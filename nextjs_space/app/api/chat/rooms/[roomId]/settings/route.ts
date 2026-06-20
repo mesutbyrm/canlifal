@@ -48,6 +48,12 @@ export async function GET(
         djUserIds: true,
         activeDjId: true,
         whitelistedWords: true,
+        roomType: true,
+        password: true,
+        welcomeMessage: true,
+        pinnedAnnouncement: true,
+        tags: true,
+        bannerImage: true,
       }
     })
 
@@ -85,7 +91,9 @@ export async function PATCH(
     const {
       nameTr, nameEn, descTr, descEn, icon,
       isMuted, isActive,
-      giftCommissionPercent, backgroundImage, bannedWords
+      giftCommissionPercent, backgroundImage, bannedWords,
+      roomType, password: roomPassword, welcomeMessage,
+      pinnedAnnouncement, tags, bannerImage
     } = body
 
     const updateData: Record<string, any> = {}
@@ -101,6 +109,19 @@ export async function PATCH(
     if (backgroundImage !== undefined) updateData.backgroundImage = backgroundImage || null
     if (bannedWords !== undefined) updateData.bannedWords = bannedWords || null
     if (body.whitelistedWords !== undefined) updateData.whitelistedWords = body.whitelistedWords || null
+    if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage || null
+    if (pinnedAnnouncement !== undefined) updateData.pinnedAnnouncement = pinnedAnnouncement || null
+    if (tags !== undefined) updateData.tags = tags || null
+    if (bannerImage !== undefined) updateData.bannerImage = bannerImage || null
+    if (roomPassword !== undefined) updateData.password = roomPassword || null
+
+    // Room type - only global admin can change
+    if (roomType !== undefined && permissions.isGlobalAdmin) {
+      const validTypes = ['FREE', 'NORMAL', 'VIP']
+      if (validTypes.includes(roomType)) {
+        updateData.roomType = roomType
+      }
+    }
 
     // Commission - only global admin (superadmin) can set
     if (giftCommissionPercent !== undefined && permissions.isGlobalAdmin) {
@@ -131,6 +152,12 @@ export async function PATCH(
         djUserIds: true,
         activeDjId: true,
         whitelistedWords: true,
+        roomType: true,
+        password: true,
+        welcomeMessage: true,
+        pinnedAnnouncement: true,
+        tags: true,
+        bannerImage: true,
       }
     })
 

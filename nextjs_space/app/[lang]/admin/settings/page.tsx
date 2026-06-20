@@ -56,6 +56,16 @@ interface PlatformSettings {
   chat_marquee_effect: string
   chat_marquee_speed: string
   chat_marquee_repeat: string
+
+  // Voice Room Settings
+  vr_gift_receiver_percent: string
+  vr_room_owner_percent: string
+  vr_site_commission_percent: string
+  vr_music_owner_percent: string
+  vr_vip_music_owner_percent: string
+  vr_free_room_max_users: string
+  vr_normal_room_max_users: string
+  vr_vip_room_max_users: string
 }
 
 export default function AdminSettingsPage() {
@@ -92,7 +102,17 @@ export default function AdminSettingsPage() {
     chat_marquee_enabled: 'true',
     chat_marquee_effect: 'scroll-left',
     chat_marquee_speed: '10',
-    chat_marquee_repeat: '0'
+    chat_marquee_repeat: '0',
+
+    // Voice Room Settings
+    vr_gift_receiver_percent: '70',
+    vr_room_owner_percent: '30',
+    vr_site_commission_percent: '50',
+    vr_music_owner_percent: '50',
+    vr_vip_music_owner_percent: '70',
+    vr_free_room_max_users: '15',
+    vr_normal_room_max_users: '100',
+    vr_vip_room_max_users: '500'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -744,6 +764,119 @@ export default function AdminSettingsPage() {
               >
                 {settings.tiktok_section_enabled === 'true' ? '✅ Gösteriliyor' : '❌ Gizli'}
               </button>
+            </div>
+          </motion.div>
+
+          {/* Voice Room Revenue Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.54 }}
+            className="bg-gradient-to-r from-deep-purple-800/50 to-purple-900/30 rounded-xl p-6 border border-purple-500/20"
+          >
+            <h3 className="text-lg font-semibold text-white mb-1">🎤 Sesli Sohbet Oda Ayarları</h3>
+            <p className="text-sm text-fuchsia-400 mb-4">Hediye dağılım oranları, müzik isteği komisyonları ve oda kapasiteleri</p>
+            
+            <div className="space-y-6">
+              {/* Gift Distribution */}
+              <div>
+                <h4 className="text-sm font-semibold text-purple-300 mb-3">🎁 Hediye Dağılımı</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { key: 'vr_gift_receiver_percent', label: 'Hediye Alan (%)' },
+                    { key: 'vr_room_owner_percent', label: 'Oda Sahibi (%)' },
+                    { key: 'vr_site_commission_percent', label: 'Site Komisyonu (%)' },
+                  ].map(item => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <span className="text-xs text-purple-200">{item.label}</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={settings[item.key as keyof PlatformSettings]}
+                          onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
+                          className="w-20 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white text-sm text-center focus:outline-none focus:border-purple-500"
+                        />
+                        <button
+                          onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])}
+                          disabled={saving === item.key}
+                          className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm"
+                        >
+                          {saving === item.key ? '...' : saved === item.key ? '✓' : 'Kaydet'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-purple-400 mt-2">Örnek: 1000 jeton hediye → Alan: %70=700, Sahibi: %30=300. Sonra her paydan %50 komisyon → Alan: 350, Sahibi: 150, Site: 500</p>
+              </div>
+
+              {/* Music Revenue */}
+              <div>
+                <h4 className="text-sm font-semibold text-purple-300 mb-3">🎵 Müzik İsteği Gelir Paylaşımı</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { key: 'vr_music_owner_percent', label: 'Normal Oda - Sahibi Payı (%)' },
+                    { key: 'vr_vip_music_owner_percent', label: 'VIP Oda - Sahibi Payı (%)' },
+                  ].map(item => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <span className="text-xs text-purple-200">{item.label}</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={settings[item.key as keyof PlatformSettings]}
+                          onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
+                          className="w-20 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white text-sm text-center focus:outline-none focus:border-purple-500"
+                        />
+                        <button
+                          onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])}
+                          disabled={saving === item.key}
+                          className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm"
+                        >
+                          {saving === item.key ? '...' : saved === item.key ? '✓' : 'Kaydet'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-purple-400 mt-2">Ücretsiz odalarda müzik geliri tamamen siteye gider. Normal/VIP odalarda kalan kısım siteye gider.</p>
+              </div>
+
+              {/* Max Users */}
+              <div>
+                <h4 className="text-sm font-semibold text-purple-300 mb-3">👥 Oda Kapasiteleri</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { key: 'vr_free_room_max_users', label: 'Ücretsiz Oda' },
+                    { key: 'vr_normal_room_max_users', label: 'Normal Oda' },
+                    { key: 'vr_vip_room_max_users', label: 'VIP Oda' },
+                  ].map(item => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <span className="text-xs text-purple-200">{item.label}</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          max="1000"
+                          value={settings[item.key as keyof PlatformSettings]}
+                          onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))}
+                          className="w-24 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white text-sm text-center focus:outline-none focus:border-purple-500"
+                        />
+                        <button
+                          onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])}
+                          disabled={saving === item.key}
+                          className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm"
+                        >
+                          {saving === item.key ? '...' : saved === item.key ? '✓' : 'Kaydet'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
 

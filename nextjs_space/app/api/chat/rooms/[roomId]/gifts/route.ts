@@ -8,6 +8,7 @@ import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { emitChatEvent } from '@/lib/chat-events'
+import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Kendinize hediye gönderemezsiniz' }, { status: 400 })
     }
 
-    // Verify room exists (include commission settings)
+    // Verify room exists (include commission settings + roomType)
     const room = await prisma.chatRoom.findUnique({
       where: { id: roomId },
       include: { owner: { select: { id: true, name: true } }, giftBeneficiary: { select: { id: true, name: true } } }
@@ -88,27 +89,10 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 })
     }
 
-    // Commission: 50% site, 50% recipient. If recipient is seated, additional 10% to room owner
-    const siteCommissionPercent = 50
-    const siteCommissionAmount = Math.floor(price * siteCommissionPercent / 100)
-    const recipientAmount = price - siteCommissionAmount
-
-    // Check if recipient is seated (for room owner commission)
-    let ownerCommissionAmount = 0
+    // Calculate revenue distribution using the new room-type-aware model
+    const roomType = (room as any).roomType || 'FREE'
+    const dist = await calculateGiftDistribution(price, roomType)
     const roomOwnerId = room.ownerId
-    if (roomOwnerId && roomOwnerId !== recipientId && roomOwnerId !== giftUserId) {
-      // Check if recipient is currently sitting in a seat
-      const recipientPresence = await prisma.chatPresence.findUnique({
-        where: { roomId_userId: { roomId, userId: recipientId } },
-        select: { seatIndex: true, lastSeen: true }
-      })
-      const presenceTimeout = new Date(Date.now() - 300000) // 5 min
-      if (recipientPresence && recipientPresence.seatIndex >= 0 && recipientPresence.lastSeen >= presenceTimeout) {
-        ownerCommissionAmount = Math.floor(price * 10 / 100) // 10% to room owner
-      }
-    }
-
-    const totalCommission = siteCommissionAmount + ownerCommissionAmount
 
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
@@ -130,52 +114,76 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         }
       })
     }
-    // Add jetons to recipient (50%) - sadece normal kullanıcılardan
-    if (recipientAmount > 0 && !senderExcluded) {
+
+    // Add net amount to recipient - sadece normal kullanıcılardan
+    if (dist.receiverNet > 0 && !senderExcluded) {
       const recipientBefore = recipient.jetonBalance ?? 0
       await prisma.user.update({
         where: { id: recipient.id },
-        data: { jetonBalance: { increment: recipientAmount } }
+        data: { jetonBalance: { increment: dist.receiverNet } }
       })
       await prisma.jetonTransaction.create({
         data: {
           userId: recipient.id,
-          amount: recipientAmount,
+          amount: dist.receiverNet,
           type: 'gift_received',
-          description: `${sender.name} tarafından ${giftType.name} hediyesi alındı (%50)`,
+          description: `${sender.name} tarafından ${giftType.name} hediyesi alındı (${room.nameTr})`,
           balanceBefore: recipientBefore,
-          balanceAfter: recipientBefore + recipientAmount
+          balanceAfter: recipientBefore + dist.receiverNet
         }
       })
     }
     // Process agency commission if recipient is in an agency
-    if (recipientAmount > 0 && !senderExcluded) {
+    if (dist.receiverNet > 0 && !senderExcluded) {
       processAgencyCommission({
         userId: recipient.id,
-        earnedAmount: recipientAmount,
+        earnedAmount: dist.receiverNet,
         sourceType: 'chat_gift',
       }).catch(err => console.error('[Chat Gift] Agency commission error:', err))
     }
 
-    // Give 10% commission to room owner if recipient is seated
-    if (ownerCommissionAmount > 0 && roomOwnerId && !senderExcluded) {
+    // Give net amount to room owner (NORMAL/VIP rooms only)
+    if (dist.ownerNet > 0 && roomOwnerId && !senderExcluded) {
       const ownerUser = await prisma.user.findUnique({ where: { id: roomOwnerId }, select: { jetonBalance: true } })
       const ownerBefore = ownerUser?.jetonBalance ?? 0
       await prisma.user.update({
         where: { id: roomOwnerId },
-        data: { jetonBalance: { increment: ownerCommissionAmount } }
+        data: { jetonBalance: { increment: dist.ownerNet } }
       })
       await prisma.jetonTransaction.create({
         data: {
           userId: roomOwnerId,
-          amount: ownerCommissionAmount,
+          amount: dist.ownerNet,
           type: 'gift_commission',
-          description: `Oda sahibi komisyonu: ${giftType.name} hediyesinden %10 (${room.nameTr})`,
+          description: `Oda sahibi payı: ${giftType.name} hediyesinden (${room.nameTr})`,
           balanceBefore: ownerBefore,
-          balanceAfter: ownerBefore + ownerCommissionAmount
+          balanceAfter: ownerBefore + dist.ownerNet
         }
       })
     }
+
+    // Log revenue to audit table
+    logRoomRevenue({
+      roomId,
+      eventType: 'gift',
+      totalAmount: price,
+      receiverAmount: senderExcluded ? 0 : dist.receiverNet,
+      ownerAmount: senderExcluded ? 0 : dist.ownerNet,
+      siteAmount: dist.siteAmount,
+      senderId: sender.id,
+      receiverId: recipient.id,
+      ownerId: roomOwnerId || undefined,
+      metadata: {
+        giftName: giftType.name,
+        giftIcon: giftType.icon,
+        quantity,
+        roomType,
+        receiverGross: dist.receiverGross,
+        ownerGross: dist.ownerGross,
+        receiverCommission: dist.receiverCommission,
+        ownerCommission: dist.ownerCommission,
+      }
+    }).catch(() => {})
 
     // Record the gift
     const gift = await prisma.chatRoomGift.create({
@@ -187,8 +195,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         quantity,
         totalPrice: price,
         currencyType: paymentType,
-        commissionAmount: totalCommission,
-        beneficiaryId: ownerCommissionAmount > 0 ? roomOwnerId : null
+        commissionAmount: dist.siteAmount,
+        beneficiaryId: dist.ownerNet > 0 ? roomOwnerId : null
       }
     })
 

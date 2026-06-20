@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const { name, description, icon, paymentType } = await req.json()
+    const { name, description, icon, paymentType, roomType: requestedRoomType } = await req.json()
     // paymentType: 'jeton' or 'cfc'
 
     if (!name || !description || !icon) {
@@ -98,6 +98,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate room type
+    const validRoomTypes = ['FREE', 'NORMAL', 'VIP']
+    const roomType = validRoomTypes.includes(requestedRoomType) ? requestedRoomType : 'FREE'
+
     // Create the room
     const room = await prisma.chatRoom.create({
       data: {
@@ -108,13 +112,14 @@ export async function POST(req: NextRequest) {
         descTr: description,
         icon: icon || '💬',
         isActive: true,
-        ownerId: user.id
+        ownerId: user.id,
+        roomType
       }
     })
 
     return NextResponse.json({
       success: true,
-      room: { id: room.id, slug: room.slug, nameTr: room.nameTr },
+      room: { id: room.id, slug: room.slug, nameTr: room.nameTr, roomType: room.roomType },
       cost,
       paymentType
     })

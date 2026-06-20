@@ -453,6 +453,12 @@ model ChatRoom {
   djUserIds             String?        @db.Text // JSON array of user IDs who can DJ (max 5)
   activeDjId            String?        // Currently active DJ user ID (who has permission to play right now)
   whitelistedWords      String?        @db.Text // JSON array of words marked as safe (not profanity)
+  roomType              String         @default("FREE") // FREE, NORMAL, VIP
+  password              String?        // Room password (NORMAL, VIP only)
+  welcomeMessage        String?        // Welcome message for users joining
+  pinnedAnnouncement    String?        // Pinned announcement text
+  tags                  String?        // Comma-separated tags
+  bannerImage           String?        // Room banner image URL
   createdAt             DateTime       @default(now())
   bans                  ChatBan[]
   messages              ChatMessage[]
@@ -460,6 +466,7 @@ model ChatRoom {
   presences             ChatPresence[]
   userRoles             ChatUserRole[]
   chatGifts             ChatRoomGift[]
+  revenueLogs           RoomRevenueLog[]
 
   @@map("chat_rooms")
 }
@@ -1414,6 +1421,27 @@ model PaymentNotification {
   @@index([status])
   @@index([createdAt])
   @@map("payment_notifications")
+}
+
+// Room Revenue Log - tracks all financial transactions in chat rooms
+model RoomRevenueLog {
+  id              String   @id @default(cuid())
+  roomId          String
+  room            ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  eventType       String   // gift, music_request, etc.
+  totalAmount     Int      // total jeton amount of the transaction
+  receiverAmount  Int      @default(0) // amount given to gift receiver
+  ownerAmount     Int      @default(0) // amount given to room owner
+  siteAmount      Int      @default(0) // amount taken by site
+  senderId        String?  // who initiated the transaction
+  receiverId      String?  // gift receiver (if applicable)
+  ownerId         String?  // room owner at the time
+  metadata        String?  @db.Text // JSON: extra info like giftName, videoTitle etc.
+  createdAt       DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([eventType])
+  @@map("room_revenue_logs")
 }
 
 // Voice Chat Session - tracks who's in voice chat

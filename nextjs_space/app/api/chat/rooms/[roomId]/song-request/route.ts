@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
+import { calculateMusicDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 
 export const dynamic = 'force-dynamic'
 
@@ -134,6 +135,16 @@ export async function POST(
     // Staff always skip payment — client skipPayment param removed for security
     const shouldSkipPayment = isStaff
 
+    // Get room info for roomType and ownerId
+    const roomInfo = await prisma.chatRoom.findUnique({
+      where: { id: params.roomId },
+      select: { roomType: true, ownerId: true, nameTr: true }
+    })
+    const roomType = roomInfo?.roomType || 'FREE'
+
+    // Calculate music revenue distribution based on room type
+    const musicDist = await calculateMusicDistribution(roomType)
+
     // Deduct jetons only if not skipping payment
     if (!shouldSkipPayment) {
       if (user.jetonBalance < SONG_REQUEST_COST) {
@@ -154,6 +165,44 @@ export async function POST(
           balanceAfter: user.jetonBalance - SONG_REQUEST_COST,
         }
       })
+
+      // Pay room owner their share (NORMAL/VIP only)
+      if (musicDist.ownerAmount > 0 && roomInfo?.ownerId) {
+        const ownerUser = await prisma.user.findUnique({
+          where: { id: roomInfo.ownerId },
+          select: { jetonBalance: true }
+        })
+        if (ownerUser) {
+          const ownerBefore = ownerUser.jetonBalance ?? 0
+          await prisma.user.update({
+            where: { id: roomInfo.ownerId },
+            data: { jetonBalance: { increment: musicDist.ownerAmount } }
+          })
+          await prisma.jetonTransaction.create({
+            data: {
+              userId: roomInfo.ownerId,
+              amount: musicDist.ownerAmount,
+              type: 'music_income',
+              description: `Müzik isteği geliri: ${title} (${roomInfo.nameTr})`,
+              balanceBefore: ownerBefore,
+              balanceAfter: ownerBefore + musicDist.ownerAmount
+            }
+          })
+        }
+      }
+
+      // Log revenue
+      logRoomRevenue({
+        roomId: params.roomId,
+        eventType: 'music_request',
+        totalAmount: SONG_REQUEST_COST,
+        receiverAmount: 0,
+        ownerAmount: musicDist.ownerAmount,
+        siteAmount: musicDist.siteAmount,
+        senderId: userId,
+        ownerId: roomInfo?.ownerId || undefined,
+        metadata: { title, videoId, roomType }
+      }).catch(() => {})
     }
 
     const dedText = dedication ? String(dedication).trim() : ''

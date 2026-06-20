@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissions'
 import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
+import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
 
 export const dynamic = 'force-dynamic'
 
@@ -224,6 +225,23 @@ export async function POST(
     const existingPresence = await prisma.chatPresence.findUnique({
       where: { roomId_userId: { roomId, userId: userId } }
     })
+
+    // Enforce max user limit based on room type (only on new joins)
+    const thirtySecondsAgoCheck = new Date(Date.now() - 30000)
+    if (!existingPresence || existingPresence.lastSeen < thirtySecondsAgoCheck) {
+      const room = await prisma.chatRoom.findUnique({
+        where: { id: roomId },
+        select: { roomType: true }
+      })
+      const maxUsers = await getMaxUsersForRoomType(room?.roomType || 'FREE')
+      const presenceTimeout = new Date(Date.now() - 300000)
+      const activeCount = await prisma.chatPresence.count({
+        where: { roomId, lastSeen: { gte: presenceTimeout } }
+      })
+      if (activeCount >= maxUsers) {
+        return NextResponse.json({ error: `Bu oda dolu. Maksimum ${maxUsers} kişi.` }, { status: 403 })
+      }
+    }
     
     const thirtySecondsAgo = new Date(Date.now() - 30000)
     const isNewJoin = !existingPresence || existingPresence.lastSeen < thirtySecondsAgo

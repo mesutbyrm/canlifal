@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
-    const { name, description, icon } = await req.json()
+    const { name, description, icon, roomType: reqRoomType } = await req.json()
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
         descEn: description || '',
         descTr: description || '',
         icon: icon || '💬',
-        isActive: true
+        isActive: true,
+        roomType: ['FREE', 'NORMAL', 'VIP'].includes(reqRoomType) ? reqRoomType : 'FREE'
       }
     })
 
@@ -89,7 +90,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
-    const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive, ownerId, giftCommissionPercent, isMuted, backgroundImage } = await req.json()
+    const { roomId, nameTr, nameEn, descTr, descEn, icon, isActive, ownerId, giftCommissionPercent, isMuted, backgroundImage, roomType } = await req.json()
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID required' }, { status: 400 })
     }
@@ -103,6 +104,9 @@ export async function PUT(req: NextRequest) {
     if (isActive !== undefined) updateData.isActive = isActive
     if (typeof isMuted === 'boolean') updateData.isMuted = isMuted
     if (backgroundImage !== undefined) updateData.backgroundImage = backgroundImage || null
+    if (roomType !== undefined && ['FREE', 'NORMAL', 'VIP'].includes(roomType)) {
+      updateData.roomType = roomType
+    }
     if (giftCommissionPercent !== undefined) {
       const pct = Math.max(0, Math.min(100, parseInt(giftCommissionPercent) || 0))
       updateData.giftCommissionPercent = pct

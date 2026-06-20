@@ -21,7 +21,14 @@ interface ChatRoom {
   ownerId: string | null
   owner: { id: string; name: string; username: string | null } | null
   giftCommissionPercent: number
+  roomType: string
   _count: { messages: number; chatGifts: number; presences: number }
+}
+
+const ROOM_TYPE_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
+  FREE: { label: 'Ücretsiz', color: 'text-green-400 bg-green-600/20 border-green-500/30', emoji: '🆓' },
+  NORMAL: { label: 'Normal', color: 'text-blue-400 bg-blue-600/20 border-blue-500/30', emoji: '⭐' },
+  VIP: { label: 'VIP', color: 'text-yellow-400 bg-yellow-600/20 border-yellow-500/30', emoji: '👑' },
 }
 
 interface User {
@@ -48,6 +55,7 @@ export default function AdminChatRoomsPage() {
   const [createName, setCreateName] = useState('')
   const [createDesc, setCreateDesc] = useState('')
   const [createIcon, setCreateIcon] = useState('💬')
+  const [createRoomType, setCreateRoomType] = useState('FREE')
   const [creating, setCreating] = useState(false)
   
   // User search for owner
@@ -117,7 +125,7 @@ export default function AdminChatRoomsPage() {
       const res = await fetch('/api/admin/chat-rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: createName, description: createDesc, icon: createIcon })
+        body: JSON.stringify({ name: createName, description: createDesc, icon: createIcon, roomType: createRoomType })
       })
       if (res.ok) {
         setShowCreateModal(false)
@@ -148,7 +156,8 @@ export default function AdminChatRoomsPage() {
           icon: editingRoom.icon,
           isActive: editingRoom.isActive,
           isMuted: editingRoom.isMuted,
-          giftCommissionPercent: editingRoom.giftCommissionPercent
+          giftCommissionPercent: editingRoom.giftCommissionPercent,
+          roomType: editingRoom.roomType
         })
       })
       if (res.ok) {
@@ -309,9 +318,12 @@ export default function AdminChatRoomsPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{room.icon}</span>
                   <div>
-                    <h3 className="text-white font-bold">
-                      {room.nameTr}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white font-bold">{room.nameTr}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${ROOM_TYPE_LABELS[room.roomType || 'FREE']?.color || ROOM_TYPE_LABELS.FREE.color}`}>
+                        {ROOM_TYPE_LABELS[room.roomType || 'FREE']?.emoji} {ROOM_TYPE_LABELS[room.roomType || 'FREE']?.label}
+                      </span>
+                    </div>
                     <p className="text-fuchsia-300/60 text-sm">
                       {room.descTr}
                     </p>
@@ -412,6 +424,25 @@ export default function AdminChatRoomsPage() {
                 </div>
                 
                 <div>
+                  <label className="text-fuchsia-300/70 text-sm block mb-1">Oda Tipi</label>
+                  <div className="flex gap-2">
+                    {(['FREE', 'NORMAL', 'VIP'] as const).map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setCreateRoomType(t)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
+                          createRoomType === t
+                            ? ROOM_TYPE_LABELS[t].color + ' ring-1 ring-white/30'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        {ROOM_TYPE_LABELS[t].emoji} {ROOM_TYPE_LABELS[t].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <label className="text-fuchsia-300/70 text-sm block mb-1">Oda Adı</label>
                   <input
                     type="text"
@@ -484,6 +515,25 @@ export default function AdminChatRoomsPage() {
                   </div>
                 </div>
                 
+                <div>
+                  <label className="text-fuchsia-300/70 text-sm block mb-1">Oda Tipi</label>
+                  <div className="flex gap-2">
+                    {(['FREE', 'NORMAL', 'VIP'] as const).map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setEditingRoom({ ...editingRoom, roomType: t })}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
+                          editingRoom.roomType === t
+                            ? ROOM_TYPE_LABELS[t].color + ' ring-1 ring-white/30'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        {ROOM_TYPE_LABELS[t].emoji} {ROOM_TYPE_LABELS[t].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-fuchsia-300/70 text-sm block mb-1">Ad (TR)</label>
