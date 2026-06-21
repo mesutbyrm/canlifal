@@ -8,9 +8,10 @@ import { useSiteTheme } from '@/lib/theme-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Coins, Clock, Gift, Percent, BadgeCheck, Star,
-  Check, Loader2, X, Sparkles, ArrowLeft
+  Check, Loader2, X, Sparkles, ArrowLeft, Send
 } from 'lucide-react'
 import Link from 'next/link'
+import PaymentNotifyForm from '@/components/payment-notify-form'
 
 interface MembershipPlan {
   id: string
@@ -53,6 +54,7 @@ export default function MembershipsPage() {
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'jeton' | 'cfc'>('jeton')
+  const [showPaymentNotify, setShowPaymentNotify] = useState(false)
 
   // Theme colors
   const isCosmic = theme === 'cosmic'
@@ -392,6 +394,39 @@ export default function MembershipsPage() {
           )}
         </div>
 
+        {/* Ödeme Bildir Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6"
+        >
+          <button
+            onClick={() => {
+              if (!session?.user) {
+                router.push('/giris')
+                return
+              }
+              setShowPaymentNotify(true)
+            }}
+            className={`w-full py-3.5 px-4 rounded-xl border-2 flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
+              isFacebook
+                ? 'bg-green-50 border-green-400 hover:bg-green-100'
+                : isCosmic
+                ? 'bg-green-500/10 border-green-400/50 hover:bg-green-500/20'
+                : 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/40 hover:from-green-500/20 hover:to-emerald-500/20'
+            }`}
+          >
+            <Send className={`w-5 h-5 ${isFacebook ? 'text-green-600' : 'text-green-400'}`} />
+            <span className={`${isFacebook ? 'text-green-700' : 'text-green-400'} font-bold`}>
+              Ödeme Yaptım, Bildir
+            </span>
+          </button>
+          <p className={`text-center text-xs mt-2 ${textSecondary}`}>
+            Ödemenizi yaptıktan sonra buradan bildirim gönderin
+          </p>
+        </motion.div>
+
         {/* Confirm Modal */}
         <AnimatePresence>
           {showConfirm && selectedPlan && (
@@ -502,6 +537,22 @@ export default function MembershipsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Payment Notify Form Modal */}
+        <PaymentNotifyForm
+          isOpen={showPaymentNotify}
+          onClose={() => setShowPaymentNotify(false)}
+          modalBg={modalBg}
+          modalBorder={modalBorder}
+          cardBg={cardBg}
+          textPrimary={textPrimary}
+          textSecondary={textSecondary}
+          accentColor={accentColor}
+          goldColor={goldColor}
+          isFacebook={isFacebook}
+          isCosmic={isCosmic}
+          contextLabel="Üyelik ödemesi bildirin"
+        />
       </div>
     </div>
   )

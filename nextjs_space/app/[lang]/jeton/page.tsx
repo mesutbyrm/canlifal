@@ -21,8 +21,10 @@ import {
   CreditCard,
   User,
   Crown,
-  Sparkles
+  Sparkles,
+  Send
 } from 'lucide-react'
+import PaymentNotifyForm from '@/components/payment-notify-form'
 
 interface CreditPackage {
   id: string
@@ -75,6 +77,7 @@ export default function CreditsPage() {
   const [customMode, setCustomMode] = useState<'jeton' | 'fiyat'>('jeton')
   const [customJeton, setCustomJeton] = useState('')
   const [customPrice, setCustomPrice] = useState('')
+  const [showPaymentNotify, setShowPaymentNotify] = useState(false)
 
   // Theme colors
   const isCosmic = theme === 'cosmic'
@@ -501,6 +504,39 @@ export default function CreditsPage() {
         <div className={`text-center ${textSecondary} text-xs p-3 rounded-xl ${cardBg} border`}>
           {'👆 Paket seçin veya özel miktar belirleyerek ödeme yöntemlerini görüntüleyin'}
         </div>
+
+        {/* Ödeme Bildir Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-4"
+        >
+          <button
+            onClick={() => {
+              if (!session?.user) {
+                router.push('/giris')
+                return
+              }
+              setShowPaymentNotify(true)
+            }}
+            className={`w-full py-3.5 px-4 rounded-xl border-2 flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${
+              isFacebook
+                ? 'bg-green-50 border-green-400 hover:bg-green-100'
+                : isCosmic
+                ? 'bg-green-500/10 border-green-400/50 hover:bg-green-500/20'
+                : 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/40 hover:from-green-500/20 hover:to-emerald-500/20'
+            }`}
+          >
+            <Send className={`w-5 h-5 ${isFacebook ? 'text-green-600' : 'text-green-400'}`} />
+            <span className={`${isFacebook ? 'text-green-700' : 'text-green-400'} font-bold`}>
+              Ödeme Yaptım, Bildir
+            </span>
+          </button>
+          <p className={`text-center text-xs mt-2 ${textSecondary}`}>
+            Ödemenizi yaptıktan sonra buradan bildirim gönderin
+          </p>
+        </motion.div>
       </div>
 
       {/* Payment Methods Selection Popup */}
@@ -999,6 +1035,21 @@ export default function CreditsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Payment Notify Form Modal */}
+      <PaymentNotifyForm
+        isOpen={showPaymentNotify}
+        onClose={() => setShowPaymentNotify(false)}
+        modalBg={modalBg}
+        modalBorder={modalBorder}
+        cardBg={cardBg}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentColor={accentColor}
+        goldColor={goldColor}
+        isFacebook={isFacebook}
+        isCosmic={isCosmic}
+        contextLabel="Jeton yükleme ödemesi bildirin"
+      />
     </div>
   )
 }
