@@ -10,11 +10,11 @@ export const dynamic = 'force-dynamic'
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+) {
   const authUser = await authenticateRequest(request);
   if (!authUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-) {
   try {
     if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })

@@ -33,7 +33,7 @@ export async function GET(
       })
     }
 
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     let isMember = false
     let memberRole = null
     if (authUser?.id) {

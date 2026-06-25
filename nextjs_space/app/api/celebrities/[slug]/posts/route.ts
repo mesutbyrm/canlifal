@@ -45,7 +45,7 @@ export async function GET(
     ])
 
     // Check user likes
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     let likedPostIds: string[] = []
     if (authUser?.id && posts.length > 0) {
       const likes = await prisma.celebrityPostLike.findMany({

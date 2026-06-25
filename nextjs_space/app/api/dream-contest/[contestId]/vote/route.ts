@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: { contestId: string } }
 ) {
   try {
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     if (!authUser) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
     const userId = authUser.id
 

@@ -36,7 +36,7 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }

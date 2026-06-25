@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: 'Ünlü bulunamadı' }, { status: 404 })
     }
 
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     let isFollowed = false
     if (authUser?.id) {
       const follow = await prisma.celebrityFollow.findUnique({

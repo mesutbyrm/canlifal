@@ -11,11 +11,11 @@ export const dynamic = 'force-dynamic'
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+) {
   const authUser = await authenticateRequest(request);
   if (!authUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-) {
   try {
     if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
@@ -75,11 +75,11 @@ export async function GET(
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+) {
   const authUser = await authenticateRequest(request);
   if (!authUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-) {
   try {
     if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })

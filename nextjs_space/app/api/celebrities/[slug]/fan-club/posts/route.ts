@@ -29,7 +29,7 @@ export async function GET(
       return NextResponse.json({ posts: [], total: 0, page, totalPages: 0 })
     }
 
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
 
     const [posts, total] = await Promise.all([
       prisma.fanClubPost.findMany({
@@ -79,7 +79,7 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
@@ -145,7 +145,7 @@ export async function DELETE(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }

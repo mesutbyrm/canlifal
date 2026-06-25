@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ isFavorited: false, count: 0 })
     }
@@ -44,7 +44,7 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const authUser = await authenticateRequest(request)
+    const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
