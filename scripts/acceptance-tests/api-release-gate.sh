@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
+echo "DEBUG: API_BASE_URL=${API_BASE_URL:-EMPTY}"
+echo "DEBUG: USER_EMAIL=${ACCEPTANCE_USER_EMAIL:-EMPTY}"
+echo "DEBUG: ADMIN_EMAIL=${ACCEPTANCE_ADMIN_EMAIL:-EMPTY}"
 # CanlıFal – API Release Gate (Acceptance Tests)
 # ============================================================
 # Runs against the live deployment before merging to main.
