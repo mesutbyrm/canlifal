@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
@@ -12,8 +11,8 @@ export async function POST(
   { params }: { params: { postId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -31,7 +30,7 @@ export async function POST(
       where: {
         postId_userId: {
           postId: params.postId,
-          userId: session.user.id
+          userId: authUser.id
         }
       }
     })
@@ -52,7 +51,7 @@ export async function POST(
       await prisma.socialLike.create({
         data: {
           postId: params.postId,
-          userId: session.user.id
+          userId: authUser.id
         }
       })
 
@@ -61,14 +60,14 @@ export async function POST(
       })
 
       // Create notification + push for post owner (if not self-like)
-      if (post.userId !== session.user.id) {
+      if (post.userId !== authUser.id) {
         createNotificationWithPush({
           userId: post.userId,
           type: 'like',
           message: 'gönderinizi beğendi',
           postId: params.postId,
-          fromUserId: session.user.id,
-          fromUserName: session.user.name || 'Birisi'
+          fromUserId: authUser.id,
+          fromUserName: authUser.name || 'Birisi'
         }).catch((err: any) => console.error('Notification error:', err))
       }
 

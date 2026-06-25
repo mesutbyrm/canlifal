@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,13 +17,13 @@ export async function GET(
       return NextResponse.json({ error: 'Ünlü bulunamadı' }, { status: 404 })
     }
 
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     let isFollowed = false
-    if (session?.user?.id) {
+    if (authUser?.id) {
       const follow = await prisma.celebrityFollow.findUnique({
         where: {
           userId_celebrityId: {
-            userId: session.user.id,
+            userId: authUser.id,
             celebrityId: celebrity.id,
           },
         },

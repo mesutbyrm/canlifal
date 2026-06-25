@@ -1,14 +1,13 @@
 import { NextResponse, NextRequest } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 

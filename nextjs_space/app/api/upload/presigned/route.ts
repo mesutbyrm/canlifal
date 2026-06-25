@@ -1,15 +1,14 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import { generatePresignedUploadUrl } from '@/lib/s3'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     
-    if (!session?.user?.id) {
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 

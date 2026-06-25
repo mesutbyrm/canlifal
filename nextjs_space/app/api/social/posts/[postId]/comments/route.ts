@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
@@ -35,8 +34,8 @@ export async function POST(
   { params }: { params: { postId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -62,7 +61,7 @@ export async function POST(
     const comment = await prisma.socialComment.create({
       data: {
         postId: params.postId,
-        userId: session.user.id,
+        userId: authUser.id,
         content: content.trim()
       },
       include: {
@@ -73,14 +72,14 @@ export async function POST(
     })
 
     // Create notification + push for post owner (if not self-comment)
-    if (post.userId !== session.user.id) {
+    if (post.userId !== authUser.id) {
       createNotificationWithPush({
         userId: post.userId,
         type: 'comment',
         message: 'gönderinize yorum yaptı',
         postId: params.postId,
-        fromUserId: session.user.id,
-        fromUserName: session.user.name || 'Birisi'
+        fromUserId: authUser.id,
+        fromUserName: authUser.name || 'Birisi'
       }).catch((err: any) => console.error('Notification error:', err))
     }
 
@@ -97,8 +96,8 @@ export async function DELETE(
   { params }: { params: { postId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -118,7 +117,7 @@ export async function DELETE(
     }
 
     // Only owner or admin can delete
-    if (comment.userId !== session.user.id && session.user.role !== 'admin') {
+    if (comment.userId !== authUser.id && authUser.role !== 'admin') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

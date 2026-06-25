@@ -1,25 +1,24 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST: Use daily free spin
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    let profile = await prisma.userGameProfile.findUnique({ where: { userId: session.user.id } })
+    let profile = await prisma.userGameProfile.findUnique({ where: { userId: authUser.id } })
     if (!profile) {
       profile = await prisma.userGameProfile.create({
-        data: { userId: session.user.id },
+        data: { userId: authUser.id },
       })
     }
 
@@ -45,7 +44,7 @@ export async function POST() {
 
     // Update spin usage
     await prisma.userGameProfile.update({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       data: {
         dailySpinsUsed: lastSpin && lastSpin.getTime() === today.getTime() ? { increment: 1 } : 1,
         lastSpinDate: today,
@@ -54,17 +53,17 @@ export async function POST() {
 
     // Add CFC (credits)
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: { credits: { increment: reward } },
     })
 
     // Update game profile
     await prisma.userGameProfile.update({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       data: { totalJetons: { increment: reward } },
     })
 
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,

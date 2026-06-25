@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST: Create a new SOS game
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -24,7 +23,7 @@ export async function POST(req: NextRequest) {
     // Check balance
     if (amount > 0) {
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         select: { credits: true, jetonBalance: true, name: true, role: true }
       })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
         }
         await prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: authUser.id },
           data: currency === 'CFC'
             ? { credits: { decrement: amount } }
             : { jetonBalance: { decrement: amount } }
@@ -49,12 +48,12 @@ export async function POST(req: NextRequest) {
     // Create empty board
     const board = Array(size).fill(null).map(() => Array(size).fill(''))
 
-    const userName = (session.user as any)?.name || 'Oyuncu 1'
+    const userName = (authUser as any)?.name || 'Oyuncu 1'
 
     const game = await prisma.sosGame.create({
       data: {
         gridSize: size,
-        player1Id: session.user.id,
+        player1Id: authUser.id,
         player2Id: isAI ? 'AI' : null,
         isAI: !!isAI,
         betAmount: amount,
@@ -82,8 +81,8 @@ export async function POST(req: NextRequest) {
 // GET: List waiting games, stats, and recent winners
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    const userId = session?.user?.id
+    const authUser = await authenticateRequest(req)
+    const userId = authUser?.id
     const url = new URL(req.url)
     const type = url.searchParams.get('type')
 

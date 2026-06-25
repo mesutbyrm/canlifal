@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCached } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
@@ -88,8 +87,8 @@ export async function GET(request: NextRequest) {
     const baseTellers = await getCached(cacheKey, 10, () => fetchTellerList(specialty, onlineOnly, sort));
 
     // Per-user enrichment (queue position) - lightweight, no DB query
-    const userSession = await getServerSession(authOptions);
-    const currentUserId = userSession?.user?.id;
+    const authUser = await authenticateRequest(request).catch(() => null)
+    const currentUserId = authUser?.id;
 
     const enrichedTellers = baseTellers.map((t: any) => {
       let queuePosition = 0;
@@ -118,8 +117,8 @@ export async function GET(request: NextRequest) {
 // Apply to become a fortune teller
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -128,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     // Check if already has a profile
     const existing = await prisma.liveFortuneTeller.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: authUser.id }
     });
 
     if (existing) {
@@ -137,8 +136,8 @@ export async function POST(request: NextRequest) {
 
     const teller = await prisma.liveFortuneTeller.create({
       data: {
-        userId: session.user.id,
-        displayName: displayName || session.user.name || 'Fortune Teller',
+        userId: authUser.id,
+        displayName: displayName || authUser.name || 'Fortune Teller',
         bio: bio || null,
         specialties: specialties || [],
         pricePerSession: pricePerSession || 100,

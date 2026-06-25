@@ -1,17 +1,16 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     
     // Parse body once
     const body = await request.json().catch(() => ({}))
@@ -20,7 +19,7 @@ export async function POST(request: Request) {
     const language: string = body?.language || 'tr'
 
     // Access control: IP-based for unregistered, CFC for registered
-    if (!session?.user?.id) {
+    if (!authUser) {
       const ip = getClientIp(request)
       const ipAccess = await checkIpFortuneAccess(ip, adWatched)
       if (!ipAccess.allowed) {
@@ -30,8 +29,8 @@ export async function POST(request: Request) {
 
     // Check and deduct credits
     // Check and deduct credits (skip if ad watched or unregistered)
-    if (session?.user?.id && !adWatched) {
-      const creditResult = await checkAndDeductCredits(session.user.id, 'kursundokme')
+    if (authUser?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(authUser.id, 'kursundokme')
       if (!creditResult.success) {
         return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
       }
@@ -117,10 +116,10 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
           }
 
           // Save fortune to database if we got a response (only for registered users)
-          if (session?.user?.id && fullResponse.length > 0) {
+          if (authUser?.id && fullResponse.length > 0) {
             const fortune = await prisma.fortune.create({
               data: {
-                userId: session.user.id,
+                userId: authUser.id,
                 fortuneType: 'kursundokme',
                 inputData: JSON.stringify({ shapes: finalShapes }),
                 aiResponse: fullResponse,
@@ -129,12 +128,12 @@ Türkçe olarak cevap ver. Mistik ve şiirsel bir dil kullan.`
             })
 
             // Auto-share to social feed
-            await autoShareFortune(session.user.id, fortune.id, 'kursundokme', fullResponse, language || 'tr')
+            await autoShareFortune(authUser.id, fortune.id, 'kursundokme', fullResponse, language || 'tr')
               
 
             // Send summary email
             sendFortuneSummaryEmail(
-              session.user.id,
+              authUser.id,
               'kursundokme',
               fullResponse.substring(0, 500),
               language || 'tr'

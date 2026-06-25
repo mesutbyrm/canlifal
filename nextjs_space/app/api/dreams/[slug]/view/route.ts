@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,8 +10,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ ok: true }) // silent for anonymous
     }
 
@@ -24,7 +23,7 @@ export async function POST(
       return NextResponse.json({ ok: true })
     }
 
-    const userId = (session.user as any).id
+    const userId = authUser.id
 
     // Only record one view per user per dream per day
     const today = new Date()

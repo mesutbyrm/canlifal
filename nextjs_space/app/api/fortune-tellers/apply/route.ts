@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 import { sendNotificationEmail } from '@/lib/email-service'
 import { getCachedPlatformSetting } from '@/lib/cache'
@@ -11,14 +10,14 @@ export const dynamic = 'force-dynamic'
 // Apply to become a fortune teller
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if already has an application
     const existing = await prisma.liveFortuneTeller.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: authUser.id }
     })
 
     if (existing) {
@@ -45,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Create the application
     const teller = await prisma.liveFortuneTeller.create({
       data: {
-        userId: session.user.id,
+        userId: authUser.id,
         displayName,
         bio: bio || null,
         specialties,

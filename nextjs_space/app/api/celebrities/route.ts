@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,12 +35,12 @@ export async function GET(req: NextRequest) {
     ])
 
     // Check if current user follows any of these
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(req)
     let followedIds: string[] = []
-    if (session?.user?.id) {
+    if (authUser?.id) {
       const follows = await prisma.celebrityFollow.findMany({
         where: {
-          userId: session.user.id,
+          userId: authUser.id,
           celebrityId: { in: celebrities.map(c => c.id) },
         },
         select: { celebrityId: true },

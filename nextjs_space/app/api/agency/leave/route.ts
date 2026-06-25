@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST: Submit leave request (member) or approve/reject leave request (owner/manager)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
     // If action is approve/reject, handle as owner/manager
     if (action === 'approve' || action === 'reject') {
       const myMembership = await prisma.agencyUser.findUnique({
-        where: { userId: session.user.id },
+        where: { userId: authUser.id },
       })
       if (!myMembership || !['owner', 'manager'].includes(myMembership.role)) {
         return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
 
         await prisma.agencyLeaveRequest.update({
           where: { id: requestId },
-          data: { status: 'approved', reviewedBy: session.user.id, reviewNote: reviewNote || null, reviewedAt: new Date() },
+          data: { status: 'approved', reviewedBy: authUser.id, reviewNote: reviewNote || null, reviewedAt: new Date() },
         })
 
         if (targetMember && targetMember.agencyId === myMembership.agencyId) {
@@ -59,7 +58,7 @@ export async function POST(req: NextRequest) {
         // Reject
         await prisma.agencyLeaveRequest.update({
           where: { id: requestId },
-          data: { status: 'rejected', reviewedBy: session.user.id, reviewNote: reviewNote || null, reviewedAt: new Date() },
+          data: { status: 'rejected', reviewedBy: authUser.id, reviewNote: reviewNote || null, reviewedAt: new Date() },
         })
         return NextResponse.json({ success: true, message: 'Çıkış talebi reddedildi' })
       }
@@ -67,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     // Otherwise, submit a new leave request
     const membership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       include: { agency: { select: { id: true, ownerId: true } } }
     })
 
@@ -75,13 +74,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Herhangi bir ajansa üye değilsiniz' }, { status: 400 })
     }
 
-    if (membership.agency.ownerId === session.user.id) {
+    if (membership.agency.ownerId === authUser.id) {
       return NextResponse.json({ error: 'Ajans sahibi olarak çıkış talebi gönderemezsiniz.' }, { status: 400 })
     }
 
     // Check existing pending request
     const existingReq = await prisma.agencyLeaveRequest.findFirst({
-      where: { userId: session.user.id, agencyId: membership.agencyId, status: 'pending' },
+      where: { userId: authUser.id, agencyId: membership.agencyId, status: 'pending' },
     })
     if (existingReq) {
       return NextResponse.json({ error: 'Zaten bekleyen bir çıkış talebiniz var' }, { status: 409 })
@@ -90,7 +89,7 @@ export async function POST(req: NextRequest) {
     await prisma.agencyLeaveRequest.create({
       data: {
         agencyId: membership.agencyId,
-        userId: session.user.id,
+        userId: authUser.id,
         reason: reason || null,
       }
     })
@@ -105,13 +104,13 @@ export async function POST(req: NextRequest) {
 // DELETE: Cancel own pending leave request
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const pending = await prisma.agencyLeaveRequest.findFirst({
-      where: { userId: session.user.id, status: 'pending' },
+      where: { userId: authUser.id, status: 'pending' },
     })
     if (!pending) {
       return NextResponse.json({ error: 'Bekleyen talep bulunamadı' }, { status: 404 })

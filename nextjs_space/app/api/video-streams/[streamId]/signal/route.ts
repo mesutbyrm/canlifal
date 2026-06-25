@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 /**
  * Per-stream WebRTC signal route.
@@ -70,8 +69,8 @@ export async function POST(
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const session = await getServerSession(authOptions)
-    const senderId = session?.user?.id || data?.viewerId || `guest_${Date.now()}`
+    const authUser = await authenticateRequest(request)
+    const senderId = authUser?.id || data?.viewerId || `guest_${Date.now()}`
 
     await prisma.videoStreamSignal.create({
       data: {

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user already owns an agency
     const existingOwner = await prisma.agency.findFirst({
-      where: { ownerId: session.user.id, status: { in: ['pending', 'approved'] } }
+      where: { ownerId: authUser.id, status: { in: ['pending', 'approved'] } }
     })
     if (existingOwner) {
       return NextResponse.json({ error: 'Zaten bir ajans başvurunuz veya aktif ajansınız var' }, { status: 400 })
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user is already in an agency
     const existingMember = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: authUser.id }
     })
     if (existingMember) {
       return NextResponse.json({ error: 'Başka bir ajansın üyesiyken ajans kuramazsınız' }, { status: 400 })
@@ -40,13 +39,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bu ajans adı zaten kullanılıyor' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
+    const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { name: true } })
 
     const agency = await prisma.agency.create({
       data: {
         name: name.trim(),
         description: description || null,
-        ownerId: session.user.id,
+        ownerId: authUser.id,
         ownerName: user?.name || 'Kullanıcı',
         contactEmail: contactEmail || null,
         contactPhone: contactPhone || null,

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET - Check user's fortune request status for a stream
 export async function GET(
@@ -9,8 +8,8 @@ export async function GET(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -18,7 +17,7 @@ export async function GET(
       where: {
         streamId_userId: {
           streamId: params.streamId,
-          userId: session.user.id
+          userId: authUser.id
         }
       },
       include: {

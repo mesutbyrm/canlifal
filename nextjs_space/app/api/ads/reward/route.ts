@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { getClientIp } from '@/lib/fortune-access'
 
 export const dynamic = 'force-dynamic'
@@ -9,14 +8,14 @@ export const dynamic = 'force-dynamic'
 /**
  * Record that a user watched a rewarded ad
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     const ip = getClientIp(request)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    if (!session?.user?.id) {
+    if (!authUser) {
       // Unregistered user - update IP usage
       const usage = await prisma.ipFortuneUsage.findUnique({
         where: { ipAddress_date: { ipAddress: ip, date: today } },

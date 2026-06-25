@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,8 +36,8 @@ export async function GET(req: NextRequest) {
 // POST a new comment
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest) {
     const post = await prisma.blogPost.findUnique({ where: { id: postId } })
     if (!post) return NextResponse.json({ error: 'Yazı bulunamadı' }, { status: 404 })
 
-    const user = session.user as any
+    const user = authUser as any
 
     const comment = await prisma.blogComment.create({
       data: {
@@ -80,8 +79,8 @@ export async function POST(req: NextRequest) {
 // DELETE a comment (own comment only)
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -89,7 +88,7 @@ export async function DELETE(req: NextRequest) {
     const commentId = searchParams.get('id')
     if (!commentId) return NextResponse.json({ error: 'id gerekli' }, { status: 400 })
 
-    const user = session.user as any
+    const user = authUser as any
     const comment = await prisma.blogComment.findUnique({ where: { id: commentId } })
 
     if (!comment) return NextResponse.json({ error: 'Yorum bulunamadı' }, { status: 404 })

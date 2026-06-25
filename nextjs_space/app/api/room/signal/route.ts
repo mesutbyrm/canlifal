@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic';
 
 // Send a WebRTC signal
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -29,8 +30,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    const isUser = liveSession.userId === session.user.id;
-    const isTeller = liveSession.teller.userId === session.user.id;
+    const isUser = liveSession.userId === authUser.id;
+    const isTeller = liveSession.teller.userId === authUser.id;
 
     if (!isUser && !isTeller) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     const signal = await prisma.roomSignal.create({
       data: {
         sessionId,
-        senderId: session.user.id,
+        senderId: authUser.id,
         receiverId,
         signalType,
         signalData: JSON.stringify(signalData)
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
 // Delete old signals for reconnection
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -74,8 +75,8 @@ export async function DELETE(request: NextRequest) {
       where: {
         sessionId,
         OR: [
-          { senderId: session.user.id },
-          { receiverId: session.user.id }
+          { senderId: authUser.id },
+          { receiverId: authUser.id }
         ]
       }
     });
@@ -90,8 +91,8 @@ export async function DELETE(request: NextRequest) {
 // Get pending signals for current user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     const signals = await prisma.roomSignal.findMany({
       where: {
         sessionId,
-        receiverId: session.user.id,
+        receiverId: authUser.id,
         processed: false
       },
       orderBy: { createdAt: 'asc' }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
@@ -9,8 +8,8 @@ export const dynamic = 'force-dynamic'
 // POST - create event-based announcement (game win, gift, voice room, social post, fortune)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -24,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { id: true, name: true, username: true, role: true, membership: true, favoriteTeam: true }
     })
 

@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 const STREAK_REWARDS = [
   { day: 1, xp: 10, jeton: 0 },
@@ -17,9 +16,9 @@ const STREAK_REWARDS = [
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
-    const userId = (session.user as any).id
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
+    const userId = authUser.id
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -46,9 +45,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
-    const userId = (session.user as any).id
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
+    const userId = authUser.id
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

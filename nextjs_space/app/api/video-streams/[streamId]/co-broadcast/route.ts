@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 
 const MAX_GUESTS = 8 // Maximum simultaneous co-broadcasters allowed
@@ -48,8 +47,8 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -68,7 +67,7 @@ export async function POST(
     if (action === 'request') {
       // Check if already requested or active
       const existing = await prisma.streamCoBroadcaster.findUnique({
-        where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } }
+        where: { streamId_userId: { streamId: params.streamId, userId: authUser.id } }
       })
 
       if (existing && ['active', 'requested'].includes(existing.status)) {
@@ -76,8 +75,8 @@ export async function POST(
       }
 
       const request = await prisma.streamCoBroadcaster.upsert({
-        where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
-        create: { streamId: params.streamId, userId: session.user.id, status: 'requested' },
+        where: { streamId_userId: { streamId: params.streamId, userId: authUser.id } },
+        create: { streamId: params.streamId, userId: authUser.id, status: 'requested' },
         update: { status: 'requested', isMuted: false, isVideoOff: false, leftAt: null }
       })
 
@@ -86,14 +85,14 @@ export async function POST(
         userId: stream.userId,
         type: 'co_broadcast_request',
         title: 'Ortak Yayın Talebi',
-        message: `${session.user.name || 'Kullanıcı'} sizinle ortak yayın yapmak istiyor!`,
-        fromUserId: session.user.id,
-        fromUserName: session.user.name || undefined,
+        message: `${authUser.name || 'Kullanıcı'} sizinle ortak yayın yapmak istiyor!`,
+        fromUserId: authUser.id,
+        fromUserName: authUser.name || undefined,
         data: JSON.stringify({ 
           streamId: params.streamId, 
-          requesterId: session.user.id,
-          requesterName: session.user.name,
-          requesterImage: session.user.image
+          requesterId: authUser.id,
+          requesterName: authUser.name,
+          requesterImage: authUser.image
         })
       })
 
@@ -101,7 +100,7 @@ export async function POST(
     }
 
     // All other actions require broadcaster permission
-    if (stream.userId !== session.user.id) {
+    if (stream.userId !== authUser.id) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
@@ -221,8 +220,8 @@ export async function PATCH(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -243,7 +242,7 @@ export async function PATCH(
       }
 
       const coBroadcaster = await prisma.streamCoBroadcaster.update({
-        where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
+        where: { streamId_userId: { streamId: params.streamId, userId: authUser.id } },
         data: { status: 'active', joinedAt: new Date() }
       })
       
@@ -258,11 +257,11 @@ export async function PATCH(
             userId: stream.userId,
             type: 'co_broadcast_accepted',
             title: 'Ortak Yayın Kabul Edildi',
-            message: `${session.user.name || 'Kullanıcı'} ortak yayın davetinizi kabul etti!`,
+            message: `${authUser.name || 'Kullanıcı'} ortak yayın davetinizi kabul etti!`,
             data: JSON.stringify({ 
               streamId: params.streamId, 
-              userName: session.user.name,
-              userImage: session.user.image
+              userName: authUser.name,
+              userImage: authUser.image
             })
         })
       }
@@ -272,7 +271,7 @@ export async function PATCH(
 
     if (action === 'reject' || action === 'leave') {
       await prisma.streamCoBroadcaster.update({
-        where: { streamId_userId: { streamId: params.streamId, userId: session.user.id } },
+        where: { streamId_userId: { streamId: params.streamId, userId: authUser.id } },
         data: { status: 'ended', leftAt: new Date() }
       })
       
@@ -287,11 +286,11 @@ export async function PATCH(
             userId: stream.userId,
             type: 'co_broadcast_rejected',
             title: 'Ortak Yayın Reddedildi',
-            message: `${session.user.name || 'Kullanıcı'} ortak yayın davetinizi reddetti.`,
+            message: `${authUser.name || 'Kullanıcı'} ortak yayın davetinizi reddetti.`,
             data: JSON.stringify({ 
               streamId: params.streamId, 
-              userName: session.user.name,
-              userImage: session.user.image,
+              userName: authUser.name,
+              userImage: authUser.image,
               action: action
             })
         })

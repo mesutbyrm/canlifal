@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import OpenAI from 'openai'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,12 +14,12 @@ const JETON_COST = 5
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
-    const userId = (session.user as any).id
+    const userId = authUser.id
     const { dreamText } = await req.json()
     if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length < 10) {
       return NextResponse.json({ error: 'Rüyanızı en az 10 karakter olarak yazın' }, { status: 400 })

@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 const MISSIONS = [
   { type: 'login', title: 'Günlük Giriş', description: 'Uygulamaya giriş yap', reward: 5, icon: '👋', autoComplete: true },
@@ -14,10 +13,10 @@ const MISSIONS = [
   { type: 'share', title: 'Paylaş', description: 'Bir falı veya yayını paylaş', reward: 5, icon: '📤', autoComplete: false },
 ]
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -25,13 +24,13 @@ export async function GET() {
     today.setHours(0, 0, 0, 0)
 
     const completedTasks = await prisma.dailyTask.findMany({
-      where: { userId: session.user.id, date: today },
+      where: { userId: authUser.id, date: today },
     })
     const completedTypes = new Set(completedTasks.map((t: any) => t.taskType))
 
     // Get user streak
     const streak = await prisma.userFortuneStreak.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
 
     const missions = MISSIONS.map(m => ({
@@ -64,8 +63,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -80,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     // Check already completed
     const existing = await prisma.dailyTask.findUnique({
-      where: { userId_taskType_date: { userId: session.user.id, taskType, date: today } },
+      where: { userId_taskType_date: { userId: authUser.id, taskType, date: today } },
     })
     if (existing) {
       return NextResponse.json({ error: 'Bu görev zaten tamamlandı', alreadyClaimed: true }, { status: 400 })
@@ -89,7 +88,7 @@ export async function POST(req: NextRequest) {
     // All complete bonus
     if (taskType === 'all_complete_bonus') {
       const completedTasks = await prisma.dailyTask.findMany({
-        where: { userId: session.user.id, date: today },
+        where: { userId: authUser.id, date: today },
       })
       const completedTypes = new Set(completedTasks.map((t: any) => t.taskType))
       const allDone = MISSIONS.every(m => completedTypes.has(m.type))
@@ -98,28 +97,28 @@ export async function POST(req: NextRequest) {
       }
 
       const bonusAmount = 25
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+      const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
       const newBalance = (user?.credits || 0) + bonusAmount
       await prisma.$transaction([
-        prisma.user.update({ where: { id: session.user.id }, data: { credits: { increment: bonusAmount } } }),
+        prisma.user.update({ where: { id: authUser.id }, data: { credits: { increment: bonusAmount } } }),
         prisma.creditTransaction.create({
-          data: { userId: session.user.id, amount: bonusAmount, type: 'daily_bonus', description: 'Tüm günlük görevler tamamlandı bonusu', balance: newBalance },
+          data: { userId: authUser.id, amount: bonusAmount, type: 'daily_bonus', description: 'Tüm günlük görevler tamamlandı bonusu', balance: newBalance },
         }),
-        prisma.dailyTask.create({ data: { userId: session.user.id, taskType: 'all_complete_bonus', jetonEarned: bonusAmount, date: today } }),
+        prisma.dailyTask.create({ data: { userId: authUser.id, taskType: 'all_complete_bonus', jetonEarned: bonusAmount, date: today } }),
       ])
       return NextResponse.json({ success: true, creditsEarned: bonusAmount })
     }
 
     // Complete a regular mission
     const reward = mission!.reward
-    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+    const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
     const newBalance = (user?.credits || 0) + reward
     await prisma.$transaction([
-      prisma.user.update({ where: { id: session.user.id }, data: { credits: { increment: reward } } }),
+      prisma.user.update({ where: { id: authUser.id }, data: { credits: { increment: reward } } }),
       prisma.creditTransaction.create({
-        data: { userId: session.user.id, amount: reward, type: 'daily_bonus', description: `Günlük görev: ${mission!.title}`, balance: newBalance },
+        data: { userId: authUser.id, amount: reward, type: 'daily_bonus', description: `Günlük görev: ${mission!.title}`, balance: newBalance },
       }),
-      prisma.dailyTask.create({ data: { userId: session.user.id, taskType, jetonEarned: reward, date: today } }),
+      prisma.dailyTask.create({ data: { userId: authUser.id, taskType, jetonEarned: reward, date: today } }),
     ])
 
     return NextResponse.json({ success: true, creditsEarned: reward })

@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCachedPlatformSetting } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
 // GET: List user's withdrawal requests
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const requests = await prisma.withdrawalRequest.findMany({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -30,8 +31,8 @@ export async function GET() {
 // POST: Create a new withdrawal request
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user is a teller with canWithdraw
     const teller = await prisma.liveFortuneTeller.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     });
     if (!teller || !teller.canWithdraw) {
       return NextResponse.json({ error: 'Para çekme yetkiniz yok' }, { status: 403 });
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Check user balance
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { jetonBalance: true, withdrawalLimit: true },
     });
     if (!user) {
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     // Check for pending requests
     const pending = await prisma.withdrawalRequest.findFirst({
-      where: { userId: session.user.id, status: { in: ['pending', 'agency_approved'] } },
+      where: { userId: authUser.id, status: { in: ['pending', 'agency_approved'] } },
     });
     if (pending) {
       return NextResponse.json({ error: 'Zaten bekleyen bir çekim talebiniz var' }, { status: 400 });
@@ -89,14 +90,14 @@ export async function POST(request: NextRequest) {
 
     // Check if user belongs to an agency
     const agencyMembership = await prisma.agencyUser.findFirst({
-      where: { userId: session.user.id, isActive: true },
+      where: { userId: authUser.id, isActive: true },
       select: { agencyId: true },
     });
 
     // Create withdrawal request
     const withdrawal = await prisma.withdrawalRequest.create({
       data: {
-        userId: session.user.id,
+        userId: authUser.id,
         amount,
         amountTL,
         method,

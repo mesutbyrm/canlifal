@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET polls for a fan club
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(req)
     const celebrity = await prisma.celebrity.findUnique({ where: { slug: params.slug } })
     if (!celebrity) return NextResponse.json({ error: 'Ünlü bulunamadı' }, { status: 404 })
 
@@ -23,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       },
     })
 
-    const userId = session?.user?.id
+    const userId = authUser?.id
     const formatted = polls.map(poll => {
       const options = (poll.options as any[]) || []
       const voteCounts = options.map((_: any, i: number) => 
@@ -58,8 +57,8 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 // POST create a poll or vote on a poll
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const celebrity = await prisma.celebrity.findUnique({ where: { slug: params.slug } })
     if (!celebrity) return NextResponse.json({ error: 'Ünlü bulunamadı' }, { status: 404 })
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
     // Check membership
     const membership = await prisma.fanClubMember.findUnique({
-      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } }
+      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } }
     })
     if (!membership) return NextResponse.json({ error: 'Fan kulübüne üye olmalısınız' }, { status: 403 })
 
@@ -90,21 +89,21 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
       // Check if already voted
       const existing = await prisma.fanClubPollVote.findUnique({
-        where: { pollId_userId: { pollId: body.pollId, userId: session.user.id } }
+        where: { pollId_userId: { pollId: body.pollId, userId: authUser.id } }
       })
       if (existing) return NextResponse.json({ error: 'Zaten oy verdiniz' }, { status: 400 })
 
       await prisma.fanClubPollVote.create({
         data: {
           pollId: body.pollId,
-          userId: session.user.id,
+          userId: authUser.id,
           optionIndex: body.optionIndex,
         }
       })
 
       // Award XP for voting
       await prisma.fanClubMember.update({
-        where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } },
+        where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } },
         data: { xp: { increment: 5 } },
       })
 
@@ -121,7 +120,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       const poll = await prisma.fanClubPoll.create({
         data: {
           fanClubId: fanClub.id,
-          userId: session.user.id,
+          userId: authUser.id,
           question: body.question.trim(),
           options: body.options.map((o: string) => ({ text: o.trim() })),
           endsAt: body.endsAt ? new Date(body.endsAt) : null,
@@ -130,7 +129,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
       // Award XP for creating a poll
       await prisma.fanClubMember.update({
-        where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } },
+        where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } },
         data: { xp: { increment: 15 } },
       })
 

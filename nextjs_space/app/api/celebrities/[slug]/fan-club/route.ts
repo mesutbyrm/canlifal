@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,12 +33,12 @@ export async function GET(
       })
     }
 
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     let isMember = false
     let memberRole = null
-    if (session?.user?.id) {
+    if (authUser?.id) {
       const membership = await prisma.fanClubMember.findUnique({
-        where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } },
+        where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } },
       })
       if (membership) {
         isMember = true

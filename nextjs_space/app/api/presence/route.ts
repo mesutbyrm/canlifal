@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { authenticateRequest } from '@/lib/mobile-auth';
 import crypto from 'crypto';
 import { parseUserAgent } from '@/lib/ua-parser';
 
@@ -35,7 +34,7 @@ function hashIP(ip: string): string {
 // Update presence (heartbeat) and get visitor count
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await authenticateRequest(request).catch(() => null);
     const body = await request.json().catch(() => ({}));
     const { visitorId, path, isNewSession } = body;
 
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
       where: { visitorId },
       update: {
         lastSeen: new Date(),
-        userId: session?.user?.id || null,
+        userId: authUser?.id || null,
         path: path || null,
         userAgent,
         deviceType: uaInfo.deviceType,
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest) {
       },
       create: {
         visitorId,
-        userId: session?.user?.id || null,
+        userId: authUser?.id || null,
         lastSeen: new Date(),
         path: path || null,
         userAgent,
@@ -75,8 +74,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Update user's lastActiveAt and track activity if logged in
-    if (session?.user?.id) {
-      const userId = session.user.id;
+    if (authUser?.id) {
+      const userId = authUser?.id;
       const now = new Date();
       
       await prisma.user.update({
@@ -180,7 +179,7 @@ export async function POST(request: NextRequest) {
         await prisma.siteVisit.create({
           data: {
             visitorId,
-            userId: session?.user?.id || null,
+            userId: authUser?.id || null,
             path: path || null,
             userAgent,
             country: geoInfo.country,

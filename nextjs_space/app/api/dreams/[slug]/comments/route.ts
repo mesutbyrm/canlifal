@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,8 +62,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
@@ -90,7 +89,7 @@ export async function POST(
     const comment = await prisma.dreamComment.create({
       data: {
         content: content.trim(),
-        userId: (session.user as any).id,
+        userId: authUser.id,
         dreamId: dream.id,
         experienceType: type,
         didComeTrue: type === 'deneyim' && typeof didComeTrue === 'boolean' ? didComeTrue : null,
@@ -117,8 +116,8 @@ export async function POST(
 // DELETE a comment (own comment or admin)
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -132,8 +131,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
     }
 
-    const userId = (session.user as any).id
-    const isAdmin = (session.user as any).role === 'admin'
+    const userId = authUser.id
+    const isAdmin = authUser.role === 'admin'
     if (comment.userId !== userId && !isAdmin) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }

@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    const userId = (session?.user as any)?.id
-    const userRole = (session?.user as any)?.role || 'user'
-    const userMembership = (session?.user as any)?.membership || 'basic'
+    const authUser = await authenticateRequest(req)
+    const userId = (authUser as any)?.id
+    const userRole = (authUser as any)?.role || 'user'
+    const userMembership = (authUser as any)?.membership || 'basic'
 
     // Get feed config
     let config = await prisma.activityFeedConfig.findFirst()
@@ -36,7 +35,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Check group visibility
-    const isGuest = !session?.user
+    const isGuest = !authUser
     const isAdmin = ['admin', 'yonetici'].includes(userRole)
     const isModerator = userRole === 'moderator'
 

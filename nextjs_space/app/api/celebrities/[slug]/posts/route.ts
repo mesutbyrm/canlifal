@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,12 +45,12 @@ export async function GET(
     ])
 
     // Check user likes
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     let likedPostIds: string[] = []
-    if (session?.user?.id && posts.length > 0) {
+    if (authUser?.id && posts.length > 0) {
       const likes = await prisma.celebrityPostLike.findMany({
         where: {
-          userId: session.user.id,
+          userId: authUser.id,
           postId: { in: posts.map(p => p.id) },
         },
         select: { postId: true },

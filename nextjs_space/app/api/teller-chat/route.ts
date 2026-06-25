@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic';
 
 // Get user's chat sessions
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (role === 'teller') {
       // Get teller's chat sessions
       const teller = await prisma.liveFortuneTeller.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: authUser.id }
       });
 
       if (!teller) {
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Get user's chat sessions
       chatSessions = await prisma.tellerChatSession.findMany({
-        where: { userId: session.user.id },
+        where: { userId: authUser.id },
         include: {
           liveSession: {
             include: {

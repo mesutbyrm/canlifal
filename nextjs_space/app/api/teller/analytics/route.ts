@@ -1,19 +1,18 @@
 export const dynamic = 'force-dynamic'
 
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const teller = await prisma.liveFortuneTeller.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
     if (!teller) {
       return NextResponse.json({ error: 'Falcı profili bulunamadı' }, { status: 404 })

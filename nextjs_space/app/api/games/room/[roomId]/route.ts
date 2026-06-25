@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { processMove } from '@/lib/game-logic'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
@@ -10,8 +9,8 @@ export const dynamic = 'force-dynamic'
 // GET: Get room state (also checks disconnect timeout & auto-close stale waiting rooms)
 export async function GET(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    const userId = session?.user?.id
+    const authUser = await authenticateRequest(req)
+    const userId = authUser?.id
 
     const roomResult = await prisma.gameRoom.findUnique({
       where: { id: params.roomId },
@@ -163,8 +162,8 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
 // POST: Join a waiting room
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
@@ -175,46 +174,46 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       return NextResponse.json({ error: 'Bu odaya katılınamaz' }, { status: 400 })
     }
     // Block self-join unless reconnecting
-    if (room.player1Id === session.user.id && room.disconnectedPlayerId !== session.user.id) {
+    if (room.player1Id === authUser.id && room.disconnectedPlayerId !== authUser.id) {
       return NextResponse.json({ error: 'Kendi odanıza katılamazsınız' }, { status: 400 })
     }
 
     // Skip bet deduction for AI replace (original player already paid)
     if (room.betAmount > 0 && !isAIReplace) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true, role: true } })
+      const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true, jetonBalance: true, role: true } })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
       const joinStaff = user.role === 'admin' || user.role === 'yonetici'
       if (!joinStaff) {
         if (room.betCurrency === 'CFC' && user.credits < room.betAmount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         if (room.betCurrency === 'JETON' && user.jetonBalance < room.betAmount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
         await prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: authUser.id },
           data: room.betCurrency === 'CFC' ? { credits: { decrement: room.betAmount } } : { jetonBalance: { decrement: room.betAmount } },
         })
       }
     }
 
-    const userName = (session.user as any)?.name || 'Oyuncu 2'
+    const userName = (authUser as any)?.name || 'Oyuncu 2'
     const updateData: any = { lastMoveAt: new Date() }
     if (isAIReplace) {
-      const isReconnecting = room.disconnectedPlayerId === session.user.id
+      const isReconnecting = room.disconnectedPlayerId === authUser.id
       if (isReconnecting) {
         // Reconnecting original player
         updateData.isAI = false
         updateData.disconnectedPlayerId = null
-        const isP1 = room.player1Id === session.user.id
+        const isP1 = room.player1Id === authUser.id
         if (isP1) updateData.player1LastSeen = new Date()
         else updateData.player2LastSeen = new Date()
       } else {
         // New player replacing AI
-        updateData.player2Id = session.user.id
+        updateData.player2Id = authUser.id
         updateData.player2Name = userName
         updateData.isAI = false
         updateData.disconnectedPlayerId = null
         updateData.player2LastSeen = new Date()
       }
     } else {
-      updateData.player2Id = session.user.id
+      updateData.player2Id = authUser.id
       updateData.player2Name = userName
       updateData.status = 'active' // Normal join: waiting -> active
     }
@@ -232,16 +231,16 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 // PATCH: Make a move
 export async function PATCH(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const body = await req.json()
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
     if (room.status !== 'active') return NextResponse.json({ error: 'Oyun aktif değil' }, { status: 400 })
 
-    const isP1 = room.player1Id === session.user.id
-    const isP2 = room.player2Id === session.user.id
+    const isP1 = room.player1Id === authUser.id
+    const isP2 = room.player2Id === authUser.id
     if (!isP1 && !isP2) return NextResponse.json({ error: 'Bu oyuna dahil değilsiniz' }, { status: 403 })
 
     const playerNum = isP1 ? 1 : 2
@@ -258,7 +257,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
       }
 
       // PvP game: AI takes over the leaving player's spot instead of forfeit
-      const leaverId = session.user.id
+      const leaverId = authUser.id
       const updated = await prisma.gameRoom.update({
         where: { id: params.roomId },
         data: {
@@ -286,7 +285,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
       if (newStatus === 'completed') {
         updateData.status = 'completed'
         updateData.winnerId = winnerId
-        await settleBet(room, winnerId, session.user.id)
+        await settleBet(room, winnerId, authUser.id)
         if (winnerId) {
           const winner = await prisma.user.findUnique({ where: { id: winnerId }, select: { name: true, role: true } })
           const winnerName = winner?.name || 'Bir kullanıcı'
@@ -340,7 +339,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     }
 
     if (status === 'completed') {
-      await settleBet(room, winnerId, session.user.id)
+      await settleBet(room, winnerId, authUser.id)
       // Trigger event announcement for game win
       if (winnerId) {
         const winner = await prisma.user.findUnique({ where: { id: winnerId }, select: { name: true, role: true } })
@@ -361,17 +360,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
 // DELETE: Cancel waiting room
 export async function DELETE(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
     if (!room) return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
-    if (room.player1Id !== session.user.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+    if (room.player1Id !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     if (room.status !== 'waiting') return NextResponse.json({ error: 'Sadece bekleyen odalar iptal edilebilir' }, { status: 400 })
 
     if (room.betAmount > 0) {
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         data: room.betCurrency === 'CFC' ? { credits: { increment: room.betAmount } } : { jetonBalance: { increment: room.betAmount } },
       })
     }

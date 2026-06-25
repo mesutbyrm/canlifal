@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic';
 
 // GET: List withdrawal requests for agency owner/manager
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     // Check if user is agency owner or manager
     const membership = await prisma.agencyUser.findFirst({
-      where: { userId: session.user.id, isActive: true, role: { in: ['owner', 'manager'] } },
+      where: { userId: authUser.id, isActive: true, role: { in: ['owner', 'manager'] } },
       select: { agencyId: true, role: true },
     });
     if (!membership) {
@@ -51,13 +52,13 @@ export async function GET() {
 // POST: Agency owner/manager approves or rejects withdrawal
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const membership = await prisma.agencyUser.findFirst({
-      where: { userId: session.user.id, isActive: true, role: { in: ['owner', 'manager'] } },
+      where: { userId: authUser.id, isActive: true, role: { in: ['owner', 'manager'] } },
       select: { agencyId: true, role: true },
     });
     if (!membership) {
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
         where: { id: requestId },
         data: {
           status: 'agency_approved',
-          agencyApprovedBy: session.user.id,
+          agencyApprovedBy: authUser.id,
           agencyApprovedAt: new Date(),
           agencyNote: note || null,
         },
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         data: {
           status: 'rejected',
           agencyNote: note || 'Ajans tarafından reddedildi',
-          agencyApprovedBy: session.user.id,
+          agencyApprovedBy: authUser.id,
           agencyApprovedAt: new Date(),
         },
       });

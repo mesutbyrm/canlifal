@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,8 +36,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -50,7 +49,7 @@ export async function POST(
     const comment = await prisma.celebrityPostComment.create({
       data: {
         postId,
-        userId: session.user.id,
+        userId: authUser.id,
         content: content.trim(),
       },
       include: {

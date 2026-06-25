@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
@@ -82,10 +81,11 @@ export async function GET(request: NextRequest) {
 // POST - Create new post
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const { content, postType, fortuneType, fortuneId, imageUrl, youtubeUrl, isPublic = true } = await request.json()
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // If fortune post, verify the fortune belongs to the user
     if (fortuneId) {
       const fortune = await prisma.fortune.findFirst({
-        where: { id: fortuneId, userId: session.user.id }
+        where: { id: fortuneId, userId: userId }
       })
       if (!fortune) {
         return NextResponse.json({ error: 'Fortune not found' }, { status: 404 })
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     const post = await prisma.socialPost.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         content: content || '',
         postType,
         fortuneType: fortuneType || null,
@@ -135,8 +135,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Trigger social post event announcement
-    const posterName = post.user?.name || session.user.name || 'Bir kullanıcı'
-    triggerEventAnnouncement('social_post', { user: posterName }, session.user.id, posterName, post.user?.role || 'free').catch(() => {})
+    const posterName = post.user?.name || authUser.name || 'Bir kullanıcı'
+    triggerEventAnnouncement('social_post', { user: posterName }, userId, posterName, post.user?.role || 'free').catch(() => {})
 
     return NextResponse.json(post, { status: 201 })
   } catch (error) {

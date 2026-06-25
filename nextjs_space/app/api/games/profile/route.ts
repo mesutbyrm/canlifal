@@ -1,27 +1,26 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET: Fetch user game profile
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
-    let profile = await prisma.userGameProfile.findUnique({ where: { userId: session.user.id } })
+    let profile = await prisma.userGameProfile.findUnique({ where: { userId: authUser.id } })
     if (!profile) {
       profile = await prisma.userGameProfile.create({
-        data: { userId: session.user.id },
+        data: { userId: authUser.id },
       })
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { credits: true, jetonBalance: true, name: true, username: true, image: true, referralCode: true },
     })
 

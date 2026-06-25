@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // Get current user's agency info
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     // Check if user is member of an agency
     const membership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       include: {
         agency: {
           include: {
@@ -27,7 +26,7 @@ export async function GET() {
 
     // Check if user owns an agency (even if not a member)
     const ownedAgency = await prisma.agency.findFirst({
-      where: { ownerId: session.user.id },
+      where: { ownerId: authUser.id },
       include: {
         _count: { select: { members: true, earnings: true, inviteCodes: true } },
       }
@@ -35,7 +34,7 @@ export async function GET() {
 
     // Check pending leave request
     const pendingLeaveRequest = await prisma.agencyLeaveRequest.findFirst({
-      where: { userId: session.user.id, status: 'pending' },
+      where: { userId: authUser.id, status: 'pending' },
     })
 
     return NextResponse.json({
@@ -59,8 +58,8 @@ export async function GET() {
 // PATCH: Update agency name (owner only)
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -69,7 +68,7 @@ export async function PATCH(req: NextRequest) {
 
     // Find owned agency
     const agency = await prisma.agency.findFirst({
-      where: { ownerId: session.user.id, status: 'approved' },
+      where: { ownerId: authUser.id, status: 'approved' },
     })
 
     if (!agency) {

@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -13,9 +12,9 @@ const openai = new OpenAI({
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
-    const userId = (session.user as any).id
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
+    const userId = authUser.id
 
     const reports = await prisma.weeklyDreamReport.findMany({
       where: { userId },
@@ -32,9 +31,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
-    const userId = (session.user as any).id
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
+    const userId = authUser.id
 
     const now = new Date()
     const weekStart = new Date(now)

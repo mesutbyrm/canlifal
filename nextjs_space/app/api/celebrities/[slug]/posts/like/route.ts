@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +9,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -21,7 +20,7 @@ export async function POST(
     }
 
     const existing = await prisma.celebrityPostLike.findUnique({
-      where: { postId_userId: { postId, userId: session.user.id } },
+      where: { postId_userId: { postId, userId: authUser.id } },
     })
 
     if (existing) {
@@ -33,7 +32,7 @@ export async function POST(
       return NextResponse.json({ liked: false })
     } else {
       await prisma.celebrityPostLike.create({
-        data: { postId, userId: session.user.id },
+        data: { postId, userId: authUser.id },
       })
       await prisma.celebrityPost.update({
         where: { id: postId },

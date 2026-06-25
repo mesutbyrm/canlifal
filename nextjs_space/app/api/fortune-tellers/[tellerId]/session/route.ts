@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
 
@@ -13,8 +14,8 @@ export async function POST(
   { params }: { params: { tellerId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -39,7 +40,7 @@ export async function POST(
 
     // Check user jeton balance (live sessions require jetons)
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { jetonBalance: true, role: true }
     });
 
@@ -55,7 +56,7 @@ export async function POST(
 
     // Get user info for notification
     const fullUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { name: true, email: true }
     });
 
@@ -64,7 +65,7 @@ export async function POST(
       prisma.liveSession.create({
         data: {
           tellerId: teller.id,
-          userId: session.user.id,
+          userId: authUser.id,
           fortuneType: fortuneType || 'general',
           creditsCharged: isStaff ? 0 : totalCost,
           maxMinutes: duration,
@@ -76,7 +77,7 @@ export async function POST(
     if (!isStaff) {
       txOps.push(
         prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: authUser.id },
           data: { jetonBalance: { decrement: totalCost } }
         })
       );
@@ -100,7 +101,7 @@ export async function POST(
       type: 'session_request',
       title: 'Yeni Randevu Talebi',
       message: `${fullUser?.name || 'Bir kullanıcı'} sizden ${ftName} için ${duration} dakikalık randevu talep etti.`,
-      fromUserId: session.user.id,
+      fromUserId: authUser.id,
       fromUserName: fullUser?.name || undefined,
       data: JSON.stringify({
         sessionId: liveSession.id,
@@ -128,8 +129,8 @@ export async function GET(
   { params }: { params: { tellerId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -138,7 +139,7 @@ export async function GET(
       where: { id: params.tellerId }
     });
 
-    if (!teller || teller.userId !== session.user.id) {
+    if (!teller || teller.userId !== authUser.id) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 

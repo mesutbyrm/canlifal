@@ -1,14 +1,13 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET - List all active Bana Özel items + user jeton balance + streak info
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(req)
     
     const items = await prisma.banaOzelItem.findMany({
       where: { isActive: true },
@@ -19,15 +18,15 @@ export async function GET(req: NextRequest) {
     let streak = { currentStreak: 0, longestStreak: 0, totalFortunes: 0 }
     let todayTasks: string[] = []
 
-    if (session?.user?.id) {
+    if (authUser?.id) {
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         select: { jetonBalance: true },
       })
       jetonBalance = user?.jetonBalance ?? 0
 
       const streakData = await prisma.userFortuneStreak.findUnique({
-        where: { userId: session.user.id },
+        where: { userId: authUser.id },
       })
       if (streakData) {
         streak = {
@@ -40,7 +39,7 @@ export async function GET(req: NextRequest) {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const completedTasks = await prisma.dailyTask.findMany({
-        where: { userId: session.user.id, date: today },
+        where: { userId: authUser.id, date: today },
         select: { taskType: true },
       })
       todayTasks = completedTasks.map((t: { taskType: string }) => t.taskType)

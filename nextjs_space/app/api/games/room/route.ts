@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { getInitialState } from '@/lib/game-logic'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +10,8 @@ const VALID_TYPES = ['xox', 'tombala', 'tavla', 'pisti', 'sayi_tahmin', 'zar', '
 // POST: Create a new game room
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const { gameType, isAI, betAmount, betCurrency, turnTimer, gridSize: reqGridSize } = await req.json()
     if (!VALID_TYPES.includes(gameType)) return NextResponse.json({ error: 'Geçersiz oyun tipi' }, { status: 400 })
@@ -25,27 +24,27 @@ export async function POST(req: NextRequest) {
     const gridSize = gameType === 'xox' && reqGridSize ? Math.max(3, Math.min(30, Math.floor(reqGridSize))) : undefined
 
     if (amount > 0) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true, jetonBalance: true, role: true } })
+      const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true, jetonBalance: true, role: true } })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
       const gameStaff = user.role === 'admin' || user.role === 'yonetici'
       if (!gameStaff) {
         if (currency === 'CFC' && user.credits < amount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         if (currency === 'JETON' && user.jetonBalance < amount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
         await prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: authUser.id },
           data: currency === 'CFC' ? { credits: { decrement: amount } } : { jetonBalance: { decrement: amount } },
         })
       }
     }
 
     const initialState = getInitialState(gameType, gridSize ? { gridSize } : undefined)
-    const userName = (session.user as any)?.name || 'Oyuncu 1'
+    const userName = (authUser as any)?.name || 'Oyuncu 1'
     const aiNames: Record<string, string> = Object.fromEntries(VALID_TYPES.map(t => [t, 'Yapay Zeka']))
 
     const room = await prisma.gameRoom.create({
       data: {
         gameType,
-        player1Id: session.user.id,
+        player1Id: authUser.id,
         player2Id: isAI ? 'AI' : null,
         isAI: !!isAI,
         betAmount: amount,
@@ -70,8 +69,8 @@ export async function POST(req: NextRequest) {
 // GET: List rooms
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    const userId = session?.user?.id
+    const authUser = await authenticateRequest(req)
+    const userId = authUser?.id
     const url = new URL(req.url)
     const type = url.searchParams.get('type')
     const gameType = url.searchParams.get('gameType')

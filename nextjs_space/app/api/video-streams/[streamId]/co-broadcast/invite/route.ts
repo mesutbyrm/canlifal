@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 const MAX_GUESTS = 4
 
@@ -17,8 +16,8 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -27,7 +26,7 @@ export async function POST(
     })
 
     if (!stream) return NextResponse.json({ error: 'Yayın bulunamadı' }, { status: 404 })
-    if (stream.userId !== session.user.id) {
+    if (stream.userId !== authUser.id) {
       return NextResponse.json({ error: 'Sadece yayıncı davet gönderebilir' }, { status: 403 })
     }
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 interface FortuneRequestRecord {
   id: string
@@ -75,8 +74,8 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -87,7 +86,7 @@ export async function POST(
       where: {
         streamId_userId: {
           streamId: params.streamId,
-          userId: session.user.id
+          userId: authUser.id
         }
       }
     })
@@ -113,7 +112,7 @@ export async function POST(
     
     // Check user's jeton balance
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { jetonBalance: true, role: true }
     })
     const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
@@ -132,7 +131,7 @@ export async function POST(
     if (!isStaff) {
       txOps.push(
         prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: authUser.id },
           data: { jetonBalance: { decrement: fortuneType.jetonCost } }
         })
       )
@@ -142,7 +141,7 @@ export async function POST(
         where: {
           streamId_userId: {
             streamId: params.streamId,
-            userId: session.user.id
+            userId: authUser.id
           }
         },
         update: {
@@ -156,7 +155,7 @@ export async function POST(
         },
         create: {
           streamId: params.streamId,
-          userId: session.user.id,
+          userId: authUser.id,
           typeId,
           nickname: nickname || null,
           isHidden: isHidden || false,
@@ -184,8 +183,8 @@ export async function PATCH(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -194,7 +193,7 @@ export async function PATCH(
       where: { id: params.streamId }
     })
     
-    const isBroadcaster = stream?.userId === session.user.id
+    const isBroadcaster = stream?.userId === authUser.id
     
     if (!isBroadcaster) {
       return NextResponse.json({ error: 'Only broadcaster can manage fortune requests' }, { status: 403 })
@@ -271,14 +270,14 @@ export async function DELETE(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     const refundAll = searchParams.get('refundAll') === 'true'
     
     // Refund all pending requests for a stream (when stream ends)
     if (refundAll) {
-      if (!session?.user?.id) {
+      if (!authUser) {
         return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
       }
       
@@ -287,7 +286,7 @@ export async function DELETE(
         where: { id: params.streamId }
       })
       
-      if (stream?.userId !== session.user.id) {
+      if (stream?.userId !== authUser.id) {
         return NextResponse.json({ error: 'Only broadcaster can refund all' }, { status: 403 })
       }
       
@@ -324,7 +323,7 @@ export async function DELETE(
     }
     
     // Refund single user's request (when user leaves)
-    const targetUserId = userId || session?.user?.id
+    const targetUserId = userId || authUser?.id
     if (!targetUserId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }

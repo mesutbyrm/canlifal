@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +13,8 @@ export async function GET(
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -34,8 +35,8 @@ export async function GET(
     }
 
     // Check if user has access
-    const isUser = chatSession.userId === session.user.id;
-    const isTeller = chatSession.liveSession.teller.userId === session.user.id;
+    const isUser = chatSession.userId === authUser.id;
+    const isTeller = chatSession.liveSession.teller.userId === authUser.id;
 
     if (!isUser && !isTeller) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
@@ -73,8 +74,8 @@ export async function POST(
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -101,8 +102,8 @@ export async function POST(
     }
 
     // Check if user has access
-    const isUser = chatSession.userId === session.user.id;
-    const isTeller = chatSession.liveSession.teller.userId === session.user.id;
+    const isUser = chatSession.userId === authUser.id;
+    const isTeller = chatSession.liveSession.teller.userId === authUser.id;
 
     if (!isUser && !isTeller) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
@@ -116,7 +117,7 @@ export async function POST(
     const message = await prisma.tellerChatMessage.create({
       data: {
         chatSessionId: params.sessionId,
-        senderId: session.user.id,
+        senderId: authUser.id,
         senderType: isUser ? 'user' : 'teller',
         content: content || '',
         messageType: messageType || 'text',

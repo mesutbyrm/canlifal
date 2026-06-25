@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const membership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
 
     if (!membership || !['owner', 'manager'].includes(membership.role)) {
@@ -49,13 +48,13 @@ export async function GET() {
 // POST: Add member by username (owner/manager only)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const membership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
     if (!membership || !['owner', 'manager'].includes(membership.role)) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
@@ -116,13 +115,13 @@ export async function POST(req: NextRequest) {
 // DELETE: Remove member (owner/manager only)
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const myMembership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       include: { agency: { select: { ownerId: true } } }
     })
     if (!myMembership || !['owner', 'manager'].includes(myMembership.role)) {

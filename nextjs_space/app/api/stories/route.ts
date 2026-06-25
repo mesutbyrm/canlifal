@@ -1,21 +1,20 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET - fetch active stories (not expired) grouped by user, followed users first
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(req).catch(() => null)
     const now = new Date()
 
     // Get followed user IDs if logged in
     let followedIds: string[] = []
-    if (session?.user?.id) {
+    if (authUser?.id) {
       const follows = await prisma.follow.findMany({
-        where: { followerId: session.user.id },
+        where: { followerId: authUser.id },
         select: { followingId: true },
       })
       followedIds = follows.map(f => f.followingId)
@@ -73,10 +72,11 @@ export async function GET() {
 // POST - create a new story
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const body = await req.json()
     const { mediaUrl, mediaType, caption } = body
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     const story = await prisma.userStory.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         mediaUrl,
         mediaType: mediaType || 'image',
         caption: caption || null,
@@ -109,10 +109,11 @@ export async function POST(req: NextRequest) {
 // DELETE - delete own story
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const { searchParams } = new URL(req.url)
     const storyId = searchParams.get('id')
@@ -123,7 +124,7 @@ export async function DELETE(req: NextRequest) {
 
     // Verify ownership
     const story = await prisma.userStory.findFirst({
-      where: { id: storyId, userId: session.user.id },
+      where: { id: storyId, userId: userId },
     })
 
     if (!story) {

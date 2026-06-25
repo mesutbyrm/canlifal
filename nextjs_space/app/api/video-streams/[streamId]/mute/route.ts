@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // POST - Mute a viewer
 export async function POST(
@@ -9,8 +8,8 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -19,12 +18,12 @@ export async function POST(
       where: { id: params.streamId }
     })
     
-    const isBroadcaster = stream?.userId === session.user.id
+    const isBroadcaster = stream?.userId === authUser.id
     const isModerator = await prisma.streamModerator.findUnique({
       where: {
         streamId_userId: {
           streamId: params.streamId,
-          userId: session.user.id
+          userId: authUser.id
         }
       }
     })
@@ -44,7 +43,7 @@ export async function POST(
         }
       },
       update: {
-        mutedBy: session.user.id,
+        mutedBy: authUser.id,
         reason: reason || null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         mutedAt: new Date()
@@ -52,7 +51,7 @@ export async function POST(
       create: {
         streamId: params.streamId,
         viewerId,
-        mutedBy: session.user.id,
+        mutedBy: authUser.id,
         reason: reason || null,
         expiresAt: expiresAt ? new Date(expiresAt) : null
       }
@@ -71,8 +70,8 @@ export async function DELETE(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -81,12 +80,12 @@ export async function DELETE(
       where: { id: params.streamId }
     })
     
-    const isBroadcaster = stream?.userId === session.user.id
+    const isBroadcaster = stream?.userId === authUser.id
     const isModerator = await prisma.streamModerator.findUnique({
       where: {
         streamId_userId: {
           streamId: params.streamId,
-          userId: session.user.id
+          userId: authUser.id
         }
       }
     })

@@ -1,18 +1,17 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { contestId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
-    const userId = (session.user as any).id
+    const authUser = await authenticateRequest(request)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapın' }, { status: 401 })
+    const userId = authUser.id
 
     const { entryId } = await req.json()
     if (!entryId) return NextResponse.json({ error: 'Entry ID gerekli' }, { status: 400 })

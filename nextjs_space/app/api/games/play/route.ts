@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { logActivity } from '@/lib/activity-logger'
 
 export const dynamic = 'force-dynamic'
@@ -9,8 +8,8 @@ export const dynamic = 'force-dynamic'
 // POST: Record a game play and reward CFC (credits)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -26,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Check entry fee (CFC)
     if (game.entryFee > 0) {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+      const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
       if (!user || user.credits < game.entryFee) {
         return NextResponse.json({ error: 'Yetersiz CFC' }, { status: 400 })
       }
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
     // Create game play record
     const play = await prisma.gamePlay.create({
       data: {
-        userId: session.user.id,
+        userId: authUser.id,
         gameId: game.id,
         reward,
         score: score || null,
@@ -49,15 +48,15 @@ export async function POST(req: NextRequest) {
     // Update user CFC balance (reward - entry fee)
     const netCfc = reward - game.entryFee
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: { credits: { increment: netCfc } },
     })
 
     // Log game activity
     logActivity({
-      userId: session.user.id,
-      userName: (session.user as any)?.name || 'Kullanıcı',
-      userAvatar: (session.user as any)?.image || null,
+      userId: authUser.id,
+      userName: (authUser as any)?.name || 'Kullanıcı',
+      userAvatar: (authUser as any)?.image || null,
       activityType: 'game_played',
       detail: `${game.title} oynadı 🎮`,
       targetUrl: `/oyunlar`,
@@ -65,9 +64,9 @@ export async function POST(req: NextRequest) {
 
     // Update or create game profile
     await prisma.userGameProfile.upsert({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       create: {
-        userId: session.user.id,
+        userId: authUser.id,
         totalJetons: reward,
         totalGames: 1,
       },
@@ -83,13 +82,13 @@ export async function POST(req: NextRequest) {
     await prisma.dailyQuest.upsert({
       where: {
         userId_questDate_questType: {
-          userId: session.user.id,
+          userId: authUser.id,
           questDate: today,
           questType: 'play_3_games',
         },
       },
       create: {
-        userId: session.user.id,
+        userId: authUser.id,
         questDate: today,
         questType: 'play_3_games',
         progress: 1,
@@ -102,7 +101,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Calculate level
-    const profile = await prisma.userGameProfile.findUnique({ where: { userId: session.user.id } })
+    const profile = await prisma.userGameProfile.findUnique({ where: { userId: authUser.id } })
     if (profile) {
       let level = 1
       let title = 'Yeni Üye'
@@ -113,14 +112,14 @@ export async function POST(req: NextRequest) {
 
       if (profile.level !== level) {
         await prisma.userGameProfile.update({
-          where: { userId: session.user.id },
+          where: { userId: authUser.id },
           data: { level, levelTitle: title },
         })
       }
     }
 
     // Get updated CFC balance
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,

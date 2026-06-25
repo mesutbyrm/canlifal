@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCached } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(req)
     const url = new URL(req.url)
     const section = url.searchParams.get('section')
 
@@ -413,7 +412,7 @@ export async function GET(req: NextRequest) {
     if (section === 'auto_match') {
       const gameType = url.searchParams.get('gameType')
       if (!gameType) return NextResponse.json({ error: 'gameType gerekli' }, { status: 400 })
-      if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+      if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
       // Find a waiting room for this game type
       const waitingRoom = await prisma.gameRoom.findFirst({
@@ -421,7 +420,7 @@ export async function GET(req: NextRequest) {
           gameType,
           status: 'waiting',
           isAI: false,
-          player1Id: { not: session.user.id },
+          player1Id: { not: authUser.id },
         },
         orderBy: { createdAt: 'asc' },
       })
@@ -435,16 +434,16 @@ export async function GET(req: NextRequest) {
 
     // ===== AUTO MATCH ANY (across all game types) =====
     if (section === 'auto_match_any') {
-      if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+      if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
       // Find ANY waiting room across all game types (including SOS)
       const [waitingRoom, waitingSos] = await Promise.all([
         prisma.gameRoom.findFirst({
-          where: { status: 'waiting', isAI: false, player1Id: { not: session.user.id } },
+          where: { status: 'waiting', isAI: false, player1Id: { not: authUser.id } },
           orderBy: { createdAt: 'asc' },
         }),
         prisma.sosGame.findFirst({
-          where: { status: 'waiting', isAI: false, player1Id: { not: session.user.id } },
+          where: { status: 'waiting', isAI: false, player1Id: { not: authUser.id } },
           orderBy: { createdAt: 'asc' },
         }),
       ])

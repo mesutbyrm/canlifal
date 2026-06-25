@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,8 +18,8 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
 // POST: Join as a viewer (spectator)
 export async function POST(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -29,18 +28,18 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
     if (game.status !== 'active') return NextResponse.json({ error: 'Bu oyun aktif değil' }, { status: 400 })
 
     // Can't spectate your own game
-    if (game.player1Id === session.user.id || game.player2Id === session.user.id) {
+    if (game.player1Id === authUser.id || game.player2Id === authUser.id) {
       return NextResponse.json({ error: 'Kendi oyununuzu izleyemezsiniz' }, { status: 400 })
     }
 
-    const userName = (session.user as any)?.name || 'İzleyici'
+    const userName = (authUser as any)?.name || 'İzleyici'
 
     const viewer = await prisma.sosGameViewer.upsert({
-      where: { gameId_userId: { gameId: params.gameId, userId: session.user.id } },
+      where: { gameId_userId: { gameId: params.gameId, userId: authUser.id } },
       update: { joinedAt: new Date() },
       create: {
         gameId: params.gameId,
-        userId: session.user.id,
+        userId: authUser.id,
         userName,
       },
     })
@@ -55,13 +54,13 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 // DELETE: Leave as a viewer
 export async function DELETE(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
     await prisma.sosGameViewer.deleteMany({
-      where: { gameId: params.gameId, userId: session.user.id },
+      where: { gameId: params.gameId, userId: authUser.id },
     })
 
     return NextResponse.json({ success: true })

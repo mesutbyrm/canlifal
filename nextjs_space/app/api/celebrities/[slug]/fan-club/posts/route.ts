@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +29,7 @@ export async function GET(
       return NextResponse.json({ posts: [], total: 0, page, totalPages: 0 })
     }
 
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
 
     const [posts, total] = await Promise.all([
       prisma.fanClubPost.findMany({
@@ -48,9 +47,9 @@ export async function GET(
 
     // Check which posts current user liked
     let likedPostIds: string[] = []
-    if (session?.user?.id) {
+    if (authUser?.id) {
       const likes = await prisma.fanClubPostLike.findMany({
-        where: { userId: session.user.id, postId: { in: posts.map(p => p.id) } },
+        where: { userId: authUser.id, postId: { in: posts.map(p => p.id) } },
         select: { postId: true },
       })
       likedPostIds = likes.map(l => l.postId)
@@ -80,8 +79,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -102,7 +101,7 @@ export async function POST(
 
     // Check membership
     const membership = await prisma.fanClubMember.findUnique({
-      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } },
+      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } },
     })
     if (!membership) {
       return NextResponse.json({ error: 'Önce fan kulübüne katılmalısınız' }, { status: 403 })
@@ -117,7 +116,7 @@ export async function POST(
     const post = await prisma.fanClubPost.create({
       data: {
         fanClubId: fanClub.id,
-        userId: session.user.id,
+        userId: authUser.id,
         content: content.trim(),
         image: image || null,
       },
@@ -129,7 +128,7 @@ export async function POST(
 
     // Award XP for posting
     await prisma.fanClubMember.updateMany({
-      where: { fanClubId: fanClub.id, userId: session.user.id },
+      where: { fanClubId: fanClub.id, userId: authUser.id },
       data: { xp: { increment: 10 } },
     })
 
@@ -146,8 +145,8 @@ export async function DELETE(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -162,8 +161,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Post bulunamadı' }, { status: 404 })
     }
 
-    const isAdmin = ['admin', 'yonetici', 'moderator'].includes(session.user.role)
-    if (post.userId !== session.user.id && !isAdmin) {
+    const isAdmin = ['admin', 'yonetici', 'moderator'].includes(authUser.role)
+    if (post.userId !== authUser.id && !isAdmin) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

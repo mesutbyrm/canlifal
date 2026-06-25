@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
@@ -55,13 +54,14 @@ async function createGiftAnnouncement(
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     // Rate limit gift sending per user (10/min)
-    const { success: rateLimitOk } = heavyLimiter.check(`gift:${session.user.id}`)
+    const { success: rateLimitOk } = heavyLimiter.check(`gift:${userId}`)
     if (!rateLimitOk) {
       return NextResponse.json({ error: 'Çok hızlı hediye gönderiyorsunuz. Biraz bekleyin.' }, { status: 429 })
     }
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    if (recipient.id === session.user.id) {
+    if (recipient.id === userId) {
       return NextResponse.json({ error: 'Cannot send gift to yourself' }, { status: 400 })
     }
 
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     todayStart.setUTCHours(0, 0, 0, 0)
     const reciprocalGift = await prisma.notification.findFirst({
       where: {
-        userId: session.user.id,
+        userId: userId,
         type: 'gift_received',
         fromUserId: recipient.id,
         createdAt: { gte: todayStart }
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sender = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { id: true, name: true, username: true, credits: true, jetonBalance: true, role: true }
     })
 

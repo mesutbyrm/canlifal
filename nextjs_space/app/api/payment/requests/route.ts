@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { createBulkNotificationsWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
@@ -9,10 +8,11 @@ export const dynamic = 'force-dynamic'
 // POST - Create a new CFC payment request
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const body = await request.json()
     const { amount, method, senderInfo, notes } = body
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Check if user has pending request already
     const pendingRequest = await prisma.cfcPaymentRequest.findFirst({
       where: {
-        userId: session.user.id,
+        userId,
         status: 'pending',
       },
     })
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Create the payment request
     const paymentRequest = await prisma.cfcPaymentRequest.create({
       data: {
-        userId: session.user.id,
+        userId,
         amount: parseInt(String(amount)),
         method,
         senderInfo: senderInfo || null,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     })
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { name: true, username: true },
     })
     const userName = user?.name || user?.username || 'Kullanıcı'
@@ -83,15 +83,15 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - Get user's own payment requests
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const requests = await prisma.cfcPaymentRequest.findMany({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       orderBy: { createdAt: 'desc' },
       take: 50,
     })

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 import { triggerEventAnnouncement } from '@/lib/event-announcement';
 import { getCachedPlatformSetting } from '@/lib/cache';
@@ -15,8 +16,8 @@ export async function PATCH(
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -41,7 +42,7 @@ export async function PATCH(
     }
 
     // Verify the current user owns this teller profile
-    if (liveSession.teller.userId !== session.user.id) {
+    if (liveSession.teller.userId !== authUser.id) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
@@ -172,7 +173,7 @@ export async function PATCH(
            : action === 'reject' ? 'Randevu Reddedildi'
            : 'Randevu İptal Edildi',
       message: notificationMessage,
-      fromUserId: session.user.id,
+      fromUserId: authUser.id,
       fromUserName: liveSession.teller.displayName,
       data: JSON.stringify({
         sessionId: liveSession.id,

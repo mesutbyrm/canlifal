@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 const MAX_MODERATORS = 10
 
@@ -49,8 +48,8 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -59,7 +58,7 @@ export async function POST(
       where: { id: params.streamId }
     })
     
-    if (!stream || stream.userId !== session.user.id) {
+    if (!stream || stream.userId !== authUser.id) {
       return NextResponse.json({ error: 'Only broadcaster can add moderators' }, { status: 403 })
     }
     
@@ -95,8 +94,8 @@ export async function DELETE(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
@@ -105,7 +104,7 @@ export async function DELETE(
       where: { id: params.streamId }
     })
     
-    if (!stream || stream.userId !== session.user.id) {
+    if (!stream || stream.userId !== authUser.id) {
       return NextResponse.json({ error: 'Only broadcaster can remove moderators' }, { status: 403 })
     }
     

@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST toggle favorite
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
     const { postId } = await req.json()
     if (!postId) return NextResponse.json({ error: 'postId gerekli' }, { status: 400 })
 
-    const userId = (session.user as any).id
+    const userId = authUser.id
 
     const existing = await prisma.blogFavorite.findUnique({
       where: { postId_userId: { postId, userId } },

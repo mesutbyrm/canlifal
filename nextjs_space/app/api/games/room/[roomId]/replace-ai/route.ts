@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST: Replace AI player with a real player in an active AI game
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     // Try gameRoom first, then sosGame
     const room = await prisma.gameRoom.findUnique({ where: { id: params.roomId } })
@@ -22,15 +21,15 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     if (target.status !== 'active') return NextResponse.json({ error: 'Oyun aktif değil' }, { status: 400 })
 
     // Allow reconnection: if this user is the disconnected player, let them rejoin
-    const isReconnecting = target.disconnectedPlayerId === session.user.id
-    if (!isReconnecting && target.player1Id === session.user.id) {
+    const isReconnecting = target.disconnectedPlayerId === authUser.id
+    if (!isReconnecting && target.player1Id === authUser.id) {
       return NextResponse.json({ error: 'Kendi oyununuza katılamazsınız' }, { status: 400 })
     }
 
-    const userName = (session.user as any)?.name || 'Oyuncu 2'
+    const userName = (authUser as any)?.name || 'Oyuncu 2'
 
     if (isReconnecting) {
-      const isP1 = target.player1Id === session.user.id
+      const isP1 = target.player1Id === authUser.id
       const updateData = {
         isAI: false,
         disconnectedPlayerId: null,
@@ -45,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     // New player replacing AI
     const updateData = {
-      player2Id: session.user.id,
+      player2Id: authUser.id,
       player2Name: userName,
       isAI: false,
       disconnectedPlayerId: null,

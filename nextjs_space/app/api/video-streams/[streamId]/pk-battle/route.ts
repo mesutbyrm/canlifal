@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 /**
  * Per-stream PK battle alias.
@@ -53,8 +52,8 @@ export async function POST(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(request)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const body = await request.json()
     const { action, targetStreamId, battleId, duration } = body
@@ -66,7 +65,7 @@ export async function POST(
       }
 
       const [myStream, targetStream] = await Promise.all([
-        prisma.videoStream.findFirst({ where: { id: streamId, userId: session.user.id, status: 'live' } }),
+        prisma.videoStream.findFirst({ where: { id: streamId, userId: authUser.id, status: 'live' } }),
         prisma.videoStream.findFirst({ where: { id: targetStreamId, status: 'live' } })
       ])
 
@@ -89,7 +88,7 @@ export async function POST(
         data: {
           stream1Id: streamId,
           stream2Id: targetStreamId,
-          user1Id: session.user.id,
+          user1Id: authUser.id,
           user2Id: targetStream.userId,
           duration: duration || 180,
           status: 'pending'
@@ -103,7 +102,7 @@ export async function POST(
       if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
-      if (battle.user2Id !== session.user.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      if (battle.user2Id !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       if (battle.status !== 'pending') return NextResponse.json({ error: 'Bu PK zaten kabul edilmiş' }, { status: 400 })
 
       const updated = await prisma.pKBattle.update({
@@ -117,7 +116,7 @@ export async function POST(
       if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
-      if (battle.user1Id !== session.user.id && battle.user2Id !== session.user.id) {
+      if (battle.user1Id !== authUser.id && battle.user2Id !== authUser.id) {
         return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       }
       const updated = await prisma.pKBattle.update({

@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET: Kullanıcının favori falcılarını listele
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    const authUser = await authenticateRequest(request)
+    if (!authUser) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
 
     const favorites = await prisma.favoriteTeller.findMany({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -53,21 +52,21 @@ export async function GET(request: NextRequest) {
 // POST: Favori ekle/çıkar (toggle)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    const authUser = await authenticateRequest(request)
+    if (!authUser) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
 
     const { tellerId } = await request.json()
     if (!tellerId) return NextResponse.json({ error: 'tellerId gerekli' }, { status: 400 })
 
     const existing = await prisma.favoriteTeller.findUnique({
-      where: { userId_tellerId: { userId: session.user.id, tellerId } },
+      where: { userId_tellerId: { userId: authUser.id, tellerId } },
     })
 
     if (existing) {
       await prisma.favoriteTeller.delete({ where: { id: existing.id } })
       return NextResponse.json({ action: 'removed', isFavorite: false })
     } else {
-      await prisma.favoriteTeller.create({ data: { userId: session.user.id, tellerId } })
+      await prisma.favoriteTeller.create({ data: { userId: authUser.id, tellerId } })
       return NextResponse.json({ action: 'added', isFavorite: true })
     }
   } catch (error) {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,8 +35,8 @@ function pickWeightedReward(rewards: LambaCiniReward[]): LambaCiniReward {
 // POST: Play Lamba Cini game
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -66,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     const todayPlays = await prisma.gamePlay.count({
       where: {
-        userId: session.user.id,
+        userId: authUser.id,
         gameId: game.id,
         playedAt: { gte: today, lt: tomorrow },
       },
@@ -93,7 +92,7 @@ export async function POST(req: NextRequest) {
       freeFortune = true
       // Add 1 credit as free fortune equivalent
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         data: { credits: { increment: 5 } },
       })
     }
@@ -101,7 +100,7 @@ export async function POST(req: NextRequest) {
     // Record game play
     const play = await prisma.gamePlay.create({
       data: {
-        userId: session.user.id,
+        userId: authUser.id,
         gameId: game.id,
         reward: cfcReward,
         score: chestIndex,
@@ -118,16 +117,16 @@ export async function POST(req: NextRequest) {
     // Update CFC balance if CFC reward
     if (cfcReward > 0) {
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         data: { credits: { increment: cfcReward } },
       })
     }
 
     // Update game profile
     await prisma.userGameProfile.upsert({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       create: {
-        userId: session.user.id,
+        userId: authUser.id,
         totalJetons: cfcReward + (freeFortune ? 5 : 0),
         totalGames: 1,
       },
@@ -143,13 +142,13 @@ export async function POST(req: NextRequest) {
     await prisma.dailyQuest.upsert({
       where: {
         userId_questDate_questType: {
-          userId: session.user.id,
+          userId: authUser.id,
           questDate: todayQuest,
           questType: 'play_3_games',
         },
       },
       create: {
-        userId: session.user.id,
+        userId: authUser.id,
         questDate: todayQuest,
         questType: 'play_3_games',
         progress: 1,
@@ -163,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     // Get updated balance
     const updatedUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { credits: true },
     })
 
@@ -189,8 +188,8 @@ export async function POST(req: NextRequest) {
 // GET: Check remaining plays for today
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -210,7 +209,7 @@ export async function GET(req: NextRequest) {
 
     const todayPlays = await prisma.gamePlay.count({
       where: {
-        userId: session.user.id,
+        userId: authUser.id,
         gameId: game.id,
         playedAt: { gte: today, lt: tomorrow },
       },

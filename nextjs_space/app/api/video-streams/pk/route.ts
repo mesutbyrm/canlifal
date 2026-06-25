@@ -144,17 +144,17 @@ export async function POST(req: NextRequest) {
       
       // Authorization: user2 (opponent) can accept.
       // Also allow opponent's voice room owner/moderator to accept on their behalf.
-      let canAccept = battle.user2Id === session.user.id
+      let canAccept = battle.user2Id === session?.user?.id
       if (!canAccept && body.opponentVoiceRoomId) {
         // Check if the current user is the owner or moderator of the opponent's voice room
         const opponentRoom = await prisma.chatRoom.findUnique({
           where: { id: body.opponentVoiceRoomId },
           select: { ownerId: true }
         })
-        if (opponentRoom?.ownerId === session.user.id) canAccept = true
+        if (opponentRoom?.ownerId === session?.user?.id) canAccept = true
         if (!canAccept) {
           const modRole = await prisma.chatUserRole.findUnique({
-            where: { roomId_userId: { roomId: body.opponentVoiceRoomId, userId: session.user.id } }
+            where: { roomId_userId: { roomId: body.opponentVoiceRoomId, userId: session?.user?.id } }
           })
           if (modRole && (modRole.role === 'moderator' || modRole.role === 'admin')) canAccept = true
         }

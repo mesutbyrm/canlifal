@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,8 +68,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get sender ID from session or use the viewerId from data
-    const session = await getServerSession(authOptions)
-    const senderId = session?.user?.id || data?.viewerId || `guest_${Date.now()}`
+    const authUser = await authenticateRequest(request)
+    const senderId = authUser?.id || data?.viewerId || `guest_${Date.now()}`
 
     // Store signal
     await prisma.videoStreamSignal.create({

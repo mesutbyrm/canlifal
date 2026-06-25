@@ -1,8 +1,7 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import { FortuneType, FORTUNE_COSTS } from '@/lib/credit-checker'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic'
 
@@ -11,9 +10,9 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { fortuneType, adWatched } = body
 
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
 
-    if (!session?.user?.id) {
+    if (!authUser) {
       // Unregistered user - IP based
       const ip = getClientIp(request)
       const result = await checkIpFortuneAccess(ip, adWatched === true)
@@ -25,7 +24,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ allowed: false, reason: 'error', message: 'Geçersiz fal türü' }, { status: 400 })
     }
 
-    const result = await checkRegisteredFortuneAccess(session.user.id, fortuneType as FortuneType, adWatched === true)
+    const result = await checkRegisteredFortuneAccess(authUser.id, fortuneType as FortuneType, adWatched === true)
     return NextResponse.json(result)
   } catch (error) {
     console.error('Fortune access check error:', error)

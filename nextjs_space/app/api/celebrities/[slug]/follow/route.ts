@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +9,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -26,7 +25,7 @@ export async function POST(
     const existingFollow = await prisma.celebrityFollow.findUnique({
       where: {
         userId_celebrityId: {
-          userId: session.user.id,
+          userId: authUser.id,
           celebrityId: celebrity.id,
         },
       },
@@ -47,7 +46,7 @@ export async function POST(
       await prisma.$transaction([
         prisma.celebrityFollow.create({
           data: {
-            userId: session.user.id,
+            userId: authUser.id,
             celebrityId: celebrity.id,
           },
         }),

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import { processAgencyCommission } from '@/lib/agency-commission';
 import { getCachedPlatformSetting } from '@/lib/cache';
 
@@ -13,8 +14,8 @@ export async function POST(
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -39,13 +40,13 @@ export async function POST(
     }
 
     // Only user (fal baktıran) can tip
-    if (liveSession.userId !== session.user.id) {
+    if (liveSession.userId !== authUser.id) {
       return NextResponse.json({ error: 'Sadece kullanıcı bahşiş verebilir' }, { status: 403 });
     }
 
     // Check if tipper is staff
     const tipperUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { role: true }
     });
     const tipperIsStaff = tipperUser?.role === 'admin' || tipperUser?.role === 'yonetici';

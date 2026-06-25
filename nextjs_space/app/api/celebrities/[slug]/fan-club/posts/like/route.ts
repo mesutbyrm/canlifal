@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,8 +10,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -28,7 +27,7 @@ export async function POST(
     }
 
     const existing = await prisma.fanClubPostLike.findUnique({
-      where: { postId_userId: { postId, userId: session.user.id } },
+      where: { postId_userId: { postId, userId: authUser.id } },
     })
 
     // Find fan club membership for XP
@@ -45,14 +44,14 @@ export async function POST(
       return NextResponse.json({ liked: false, likeCount: Math.max(0, post.likeCount - 1) })
     } else {
       const txOps: any[] = [
-        prisma.fanClubPostLike.create({ data: { postId, userId: session.user.id } }),
+        prisma.fanClubPostLike.create({ data: { postId, userId: authUser.id } }),
         prisma.fanClubPost.update({ where: { id: postId }, data: { likeCount: { increment: 1 } } }),
       ]
       // Award 2 XP to the liker if they are a member
       if (fanClubPost?.fanClub?.id) {
         txOps.push(
           prisma.fanClubMember.updateMany({
-            where: { fanClubId: fanClubPost.fanClub.id, userId: session.user.id },
+            where: { fanClubId: fanClubPost.fanClub.id, userId: authUser.id },
             data: { xp: { increment: 2 } },
           })
         )

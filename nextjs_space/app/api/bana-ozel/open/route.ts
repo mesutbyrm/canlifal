@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -59,8 +58,8 @@ function getPromptForItem(slug: string, userName: string, zodiac: string | null)
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -77,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     // Check jeton balance
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { jetonBalance: true, name: true, zodiacSign: true },
     })
     if (!user || user.jetonBalance < item.jetonCost) {
@@ -107,12 +106,12 @@ export async function POST(req: NextRequest) {
     const newBalance = user.jetonBalance - item.jetonCost
     await prisma.$transaction([
       prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         data: { jetonBalance: newBalance },
       }),
       prisma.jetonTransaction.create({
         data: {
-          userId: session.user.id,
+          userId: authUser.id,
           amount: -item.jetonCost,
           type: 'spend',
           description: item.nameTr,
@@ -123,7 +122,7 @@ export async function POST(req: NextRequest) {
       }),
       prisma.banaOzelHistory.create({
         data: {
-          userId: session.user.id,
+          userId: authUser.id,
           itemSlug: slug,
           content,
           jetonSpent: item.jetonCost,
@@ -138,7 +137,7 @@ export async function POST(req: NextRequest) {
     yesterday.setDate(yesterday.getDate() - 1)
 
     const existingStreak = await prisma.userFortuneStreak.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
 
     if (existingStreak) {
@@ -151,7 +150,7 @@ export async function POST(req: NextRequest) {
         newStreak = existingStreak.currentStreak + 1
       }
       await prisma.userFortuneStreak.update({
-        where: { userId: session.user.id },
+        where: { userId: authUser.id },
         data: {
           currentStreak: newStreak,
           longestStreak: Math.max(newStreak, existingStreak.longestStreak),
@@ -165,12 +164,12 @@ export async function POST(req: NextRequest) {
         const bonusAmount = 10
         await prisma.$transaction([
           prisma.user.update({
-            where: { id: session.user.id },
+            where: { id: authUser.id },
             data: { credits: { increment: bonusAmount } },
           }),
           prisma.creditTransaction.create({
             data: {
-              userId: session.user.id,
+              userId: authUser.id,
               amount: bonusAmount,
               type: 'streak_bonus',
               description: `${newStreak} günlük seri bonusu!`,
@@ -182,7 +181,7 @@ export async function POST(req: NextRequest) {
     } else {
       await prisma.userFortuneStreak.create({
         data: {
-          userId: session.user.id,
+          userId: authUser.id,
           currentStreak: 1,
           longestStreak: 1,
           lastFortuneDate: new Date(),
@@ -194,10 +193,10 @@ export async function POST(req: NextRequest) {
     // Complete daily task
     try {
       await prisma.dailyTask.upsert({
-        where: { userId_taskType_date: { userId: session.user.id, taskType: 'open_fortune', date: today } },
+        where: { userId_taskType_date: { userId: authUser.id, taskType: 'open_fortune', date: today } },
         update: {},
         create: {
-          userId: session.user.id,
+          userId: authUser.id,
           taskType: 'open_fortune',
           jetonEarned: 2,
           date: today,
@@ -215,7 +214,7 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.socialPost.create({
         data: {
-          userId: session.user.id,
+          userId: authUser.id,
           content: content,
           postType: 'fortune',
           fortuneType: slug,

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 import OpenAI from 'openai';
 
 export const dynamic = 'force-dynamic';
@@ -55,8 +56,8 @@ function generateDailyStats(zodiacSign: string, risingSign: string | null): { lu
 // Get or generate daily horoscope for user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // Get user with zodiac sign
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: {
         zodiacSign: true,
         risingSign: true,
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
     // Check if we already have today's horoscope cached in fortune table
     const existingHoroscope = await prisma.fortune.findFirst({
       where: {
-        userId: session.user.id,
+        userId: authUser.id,
         fortuneType: 'daily_horoscope',
         createdAt: {
           gte: today
@@ -174,7 +175,7 @@ Use a warm, positive and motivating tone. Write 150-200 words.`;
     // Save to database
     await prisma.fortune.create({
       data: {
-        userId: session.user.id,
+        userId: authUser.id,
         fortuneType: 'daily_horoscope',
         inputData: `${user.zodiacSign}${user.risingSign ? `_${user.risingSign}` : ''}`,
         aiResponse: horoscopeText,
@@ -184,7 +185,7 @@ Use a warm, positive and motivating tone. Write 150-200 words.`;
 
     // Update last horoscope date
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: { lastHoroscopeDate: new Date() }
     });
 

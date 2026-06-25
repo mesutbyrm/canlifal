@@ -1,24 +1,23 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { NextRequest, NextResponse } from 'next/server'
 import { checkIpFortuneAccess, checkRegisteredFortuneAccess, getClientIp } from '@/lib/fortune-access'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(request)
     
     // Parse body once
     const body = await request.json().catch(() => ({}))
     const adWatched = body?.adWatched === true
 
     // Access control: IP-based for unregistered, CFC for registered
-    if (!session?.user?.id) {
+    if (!authUser) {
       const ip = getClientIp(request)
       const ipAccess = await checkIpFortuneAccess(ip, adWatched)
       if (!ipAccess.allowed) {
@@ -31,8 +30,8 @@ export async function POST(request: Request) {
     const count = cardCount || 3
 
     // Check and deduct credits (skip if ad watched or unregistered)
-    if (session?.user?.id && !adWatched) {
-      const creditResult = await checkAndDeductCredits(session.user.id, 'angel')
+    if (authUser?.id && !adWatched) {
+      const creditResult = await checkAndDeductCredits(authUser.id, 'angel')
       if (!creditResult.success) {
         return NextResponse.json({ error: creditResult.message, reason: 'needs_cfc' }, { status: 403 })
       }
@@ -68,17 +67,17 @@ export async function POST(request: Request) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6)
                 if (data === '[DONE]') {
-                  if (session?.user?.id) {
+                  if (authUser?.id) {
                   const fortune = await prisma.fortune.create({
                     data: {
-                      userId: session.user.id,
+                      userId: authUser.id,
                       fortuneType: 'angel',
                       inputData: JSON.stringify({ question, cardCount: count }),
                       aiResponse: fullResponse,
                       language: language || 'en',
                     },
                   })
-                  await autoShareFortune(session.user.id, fortune.id, 'angel', fullResponse, language || 'en')
+                  await autoShareFortune(authUser.id, fortune.id, 'angel', fullResponse, language || 'en')
                     
                   } else {
                     // Auto-share guest fortune to social feed

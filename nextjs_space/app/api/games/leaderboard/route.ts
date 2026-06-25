@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET: Fetch leaderboard with optional filters
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const authUser = await authenticateRequest(req)
     const url = new URL(req.url)
     const period = url.searchParams.get('period') || 'all' // all, weekly, monthly
     const gameType = url.searchParams.get('gameType') || 'all'
@@ -92,7 +91,7 @@ export async function GET(req: NextRequest) {
         entries: leaderboard,
         period,
         gameType,
-        currentUserId: session?.user?.id || null,
+        currentUserId: authUser?.id || null,
       })
     }
 
@@ -138,7 +137,7 @@ export async function GET(req: NextRequest) {
       entries: leaderboard,
       period: 'all',
       gameType: 'all',
-      currentUserId: session?.user?.id || null,
+      currentUserId: authUser?.id || null,
     })
   } catch (error: any) {
     console.error('Leaderboard error:', error)

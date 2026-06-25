@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET: List available frames for the current user based on membership
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { membership: true, profileFrameId: true, adminAssignedFrameId: true }
     })
 
@@ -49,15 +48,15 @@ export async function GET() {
 // POST: User selects a frame
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { frameId } = await request.json()
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { membership: true }
     })
 
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
     // If removing frame
     if (!frameId) {
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         data: { profileFrameId: null }
       })
       return NextResponse.json({ success: true })
@@ -87,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: { profileFrameId: frameId }
     })
 

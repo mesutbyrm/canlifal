@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       // For anonymous users, return popular dreams
       const popular = await prisma.dreamInterpretation.findMany({
         where: { isPublished: true },
@@ -19,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ recommendations: popular, type: 'popular' })
     }
 
-    const userId = (session.user as any).id
+    const userId = authUser.id
 
     // Get user's recent views and favorites to find their interests
     const [recentViews, favorites] = await Promise.all([

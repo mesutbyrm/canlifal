@@ -1,35 +1,35 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // GET - Get jeton balance, streak, daily tasks
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { jetonBalance: true },
     })
 
     const streak = await prisma.userFortuneStreak.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
     })
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const completedTasks = await prisma.dailyTask.findMany({
-      where: { userId: session.user.id, date: today },
+      where: { userId, date: today },
     })
 
     const recentHistory = await prisma.banaOzelHistory.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 10,
     })
@@ -58,17 +58,18 @@ export async function GET() {
 // POST - Claim daily bonuses
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const { action } = await req.json()
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { jetonBalance: true },
     })
     if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     if (action === 'daily_login') {
       // Check if already claimed
       const existing = await prisma.dailyTask.findUnique({
-        where: { userId_taskType_date: { userId: session.user.id, taskType: 'login', date: today } },
+        where: { userId_taskType_date: { userId: userId, taskType: 'login', date: today } },
       })
       if (existing) {
         return NextResponse.json({ error: 'Günlük bonus zaten alındı', alreadyClaimed: true }, { status: 400 })
@@ -86,19 +87,19 @@ export async function POST(req: NextRequest) {
       // Jetons are only obtained through real money purchases
       const bonusAmount = 5
       const userFull = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: userId },
         select: { credits: true },
       })
       const currentCredits = userFull?.credits ?? 0
       const newCreditsBalance = currentCredits + bonusAmount
       await prisma.$transaction([
         prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: userId },
           data: { credits: { increment: bonusAmount } },
         }),
         prisma.creditTransaction.create({
           data: {
-            userId: session.user.id,
+            userId: userId,
             amount: bonusAmount,
             type: 'daily_bonus',
             description: 'Günlük giriş bonusu',
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
         }),
         prisma.dailyTask.create({
           data: {
-            userId: session.user.id,
+            userId: userId,
             taskType: 'login',
             jetonEarned: bonusAmount,
             date: today,

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,8 +59,8 @@ export async function DELETE(
   { params }: { params: { postId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -74,7 +73,7 @@ export async function DELETE(
     }
 
     // Only owner or admin can delete
-    if (post.userId !== session.user.id && session.user.role !== 'admin') {
+    if (post.userId !== authUser.id && authUser.role !== 'admin') {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

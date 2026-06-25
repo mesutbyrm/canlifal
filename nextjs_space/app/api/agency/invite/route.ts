@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,8 +16,8 @@ function generateCode(): string {
 // Create invite code
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -26,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Check user's agency ownership/management
     const membership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       include: { agency: { select: { id: true, status: true, invitesDisabled: true } } }
     })
 
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest) {
       data: {
         agencyId: membership.agencyId,
         code,
-        createdById: session.user.id,
+        createdById: authUser.id,
         maxUses: maxUses || 0,
         expiresAt,
       }
@@ -71,15 +70,15 @@ export async function POST(req: NextRequest) {
 }
 
 // Get invite codes for agency
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const membership = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
 
     if (!membership || !['owner', 'manager'].includes(membership.role)) {

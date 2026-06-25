@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic';
 
 // POST - Toggle online status for the authenticated teller
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await authenticateRequest(request)
     
-    if (!session?.user?.id) {
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     // Find the teller profile for this user
     const teller = await prisma.liveFortuneTeller.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     });
 
     if (!teller) {
@@ -52,16 +51,16 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - Get current online status
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await authenticateRequest(request)
     
-    if (!session?.user?.id) {
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
     const teller = await prisma.liveFortuneTeller.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
       select: {
         id: true,
         isOnline: true,

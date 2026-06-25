@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user is already in an agency
     const existingMember = await prisma.agencyUser.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: authUser.id }
     })
     if (existingMember) {
       return NextResponse.json({ error: 'Zaten bir ajansın üyesisiniz. Önce ayrılmanız gerekiyor.' }, { status: 400 })
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
     const membership = await prisma.agencyUser.create({
       data: {
         agencyId: code.agencyId,
-        userId: session.user.id,
+        userId: authUser.id,
         role: 'member',
         joinedVia: 'invite_code',
         inviteCodeId: code.id,

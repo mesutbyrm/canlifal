@@ -11,15 +11,18 @@ export const dynamic = 'force-dynamic'
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+  const authUser = await authenticateRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { roomId } = await params
-    const permissions = await getUserPermissions(roomId, session.user.id)
+    const permissions = await getUserPermissions(roomId, authUser.id)
 
     // Only founders+ and room owners can view settings
     if (!permissions.canManageRoom && !permissions.isGlobalAdmin) {
@@ -72,15 +75,18 @@ export async function GET(
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+  const authUser = await authenticateRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { roomId } = await params
-    const permissions = await getUserPermissions(roomId, session.user.id)
+    const permissions = await getUserPermissions(roomId, authUser.id)
 
     // Only founders+ and room owners can update settings
     if (!permissions.canManageRoom && !permissions.isGlobalAdmin) {

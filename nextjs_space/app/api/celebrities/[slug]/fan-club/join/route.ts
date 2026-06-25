@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,8 +10,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -34,7 +33,7 @@ export async function POST(
     }
 
     const existing = await prisma.fanClubMember.findUnique({
-      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } },
+      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } },
     })
 
     if (existing) {
@@ -47,7 +46,7 @@ export async function POST(
     } else {
       // Join
       await prisma.$transaction([
-        prisma.fanClubMember.create({ data: { fanClubId: fanClub.id, userId: session.user.id } }),
+        prisma.fanClubMember.create({ data: { fanClubId: fanClub.id, userId: authUser.id } }),
         prisma.fanClub.update({ where: { id: fanClub.id }, data: { memberCount: { increment: 1 } } }),
       ])
       return NextResponse.json({ joined: true, memberCount: fanClub.memberCount + 1 })

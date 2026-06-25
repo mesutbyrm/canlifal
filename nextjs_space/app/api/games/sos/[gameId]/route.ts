@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
 export const dynamic = 'force-dynamic'
@@ -9,8 +8,8 @@ export const dynamic = 'force-dynamic'
 // GET: Get game state (with timer timeout, disconnect detection, reconnection)
 export async function GET(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    const userId = session?.user?.id
+    const authUser = await authenticateRequest(req)
+    const userId = authUser?.id
 
     const gameResult = await prisma.sosGame.findUnique({
       where: { id: params.gameId },
@@ -130,8 +129,8 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
 // POST: Join a waiting game
 export async function POST(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -143,15 +142,15 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
     if (game.status !== 'waiting' && !isAIReplace) {
       return NextResponse.json({ error: 'Bu oyuna katılınamaz' }, { status: 400 })
     }
-    if (game.player1Id === session.user.id && !game.disconnectedPlayerId) {
+    if (game.player1Id === authUser.id && !game.disconnectedPlayerId) {
       return NextResponse.json({ error: 'Kendi oyununuza katılamazsınız' }, { status: 400 })
     }
 
     // Check & deduct balance for bet (skip for reconnecting or AI replace - bet already deducted)
-    const isReconnectingPlayer = game.disconnectedPlayerId === session.user.id
+    const isReconnectingPlayer = game.disconnectedPlayerId === authUser.id
     if (game.betAmount > 0 && !isAIReplace) {
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         select: { credits: true, jetonBalance: true, role: true }
       })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
@@ -165,7 +164,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
           return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
         }
         await prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: authUser.id },
           data: game.betCurrency === 'CFC'
             ? { credits: { decrement: game.betAmount } }
             : { jetonBalance: { decrement: game.betAmount } }
@@ -173,16 +172,16 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
       }
     }
 
-    const userName = (session.user as any)?.name || 'Oyuncu 2'
+    const userName = (authUser as any)?.name || 'Oyuncu 2'
 
-    const updateData: any = { player2Id: session.user.id, player2Name: userName, lastMoveAt: new Date() }
+    const updateData: any = { player2Id: authUser.id, player2Name: userName, lastMoveAt: new Date() }
     if (isAIReplace) {
       // Check if reconnecting or new player
-      const isReconnecting = game.disconnectedPlayerId === session.user.id
+      const isReconnecting = game.disconnectedPlayerId === authUser.id
       if (isReconnecting) {
         updateData.isAI = false
         updateData.disconnectedPlayerId = null
-        const isP1 = game.player1Id === session.user.id
+        const isP1 = game.player1Id === authUser.id
         if (isP1) updateData.player1LastSeen = new Date()
         else updateData.player2LastSeen = new Date()
         // Don't overwrite player names for reconnection
@@ -212,8 +211,8 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 // PATCH: Make a move
 export async function PATCH(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -224,8 +223,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
     if (game.status !== 'active') return NextResponse.json({ error: 'Oyun aktif değil' }, { status: 400 })
 
-    const isPlayer1 = game.player1Id === session.user.id
-    const isPlayer2 = game.player2Id === session.user.id
+    const isPlayer1 = game.player1Id === authUser.id
+    const isPlayer2 = game.player2Id === authUser.id
     if (!isPlayer1 && !isPlayer2) return NextResponse.json({ error: 'Bu oyuna dahil değilsiniz' }, { status: 403 })
 
     // Handle leave action: AI takes over
@@ -241,7 +240,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
         where: { id: params.gameId },
         data: {
           isAI: true,
-          disconnectedPlayerId: session.user.id,
+          disconnectedPlayerId: authUser.id,
           lastMoveAt: new Date(),
           ...(isPlayer1 ? { player1LastSeen: null } : { player2LastSeen: null }),
         },
@@ -272,10 +271,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
           const commission = Math.floor(totalPot * 0.10)
           const winnerPayout = totalPot - commission
 
-          if (winnerId === session.user.id) {
+          if (winnerId === authUser.id) {
             // Player wins
             await prisma.user.update({
-              where: { id: session.user.id },
+              where: { id: authUser.id },
               data: game.betCurrency === 'CFC'
                 ? { credits: { increment: winnerPayout } }
                 : { jetonBalance: { increment: winnerPayout } }
@@ -285,7 +284,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
         } else if (game.betAmount > 0 && !winnerId) {
           // Draw - refund player
           await prisma.user.update({
-            where: { id: session.user.id },
+            where: { id: authUser.id },
             data: game.betCurrency === 'CFC'
               ? { credits: { increment: game.betAmount } }
               : { jetonBalance: { increment: game.betAmount } }
@@ -412,20 +411,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
 // DELETE: Cancel a waiting game
 export async function DELETE(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
     const game = await prisma.sosGame.findUnique({ where: { id: params.gameId } })
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
-    if (game.player1Id !== session.user.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+    if (game.player1Id !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     if (game.status !== 'waiting') return NextResponse.json({ error: 'Sadece bekleyen oyunlar iptal edilebilir' }, { status: 400 })
 
     // Refund bet
     if (game.betAmount > 0) {
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: authUser.id },
         data: game.betCurrency === 'CFC'
           ? { credits: { increment: game.betAmount } }
           : { jetonBalance: { increment: game.betAmount } }

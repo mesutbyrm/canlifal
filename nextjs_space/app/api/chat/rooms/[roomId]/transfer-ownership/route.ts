@@ -10,10 +10,13 @@ export const dynamic = 'force-dynamic'
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+  const authUser = await authenticateRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -35,9 +38,9 @@ export async function POST(
     }
 
     // Check if the user is the current owner or a global admin
-    const isOwner = room.ownerId === session.user.id
+    const isOwner = room.ownerId === authUser.id
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       select: { role: true }
     })
     const isGlobalAdmin = user?.role === 'admin' || user?.role === 'superadmin'
@@ -76,11 +79,11 @@ export async function POST(
         roomId,
         userId: newOwnerId,
         role: 'founder',
-        grantedBy: session.user.id
+        grantedBy: authUser.id
       },
       update: {
         role: 'founder',
-        grantedBy: session.user.id
+        grantedBy: authUser.id
       }
     })
 

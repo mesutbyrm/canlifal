@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,10 +11,10 @@ const QUEST_DEFINITIONS = [
 ]
 
 // GET: Fetch daily quests for user
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -27,13 +26,13 @@ export async function GET() {
       await prisma.dailyQuest.upsert({
         where: {
           userId_questDate_questType: {
-            userId: session.user.id,
+            userId: authUser.id,
             questDate: today,
             questType: quest.type,
           },
         },
         create: {
-          userId: session.user.id,
+          userId: authUser.id,
           questDate: today,
           questType: quest.type,
           target: quest.target,
@@ -45,7 +44,7 @@ export async function GET() {
     }
 
     const quests = await prisma.dailyQuest.findMany({
-      where: { userId: session.user.id, questDate: today },
+      where: { userId: authUser.id, questDate: today },
     })
 
     // Map with definitions
@@ -69,8 +68,8 @@ export async function GET() {
 // POST: Claim quest reward
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -81,7 +80,7 @@ export async function POST(req: NextRequest) {
     const quest = await prisma.dailyQuest.findUnique({
       where: {
         userId_questDate_questType: {
-          userId: session.user.id,
+          userId: authUser.id,
           questDate: today,
           questType,
         },
@@ -105,11 +104,11 @@ export async function POST(req: NextRequest) {
     })
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: { credits: { increment: quest.reward } },
     })
 
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,

@@ -15,8 +15,8 @@ export async function GET(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    const userId = session?.user?.id || null
+    const authUser = await authenticateRequest(req)
+    const userId = authUser?.id || null
 
     const room = await prisma.chatRoom.findUnique({
       where: { id: params.roomId },
@@ -110,8 +110,8 @@ export async function POST(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -124,9 +124,9 @@ export async function POST(
     }
 
     // Only room owner and global admins can manage DJs
-    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
+    const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { role: true } })
     const isGlobalAdmin = user?.role === 'admin' || user?.role === 'yonetici'
-    const isOwner = room.ownerId === session.user.id
+    const isOwner = room.ownerId === authUser.id
 
     if (!isOwner && !isGlobalAdmin) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })

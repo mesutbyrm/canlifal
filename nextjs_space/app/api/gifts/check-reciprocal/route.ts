@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 // Check if the recipient has already gifted the sender today
 // If so, block the reciprocal gift
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ blocked: false })
     }
 
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Look in notifications: recipient gifted us = notification to us from recipient
     const reciprocalGift = await prisma.notification.findFirst({
       where: {
-        userId: session.user.id, // notification sent TO current user
+        userId: authUser.id, // notification sent TO current user
         type: 'gift_received',
         fromUserId: recipientId, // FROM the person we want to gift
         createdAt: { gte: todayStart }

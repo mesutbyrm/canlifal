@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,10 +20,10 @@ function getStreakReward(streak: number): number {
 }
 
 // GET: Check daily reward status
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -32,14 +31,14 @@ export async function GET() {
     today.setHours(0, 0, 0, 0)
 
     const todayReward = await prisma.dailyReward.findUnique({
-      where: { userId_rewardDate: { userId: session.user.id, rewardDate: today } },
+      where: { userId_rewardDate: { userId: authUser.id, rewardDate: today } },
     })
 
     // Get yesterday's reward for streak info
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayReward = await prisma.dailyReward.findUnique({
-      where: { userId_rewardDate: { userId: session.user.id, rewardDate: yesterday } },
+      where: { userId_rewardDate: { userId: authUser.id, rewardDate: yesterday } },
     })
 
     const currentStreak = todayReward?.streak || (yesterdayReward ? yesterdayReward.streak : 0)
@@ -59,10 +58,10 @@ export async function GET() {
 }
 
 // POST: Claim daily reward
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -71,7 +70,7 @@ export async function POST() {
 
     // Check if already claimed
     const existing = await prisma.dailyReward.findUnique({
-      where: { userId_rewardDate: { userId: session.user.id, rewardDate: today } },
+      where: { userId_rewardDate: { userId: authUser.id, rewardDate: today } },
     })
     if (existing) {
       return NextResponse.json({ error: 'Bugünkü ödül zaten alındı' }, { status: 400 })
@@ -81,7 +80,7 @@ export async function POST() {
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayReward = await prisma.dailyReward.findUnique({
-      where: { userId_rewardDate: { userId: session.user.id, rewardDate: yesterday } },
+      where: { userId_rewardDate: { userId: authUser.id, rewardDate: yesterday } },
     })
 
     const newStreak = yesterdayReward ? yesterdayReward.streak + 1 : 1
@@ -90,7 +89,7 @@ export async function POST() {
     // Create daily reward
     await prisma.dailyReward.create({
       data: {
-        userId: session.user.id,
+        userId: authUser.id,
         rewardDate: today,
         streak: newStreak,
         jetonReward: reward,
@@ -99,7 +98,7 @@ export async function POST() {
 
     // Add CFC to user
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: { credits: { increment: reward } },
     })
 
@@ -107,13 +106,13 @@ export async function POST() {
     await prisma.dailyQuest.upsert({
       where: {
         userId_questDate_questType: {
-          userId: session.user.id,
+          userId: authUser.id,
           questDate: today,
           questType: 'daily_login',
         },
       },
       create: {
-        userId: session.user.id,
+        userId: authUser.id,
         questDate: today,
         questType: 'daily_login',
         progress: 1,
@@ -125,7 +124,7 @@ export async function POST() {
       },
     })
 
-    const updatedUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { credits: true } })
+    const updatedUser = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
 
     return NextResponse.json({
       success: true,

@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const { planId, paymentMethod } = await req.json()
     if (!planId) {
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     // Get the user
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { jetonBalance: true, credits: true, membership: true, membershipExpiresAt: true, role: true }
     })
 
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         }
         await prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: userId },
           data: { credits: { decrement: plan.price } }
         })
       } else {
@@ -53,12 +55,12 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
         }
         await prisma.user.update({
-          where: { id: session.user.id },
+          where: { id: userId },
           data: { jetonBalance: { decrement: plan.price } }
         })
         await prisma.jetonTransaction.create({
           data: {
-            userId: session.user.id,
+            userId: userId,
             amount: -plan.price,
             type: 'spend',
             description: `${plan.name} üyelik satın alındı`,
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     // Create purchase record
     await prisma.membershipPurchase.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         planId: plan.id,
         priceType: plan.priceType,
         pricePaid: plan.price,
@@ -97,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     // Update user membership
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: {
         membership: plan.tier,
         membershipExpiresAt: expiresAt
@@ -107,14 +109,14 @@ export async function POST(req: NextRequest) {
     // Add bonus jetons if any
     if (plan.bonusJetons > 0) {
       const updatedUser = await prisma.user.update({
-        where: { id: session.user.id },
+        where: { id: userId },
         data: { jetonBalance: { increment: plan.bonusJetons } },
         select: { jetonBalance: true }
       })
 
       await prisma.jetonTransaction.create({
         data: {
-          userId: session.user.id,
+          userId: userId,
           amount: plan.bonusJetons,
           type: 'purchase',
           description: `${plan.name} üyelik bonus jetonları`,

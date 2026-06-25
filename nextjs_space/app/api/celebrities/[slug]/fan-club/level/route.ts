@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 const FAN_LEVELS = [
   { key: 'yeni_fan', label: 'Yeni Fan', emoji: '🌱', minXp: 0, color: 'from-gray-400 to-gray-600' },
@@ -28,8 +27,8 @@ function calculateLevel(xp: number) {
 // GET fan level info
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    const authUser = await authenticateRequest(req)
+    if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const celebrity = await prisma.celebrity.findUnique({ where: { slug: params.slug } })
     if (!celebrity) return NextResponse.json({ error: 'Ünlü bulunamadı' }, { status: 404 })
@@ -38,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     if (!fanClub) return NextResponse.json({ error: 'Fan kulübü bulunamadı' }, { status: 404 })
 
     const membership = await prisma.fanClubMember.findUnique({
-      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: session.user.id } }
+      where: { fanClubId_userId: { fanClubId: fanClub.id, userId: authUser.id } }
     })
     if (!membership) return NextResponse.json({ error: 'Üye değilsiniz' }, { status: 403 })
 

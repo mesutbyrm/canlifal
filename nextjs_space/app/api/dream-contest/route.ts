@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,8 +16,8 @@ export async function GET(req: NextRequest) {
       take: 10,
     })
 
-    const session = await getServerSession(authOptions)
-    const userId = session?.user ? (session.user as any).id : null
+    const authUser = await authenticateRequest(req)
+    const userId = authUser ? authUser.id : null
 
     const contestsWithStatus = contests.map((c: any) => ({
       ...c,

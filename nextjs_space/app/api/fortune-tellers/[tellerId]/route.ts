@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import prisma from '@/lib/db';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,8 +49,8 @@ export async function PATCH(
   { params }: { params: { tellerId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 
@@ -61,8 +62,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
     }
 
-    const isAdmin = (session.user as { role?: string }).role === 'admin';
-    const isOwner = teller.userId === session.user.id;
+    const isAdmin = (authUser as { role?: string }).role === 'admin';
+    const isOwner = teller.userId === authUser.id;
 
     if (!isAdmin && !isOwner) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });

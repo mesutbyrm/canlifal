@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,8 +29,8 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
 // POST: Send a chat message
 export async function POST(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
@@ -49,20 +48,20 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
     if (!game.chatEnabled) return NextResponse.json({ error: 'Sohbet kapalı' }, { status: 403 })
 
     // Only players and viewers can chat
-    const isPlayer = game.player1Id === session.user.id || game.player2Id === session.user.id
+    const isPlayer = game.player1Id === authUser.id || game.player2Id === authUser.id
     const viewer = isPlayer ? null : await prisma.sosGameViewer.findUnique({
-      where: { gameId_userId: { gameId: params.gameId, userId: session.user.id } },
+      where: { gameId_userId: { gameId: params.gameId, userId: authUser.id } },
     })
 
     if (!isPlayer && !viewer) {
       return NextResponse.json({ error: 'Bu sohbete erişiminiz yok' }, { status: 403 })
     }
 
-    const userName = (session.user as any)?.name || 'Anonim'
+    const userName = (authUser as any)?.name || 'Anonim'
     const chatMsg = await prisma.sosGameChat.create({
       data: {
         gameId: params.gameId,
-        userId: session.user.id,
+        userId: authUser.id,
         userName,
         message: message.trim().slice(0, 200),
       },
@@ -78,14 +77,14 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 // PATCH: Toggle chat enabled/disabled (room owner only)
 export async function PATCH(req: NextRequest, { params }: { params: { gameId: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
     const game = await prisma.sosGame.findUnique({ where: { id: params.gameId } })
     if (!game) return NextResponse.json({ error: 'Oyun bulunamadı' }, { status: 404 })
-    if (game.player1Id !== session.user.id) {
+    if (game.player1Id !== authUser.id) {
       return NextResponse.json({ error: 'Sadece oda sahibi sohbeti yönetebilir' }, { status: 403 })
     }
 

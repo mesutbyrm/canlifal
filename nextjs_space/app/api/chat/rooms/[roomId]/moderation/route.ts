@@ -11,18 +11,21 @@ export const dynamic = 'force-dynamic'
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+  const authUser = await authenticateRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { roomId } = await params
     const { action, targetUserId, role, reason, duration } = await request.json()
 
-    const permissions = await getUserPermissions(roomId, session.user.id)
+    const permissions = await getUserPermissions(roomId, authUser.id)
     const actorRoleLevel = ROLE_HIERARCHY[permissions.role]
 
     // Get target user's role for hierarchy check (only if targetUserId is provided)
@@ -36,7 +39,7 @@ export async function POST(
       })
       const protectedRoles = ['admin', 'moderator', 'site_manager']
       const isTargetProtected = targetUserGlobal && protectedRoles.includes(targetUserGlobal.role)
-      const isActorProtected = protectedRoles.includes((session.user as any).role || '')
+      const isActorProtected = protectedRoles.includes(authUser.role || '')
 
       // If target is protected and actor is NOT protected, reverse the action
       if (isTargetProtected && !isActorProtected) {
@@ -44,23 +47,23 @@ export async function POST(
         if (reverseAction === 'kick_user') {
           // Auto-kick the attacker from the room
           await prisma.chatPresence.deleteMany({
-            where: { roomId, userId: session.user.id }
+            where: { roomId, userId: authUser.id }
           })
           return NextResponse.json({ error: 'Bu kullanıcıyı atamazsınız! Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
         }
         if (reverseAction === 'mute_user') {
           // Auto-mute the attacker
           await prisma.chatMute.upsert({
-            where: { roomId_userId: { roomId, userId: session.user.id } },
+            where: { roomId_userId: { roomId, userId: authUser.id } },
             update: { mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) },
-            create: { roomId, userId: session.user.id, mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) }
+            create: { roomId, userId: authUser.id, mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) }
           })
           return NextResponse.json({ error: 'Bu kullanıcıyı susturamazsınız! Kendiniz susturuldunuz.', reversed: true, reverseAction: 'muted' }, { status: 403 })
         }
         if (reverseAction === 'ban_user') {
           // Auto-kick the attacker and ban them
           await prisma.chatPresence.deleteMany({
-            where: { roomId, userId: session.user.id }
+            where: { roomId, userId: authUser.id }
           })
           return NextResponse.json({ error: 'Bu kullanıcıyı banlayamazsınız! Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
         }
@@ -74,7 +77,7 @@ export async function POST(
       targetRoleLevel = ROLE_HIERARCHY[(targetRole?.role as ChatRole) || 'none']
 
       // Cannot act on users with same or higher role (except global admin or self-role-assign)
-      const isSelfAction = targetUserId === session.user.id
+      const isSelfAction = targetUserId === authUser.id
       if (targetRoleLevel >= actorRoleLevel && !permissions.isGlobalAdmin && !isSelfAction) {
         return NextResponse.json({ error: 'Cannot moderate users with same or higher role' }, { status: 403 })
       }
@@ -90,11 +93,11 @@ export async function POST(
 
         await prisma.chatMute.upsert({
           where: { roomId_userId: { roomId, userId: targetUserId } },
-          update: { mutedBy: session.user.id, reason, expiresAt },
+          update: { mutedBy: authUser.id, reason, expiresAt },
           create: {
             roomId,
             userId: targetUserId,
-            mutedBy: session.user.id,
+            mutedBy: authUser.id,
             reason,
             expiresAt
           }
@@ -137,11 +140,11 @@ export async function POST(
 
         await prisma.chatBan.upsert({
           where: { roomId_userId: { roomId, userId: targetUserId } },
-          update: { bannedBy: session.user.id, reason, expiresAt: banExpiresAt },
+          update: { bannedBy: authUser.id, reason, expiresAt: banExpiresAt },
           create: {
             roomId,
             userId: targetUserId,
-            bannedBy: session.user.id,
+            bannedBy: authUser.id,
             reason,
             expiresAt: banExpiresAt
           }
@@ -222,12 +225,12 @@ export async function POST(
 
         await prisma.chatUserRole.upsert({
           where: { roomId_userId: { roomId, userId: targetUserId } },
-          update: { role: newRole, grantedBy: session.user.id },
+          update: { role: newRole, grantedBy: authUser.id },
           create: {
             roomId,
             userId: targetUserId,
             role: newRole,
-            grantedBy: session.user.id
+            grantedBy: authUser.id
           }
         })
 
@@ -275,12 +278,12 @@ export async function POST(
         if (targetUserId) {
           await prisma.chatUserRole.upsert({
             where: { roomId_userId: { roomId, userId: targetUserId } },
-            update: { role: 'founder', grantedBy: session.user.id },
+            update: { role: 'founder', grantedBy: authUser.id },
             create: {
               roomId,
               userId: targetUserId,
               role: 'founder',
-              grantedBy: session.user.id
+              grantedBy: authUser.id
             }
           })
         }
@@ -315,16 +318,19 @@ export async function POST(
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
+  const authUser = await authenticateRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const { roomId } = await params
-    const permissions = await getUserPermissions(roomId, session.user.id)
+    const permissions = await getUserPermissions(roomId, authUser.id)
 
     // Only mods can see moderation info
     if (ROLE_HIERARCHY[permissions.role] < ROLE_HIERARCHY.op && !permissions.isGlobalAdmin) {

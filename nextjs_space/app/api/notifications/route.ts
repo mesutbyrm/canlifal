@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET - Get user's notifications
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
-    const where: any = { userId: session.user.id }
+    const where: any = { userId }
     if (unreadOnly) {
       where.isRead = false
     }
@@ -24,11 +25,12 @@ export async function GET(request: NextRequest) {
     const notifications = await prisma.notification.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 50
+      take: 50,
+      skip: (page - 1) * 50
     })
 
     const unreadCount = await prisma.notification.count({
-      where: { userId: session.user.id, isRead: false }
+      where: { userId, isRead: false }
     })
 
     return NextResponse.json({ notifications, unreadCount })
@@ -41,23 +43,24 @@ export async function GET(request: NextRequest) {
 // POST - Mark notifications as read
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+    const userId = authUser.id
 
     const { notificationIds, markAll } = await request.json()
 
     if (markAll) {
       await prisma.notification.updateMany({
-        where: { userId: session.user.id, isRead: false },
+        where: { userId, isRead: false },
         data: { isRead: true }
       })
     } else if (notificationIds?.length > 0) {
       await prisma.notification.updateMany({
         where: { 
           id: { in: notificationIds },
-          userId: session.user.id 
+          userId
         },
         data: { isRead: true }
       })
@@ -67,5 +70,31 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Mark notifications error:', error)
     return NextResponse.json({ error: 'Bildirimler güncellenemedi' }, { status: 500 })
+  }
+}
+
+// DELETE - Delete a notification
+export async function DELETE(request: NextRequest) {
+  try {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const notificationId = searchParams.get('id')
+
+    if (!notificationId) {
+      return NextResponse.json({ error: 'Bildirim ID gerekli' }, { status: 400 })
+    }
+
+    await prisma.notification.deleteMany({
+      where: { id: notificationId, userId: authUser.id }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Delete notification error:', error)
+    return NextResponse.json({ error: 'Bildirim silinemedi' }, { status: 500 })
   }
 }
