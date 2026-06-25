@@ -20,14 +20,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { email, password } = body
+    const { email, username, password } = body
+    const loginIdentifier = email || username
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'E-posta ve şifre gereklidir' }, { status: 400 })
+    if (!loginIdentifier || !password) {
+      return NextResponse.json({ error: 'E-posta/kullanıcı adı ve şifre gereklidir' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    // Support login by email or username
+    const user = await prisma.user.findFirst({
+      where: loginIdentifier.includes('@')
+        ? { email: loginIdentifier.toLowerCase().trim() }
+        : { username: loginIdentifier.trim() },
       select: {
         id: true,
         email: true,
