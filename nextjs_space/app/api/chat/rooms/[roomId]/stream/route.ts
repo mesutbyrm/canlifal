@@ -69,6 +69,22 @@ export async function GET(
                 messages: messages.map(e => e.data)
               })}\n\n`))
             }
+            // System events (moderation: kick, ban, mute, announcement, clear)
+            const systemEvents = newEvents.filter(e => e.type === 'system')
+            for (const sysEvt of systemEvents) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'system',
+                ...sysEvt.data
+              })}\n\n`))
+            }
+            // Gift events
+            const giftEvents = newEvents.filter(e => e.type === 'gift')
+            for (const giftEvt of giftEvents) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'gift',
+                ...giftEvt.data
+              })}\n\n`))
+            }
             lastEventCheck = Date.now()
           }
 

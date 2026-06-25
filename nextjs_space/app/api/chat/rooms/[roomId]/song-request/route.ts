@@ -8,7 +8,8 @@ import { calculateMusicDistribution, logRoomRevenue } from '@/lib/voice-room-rev
 
 export const dynamic = 'force-dynamic'
 
-const SONG_REQUEST_COST = 10
+const SONG_REQUEST_COST_AUDIO = 10
+const SONG_REQUEST_COST_VIDEO = 20
 
 /** Helper: parse queue from DB messages */
 async function parseQueue(roomId: string) {
@@ -33,6 +34,8 @@ async function parseQueue(roomId: string) {
     const data = msg.content.replace(prefix, '')
     const parts = data.split('|')
 
+    // parts: videoId|title|dedication|note|duration|typeTag
+    const typeTag = isPaid ? (parts[5] || 'AUDIO') : (parts[3] || 'AUDIO')
     return {
       id: msg.id,
       videoId: parts[0] || '',
@@ -40,6 +43,7 @@ async function parseQueue(roomId: string) {
       dedication: isPaid ? (parts[2] || '') : '',
       note: isPaid ? (parts[3] || '') : '',
       duration: isPaid ? (parts[4] || '') : (parts[2] || ''),
+      requestType: typeTag === 'VIDEO' ? 'video' : 'audio',
       isPaid,
       userId: msg.userId,
       userName: msg.user?.name || msg.user?.username || 'Anonim',
@@ -92,6 +96,7 @@ export async function GET(
         ? `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
         : null,
       musicQueue: queue,
+      requestCosts: { audio: SONG_REQUEST_COST_AUDIO, video: SONG_REQUEST_COST_VIDEO },
     })
   } catch (error) {
     console.error('Get song queue error:', error)
@@ -116,7 +121,10 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { videoId, title, dedication, note, duration, priority } = body
+    const { videoId, title, dedication, note, duration, priority, requestType } = body
+    // requestType: 'video' (20 jeton) or 'audio' (10 jeton, default)
+    const isVideoRequest = requestType === 'video'
+    const SONG_REQUEST_COST = isVideoRequest ? SONG_REQUEST_COST_VIDEO : SONG_REQUEST_COST_AUDIO
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
@@ -208,6 +216,7 @@ export async function POST(
     const dedText = dedication ? String(dedication).trim() : ''
     const noteText = note ? String(note).trim() : ''
     const durText = duration ? String(duration).trim() : ''
+    const typeTag = isVideoRequest ? 'VIDEO' : 'AUDIO'
     const isPaidRequest = !shouldSkipPayment
     const prefix = isPaidRequest ? '[SONG_REQUEST_PAID]' : '[SONG_REQUEST_FREE]'
 
@@ -216,7 +225,7 @@ export async function POST(
       data: {
         roomId: params.roomId,
         userId,
-        content: `${prefix} ${videoId}|${title}|${dedText}|${noteText}|${durText}`,
+        content: `${prefix} ${videoId}|${title}|${dedText}|${noteText}|${durText}|${typeTag}`,
       }
     })
 
@@ -227,7 +236,7 @@ export async function POST(
       : `🎵 ${userName} şarkı isteği gönderdi: ${title}`
     if (dedText) visibleMsg += ` (${dedText} için)`
     if (noteText) visibleMsg += ` — "${noteText}"`
-    if (!shouldSkipPayment) visibleMsg += ` [${SONG_REQUEST_COST} 💎]`
+    if (!shouldSkipPayment) visibleMsg += ` [${SONG_REQUEST_COST} 💎${isVideoRequest ? ' 🎬' : ' 🎧'}]`
 
     await prisma.chatMessage.create({
       data: {

@@ -35,6 +35,7 @@ async function parseQueue(roomId: string) {
     const data = msg.content.replace(prefix, '')
     const parts = data.split('|')
 
+    const typeTag = isPaid ? (parts[5] || 'AUDIO') : (parts[3] || 'AUDIO')
     return {
       id: msg.id,
       videoId: parts[0] || '',
@@ -42,6 +43,7 @@ async function parseQueue(roomId: string) {
       dedication: isPaid ? (parts[2] || '') : '',
       note: isPaid ? (parts[3] || '') : '',
       duration: isPaid ? (parts[4] || '') : (parts[2] || ''),
+      requestType: typeTag === 'VIDEO' ? 'video' : 'audio',
       isPaid,
       userId: msg.userId,
       userName: msg.user?.name || msg.user?.username || 'Anonim',

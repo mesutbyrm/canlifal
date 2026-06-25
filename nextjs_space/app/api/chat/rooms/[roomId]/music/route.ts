@@ -7,6 +7,60 @@ import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
 
 export const dynamic = 'force-dynamic'
 
+// Helper: play next song from queue (auto-advance)
+async function playNextFromQueue(roomId: string): Promise<boolean> {
+  // Find next unplayed song in queue (paid first, then chronological)
+  const requests = await prisma.chatMessage.findMany({
+    where: {
+      roomId,
+      content: { startsWith: '[SONG_REQUEST' },
+      NOT: { content: { contains: '[PLAYED]' } }
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 30,
+  })
+
+  // Sort: paid first
+  const sorted = requests.sort((a, b) => {
+    const aP = a.content.startsWith('[SONG_REQUEST_PAID]') ? 0 : 1
+    const bP = b.content.startsWith('[SONG_REQUEST_PAID]') ? 0 : 1
+    if (aP !== bP) return aP - bP
+    return a.createdAt.getTime() - b.createdAt.getTime()
+  })
+
+  if (sorted.length === 0) return false
+
+  const next = sorted[0]
+  const isPaid = next.content.startsWith('[SONG_REQUEST_PAID]')
+  const prefix = isPaid ? '[SONG_REQUEST_PAID] ' : '[SONG_REQUEST_FREE] '
+  const data = next.content.replace(prefix, '')
+  const parts = data.split('|')
+  const videoId = parts[0]
+  const title = parts[1] || ''
+  const duration = isPaid ? (parts[4] || '') : (parts[2] || '')
+
+  if (!videoId) return false
+
+  // Mark as played
+  await prisma.chatMessage.update({
+    where: { id: next.id },
+    data: { content: next.content + '[PLAYED]' }
+  })
+
+  // Set as current music
+  await prisma.chatRoom.update({
+    where: { id: roomId },
+    data: {
+      currentMusicVideoId: videoId,
+      currentMusicTitle: title,
+      currentMusicStartedAt: new Date(),
+      currentMusicDuration: duration || null,
+    }
+  })
+
+  return true
+}
+
 // Helper to check if user can control music (DJ system)
 async function canControlMusic(roomId: string, userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
@@ -293,6 +347,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
     }
 
+    // Clear current music
     await prisma.chatRoom.update({
       where: { id: params.roomId },
       data: {
@@ -303,8 +358,11 @@ export async function DELETE(
       }
     })
 
+    // Auto-advance: play next song from queue
+    const playedNext = await playNextFromQueue(params.roomId)
+
     await emitDjUpdate(params.roomId)
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, autoAdvanced: playedNext })
   } catch (error) {
     console.error('Stop music error:', error)
     return NextResponse.json({ error: 'Müzik durdurulamadı' }, { status: 500 })

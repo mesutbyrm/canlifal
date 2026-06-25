@@ -4,8 +4,14 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getUserPermissions, ROLE_HIERARCHY, ChatRole } from '@/lib/chat-permissions'
+import { emitChatEvent } from '@/lib/chat-events'
 
 export const dynamic = 'force-dynamic'
+
+// In-memory kick warning counter: userId -> { roomId -> count }
+const kickWarnings = new Map<string, Map<string, { count: number; lastKick: number }>>()
+const KICK_WARNING_RESET_MS = 30 * 60 * 1000 // 30 minutes
+const MAX_KICKS_BEFORE_BAN = 3
 
 // POST - Perform moderation action
 export async function POST(
@@ -23,7 +29,7 @@ export async function POST(
     }
 
     const { roomId } = await params
-    const { action, targetUserId, role, reason, duration } = await request.json()
+    const { action, targetUserId, role, reason, duration, message: announcementMessage, ttl } = await request.json()
 
     const permissions = await getUserPermissions(roomId, authUser.id)
     const actorRoleLevel = ROLE_HIERARCHY[permissions.role]
@@ -103,6 +109,19 @@ export async function POST(
           }
         })
 
+        // SSE: mute notification
+        const mutedUser = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: { name: true, username: true }
+        })
+        emitChatEvent(roomId, 'system', {
+          event: 'USER_MUTED',
+          userId: targetUserId,
+          userName: mutedUser?.name || mutedUser?.username || 'Kullanıcı',
+          duration: duration || null,
+          moderator: authUser.name || 'Moderatör'
+        })
+
         return NextResponse.json({ success: true, message: 'User muted' })
       }
 
@@ -115,6 +134,13 @@ export async function POST(
           where: { roomId, userId: targetUserId }
         })
 
+        // SSE: unmute notification
+        emitChatEvent(roomId, 'system', {
+          event: 'USER_UNMUTED',
+          userId: targetUserId,
+          moderator: authUser.name || 'Moderatör'
+        })
+
         return NextResponse.json({ success: true, message: 'User unmuted' })
       }
 
@@ -123,12 +149,71 @@ export async function POST(
           return NextResponse.json({ error: 'No permission to kick users' }, { status: 403 })
         }
 
+        // Kick warning counter (3 strikes → auto-ban)
+        let userKicks = kickWarnings.get(targetUserId)
+        if (!userKicks) {
+          userKicks = new Map()
+          kickWarnings.set(targetUserId, userKicks)
+        }
+        const roomKick = userKicks.get(roomId) || { count: 0, lastKick: 0 }
+        // Reset if too old
+        if (Date.now() - roomKick.lastKick > KICK_WARNING_RESET_MS) {
+          roomKick.count = 0
+        }
+        roomKick.count++
+        roomKick.lastKick = Date.now()
+        userKicks.set(roomId, roomKick)
+
         // Remove user presence
         await prisma.chatPresence.deleteMany({
           where: { roomId, userId: targetUserId }
         })
 
-        return NextResponse.json({ success: true, message: 'User kicked' })
+        // Get target user name
+        const kickedUser = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: { name: true, username: true }
+        })
+        const kickedName = kickedUser?.name || kickedUser?.username || 'Kullanıcı'
+
+        // 3 strikes → auto-ban
+        if (roomKick.count >= MAX_KICKS_BEFORE_BAN) {
+          await prisma.chatBan.upsert({
+            where: { roomId_userId: { roomId, userId: targetUserId } },
+            update: { bannedBy: authUser.id, reason: `${MAX_KICKS_BEFORE_BAN} kez atıldı (otomatik ban)` },
+            create: {
+              roomId,
+              userId: targetUserId,
+              bannedBy: authUser.id,
+              reason: `${MAX_KICKS_BEFORE_BAN} kez atıldı (otomatik ban)`
+            }
+          })
+          // Reset counter
+          userKicks.delete(roomId)
+          
+          // SSE: ban notification
+          emitChatEvent(roomId, 'system', {
+            event: 'USER_BANNED',
+            userId: targetUserId,
+            userName: kickedName,
+            reason: `${MAX_KICKS_BEFORE_BAN} kez atıldı (otomatik ban)`,
+            moderator: authUser.name || 'Moderatör'
+          })
+
+          return NextResponse.json({ success: true, message: 'User auto-banned after 3 kicks', autoBanned: true, kickCount: roomKick.count })
+        }
+
+        // SSE: kick notification
+        emitChatEvent(roomId, 'system', {
+          event: 'USER_KICKED',
+          userId: targetUserId,
+          userName: kickedName,
+          reason: reason || '',
+          kickCount: roomKick.count,
+          moderator: authUser.name || 'Moderatör'
+        })
+
+        return NextResponse.json({ success: true, message: 'User kicked', kickCount: roomKick.count })
       }
 
       case 'ban_user': {
@@ -153,6 +238,19 @@ export async function POST(
         // Also remove presence
         await prisma.chatPresence.deleteMany({
           where: { roomId, userId: targetUserId }
+        })
+
+        // SSE: ban notification
+        const bannedUser = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: { name: true, username: true }
+        })
+        emitChatEvent(roomId, 'system', {
+          event: 'USER_BANNED',
+          userId: targetUserId,
+          userName: bannedUser?.name || bannedUser?.username || 'Kullanıcı',
+          reason: reason || '',
+          moderator: authUser.name || 'Moderatör'
         })
 
         return NextResponse.json({ success: true, message: 'User banned' })
@@ -180,6 +278,12 @@ export async function POST(
           data: { isMuted: true }
         })
 
+        // SSE: room mute notification
+        emitChatEvent(roomId, 'system', {
+          event: 'ROOM_MUTED',
+          moderator: authUser.name || 'Moderatör'
+        })
+
         return NextResponse.json({ success: true, message: 'Room muted' })
       }
 
@@ -191,6 +295,12 @@ export async function POST(
         await prisma.chatRoom.update({
           where: { id: roomId },
           data: { isMuted: false }
+        })
+
+        // SSE: room unmute notification
+        emitChatEvent(roomId, 'system', {
+          event: 'ROOM_UNMUTED',
+          moderator: authUser.name || 'Moderatör'
         })
 
         return NextResponse.json({ success: true, message: 'Room unmuted' })
@@ -260,6 +370,12 @@ export async function POST(
           where: { roomId }
         })
 
+        // SSE: clear chat notification
+        emitChatEvent(roomId, 'system', {
+          event: 'CHAT_CLEARED',
+          moderator: authUser.name || 'Moderatör'
+        })
+
         return NextResponse.json({ success: true, message: 'Messages cleared' })
       }
 
@@ -303,6 +419,41 @@ export async function POST(
         })
 
         return NextResponse.json({ success: true, message: 'Room owner removed' })
+      }
+
+      case 'announce': {
+        // !duyuru - Announcement (pinned message with TTL)
+        // Requires at least op role
+        if (ROLE_HIERARCHY[permissions.role] < ROLE_HIERARCHY.op && !permissions.isGlobalAdmin) {
+          return NextResponse.json({ error: 'No permission to make announcements' }, { status: 403 })
+        }
+
+        const annText = announcementMessage || reason || ''
+        const annTtl = ttl || duration || 15
+
+        if (!annText) {
+          return NextResponse.json({ error: 'Duyuru metni gerekiyor' }, { status: 400 })
+        }
+
+        // Create system message for announcement
+        await prisma.chatMessage.create({
+          data: {
+            roomId,
+            userId: authUser.id,
+            content: `[ANNOUNCEMENT]${annText}`,
+          }
+        })
+
+        // SSE: announcement event
+        emitChatEvent(roomId, 'system', {
+          event: 'ANNOUNCEMENT',
+          text: annText,
+          ttl: annTtl, // seconds
+          moderator: authUser.name || 'Moderatör',
+          timestamp: Date.now()
+        })
+
+        return NextResponse.json({ success: true, message: 'Announcement sent', ttl: annTtl })
       }
 
       default:
