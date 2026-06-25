@@ -84,6 +84,8 @@ gate_3_user_login() {
     -d "{\"email\":\"${ACCEPTANCE_USER_EMAIL}\",\"password\":\"${ACCEPTANCE_USER_PASSWORD}\"}")
 
   USER_TOKEN=$(extract_json_field "$LOGIN_RESPONSE" "accessToken")
+  echo "DEBUG LOGIN RESPONSE: $LOGIN_RESPONSE"
+  echo "DEBUG USER TOKEN: $USER_TOKEN"
 
   if [[ -z "$USER_TOKEN" ]]; then
     echo "  Response: $LOGIN_RESPONSE"
@@ -103,6 +105,8 @@ gate_4_admin_login() {
     -d "{\"email\":\"${ACCEPTANCE_ADMIN_EMAIL}\",\"password\":\"${ACCEPTANCE_ADMIN_PASSWORD}\"}")
 
   ADMIN_TOKEN=$(extract_json_field "$ADMIN_RESPONSE" "accessToken")
+  echo "DEBUG ADMIN RESPONSE: $ADMIN_RESPONSE"
+  echo "DEBUG ADMIN TOKEN: $ADMIN_TOKEN"
 
   if [[ -z "$ADMIN_TOKEN" ]]; then
     echo "  Response: $ADMIN_RESPONSE"
