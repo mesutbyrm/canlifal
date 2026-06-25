@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
+echo "DEBUG: API_BASE_URL=${API_BASE_URL:-EMPTY}"
+echo "DEBUG: USER_EMAIL=${ACCEPTANCE_USER_EMAIL:-EMPTY}"
+echo "DEBUG: ADMIN_EMAIL=${ACCEPTANCE_ADMIN_EMAIL:-EMPTY}"
 # CanlıFal – API Release Gate (Acceptance Tests)
 # ============================================================
 # Runs against the live deployment before merging to main.
@@ -41,11 +44,20 @@ run_gate() {
 
 extract_json_field() {
   # Usage: extract_json_field <json_string> <field_name>
-  echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | cut -d'"' -f4
+  # grep -o can fail (exit 1) under set -e if no match, so use || true
+  local match
+  match=$(echo "$1" | grep -o "\"$2\":\"[^\"]*\"" 2>/dev/null | head -1) || true
+  if [[ -n "$match" ]]; then
+    echo "$match" | cut -d'"' -f4
+  fi
 }
 
 extract_json_number() {
-  echo "$1" | grep -o "\"$2\":[0-9]*" | head -1 | cut -d':' -f2
+  local match
+  match=$(echo "$1" | grep -o "\"$2\":[0-9]*" 2>/dev/null | head -1) || true
+  if [[ -n "$match" ]]; then
+    echo "$match" | cut -d':' -f2
+  fi
 }
 
 # ── Gate 1: Health check ─────────────────────────────────────
@@ -81,6 +93,8 @@ gate_3_user_login() {
     -d "{\"email\":\"${ACCEPTANCE_USER_EMAIL}\",\"password\":\"${ACCEPTANCE_USER_PASSWORD}\"}")
 
   USER_TOKEN=$(extract_json_field "$LOGIN_RESPONSE" "accessToken")
+  echo "DEBUG LOGIN RESPONSE: $LOGIN_RESPONSE"
+  echo "DEBUG USER TOKEN: $USER_TOKEN"
 
   if [[ -z "$USER_TOKEN" ]]; then
     echo "  Response: $LOGIN_RESPONSE"
@@ -100,6 +114,8 @@ gate_4_admin_login() {
     -d "{\"email\":\"${ACCEPTANCE_ADMIN_EMAIL}\",\"password\":\"${ACCEPTANCE_ADMIN_PASSWORD}\"}")
 
   ADMIN_TOKEN=$(extract_json_field "$ADMIN_RESPONSE" "accessToken")
+  echo "DEBUG ADMIN RESPONSE: $ADMIN_RESPONSE"
+  echo "DEBUG ADMIN TOKEN: $ADMIN_TOKEN"
 
   if [[ -z "$ADMIN_TOKEN" ]]; then
     echo "  Response: $ADMIN_RESPONSE"

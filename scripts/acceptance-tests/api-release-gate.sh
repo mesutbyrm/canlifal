@@ -44,11 +44,20 @@ run_gate() {
 
 extract_json_field() {
   # Usage: extract_json_field <json_string> <field_name>
-  echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | cut -d'"' -f4
+  # grep -o can fail (exit 1) under set -e if no match, so use || true
+  local match
+  match=$(echo "$1" | grep -o "\"$2\":\"[^\"]*\"" 2>/dev/null | head -1) || true
+  if [[ -n "$match" ]]; then
+    echo "$match" | cut -d'"' -f4
+  fi
 }
 
 extract_json_number() {
-  echo "$1" | grep -o "\"$2\":[0-9]*" | head -1 | cut -d':' -f2
+  local match
+  match=$(echo "$1" | grep -o "\"$2\":[0-9]*" 2>/dev/null | head -1) || true
+  if [[ -n "$match" ]]; then
+    echo "$match" | cut -d':' -f2
+  fi
 }
 
 # ── Gate 1: Health check ─────────────────────────────────────
