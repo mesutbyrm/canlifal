@@ -98,15 +98,20 @@ export async function GET(
 }
 
 // Helper to check user's special role for entry announcement
-async function getUserSpecialRole(roomId: string, userId: string): Promise<{ role: string | null; isSpecial: boolean; entryType: string | null }> {
+async function getUserSpecialRole(roomId: string, userId: string): Promise<{ role: string | null; isSpecial: boolean; entryType: string | null; roleSymbol: string; membership: string | null }> {
   // Check if site admin
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, name: true }
+    select: { role: true, name: true, membership: true }
   })
   
+  const membership = user?.membership || null
+  
   if (user?.role === 'admin') {
-    return { role: 'admin', isSpecial: true, entryType: 'ADMIN' }
+    return { role: 'admin', isSpecial: true, entryType: 'ADMIN', roleSymbol: '%', membership }
+  }
+  if (user?.role === 'yonetici') {
+    return { role: 'yonetici', isSpecial: true, entryType: 'ADMIN', roleSymbol: '%', membership }
   }
   
   // Check if room owner
@@ -116,7 +121,7 @@ async function getUserSpecialRole(roomId: string, userId: string): Promise<{ rol
   })
   
   if (room?.ownerId === userId) {
-    return { role: 'owner', isSpecial: true, entryType: 'OWNER' }
+    return { role: 'owner', isSpecial: true, entryType: 'OWNER', roleSymbol: '👑', membership }
   }
   
   // Check chat role
@@ -126,19 +131,29 @@ async function getUserSpecialRole(roomId: string, userId: string): Promise<{ rol
   })
   
   if (chatRole?.role === 'superadmin') {
-    return { role: 'superadmin', isSpecial: true, entryType: 'SUPERADMIN' }
+    return { role: 'superadmin', isSpecial: true, entryType: 'SUPERADMIN', roleSymbol: '%', membership }
   }
   if (chatRole?.role === 'founder') {
-    return { role: 'founder', isSpecial: true, entryType: 'FOUNDER' }
+    return { role: 'founder', isSpecial: true, entryType: 'FOUNDER', roleSymbol: '~', membership }
   }
   if (chatRole?.role === 'sop' || chatRole?.role === 'admin') {
-    return { role: 'sop', isSpecial: true, entryType: 'MODERATOR' }
+    return { role: 'sop', isSpecial: true, entryType: 'MODERATOR', roleSymbol: '&', membership }
   }
   if (chatRole?.role === 'op') {
-    return { role: 'op', isSpecial: true, entryType: 'OP' }
+    return { role: 'op', isSpecial: true, entryType: 'OP', roleSymbol: '@', membership }
   }
   
-  return { role: null, isSpecial: false, entryType: null }
+  // Check membership (Gold members)
+  if (membership && ['diamond', 'gold', 'premium'].includes(membership)) {
+    const memberLabels: Record<string, string> = {
+      diamond: 'DIAMOND',
+      gold: 'GOLD', 
+      premium: 'PREMIUM',
+    }
+    return { role: null, isSpecial: true, entryType: memberLabels[membership] || null, roleSymbol: '', membership }
+  }
+  
+  return { role: null, isSpecial: false, entryType: null, roleSymbol: '', membership }
 }
 
 // POST to update user presence (heartbeat) or remove presence (with ?_delete=1 via sendBeacon)
@@ -352,10 +367,11 @@ export async function POST(
           }
         })
         
-        // Create entry system message
+        // Create entry system message with roleSymbol prefix
+        const prefixedName = specialRole.roleSymbol ? `${specialRole.roleSymbol}${displayName}` : displayName
         let systemContent = `[SYSTEM_JOIN]${displayName}`
         if (specialRole.isSpecial && specialRole.entryType) {
-          systemContent = `[SYSTEM_VIP_JOIN:${specialRole.entryType}]${displayName}`
+          systemContent = `[SYSTEM_VIP_JOIN:${specialRole.entryType}]${prefixedName}`
         }
         
         await prisma.chatMessage.create({

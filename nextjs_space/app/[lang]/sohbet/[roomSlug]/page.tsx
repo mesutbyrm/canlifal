@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import type { TRTC } from '@/lib/trtc-client'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2 } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2, Eye } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
 import dynamic from 'next/dynamic'
@@ -225,6 +225,7 @@ export default function ChatRoomPage() {
   const [currentMusicVideoId, setCurrentMusicVideoId] = useState<string | null>(null)
   const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
   const [currentMusicDuration, setCurrentMusicDuration] = useState<string | null>(null)
+  const [currentMusicRequestType, setCurrentMusicRequestType] = useState<string>('audio')
   const [musicMuted, setMusicMuted] = useState(false)
   const [musicPaused, setMusicPaused] = useState(false)
   const musicTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -248,11 +249,16 @@ export default function ChatRoomPage() {
   const [songRequestNote, setSongRequestNote] = useState('')
   const [songRequestSending, setSongRequestSending] = useState(false)
   const songRequestSearchTimeout = useRef<NodeJS.Timeout | null>(null)
-  const [musicQueue, setMusicQueue] = useState<Array<{id: string; videoId: string; title: string; dedication?: string; note?: string; isPaid: boolean; requestedBy: string}>>([])
+  const [musicQueue, setMusicQueue] = useState<Array<{id: string; videoId: string; title: string; dedication?: string; note?: string; duration?: string; requestType?: string; isPaid: boolean; requestedBy: string; userName?: string}>>([])
   const musicQueueProcessingRef = useRef(false)
   
   // Commands panel
   const [showCommandsPanel, setShowCommandsPanel] = useState(false)
+  const [commandSubPanel, setCommandSubPanel] = useState<string | null>(null) // 'duyuru' | 'kick' | 'ban' | 'unban' | null
+  const [duyuruText, setDuyuruText] = useState('')
+  const [pinnedDuyuru, setPinnedDuyuru] = useState<string | null>(null)
+  const pinnedDuyuruTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const kickCountsRef = useRef<Map<string, number>>(new Map())
   
   // Transfer ownership
   const [showTransferModal, setShowTransferModal] = useState(false)
@@ -723,6 +729,7 @@ export default function ChatRoomPage() {
           setCurrentMusicVideoId(data.videoId || null)
           setCurrentMusicTitle(data.title || null)
           setCurrentMusicDuration(data.duration || null)
+          setCurrentMusicRequestType(data.requestType || 'audio')
         }
       } catch {}
     }
@@ -855,6 +862,7 @@ export default function ChatRoomPage() {
                 setCurrentMusicVideoId(mData.videoId || null)
                 setCurrentMusicTitle(mData.title || null)
                 setCurrentMusicDuration(mData.duration || null)
+                setCurrentMusicRequestType(mData.requestType || 'audio')
               }
               setMusicPaused(false)
             } catch {} finally {
@@ -923,6 +931,7 @@ export default function ChatRoomPage() {
                 setCurrentMusicVideoId(mData.videoId || null)
                 setCurrentMusicTitle(mData.title || null)
                 setCurrentMusicDuration(mData.duration || null)
+                setCurrentMusicRequestType(mData.requestType || 'audio')
                 setMusicPaused(false)
               }
             } catch {}
@@ -957,6 +966,38 @@ export default function ChatRoomPage() {
     musicPausedAtRef.current = 0
     musicStartTimeRef.current = currentMusicVideoId ? Date.now() : null
   }, [currentMusicVideoId])
+
+  // ── Skip to next song ──
+  const handleSkipToNext = async () => {
+    if (!room) return
+    try {
+      const qRes = await fetch(`/api/chat/rooms/${room.id}/song-request`)
+      if (qRes.ok) {
+        const qData = await qRes.json()
+        const freshQueue = qData.queue || []
+        if (freshQueue.length > 0) {
+          const next = freshQueue[0]
+          await fetch(`/api/chat/rooms/${room.id}/song-request`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestId: next.id })
+          })
+          musicPausedAtRef.current = 0
+          const mRes = await fetch(`/api/chat/rooms/${room.id}/music`)
+          if (mRes.ok) {
+            const mData = await mRes.json()
+            setCurrentMusicVideoId(mData.videoId || null)
+            setCurrentMusicTitle(mData.title || null)
+            setCurrentMusicDuration(mData.duration || null)
+            setCurrentMusicRequestType(mData.requestType || 'audio')
+            setMusicPaused(false)
+          }
+        } else {
+          await handleStopMusic()
+        }
+      }
+    } catch {}
+  }
 
   // ── Music stop handler ──
   const handleStopMusic = async () => {
@@ -1453,12 +1494,12 @@ export default function ChatRoomPage() {
     }
 
     if (cmd === '!temizle' && canMod) {
-      // Clear all messages
+      // Clear all messages with green flash animation
       try {
         await fetch(`/api/chat/rooms/${room.id}/messages`, { method: 'DELETE' })
         fetchMessages()
-        setCommandFlash('💫 Sohbet temizlendi')
-        setTimeout(() => setCommandFlash(null), 3000)
+        setCommandFlash('__TEMIZLE__')
+        setTimeout(() => setCommandFlash(null), 3500)
       } catch {}
       return true
     }
@@ -1569,7 +1610,7 @@ export default function ChatRoomPage() {
     }
 
     if (cmd === '!duyuru' && arg && canMod) {
-      // Set announcement
+      // Set announcement - pin for 15 seconds
       try {
         await fetch(`/api/chat/rooms/${room.id}/messages`, {
           method: 'POST',
@@ -1577,8 +1618,10 @@ export default function ChatRoomPage() {
           body: JSON.stringify({ content: `📢 [DUYURU] ${arg}` })
         })
         fetchMessages()
-        setCommandFlash(`📢 Duyuru yayınlandı`)
-        setTimeout(() => setCommandFlash(null), 3000)
+        // Pin the announcement
+        if (pinnedDuyuruTimerRef.current) clearTimeout(pinnedDuyuruTimerRef.current)
+        setPinnedDuyuru(arg)
+        pinnedDuyuruTimerRef.current = setTimeout(() => setPinnedDuyuru(null), 15000)
       } catch {}
       return true
     }
@@ -3050,14 +3093,53 @@ export default function ChatRoomPage() {
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {/* Sesi Aç/Kapat */}
+                      {/* Hediye At */}
+                      <button
+                        onClick={() => { openGiftModal(userActionTarget); setUserActionTarget(null) }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 text-amber-300 transition-all text-[10px]"
+                      >
+                        <Gift className="w-4 h-4" />
+                        Hediye At
+                      </button>
+                      {/* +v Ses Ver */}
+                      {!voiceUsers.some(vu => vu.id === userActionTarget.id) && myPermissions?.canGiveVoice && (
+                        <button
+                          onClick={() => { performModAction('set_role', userActionTarget.id, { role: 'voice' }); setUserActionTarget(null) }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 border border-green-500/20 text-green-300 transition-all text-[10px]"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                          +v Ses Ver
+                        </button>
+                      )}
+                      {/* Yetki Ver (@ veya &) */}
+                      {(myPermissions?.canGiveOp || myPermissions?.canGiveSop) && (
+                        <button
+                          onClick={() => {
+                            const roles: {key: string; label: string; symbol: string}[] = []
+                            if (myPermissions?.canGiveOp) roles.push({ key: 'op', label: '@Operatör', symbol: '@' })
+                            if (myPermissions?.canGiveSop) roles.push({ key: 'sop', label: '&Moderatör', symbol: '&' })
+                            if (myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin) roles.push({ key: 'founder', label: '~Kurucu', symbol: '~' })
+                            const choice = prompt(`Yetki seç:\n${roles.map(r => `${r.symbol} = ${r.label}`).join('\n')}\n\nŞu anki: ${userActionTarget.chatRole || 'yok'}`)
+                            if (!choice) return
+                            const role = roles.find(r => r.symbol === choice || r.key === choice)
+                            if (!role) { alert('Geçersiz seçim'); return }
+                            performModAction('set_role', userActionTarget.id, { role: role.key })
+                            setUserActionTarget(null)
+                          }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/20 text-purple-300 transition-all text-[10px]"
+                        >
+                          <Shield className="w-4 h-4" />
+                          Yetki Ver
+                        </button>
+                      )}
+                      {/* Sesi Kapat / Sesi Aç */}
                       {voiceUsers.some(vu => vu.id === userActionTarget.id) ? (
                         <button
                           onClick={() => { performModAction('mute_user', userActionTarget.id, { duration: 30 }); setUserActionTarget(null) }}
                           className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/20 text-yellow-300 transition-all text-[10px]"
                         >
                           <VolumeX className="w-4 h-4" />
-                          Sessize Al
+                          Sesi Kapat
                         </button>
                       ) : (
                         <button
@@ -3068,78 +3150,124 @@ export default function ChatRoomPage() {
                           Sesi Aç
                         </button>
                       )}
-                      {/* Yer Değiştir */}
+                      {/* Koltuğa Al / İndir */}
+                      {userActionTarget.seatIndex >= 0 ? (
+                        <button
+                          onClick={() => { handleAssignSeat(userActionTarget.id, -1); setUserActionTarget(null) }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/20 text-orange-300 transition-all text-[10px]"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                          İndir
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            const emptySeat = Array.from({length: 15}, (_, i) => i).find(i => !activeUsers.some(u => u.seatIndex === i))
+                            if (emptySeat !== undefined) { handleAssignSeat(userActionTarget.id, emptySeat); setUserActionTarget(null) }
+                            else alert('Boş koltuk yok')
+                          }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/20 text-blue-300 transition-all text-[10px]"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                          Koltuğa Al
+                        </button>
+                      )}
+                      {/* DJ Yap / DJ'den Çıkar */}
+                      {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin) && (
+                        djUsers.some(dj => dj.id === userActionTarget.id) ? (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await fetch(`/api/chat/rooms/${room.id}/dj`, {
+                                  method: 'DELETE',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ userId: userActionTarget.id })
+                                })
+                              } catch {}
+                              setUserActionTarget(null)
+                            }}
+                            className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-gray-500/15 hover:bg-gray-500/25 border border-gray-500/20 text-gray-300 transition-all text-[10px]"
+                          >
+                            <Music className="w-4 h-4" />
+                            DJ&apos;den Çıkar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await fetch(`/api/chat/rooms/${room.id}/dj`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ userId: userActionTarget.id })
+                                })
+                              } catch {}
+                              setUserActionTarget(null)
+                            }}
+                            className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/20 text-cyan-300 transition-all text-[10px]"
+                          >
+                            <Music className="w-4 h-4" />
+                            DJ Yap
+                          </button>
+                        )
+                      )}
+                      {/* Odayı Devret */}
+                      {myPermissions?.isRoomOwner && (
+                        <button
+                          onClick={() => {
+                            setTransferTargetId(userActionTarget.id)
+                            setShowTransferModal(true)
+                            setUserActionTarget(null)
+                          }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 text-amber-300 transition-all text-[10px]"
+                        >
+                          <ArrowRightLeft className="w-4 h-4" />
+                          Odayı Devret
+                        </button>
+                      )}
+                      {/* Mic Aç/Kapat */}
                       <button
-                        onClick={() => {
-                          const otherSeated = activeUsers.filter(u => u.seatIndex >= 0 && u.id !== userActionTarget.id && u.id !== session?.user?.id)
-                          if (otherSeated.length === 0) { alert('Yer değiştirecek başka kullanıcı yok'); return }
-                          const targetName = prompt(`Yer değiştirilecek kullanıcı adı:\n${otherSeated.map(u => u.nickname || u.name).join(', ')}`)
-                          if (!targetName) return
-                          const target = otherSeated.find(u => (u.nickname || u.name || '').toLowerCase() === targetName.toLowerCase())
-                          if (!target) { alert('Kullanıcı bulunamadı'); return }
-                          // Swap seats
-                          const tempSeat = userActionTarget.seatIndex
-                          handleAssignSeat(userActionTarget.id, target.seatIndex)
-                          setTimeout(() => handleAssignSeat(target.id, tempSeat), 300)
-                          setUserActionTarget(null)
-                        }}
-                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/20 text-blue-300 transition-all text-[10px]"
+                        onClick={() => { performModAction('mute_user', userActionTarget.id, { duration: 30 }); setUserActionTarget(null) }}
+                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/20 text-indigo-300 transition-all text-[10px]"
                       >
-                        <ArrowRightLeft className="w-4 h-4" />
-                        Yer Değiştir
+                        <MicOff className="w-4 h-4" />
+                        Mic Kapat
                       </button>
-                      {/* Kanaldan At */}
-                      <button
-                        onClick={() => { 
-                          if (confirm(`${userActionTarget.nickname || userActionTarget.name} kanaldan atılsın mı?`)) {
+                      {/* Kanaldan At (Kick) */}
+                      {myPermissions?.canKickUsers && (
+                        <button
+                          onClick={() => { 
                             performModAction('kick_user', userActionTarget.id)
                             setUserActionTarget(null)
-                          }
-                        }}
-                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-300 transition-all text-[10px]"
-                      >
-                        <UserMinus className="w-4 h-4" />
-                        Kanaldan At
-                      </button>
-                      {/* Engelle/Ban */}
-                      <button
-                        onClick={() => { 
-                          if (confirm(`${userActionTarget.nickname || userActionTarget.name} engellensin mi?`)) {
+                          }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-300 transition-all text-[10px]"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                          Kick
+                        </button>
+                      )}
+                      {/* Banla */}
+                      {myPermissions?.canBanUsers && (
+                        <button
+                          onClick={() => { 
                             performModAction('ban_user', userActionTarget.id)
                             setUserActionTarget(null)
-                          }
-                        }}
-                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-300 transition-all text-[10px]"
-                      >
-                        <Ban className="w-4 h-4" />
-                        Engelle
-                      </button>
-                      {/* Yetki Ver */}
-                      <button
-                        onClick={() => {
-                          const roles = ['voice', 'op', 'sop', 'founder'].filter(r => {
-                            if (r === 'founder' && !myPermissions?.isRoomOwner && !myPermissions?.isGlobalAdmin) return false
-                            if (r === 'sop' && !myPermissions?.canGiveSop) return false
-                            return true
-                          })
-                          const choice = prompt(`Yetki seç:\n${roles.join(', ')}\n\nŞu anki: ${userActionTarget.chatRole || 'yok'}`)
-                          if (!choice || !roles.includes(choice)) return
-                          performModAction('set_role', userActionTarget.id, { role: choice })
-                          setUserActionTarget(null)
-                        }}
-                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/20 text-purple-300 transition-all text-[10px]"
-                      >
-                        <Shield className="w-4 h-4" />
-                        Yetki Ver
-                      </button>
-                      {/* Hediye */}
-                      <button
-                        onClick={() => { openGiftModal(userActionTarget); setUserActionTarget(null) }}
-                        className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 text-amber-300 transition-all text-[10px]"
-                      >
-                        <Gift className="w-4 h-4" />
-                        Hediye
-                      </button>
+                          }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 text-red-300 transition-all text-[10px]"
+                        >
+                          <Ban className="w-4 h-4" />
+                          Banla
+                        </button>
+                      )}
+                      {/* Sessize Al */}
+                      {myPermissions?.canMuteUsers && (
+                        <button
+                          onClick={() => { performModAction('mute_user', userActionTarget.id, { duration: 999 }); setUserActionTarget(null) }}
+                          className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/20 text-orange-300 transition-all text-[10px]"
+                        >
+                          <VolumeX className="w-4 h-4" />
+                          Sessize Al
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -3243,26 +3371,7 @@ export default function ChatRoomPage() {
         {/* ── Chat Room Marquee (scrolling text below duyuru) ── */}
         <ChatRoomMarquee joinEvents={marqueeJoinEvents} />
 
-        {/* ── Music Icon (under announcement) ── */}
-        {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || canPlayMusic) && (
-          <div className="relative z-10 mx-3 mb-2 flex items-center gap-2">
-            <button
-              onClick={() => setShowMusicModal(true)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all border ${isCanlidark ? 'bg-gradient-to-r from-purple-600/40 to-fuchsia-600/40 border-purple-400/30 text-purple-200 hover:from-purple-600/60 hover:to-fuchsia-600/60' : 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 border-purple-500/30 text-purple-300 hover:from-purple-600/50 hover:to-pink-600/50'}`}
-            >
-              <span className="text-base">🎵</span> Müzik Aç
-            </button>
-            {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin) && (
-              <button
-                onClick={() => setShowDjPanel(true)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs transition-all border ${isCanlidark ? 'bg-gradient-to-r from-fuchsia-600/40 to-pink-600/40 border-fuchsia-400/30 text-fuchsia-200 hover:from-fuchsia-600/60 hover:to-pink-600/60' : 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-500/30 text-cyan-300 hover:from-cyan-600/50 hover:to-blue-600/50'}`}
-                title="DJ Yönetimi"
-              >
-                🎧 DJ ({djUsers.length}/5)
-              </button>
-            )}
-          </div>
-        )}
+        {/* Music and DJ buttons removed — accessible from Çark/Ayarlar menu */}
 
         {/* ── Floating Music Player Bar (visible to everyone when music is playing) ── */}
         {currentMusicVideoId && currentMusicTitle && (
@@ -3334,14 +3443,35 @@ export default function ChatRoomPage() {
           </div>
         )}
 
-        {/* ── Command Flash Overlay ── */}
-        {commandFlash && (
-          <div className="relative z-20 mx-3 mb-2 animate-pulse">
-            <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/30 to-yellow-500/20 border border-yellow-500/40 rounded-lg px-4 py-2 text-center">
-              <span className="text-yellow-300 text-sm font-bold drop-shadow-lg">{commandFlash}</span>
+        {/* ── Pinned Duyuru (15 seconds) ── */}
+        {pinnedDuyuru && (
+          <div className="relative z-20 mx-3 mb-2">
+            <div className="bg-gradient-to-r from-blue-600/40 via-indigo-600/50 to-blue-600/40 border border-blue-400/50 rounded-lg px-4 py-2.5 text-center shadow-lg shadow-blue-500/20">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-blue-200 text-lg">📢</span>
+                <span className="text-white text-sm font-bold drop-shadow-lg">{pinnedDuyuru}</span>
+              </div>
+              <div className="mt-1 h-0.5 bg-blue-300/20 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-400/60 rounded-full" style={{ animation: 'shrinkBar 15s linear forwards' }} />
+              </div>
             </div>
           </div>
         )}
+
+        {/* ── Command Flash Overlay ── */}
+        {commandFlash && commandFlash === '__TEMIZLE__' ? (
+          <div className="relative z-20 mx-3 mb-2" style={{ animation: 'temizleBlink 0.5s ease-in-out 3' }}>
+            <div className="bg-green-500/30 border border-green-400/50 rounded-lg px-4 py-3 text-center backdrop-blur-sm">
+              <span className="text-white text-sm font-bold drop-shadow-lg">💫 Sohbet temizlendi</span>
+            </div>
+          </div>
+        ) : commandFlash ? (
+          <div className="relative z-20 mx-3 mb-2 animate-pulse">
+            <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/30 to-yellow-500/20 border border-yellow-500/40 rounded-lg px-4 py-2 text-center">
+              <span className="text-yellow-300 text-sm font-bold drop-shadow-lg whitespace-pre-line">{commandFlash}</span>
+            </div>
+          </div>
+        ) : null}
 
         {/* ── Song Request Flash (for authorized users) ── */}
         {messages.length > 0 && (() => {
@@ -3473,10 +3603,14 @@ export default function ChatRoomPage() {
                 if (isSystemMessage) {
                   const vipLabels: Record<string, { label: string; icon: string; color: string }> = {
                     'ADMIN': { label: '👑 Site Yöneticisi', icon: '👑', color: 'text-red-400' },
+                    'SUPERADMIN': { label: '👑 Site Yöneticisi', icon: '👑', color: 'text-red-400' },
                     'OWNER': { label: '🏠 Oda Sahibi', icon: '🏠', color: 'text-yellow-400' },
-                    'FOUNDER': { label: '⭐ Kurucu', icon: '⭐', color: 'text-red-400' },
-                    'MODERATOR': { label: '🛡️ Moderatör', icon: '🛡️', color: 'text-orange-400' },
-                    'OP': { label: '✨ Operatör', icon: '✨', color: 'text-green-400' },
+                    'FOUNDER': { label: '~Kurucu', icon: '~', color: 'text-red-400' },
+                    'MODERATOR': { label: '&Moderatör', icon: '&', color: 'text-orange-400' },
+                    'OP': { label: '@Operatör', icon: '@', color: 'text-green-400' },
+                    'DIAMOND': { label: '💎 Diamond Üye', icon: '💎', color: 'text-cyan-300' },
+                    'GOLD': { label: '🏅 Gold Üye', icon: '🏅', color: 'text-yellow-300' },
+                    'PREMIUM': { label: '⭐ Premium Üye', icon: '⭐', color: 'text-purple-300' },
                   }
                   
                   if (isSystemLeave) {
@@ -3489,11 +3623,25 @@ export default function ChatRoomPage() {
                   
                   if (isVipJoin && vipType && vipLabels[vipType]) {
                     const vipInfo = vipLabels[vipType]
+                    const isMembership = ['DIAMOND', 'GOLD', 'PREMIUM'].includes(vipType)
+                    const bgClass = isMembership 
+                      ? (vipType === 'DIAMOND' ? 'bg-cyan-500/20 border-cyan-500/30' : vipType === 'GOLD' ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-purple-500/20 border-purple-500/30')
+                      : 'bg-yellow-500/20 border-yellow-500/30'
                     return (
                       <motion.div key={msg.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="py-0.5">
-                        <span className="bg-yellow-500/20 backdrop-blur-sm text-[11px] px-2 py-0.5 rounded-full inline-block border border-yellow-500/30">
-                          <span className={vipInfo.color}>{vipInfo.icon} <span className="font-bold">{joinName}</span></span>
-                          <span className="text-white/50 ml-1">odaya giriş yaptı</span>
+                        <span className={`${bgClass} backdrop-blur-sm text-[11px] px-2 py-0.5 rounded-full inline-block border`}>
+                          {isMembership ? (
+                            <>
+                              <span className={vipInfo.color}>{vipInfo.label}</span>
+                              <span className="text-white/80 font-bold ml-1">{joinName}</span>
+                              <span className="text-white/50 ml-1">odaya giriş yaptı</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className={vipInfo.color}>{vipInfo.icon} <span className="font-bold">{joinName}</span></span>
+                              <span className="text-white/50 ml-1">odaya giriş yaptı</span>
+                            </>
+                          )}
                         </span>
                       </motion.div>
                     )
@@ -4323,7 +4471,7 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Commands Panel (right side slide-out for authorized users) ── */}
+      {/* ── Commands Panel (right side slide-out) ── */}
       <AnimatePresence>
         {showCommandsPanel && (
           <motion.div
@@ -4331,7 +4479,7 @@ export default function ChatRoomPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm"
-            onClick={() => setShowCommandsPanel(false)}
+            onClick={() => { setShowCommandsPanel(false); setCommandSubPanel(null) }}
           >
             <motion.div
               initial={{ x: '100%' }}
@@ -4344,163 +4492,415 @@ export default function ChatRoomPage() {
               {/* Header */}
               <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/60 backdrop-blur-md border-b border-purple-500/20">
                 <h3 className="text-gold-400 font-bold text-sm flex items-center gap-2">
-                  <Settings className="w-4 h-4" /> Oda Komutları
+                  {commandSubPanel ? (
+                    <button onClick={() => setCommandSubPanel(null)} className="text-purple-400 hover:text-white mr-1">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <Settings className="w-4 h-4" />
+                  )}
+                  {commandSubPanel === 'duyuru' ? '📢 Duyuru Yayınla' :
+                   commandSubPanel === 'kick' ? '👢 Kullanıcı At' :
+                   commandSubPanel === 'ban' ? '🚫 Kullanıcı Banla' :
+                   commandSubPanel === 'unban' ? '✅ Ban Kaldır' : 'Oda Komutları'}
                 </h3>
-                <button onClick={() => setShowCommandsPanel(false)} className="text-purple-400 hover:text-white">
+                <button onClick={() => { setShowCommandsPanel(false); setCommandSubPanel(null) }} className="text-purple-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Herkes için komutlar */}
-              <div className="p-4 space-y-4">
-                <div>
-                  <h4 className="text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">👤 Herkes</h4>
-                  <div className="space-y-1.5">
-                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
-                      <code className="text-yellow-300 text-xs font-mono">!istek şarkı adı</code>
-                      <p className="text-purple-300/70 text-[10px] mt-0.5">🎵 Şarkı isteği gönderir (yetkililere görünür)</p>
+              <div className="p-4 space-y-3">
+                {/* === MAIN MENU === */}
+                {!commandSubPanel && (
+                  <>
+                    {/* Herkes için */}
+                    <div>
+                      <h4 className="text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">🎵 Müzik & Genel</h4>
+                      <div className="space-y-1.5">
+                        <button
+                          onClick={() => { setShowCommandsPanel(false); setShowSongRequestModal(true) }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 bg-fuchsia-900/30 border border-fuchsia-500/20 rounded-lg text-fuchsia-300 hover:bg-fuchsia-900/50 hover:text-white transition-all text-left"
+                        >
+                          <Music className="w-4 h-4 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Şarkı İsteği</p>
+                            <p className="text-[10px] text-fuchsia-400/60">YouTube&apos;dan şarkı iste (10 💎)</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => { handleChatCommand('!kural'); setShowCommandsPanel(false) }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 bg-purple-900/30 border border-purple-500/20 rounded-lg text-purple-300 hover:bg-purple-900/50 hover:text-white transition-all text-left"
+                        >
+                          <Shield className="w-4 h-4 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Oda Kuralları</p>
+                            <p className="text-[10px] text-purple-400/60">Kuralları görüntüle</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => { handleChatCommand('!bilgi'); setShowCommandsPanel(false) }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 bg-purple-900/30 border border-purple-500/20 rounded-lg text-purple-300 hover:bg-purple-900/50 hover:text-white transition-all text-left"
+                        >
+                          <Eye className="w-4 h-4 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Oda Bilgisi</p>
+                            <p className="text-[10px] text-purple-400/60">Oda detaylarını gör</p>
+                          </div>
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
-                      <code className="text-yellow-300 text-xs font-mono">!kural</code>
-                      <p className="text-purple-300/70 text-[10px] mt-0.5">📋 Oda kurallarını gösterir</p>
-                    </div>
-                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
-                      <code className="text-yellow-300 text-xs font-mono">!bilgi</code>
-                      <p className="text-purple-300/70 text-[10px] mt-0.5">ℹ️ Oda bilgilerini gösterir</p>
-                    </div>
-                    <div className="bg-purple-900/30 border border-purple-500/20 rounded-lg p-2.5">
-                      <code className="text-yellow-300 text-xs font-mono">!yardım</code>
-                      <p className="text-purple-300/70 text-[10px] mt-0.5">📖 Bu paneli açar</p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Yetkili komutları */}
-                {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
-                  (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
-                  <div>
-                    <h4 className="text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">🛡️ Yetkili Komutları</h4>
-                    <div className="space-y-1.5">
-                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
-                        <code className="text-yellow-300 text-xs font-mono">!ban kullanıcı</code>
-                        <p className="text-orange-300/70 text-[10px] mt-0.5">🚫 Kullanıcıyı odadan banlar</p>
-                      </div>
-                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
-                        <code className="text-yellow-300 text-xs font-mono">!sessiz kullanıcı</code>
-                        <p className="text-orange-300/70 text-[10px] mt-0.5">🔇 30 dakika susturur</p>
-                      </div>
-                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
-                        <code className="text-yellow-300 text-xs font-mono">!at kullanıcı</code>
-                        <p className="text-orange-300/70 text-[10px] mt-0.5">👢 Kullanıcıyı odadan atar</p>
-                      </div>
-                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
-                        <code className="text-yellow-300 text-xs font-mono">!temizle</code>
-                        <p className="text-orange-300/70 text-[10px] mt-0.5">💫 Tüm sohbeti temizler</p>
-                      </div>
-                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
-                        <code className="text-yellow-300 text-xs font-mono">!duyuru mesaj</code>
-                        <p className="text-orange-300/70 text-[10px] mt-0.5">📢 Duyuru mesajı yayınlar</p>
-                      </div>
-                      <div className="bg-orange-900/20 border border-orange-500/20 rounded-lg p-2.5">
-                        <code className="text-yellow-300 text-xs font-mono">!yetki kullanıcı sembol</code>
-                        <p className="text-orange-300/70 text-[10px] mt-0.5">✅ Rol verir</p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          <span className="text-[9px] px-1.5 py-0.5 bg-yellow-500/20 rounded text-yellow-300">~ Founder</span>
-                          <span className="text-[9px] px-1.5 py-0.5 bg-red-500/20 rounded text-red-300">% SuperAdmin</span>
-                          <span className="text-[9px] px-1.5 py-0.5 bg-orange-500/20 rounded text-orange-300">& SOP</span>
-                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 rounded text-green-300">@ OP</span>
-                          <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-300">+ Voice</span>
+                    {/* Yetkili Komutları */}
+                    {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom ||
+                      (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))) && (
+                      <div>
+                        <h4 className="text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">🛡️ Yetkili Komutları</h4>
+                        <div className="space-y-1.5">
+                          <button
+                            onClick={() => setCommandSubPanel('duyuru')}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-blue-900/30 border border-blue-500/20 rounded-lg text-blue-300 hover:bg-blue-900/50 hover:text-white transition-all text-left"
+                          >
+                            <Volume2 className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">📢 Duyuru Yayınla</p>
+                              <p className="text-[10px] text-blue-400/60">15 saniye sabit mesaj</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleChatCommand('!temizle')
+                              setShowCommandsPanel(false)
+                              setCommandSubPanel(null)
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-green-900/30 border border-green-500/20 rounded-lg text-green-300 hover:bg-green-900/50 hover:text-white transition-all text-left"
+                          >
+                            <Trash2 className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">💫 Sohbet Temizle</p>
+                              <p className="text-[10px] text-green-400/60">Tüm mesajları sil</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => setCommandSubPanel('kick')}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-yellow-900/30 border border-yellow-500/20 rounded-lg text-yellow-300 hover:bg-yellow-900/50 hover:text-white transition-all text-left"
+                          >
+                            <UserMinus className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">👢 Kick (At)</p>
+                              <p className="text-[10px] text-yellow-400/60">3 ihtar = otomatik ban</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => setCommandSubPanel('ban')}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-red-900/30 border border-red-500/20 rounded-lg text-red-300 hover:bg-red-900/50 hover:text-white transition-all text-left"
+                          >
+                            <Ban className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">🚫 Banla</p>
+                              <p className="text-[10px] text-red-400/60">Kullanıcıyı odadan banla</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => { setCommandSubPanel('unban'); fetchModList() }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-emerald-900/30 border border-emerald-500/20 rounded-lg text-emerald-300 hover:bg-emerald-900/50 hover:text-white transition-all text-left"
+                          >
+                            <UserCheck className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">✅ Ban Kaldır</p>
+                              <p className="text-[10px] text-emerald-400/60">Banlanan kullanıcıları gör</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCommandsPanel(false)
+                              setCommandSubPanel(null)
+                              setShowMusicModal(true)
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-fuchsia-900/30 border border-fuchsia-500/20 rounded-lg text-fuchsia-300 hover:bg-fuchsia-900/50 hover:text-white transition-all text-left"
+                          >
+                            <Music className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">🎶 Müzik Aç</p>
+                              <p className="text-[10px] text-fuchsia-400/60">YouTube&apos;dan müzik çal/yönet</p>
+                            </div>
+                          </button>
                         </div>
                       </div>
+                    )}
+
+                    {/* Jeton Bilgisi */}
+                    <div className="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/30 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-yellow-400 text-xs font-bold flex items-center gap-1"><Coins className="w-3.5 h-3.5" /> Jeton Bakiye</span>
+                        <span className="text-yellow-300 font-bold text-sm">💎 {userJetonBalance.toLocaleString()}</span>
+                      </div>
+                      <button
+                        onClick={() => { setShowCommandsPanel(false); window.open(`/${language}/jeton`, '_blank') }}
+                        className="w-full py-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold rounded-lg text-xs hover:from-yellow-400 hover:to-amber-400 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Coins className="w-3.5 h-3.5" /> Jeton Yükle
+                      </button>
+                    </div>
+
+                    {/* Yasaklı Kelimeler */}
+                    {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
+                      <div>
+                        <h4 className="text-red-300 text-xs font-bold uppercase tracking-wider mb-2">🚫 Yasaklı Kelimeler</h4>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1">
+                            {(() => {
+                              let customWords: string[] = []
+                              try { customWords = room?.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
+                              if (!Array.isArray(customWords)) customWords = []
+                              return customWords.map((word, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-900/30 border border-red-500/30 rounded-full text-red-300 text-[10px]">
+                                  {word}
+                                  <button
+                                    onClick={async () => {
+                                      const updated = customWords.filter((_, idx) => idx !== i)
+                                      try {
+                                        const res = await fetch(`/api/chat/rooms/${room?.id}/settings`, {
+                                          method: 'PATCH',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ bannedWords: updated.length > 0 ? JSON.stringify(updated) : null })
+                                        })
+                                        if (res.ok) setRoom(prev => prev ? { ...prev, bannedWords: updated.length > 0 ? JSON.stringify(updated) : null } : prev)
+                                      } catch {}
+                                    }}
+                                    className="text-red-400 hover:text-white"
+                                  >×</button>
+                                </span>
+                              ))
+                            })()}
+                          </div>
+                          <form
+                            onSubmit={async (e) => {
+                              e.preventDefault()
+                              const input = (e.target as HTMLFormElement).elements.namedItem('newBannedWord') as HTMLInputElement
+                              const word = input.value.trim().toLowerCase()
+                              if (!word || !room) return
+                              let currentWords: string[] = []
+                              try { currentWords = room.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
+                              if (!Array.isArray(currentWords)) currentWords = []
+                              if (currentWords.includes(word)) { input.value = ''; return }
+                              const updated = [...currentWords, word]
+                              try {
+                                const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ bannedWords: JSON.stringify(updated) })
+                                })
+                                if (res.ok) {
+                                  setRoom(prev => prev ? { ...prev, bannedWords: JSON.stringify(updated) } : prev)
+                                  input.value = ''
+                                }
+                              } catch {}
+                            }}
+                            className="flex gap-1.5"
+                          >
+                            <input
+                              name="newBannedWord"
+                              type="text"
+                              placeholder="Yasaklı kelime ekle..."
+                              maxLength={30}
+                              className="flex-1 px-2 py-1.5 bg-white/10 border border-red-500/30 rounded-lg text-white text-xs placeholder-purple-300/40 focus:outline-none focus:border-red-500/50"
+                            />
+                            <button type="submit" className="px-3 py-1.5 bg-red-600/40 border border-red-500/30 rounded-lg text-red-200 text-xs font-medium hover:bg-red-600/60 transition-all">
+                              Ekle
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* === DUYURU SUB-PANEL === */}
+                {commandSubPanel === 'duyuru' && (
+                  <div className="space-y-3">
+                    <p className="text-purple-300/70 text-xs">Mesajınız 15 saniye boyunca sohbetin üstünde sabitlenir ve herkes görür.</p>
+                    <textarea
+                      value={duyuruText}
+                      onChange={(e) => setDuyuruText(e.target.value)}
+                      placeholder="Duyuru mesajınızı yazın..."
+                      maxLength={200}
+                      rows={3}
+                      className="w-full px-3 py-2.5 bg-white/10 border border-blue-500/30 rounded-xl text-white text-sm placeholder-purple-300/40 focus:outline-none focus:border-blue-500/50 resize-none"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-purple-400/50 text-[10px]">{duyuruText.length}/200</span>
+                      <button
+                        onClick={async () => {
+                          if (!duyuruText.trim()) return
+                          await handleChatCommand(`!duyuru ${duyuruText.trim()}`)
+                          setDuyuruText('')
+                          setCommandSubPanel(null)
+                          setShowCommandsPanel(false)
+                        }}
+                        disabled={!duyuruText.trim()}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg text-xs disabled:opacity-30 hover:from-blue-500 hover:to-indigo-500 transition-all flex items-center gap-1.5"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" /> Yayınla
+                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* Jeton Bilgisi */}
-                <div className="mt-4 bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/30 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-yellow-400 text-xs font-bold flex items-center gap-1"><Coins className="w-3.5 h-3.5" /> Jeton Bakiye</span>
-                    <span className="text-yellow-300 font-bold text-sm">💎 {userJetonBalance.toLocaleString()}</span>
-                  </div>
-                  <button
-                    onClick={() => { setShowCommandsPanel(false); window.open(`/${language}/jeton`, '_blank') }}
-                    className="w-full py-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold rounded-lg text-xs hover:from-yellow-400 hover:to-amber-400 transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <Coins className="w-3.5 h-3.5" /> Jeton Yükle
-                  </button>
-                </div>
-
-                {/* Yasaklı Kelimeler - Oda Sahibi / Yetkililer */}
-                {(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || myPermissions?.canManageRoom) && (
-                  <div className="mt-4">
-                    <h4 className="text-red-300 text-xs font-bold uppercase tracking-wider mb-2">🚫 Yasaklı Kelimeler</h4>
-                    <p className="text-purple-400/70 text-[10px] mb-2">Bu kelimeleri içeren mesajlar moderatörlere bildirilir.</p>
-                    <div className="space-y-2">
-                      {/* Mevcut kelimeler */}
-                      <div className="flex flex-wrap gap-1">
-                        {(() => {
-                          let customWords: string[] = []
-                          try { customWords = room?.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
-                          if (!Array.isArray(customWords)) customWords = []
-                          return customWords.map((word, i) => (
-                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-900/30 border border-red-500/30 rounded-full text-red-300 text-[10px]">
-                              {word}
-                              <button
-                                onClick={async () => {
-                                  const updated = customWords.filter((_, idx) => idx !== i)
-                                  try {
-                                    const res = await fetch(`/api/chat/rooms/${room?.id}/settings`, {
-                                      method: 'PATCH',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ bannedWords: updated.length > 0 ? JSON.stringify(updated) : null })
-                                    })
-                                    if (res.ok) setRoom(prev => prev ? { ...prev, bannedWords: updated.length > 0 ? JSON.stringify(updated) : null } : prev)
-                                  } catch {}
-                                }}
-                                className="text-red-400 hover:text-white"
-                              >×</button>
-                            </span>
-                          ))
-                        })()}
+                {/* === KICK SUB-PANEL (color-coded user list) === */}
+                {commandSubPanel === 'kick' && (() => {
+                  const ROLE_RANK: Record<string, number> = { owner: 100, superadmin: 90, founder: 80, sop: 70, admin: 60, op: 50, voice: 30, '': 0 }
+                  const myRank = myPermissions?.isRoomOwner ? 100 : (myPermissions?.isGlobalAdmin ? 95 : ROLE_RANK[myPermissions?.role || ''] || 0)
+                  const otherUsers = activeUsers.filter(u => u.id !== session?.user?.id)
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-purple-300/70 text-xs">3 kez kick = otomatik ban. Renk kodları: <span className="text-green-400">atılabilir</span> • <span className="text-yellow-400">eşit</span> • <span className="text-red-400">atılamaz</span></p>
+                      <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+                        {otherUsers.length === 0 ? (
+                          <p className="text-purple-400/50 text-sm text-center py-4">Odada başka kullanıcı yok</p>
+                        ) : otherUsers.map(user => {
+                          const userRank = room?.ownerId === user.id ? 100 : (user.isAdmin ? 95 : ROLE_RANK[user.chatRole || ''] || 0)
+                          const canKick = myRank > userRank
+                          const isSameRank = myRank === userRank
+                          const kickCount = kickCountsRef.current.get(user.id) || 0
+                          const colorClass = room?.ownerId === user.id || user.isAdmin ? 'border-gray-700 bg-gray-900/40 text-gray-400' :
+                            !canKick && !isSameRank ? 'border-red-500/30 bg-red-900/20 text-red-300' :
+                            isSameRank ? 'border-yellow-500/30 bg-yellow-900/20 text-yellow-300' :
+                            'border-green-500/30 bg-green-900/20 text-green-300'
+                          return (
+                            <button
+                              key={user.id}
+                              disabled={!canKick}
+                              onClick={async () => {
+                                const newCount = kickCount + 1
+                                kickCountsRef.current.set(user.id, newCount)
+                                if (newCount >= 3) {
+                                  // Auto-ban on 3rd kick
+                                  await fetch(`/api/chat/rooms/${room!.id}/moderation`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'ban_user', targetUserId: user.id, reason: '3 ihtar sonucu otomatik ban' })
+                                  })
+                                  kickCountsRef.current.delete(user.id)
+                                  setCommandFlash(`🚫 ${getDisplayName(user)} 3 ihtar sonucu banlandı!`)
+                                } else {
+                                  await fetch(`/api/chat/rooms/${room!.id}/moderation`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'kick_user', targetUserId: user.id, reason: `Kick ${newCount}/3` })
+                                  })
+                                  setCommandFlash(`👢 ${getDisplayName(user)} kicklendi (${newCount}/3 ihtar)`)
+                                }
+                                setTimeout(() => setCommandFlash(null), 3000)
+                                fetchActiveUsers()
+                                setCommandSubPanel(null)
+                                setShowCommandsPanel(false)
+                              }}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all disabled:cursor-not-allowed ${colorClass}`}
+                            >
+                              <div className="w-7 h-7 rounded-full bg-purple-800 overflow-hidden flex-shrink-0">
+                                {user.image ? <img src={user.image} alt="" className="w-full h-full object-cover" /> :
+                                  <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</div>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{user.roleSymbol || ''}{getDisplayName(user)}</p>
+                                <p className="text-[10px] opacity-60">{user.chatRole || 'kullanıcı'}{kickCount > 0 ? ` • ${kickCount}/3 ihtar` : ''}</p>
+                              </div>
+                              {canKick && <UserMinus className="w-4 h-4 flex-shrink-0 opacity-60" />}
+                            </button>
+                          )
+                        })}
                       </div>
-                      {/* Yeni kelime ekleme */}
-                      <form
-                        onSubmit={async (e) => {
-                          e.preventDefault()
-                          const input = (e.target as HTMLFormElement).elements.namedItem('newBannedWord') as HTMLInputElement
-                          const word = input.value.trim().toLowerCase()
-                          if (!word || !room) return
-                          let currentWords: string[] = []
-                          try { currentWords = room.bannedWords ? JSON.parse(room.bannedWords) : [] } catch {}
-                          if (!Array.isArray(currentWords)) currentWords = []
-                          if (currentWords.includes(word)) { input.value = ''; return }
-                          const updated = [...currentWords, word]
-                          try {
-                            const res = await fetch(`/api/chat/rooms/${room.id}/settings`, {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ bannedWords: JSON.stringify(updated) })
-                            })
-                            if (res.ok) {
-                              setRoom(prev => prev ? { ...prev, bannedWords: JSON.stringify(updated) } : prev)
-                              input.value = ''
-                            }
-                          } catch {}
-                        }}
-                        className="flex gap-1.5"
-                      >
-                        <input
-                          name="newBannedWord"
-                          type="text"
-                          placeholder="Yasaklı kelime ekle..."
-                          maxLength={30}
-                          className="flex-1 px-2 py-1.5 bg-white/10 border border-red-500/30 rounded-lg text-white text-xs placeholder-purple-300/40 focus:outline-none focus:border-red-500/50"
-                        />
-                        <button type="submit" className="px-3 py-1.5 bg-red-600/40 border border-red-500/30 rounded-lg text-red-200 text-xs font-medium hover:bg-red-600/60 transition-all">
-                          Ekle
-                        </button>
-                      </form>
                     </div>
+                  )
+                })()}
+
+                {/* === BAN SUB-PANEL (color-coded user list) === */}
+                {commandSubPanel === 'ban' && (() => {
+                  const ROLE_RANK: Record<string, number> = { owner: 100, superadmin: 90, founder: 80, sop: 70, admin: 60, op: 50, voice: 30, '': 0 }
+                  const myRank = myPermissions?.isRoomOwner ? 100 : (myPermissions?.isGlobalAdmin ? 95 : ROLE_RANK[myPermissions?.role || ''] || 0)
+                  const otherUsers = activeUsers.filter(u => u.id !== session?.user?.id)
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-purple-300/70 text-xs">Banlanan kullanıcı odaya giremez. Renk kodları: <span className="text-green-400">banlanabilir</span> • <span className="text-yellow-400">eşit</span> • <span className="text-red-400">banlanamaz</span></p>
+                      <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+                        {otherUsers.length === 0 ? (
+                          <p className="text-purple-400/50 text-sm text-center py-4">Odada başka kullanıcı yok</p>
+                        ) : otherUsers.map(user => {
+                          const userRank = room?.ownerId === user.id ? 100 : (user.isAdmin ? 95 : ROLE_RANK[user.chatRole || ''] || 0)
+                          const canBan = myRank > userRank
+                          const isSameRank = myRank === userRank
+                          const colorClass = room?.ownerId === user.id || user.isAdmin ? 'border-gray-700 bg-gray-900/40 text-gray-400' :
+                            !canBan && !isSameRank ? 'border-red-500/30 bg-red-900/20 text-red-300' :
+                            isSameRank ? 'border-yellow-500/30 bg-yellow-900/20 text-yellow-300' :
+                            'border-green-500/30 bg-green-900/20 text-green-300'
+                          return (
+                            <button
+                              key={user.id}
+                              disabled={!canBan}
+                              onClick={async () => {
+                                if (!confirm(`${getDisplayName(user)} kullanıcısını banlamak istediğinize emin misiniz?`)) return
+                                await fetch(`/api/chat/rooms/${room!.id}/moderation`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ action: 'ban_user', targetUserId: user.id, reason: 'Komut panelinden banlandı' })
+                                })
+                                setCommandFlash(`🚫 ${getDisplayName(user)} banlandı`)
+                                setTimeout(() => setCommandFlash(null), 3000)
+                                fetchActiveUsers()
+                                setCommandSubPanel(null)
+                                setShowCommandsPanel(false)
+                              }}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all disabled:cursor-not-allowed ${colorClass}`}
+                            >
+                              <div className="w-7 h-7 rounded-full bg-purple-800 overflow-hidden flex-shrink-0">
+                                {user.image ? <img src={user.image} alt="" className="w-full h-full object-cover" /> :
+                                  <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{(user.nickname || user.name || '?').charAt(0).toUpperCase()}</div>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{user.roleSymbol || ''}{getDisplayName(user)}</p>
+                                <p className="text-[10px] opacity-60">{user.chatRole || 'kullanıcı'}</p>
+                              </div>
+                              {canBan && <Ban className="w-4 h-4 flex-shrink-0 opacity-60" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* === UNBAN SUB-PANEL === */}
+                {commandSubPanel === 'unban' && (
+                  <div className="space-y-3">
+                    <p className="text-purple-300/70 text-xs">Banlanan kullanıcıları görün ve banı kaldırın.</p>
+                    {loadingModList ? (
+                      <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>
+                    ) : bannedUsers.length === 0 ? (
+                      <p className="text-purple-400/50 text-sm text-center py-8">Banlanan kullanıcı yok</p>
+                    ) : (
+                      <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+                        {bannedUsers.map(ban => (
+                          <div key={ban.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/20 bg-red-900/20">
+                            <div className="w-7 h-7 rounded-full bg-red-800 overflow-hidden flex-shrink-0">
+                              <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
+                                {(ban.user.name || '?').charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+                            <span className="flex-1 text-red-200 text-xs font-medium truncate">{ban.user.name}</span>
+                            <button
+                              onClick={async () => {
+                                await handleUnban(ban.userId)
+                                setCommandFlash(`✅ ${ban.user.name} banı kaldırıldı`)
+                                setTimeout(() => setCommandFlash(null), 3000)
+                              }}
+                              className="px-2.5 py-1 bg-emerald-600/40 border border-emerald-500/30 rounded-lg text-emerald-200 text-[10px] font-medium hover:bg-emerald-600/60 transition-all"
+                            >
+                              Ban Kaldır
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -4592,6 +4992,9 @@ export default function ChatRoomPage() {
         currentVideoId={currentMusicVideoId}
         currentTitle={currentMusicTitle}
         canControl={!!(myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || canPlayMusic)}
+        musicQueue={musicQueue}
+        onSkipToNext={handleSkipToNext}
+        currentRequestType={currentMusicRequestType}
       />
 
       {/* ── DJ Management Panel ── */}
@@ -4779,17 +5182,31 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Hidden YouTube Audio Player (plays for ALL users in room) ── */}
-      {/* loop=1 keeps audio alive in hidden iframe; duration timer handles auto-next */}
-      {currentMusicVideoId && !showMusicModal && !musicMuted && !musicPaused && (
-        <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
-          <iframe
-            key={currentMusicVideoId}
-            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
-            allow="autoplay; encrypted-media"
-            style={{ width: 1, height: 1, border: 'none' }}
-          />
-        </div>
+      {/* ── YouTube Player (video mode = visible center, audio mode = hidden) ── */}
+      {currentMusicVideoId && !musicMuted && !musicPaused && (
+        currentMusicRequestType === 'video' ? (
+          <div className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none" style={{ top: '30%', bottom: '30%' }}>
+            <div className="relative w-[90%] max-w-md aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-purple-900/80 border border-purple-500/40 pointer-events-auto">
+              <iframe
+                key={currentMusicVideoId + '-video'}
+                src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=0&controls=1&modestbranding=1`}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="w-full h-full"
+                style={{ border: 'none' }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
+            <iframe
+              key={currentMusicVideoId + '-audio'}
+              src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
+              allow="autoplay; encrypted-media"
+              style={{ width: 1, height: 1, border: 'none' }}
+            />
+          </div>
+        )
       )}
 
     </div>

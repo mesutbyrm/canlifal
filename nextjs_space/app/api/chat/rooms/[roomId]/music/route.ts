@@ -218,6 +218,28 @@ export async function GET(
       }
     }
 
+    // Determine requestType from the currently playing song's request message
+    let requestType = 'audio'
+    if (room.currentMusicVideoId) {
+      const playedMsg = await prisma.chatMessage.findFirst({
+        where: {
+          roomId: params.roomId,
+          content: { contains: `${room.currentMusicVideoId}` },
+          OR: [
+            { content: { startsWith: '[SONG_REQUEST_PAID]' } },
+            { content: { startsWith: '[SONG_REQUEST_FREE]' } },
+          ]
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      if (playedMsg) {
+        const isPaid = playedMsg.content.startsWith('[SONG_REQUEST_PAID]')
+        const parts = playedMsg.content.split('|')
+        const typeTag = isPaid ? (parts[5] || '').replace('[PLAYED]', '').trim() : (parts[3] || '').replace('[PLAYED]', '').trim()
+        if (typeTag === 'VIDEO') requestType = 'video'
+      }
+    }
+
     // Build full DJ payload for Flutter compatibility
     const djPayload = await buildDjPayload(params.roomId)
 
@@ -226,6 +248,7 @@ export async function GET(
       title: room.currentMusicTitle,
       startedAt: room.currentMusicStartedAt,
       duration: room.currentMusicDuration,
+      requestType,
       // Flutter-compatible fields
       playing: djPayload.playing,
       nowPlaying: djPayload.nowPlaying,

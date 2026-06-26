@@ -1574,3 +1574,15 @@ html[data-theme="canlidark"] main {
   justify-content: center;
   padding: 0 5px;
 }
+
+/* Temizle blink animation - 3x green flash */
+@keyframes temizleBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Pinned duyuru countdown bar */
+@keyframes shrinkBar {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}

@@ -129,6 +129,18 @@ export async function POST(
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
 
+    // Enforce 6-minute max duration
+    if (duration) {
+      const parts = String(duration).split(':').map(Number)
+      let totalSec = 0
+      if (parts.length === 3) totalSec = parts[0] * 3600 + parts[1] * 60 + parts[2]
+      else if (parts.length === 2) totalSec = parts[0] * 60 + parts[1]
+      else totalSec = parts[0] || 0
+      if (totalSec > 360) {
+        return NextResponse.json({ error: 'Şarkı 6 dakikadan uzun olamaz. Daha kısa bir şarkı seçin.' }, { status: 400 })
+      }
+    }
+
     // Get user info
     const user = await prisma.user.findUnique({
       where: { id: userId },
