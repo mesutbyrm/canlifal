@@ -238,6 +238,49 @@ gate_10_refresh() {
   [[ "$status" == "200" ]] && [[ -n "$new_token" ]]
 }
 
+# ── Gate 11: Live stream creation (teller only) ─────────────
+gate_11_live_stream() {
+  if [[ -z "${TELLER_TOKEN:-}" ]]; then
+    echo "  Skipped – no teller token"
+    return 1
+  fi
+
+  # Create a test stream
+  local resp status body
+  resp=$(curl -s -w '\n%{http_code}' -X POST "${API_BASE_URL}/api/video-streams" \
+    -H "Authorization: Bearer $TELLER_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"title":"CI Gate Test Stream","description":"Acceptance test – auto cleanup"}')
+  status=$(echo "$resp" | tail -1)
+  body=$(echo "$resp" | sed '$d')
+
+  echo "  POST /api/video-streams → $status"
+
+  if [[ "$status" != "200" ]]; then
+    echo "  Response: $body"
+    return 1
+  fi
+
+  # Extract stream ID and clean up (end the stream)
+  local stream_id
+  stream_id=$(extract_json_field "$body" "streamId")
+  if [[ -z "$stream_id" ]]; then
+    stream_id=$(extract_json_field "$body" "id")
+  fi
+
+  if [[ -n "$stream_id" ]]; then
+    # End the test stream to avoid polluting the live list
+    local cleanup_status
+    cleanup_status=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "${API_BASE_URL}/api/video-streams/${stream_id}" \
+      -H "Authorization: Bearer $TELLER_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"status":"ended"}')
+    echo "  Cleanup: PATCH /api/video-streams/${stream_id} → $cleanup_status"
+  fi
+
+  return 0
+}
+
 # ── Run all gates ────────────────────────────────────────────
 echo "============================================================"
 echo "CanlıFal API Release Gate"
@@ -255,6 +298,7 @@ run_gate 7  "GET /api/wallet (JWT)"    gate_7_wallet
 run_gate 8  "Fortune tellers (JWT)"    gate_8_fortune_tellers
 run_gate 9  "Notifications (JWT)"      gate_9_notifications
 run_gate 10 "Token refresh"            gate_10_refresh
+run_gate 11 "Live stream (teller)"     gate_11_live_stream
 
 # ── Summary ──────────────────────────────────────────────────
 echo ""
