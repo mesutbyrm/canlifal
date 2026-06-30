@@ -1,5 +1,17 @@
 import prisma from '@/lib/db'
-import { resolveYoutubeStream } from '@/lib/youtube-stream-resolver'
+
+/**
+ * YENI MİMARİ (YouTube IFrame/embed):
+ * Artık ham audio stream URL'si çözümlenmiyor (yt-dlp / Piped / Invidious BİRAKILDI).
+ * Backend'in görevi sadece: videoId + startedAt + duration tutmak ve SSE üzerinden
+ * yayınlamak. İstemci (Flutter/web) YouTube'un resmi embed oynatıcısıyla
+ * `https://www.youtube.com/embed/{videoId}?autoplay=1&start={elapsed}` çalar.
+ * Böylece YouTube CDN'inden doğrudan akış olur; extraction/proxy/429 sorunu kalmaz.
+ */
+function buildEmbedUrl(videoId: string, startSeconds: number): string {
+  const s = Math.max(0, Math.floor(startSeconds))
+  return `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${s}&enablejsapi=1&playsinline=1`
+}
 
 /**
  * In-memory DJ event store. SSE streams poll this for changes.
@@ -66,31 +78,35 @@ export async function buildDjPayload(roomId: string) {
   })
 
   const playing = !!room?.currentMusicVideoId
+
+  // Senkron için: startedAt'tan geçen süreyi hesapla. Tüm istemciler aynı
+  // videoId'yi aynı elapsed konumdan yükler → cihazlar arası senkron (~1-2 sn).
+  const startedAtDate = room?.currentMusicStartedAt || null
+  const startedAtMs = startedAtDate ? new Date(startedAtDate).getTime() : null
+  const elapsedSeconds = startedAtMs ? Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000)) : 0
+
+  const embedUrl = room?.currentMusicVideoId
+    ? buildEmbedUrl(room.currentMusicVideoId, elapsedSeconds)
+    : null
+
   const nowPlaying = room?.currentMusicVideoId ? {
     videoId: room.currentMusicVideoId,
     title: room.currentMusicTitle || '',
-    startedAt: room.currentMusicStartedAt,
+    startedAt: startedAtDate,
+    startedAtMs,
+    elapsedSeconds,
     duration: room.currentMusicDuration || '',
+    embedUrl,
   } : null
-
-  // musicUrl çözümle: paylaşılan resolver (çoklu Piped + Invidious) kullan,
-  // başarısız olursa YouTube watch URL'sine düş.
-  let musicUrl: string | null = null
-  if (room?.currentMusicVideoId) {
-    musicUrl = `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
-    try {
-      const resolved = await resolveYoutubeStream(room.currentMusicVideoId)
-      if (resolved?.audioUrl) musicUrl = resolved.audioUrl
-      else if (resolved?.videoUrl) musicUrl = resolved.videoUrl
-    } catch { /* çözümleme başarısız → YouTube URL'sini koru */ }
-  }
 
   return {
     type: 'dj' as const,
     event: 'QUEUE_UPDATED',
     playing,
     nowPlaying,
-    musicUrl,
+    // Geriye dönük uyumluluk: musicUrl artık embed URL'sidir (ham stream değil).
+    musicUrl: embedUrl,
+    embedUrl,
     musicQueue: queue,
     queueLength: queue.length,
   }

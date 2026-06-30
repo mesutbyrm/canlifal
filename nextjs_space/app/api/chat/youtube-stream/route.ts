@@ -1,34 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/mobile-auth'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import { getCached } from '@/lib/cache'
-import { resolveYoutubeStream, type StreamResult } from '@/lib/youtube-stream-resolver'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/chat/youtube-stream?videoId=dQw4w9WgXcQ
  *
- * Flutter YoutubeStreamResolver tarafından kullanılır.
- * YouTube video ID'sini alıp çalınabilir audio/video stream URL'si döndürür.
+ * YENI MİMARİ (YouTube IFrame/embed):
+ * Artık ham audio/video stream URL'si ÇÖZÜMLENMEZ. yt-dlp / Piped / Invidious
+ * yaklaşımı (HTTP 429 + flaky public instance'lar nedeniyle) tamamen bırakıldı.
  *
- * Çözümleme `lib/youtube-stream-resolver.ts` üzerinden yapılır:
- * önce birden fazla Piped instance, sonra Invidious instance denenir.
- * Hiçbiri çalışmazsa fallback olarak YouTube watch URL döner.
+ * Bu endpoint artık yalnızca:
+ *   - YouTube resmi embed oynatıcısı için `embedUrl` döner (oynatma istemcide olur),
+ *   - güvenilir/keysiz YouTube oEmbed ile metadata (title/thumbnail/author) döner.
+ *
+ * Oynatma artık bu endpoint'e BAĞLI DEĞİLDİR; istemci embedUrl'i doğrudan
+ * yükler. Endpoint geriye dönük uyumluluk + metadata için korunur.
  */
+
+interface OEmbedMeta {
+  title: string | null
+  thumbnail: string | null
+  author: string | null
+}
+
+async function fetchOEmbed(videoId: string): Promise<OEmbedMeta> {
+  try {
+    const res = await fetch(
+      `https://i.ytimg.com/vi/r_2tsLb__-E/maxresdefault.jpg`,
+      { signal: AbortSignal.timeout(4000), headers: { Accept: 'application/json' } }
+    )
+    if (!res.ok) return { title: null, thumbnail: null, author: null }
+    const data = await res.json()
+    return {
+      title: data?.title || null,
+      thumbnail: data?.thumbnail_url || `https://i.ytimg.com/vi/2ybiC9EF-oc/sddefault.jpg`,
+      author: data?.author_name || null,
+    }
+  } catch {
+    return { title: null, thumbnail: `https://i.ytimg.com/vi/JtYrWqcAxuk/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDkmmN2v1Hr7tok88zQfRSuaKdndA`, author: null }
+  }
+}
+
+function buildEmbedUrl(videoId: string, startSeconds: number): string {
+  const s = Math.max(0, Math.floor(startSeconds || 0))
+  return `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${s}&enablejsapi=1&playsinline=1`
+}
 
 export async function GET(req: NextRequest) {
   try {
-    // Auth opsiyonel — stream URL çözümleme herkese açık
-    // (Flutter YoutubeStreamResolver auth header göndermeyebilir)
-    let userId: string | undefined
-    try {
-      const mobileUser = await authenticateRequest(req)
-      const session = !mobileUser ? await getServerSession(authOptions) : null
-      userId = mobileUser?.id || session?.user?.id
-    } catch { /* auth başarısız olsa da devam et */ }
-
     const videoId = req.nextUrl.searchParams.get('videoId') || req.nextUrl.searchParams.get('v') || ''
     if (!videoId || videoId.length < 5) {
       return NextResponse.json(
@@ -37,45 +57,30 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // 60 saniye cache — aynı video için tekrar API çağırmaktan kaçın
-    const cacheKey = `yt-stream:${videoId}`
-    const result = await getCached<StreamResult>(cacheKey, 60, async () => {
-      const resolved = await resolveYoutubeStream(videoId)
-      if (resolved) return resolved
-
-      // Hiçbir instance çalışmadıysa fallback
-      return {
-        audioUrl: null,
-        videoUrl: null,
-        title: null,
-        duration: null,
-        thumbnail: `https://i.ytimg.com/vi/2ybiC9EF-oc/sddefault.jpg`,
-        source: 'fallback',
-      }
-    })
-
-    // Flutter'ın beklediği format
+    const startSeconds = parseInt(req.nextUrl.searchParams.get('start') || '0', 10) || 0
+    const embedUrl = buildEmbedUrl(videoId, startSeconds)
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`
+
+    // Metadata'yı 60sn cache'le (oEmbed güvenilir ama yine de çağrı sayısını azalt)
+    const meta = await getCached<OEmbedMeta>(`yt-oembed:${videoId}`, 600, () => fetchOEmbed(videoId))
 
     return NextResponse.json({
       success: true,
       videoId,
-      audioUrl: result.audioUrl,
-      videoUrl: result.videoUrl,
-      // Flutter uyumlu: streamUrl = en iyi seçenek
-      streamUrl: result.audioUrl || result.videoUrl || youtubeUrl,
+      // Oynatma artık embed üzerinden — istemci bunu yükler.
+      embedUrl,
+      streamUrl: embedUrl,
       youtubeUrl,
-      title: result.title,
-      duration: result.duration,
-      thumbnail: result.thumbnail,
-      source: result.source,
-      // Çözümleme başarısız olduysa istemci bilgilendirilir
-      resolved: result.source !== 'fallback',
+      title: meta.title,
+      thumbnail: meta.thumbnail,
+      author: meta.author,
+      // Bilgi: ham stream çözümleme artık yapılmıyor.
+      mode: 'embed',
     })
   } catch (error) {
     console.error('[youtube-stream] Error:', error)
     return NextResponse.json(
-      { error: 'Stream URL çözümlenemedi' },
+      { error: 'Embed URL oluşturulamadı' },
       { status: 500 }
     )
   }
