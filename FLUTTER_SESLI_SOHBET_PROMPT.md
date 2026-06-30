@@ -91,7 +91,7 @@ Body: {
 ### 2.3 Çözülecek Hatalar (ZORUNLU DAVRANIŞ)
 | Hata | Çözüm |
 |------|-------|
-| Müzik çok geç bulunuyor | Arama debounce 250ms + önbellek (§17/§18). Stream URL çözümü `youtube-stream` cache'li (60sn). |
+| Müzik çok geç bulunuyor | Arama debounce 250ms + önbellek (§17/§18). Artık stream URL **çözümlenmez**; `videoId` doğrudan YouTube IFrame/embed player'a verilir (anında başlar). |
 | Müzik geç başlıyor | İstek gönderilir gönderilmez SSE `dj` event'i gelir; player **önceden hazır** (tek `AudioPlayer`/`WebView` instance) tutulur, yeniden oluşturulmaz. |
 | Yeni istek gelince mevcut müzik yeniden başlıyor | **YASAK.** Müzik çalıyorsa istek kuyruğa gider; player'a **dokunulmaz**. SSE `dj` event'inde `nowPlaying.videoId` değişmediyse player'ı **resetleme** (videoId karşılaştır). |
 | Çalan müzik kapanıyor | `nowPlaying.videoId` aynıysa player'ı yeniden kurma; sadece queue UI güncelle. |
@@ -153,12 +153,26 @@ Videolu müzik (`requestType:'video'` veya `nowPlaying` ait olduğu istek VIDEO)
 
 **Player kuralı:** Tek `YoutubePlayerController` / `WebViewController` / `AudioPlayer` instance kullan. `nowPlaying.videoId` değişmedikçe **asla** dispose/recreate etme. (Bu, §2.3'teki "yeniden başlamasın/kapanmasın" maddelerinin teknik karşılığıdır.)
 
-Stream URL çözümü:
+**YENİ MİMARİ — IFrame/embed (stream URL çözümleme YOK):**
+Artık backend googlevideo.com gibi çözümlenmiş stream URL'leri ÜRETMEZ. Müzik doğrudan YouTube IFrame player ile `videoId` üzerinden oynatılır. Bu, Piped/Invidious/yt-dlp çözümleyemediği için sessiz kalan şarkıları (örn. bazı klipler) **tamamen** ortadan kaldırır — her `videoId` için geçerli bir embed URL üretilir.
+
+SSE `dj` event'i artık şunları taşır:
+```
+nowPlaying: {
+  videoId, title, startedAt, startedAtMs, elapsedSeconds, duration,
+  embedUrl   // https://www.youtube.com/embed/{videoId}?autoplay=1&start={elapsedSeconds}
+}
+musicUrl: embedUrl   // geriye dönük uyumluluk: artık embed URL taşır
+embedUrl: embedUrl
+```
+
+İsteğe bağlı meta (başlık/thumbnail) için:
 ```
 GET /api/chat/youtube-stream?videoId={id}
-→ { success, videoId, audioUrl, videoUrl, streamUrl, youtubeUrl, title, duration, thumbnail, source }
+→ { success, videoId, embedUrl, streamUrl(=embedUrl), youtubeUrl, title, duration, thumbnail, mode:'embed', source }
 ```
-`streamUrl` en iyi seçenektir (audio→video→youtube watch fallback). Audio mod için `audioUrl`, video mod için `videoUrl` kullan; null ise `youtubeUrl`'e düş.
+
+**Flutter player kuralı (YENİ):** `youtube_player_iframe` (veya `youtube_player_flutter`) paketini kullan. Player'ı doğrudan `videoId` ile başlat — embed URL parse etmeye gerek yok, çünkü paket kendi iframe'ini oluşturur. Audio mod için player widget'ını **görünmez** (1x1 / opacity 0 / ekran dışı) ama **aktif** tut; video mod için ortadaki floating alanda göster. `nowPlaying.videoId` değişmedikçe controller'ı **asla** yeniden oluşturma.
 
 ---
 
@@ -166,13 +180,15 @@ GET /api/chat/youtube-stream?videoId={id}
 
 Müzik başladığında odadaki **herkes aynı saniyeden** dinler. Sonradan giren **kaldığı saniyeden** devam eder. **Hiç kimse baştan başlatmaz.**
 
-**Mekanizma (backend gerçeği):** `nowPlaying.startedAt` (ISO timestamp) backend tarafından set edilir ve SSE `dj` event'inde gelir.
+**Mekanizma (backend gerçeği):** `nowPlaying.startedAt` (ISO timestamp) ve `nowPlaying.startedAtMs` (epoch ms) backend tarafından set edilir; SSE `dj` event'inde ayrıca **hazır hesaplanmış** `nowPlaying.elapsedSeconds` ve `embedUrl` (`?start=elapsedSeconds` ile) gelir. Backend zaten geçen süreyi embed URL'e gömüyor; Flutter seek'i bu değere göre yapar.
 
-Flutter sync formülü:
+Flutter sync formülü (embed/IFrame):
 ```dart
-final elapsedSec = (DateTime.now().toUtc().difference(DateTime.parse(nowPlaying.startedAt).toUtc())).inMilliseconds / 1000.0;
-// Player'ı bu pozisyondan başlat:
-player.seekTo(Duration(milliseconds: (elapsedSec * 1000).round()));
+// Tercihen backend'in gönderdiği elapsedSeconds'u kullan:
+final elapsedSec = nowPlaying.elapsedSeconds ??
+    (DateTime.now().toUtc().difference(DateTime.parse(nowPlaying.startedAt).toUtc())).inMilliseconds / 1000.0;
+// youtube_player_iframe ile yeni şarkı yüklerken başlangıç saniyesini ver:
+controller.loadVideoById(videoId: nowPlaying.videoId, startSeconds: elapsedSec.toDouble());
 ```
 - Yeni `dj` event geldiğinde `videoId` **aynıysa**: seek yapma (zaten senkron), sadece queue UI güncelle.
 - `videoId` **değiştiyse**: yeni şarkıyı yükle ve `elapsedSec`'e seek et.
@@ -389,29 +405,33 @@ GET /api/youtube/search?q={query}
 
 ---
 
-## EK A — SES ÇIKMAMA SORUNU (YouTube Stream Çözümü)
+## EK A — MÜZİK OYNATMA (YouTube IFrame/embed — YENİ MİMARİ)
 
-Web'de müzik bulunuyor ama bazen ses çıkmıyorsa kök neden **stream URL çözümleme** olabilir. Backend zinciri (`/api/chat/youtube-stream`):
-1. Piped instance'ları (`pipedapi.kavin.rocks`, `pipedapi.adminforge.de`, `pipedapi.in.projectsegfau.lt`) sırayla denenir (60sn cache).
-2. Hepsi başarısızsa `youtubeUrl` (watch linki) döner.
+**Önemli değişiklik:** Eski "stream URL çözümleme" (yt-dlp / Piped / Invidious) yaklaşımı **tamamen kaldırıldı**. Sebep: bazı videolar (örn. TARKAN - Dudu) hiçbir Piped/Invidious instance'ı tarafından çözülemiyor, `resolved:false` dönüyor ve ses çıkmıyordu. Artık backend **stream çözmez**; sadece `videoId` taşır ve YouTube IFrame player oynatır. Bu sayede "çözülemedi" hata sınıfı **tasarım gereği** ortadan kalkar — her video için geçerli embed URL üretilir.
 
-**Flutter tarafı kuralı:** Önce `audioUrl` (audio mod) / `videoUrl` (video mod) dene; yoksa `streamUrl`; o da yoksa `youtubeUrl` (watch linki — `youtube_player_flutter` ile oynatılabilir). `googlevideo.com` URL'leri doğrudan `AudioPlayer`/`ExoPlayer` ile çalınır.
+**Backend artık ne döner:**
+- SSE `dj` event'i: `nowPlaying.{videoId, title, startedAt, startedAtMs, elapsedSeconds, duration, embedUrl}` + `musicUrl`(=embedUrl) + `embedUrl`.
+- `GET /api/chat/youtube-stream?videoId={id}`: `{ embedUrl, streamUrl(=embedUrl), youtubeUrl, title, thumbnail, duration, mode:'embed' }` — sadece meta + embed URL.
 
-> **Not:** Şu an backend'de ayrı bir `youtube-audio` proxy endpoint'i **yoktur**. Yeni endpoint **yazma** (kural geregi). Mevcut sözleşme: `/api/chat/youtube-stream` çözümlenmiş URL'leri döner. Eğer ileride 403/CORS sorunu için bir proxy gerekirse, bu **backend ekibiyle** ayrıca kararlaştırılmalıdır.
+**Flutter tarafı kuralı (YENİ):**
+1. `youtube_player_iframe` paketini ekle (`pubspec.yaml`).
+2. Tek bir `YoutubePlayerController` oluştur; `nowPlaying.videoId` değiştikçe `controller.loadVideoById(videoId: id, startSeconds: elapsedSeconds)` çağır. Aynı videoId için **dokunma**.
+3. **Audio mod** (`requestType:'audio'`): player widget'ını görünmez tut (1x1 boyut / `Opacity(0)` / ekran dışı) ama widget ağaçta **canlı** kalmalı (aksi halde ses durur). **Video mod**: ortadaki floating alanda göster.
+4. `autoPlay: true`, `mute: false` ayarla. iOS'ta inline oynatma için `playsInline: true`.
+5. Senkronizasyon: yeni şarkıyı her zaman `startSeconds = nowPlaying.elapsedSeconds` ile yükle — odaya geç giren kaldığı saniyeden başlar.
 
-Eğer tüm çözümleme başarısız olursa (`source:'fallback'` ve oynatma başlamazsa) kullanıcıya **sessizlik yerine görünür hata** göster:
-> "⚠️ Şarkı oynatılamadı, lütfen başka bir şarkı deneyin."
-
-> Not: Piped instance sağlığı / yt-dlp güncelliği gibi **sunucu tarafı** bakımlar backend ekibinin sorumluluğundadır; Flutter sadece yukarıdaki endpoint sözleşmesine uyar ve hata durumunu görünür kılar.
+**Embed-engelli (rare) videolar:** Bir yüklenici videoyu embed'e kapatmış olabilir. Bu durumda IFrame player `onError` / `playerState == unplayable` verir. O zaman:
+> "⚠️ Bu şarkı çalınamıyor, lütfen başka bir şarkı deneyin."
+göster ve yetkiliyse `DELETE /api/chat/rooms/{roomId}/music` çağırarak kuyruktaki sonrakine geç.
 
 ---
 
 ## EK B — VERİ MODELLERİ (DTO ÖZET)
 
 ```dart
-class NowPlaying { String videoId; String title; String? startedAt; String? duration; }
+class NowPlaying { String videoId; String title; String? startedAt; int? startedAtMs; double? elapsedSeconds; String? duration; String? embedUrl; }
 class QueueItem { String id; String videoId; String title; String dedication; String note; String duration; String requestType; bool isPaid; String userId; String userName; String createdAt; }
-class DjEvent { String type='dj'; String event='QUEUE_UPDATED'; bool playing; NowPlaying? nowPlaying; String? musicUrl; List<QueueItem> musicQueue; int queueLength; }
+class DjEvent { String type='dj'; String event='QUEUE_UPDATED'; bool playing; NowPlaying? nowPlaying; String? musicUrl; String? embedUrl; List<QueueItem> musicQueue; int queueLength; }
 class PresenceUser { String id; String name; String nickname; String? chatRole; String? roleSymbol; int roleLevel; bool isAdmin; }
 class ChatMessage { String id; String userId; String content; String createdAt; /* [SYSTEM_JOIN], [SYSTEM_VIP_JOIN:TYPE], [ANNOUNCEMENT], [SONG_REQUEST_*] prefixleri parse edilir */ }
 class SystemEvent { String event; String? text; int? ttl; String? userName; int? kickCount; String? reason; String? moderator; }
