@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { getCached } from '@/lib/cache'
+import { resolveYoutubeStream, type StreamResult } from '@/lib/youtube-stream-resolver'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,64 +13,10 @@ export const dynamic = 'force-dynamic'
  * Flutter YoutubeStreamResolver tarafından kullanılır.
  * YouTube video ID'sini alıp çalınabilir audio/video stream URL'si döndürür.
  *
- * Piped API (birden fazla instance) kullanarak YouTube'un kısıtlamalarını aşar.
- * Fallback olarak YouTube watch URL döner.
+ * Çözümleme `lib/youtube-stream-resolver.ts` üzerinden yapılır:
+ * önce birden fazla Piped instance, sonra Invidious instance denenir.
+ * Hiçbiri çalışmazsa fallback olarak YouTube watch URL döner.
  */
-
-// Piped API instances — birisi başarısız olursa sıradaki denenir
-const PIPED_INSTANCES = [
-  'https://pipedapi.kavin.rocks',
-  'https://pipedapi.adminforge.de',
-  'https://pipedapi.in.projectsegfau.lt',
-]
-
-interface StreamResult {
-  audioUrl: string | null
-  videoUrl: string | null
-  title: string | null
-  duration: number | null
-  thumbnail: string | null
-  source: string
-}
-
-async function resolveFromPiped(videoId: string, instance: string): Promise<StreamResult | null> {
-  try {
-    const res = await fetch(`${instance}/streams/${videoId}`, {
-      signal: AbortSignal.timeout(5000),
-      headers: { 'Accept': 'application/json' },
-    })
-    if (!res.ok) return null
-
-    const data = await res.json()
-
-    // Audio stream — en yüksek kaliteli olanı seç
-    const audioStreams: any[] = data?.audioStreams || []
-    const bestAudio = audioStreams
-      .filter((s: any) => s.url && s.mimeType?.startsWith('audio/'))
-      .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
-
-    // Video stream — 720p veya en yakını
-    const videoStreams: any[] = data?.videoStreams || []
-    const bestVideo = videoStreams
-      .filter((s: any) => s.url && s.videoOnly === false)
-      .sort((a: any, b: any) => {
-        const aDiff = Math.abs((a.height || 0) - 720)
-        const bDiff = Math.abs((b.height || 0) - 720)
-        return aDiff - bDiff
-      })[0]
-
-    return {
-      audioUrl: bestAudio?.url || null,
-      videoUrl: bestVideo?.url || null,
-      title: data.title || null,
-      duration: data.duration || null,
-      thumbnail: data.thumbnailUrl || `https://i.ytimg.com/vi/2ybiC9EF-oc/sddefault.jpg`,
-      source: 'piped',
-    }
-  } catch {
-    return null
-  }
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -93,21 +40,16 @@ export async function GET(req: NextRequest) {
     // 60 saniye cache — aynı video için tekrar API çağırmaktan kaçın
     const cacheKey = `yt-stream:${videoId}`
     const result = await getCached<StreamResult>(cacheKey, 60, async () => {
-      // Piped instances'ı sırayla dene
-      for (const instance of PIPED_INSTANCES) {
-        const piped = await resolveFromPiped(videoId, instance)
-        if (piped && (piped.audioUrl || piped.videoUrl)) {
-          return piped
-        }
-      }
+      const resolved = await resolveYoutubeStream(videoId)
+      if (resolved) return resolved
 
-      // Hiçbir Piped instance çalışmadıysa fallback
+      // Hiçbir instance çalışmadıysa fallback
       return {
         audioUrl: null,
         videoUrl: null,
         title: null,
         duration: null,
-        thumbnail: `https://i.ytimg.com/vi/JtYrWqcAxuk/maxresdefault.jpg`,
+        thumbnail: `https://i.ytimg.com/vi/2ybiC9EF-oc/sddefault.jpg`,
         source: 'fallback',
       }
     })
@@ -127,6 +69,8 @@ export async function GET(req: NextRequest) {
       duration: result.duration,
       thumbnail: result.thumbnail,
       source: result.source,
+      // Çözümleme başarısız olduysa istemci bilgilendirilir
+      resolved: result.source !== 'fallback',
     })
   } catch (error) {
     console.error('[youtube-stream] Error:', error)

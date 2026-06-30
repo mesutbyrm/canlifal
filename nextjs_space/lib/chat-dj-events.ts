@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { resolveYoutubeStream } from '@/lib/youtube-stream-resolver'
 
 /**
  * In-memory DJ event store. SSE streams poll this for changes.
@@ -72,18 +73,16 @@ export async function buildDjPayload(roomId: string) {
     duration: room.currentMusicDuration || '',
   } : null
 
-  // Resolve musicUrl: try Piped stream URL, fallback to YouTube watch URL
+  // musicUrl çözümle: paylaşılan resolver (çoklu Piped + Invidious) kullan,
+  // başarısız olursa YouTube watch URL'sine düş.
   let musicUrl: string | null = null
   if (room?.currentMusicVideoId) {
     musicUrl = `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
     try {
-      const pipedRes = await fetch(`https://pipedapi.kavin.rocks/streams/${room.currentMusicVideoId}`, { signal: AbortSignal.timeout(3000) })
-      if (pipedRes.ok) {
-        const pipedData = await pipedRes.json()
-        const audioStream = pipedData?.audioStreams?.find((s: any) => s.mimeType?.startsWith('audio/'))
-        if (audioStream?.url) musicUrl = audioStream.url
-      }
-    } catch { /* Piped fail → keep YouTube URL */ }
+      const resolved = await resolveYoutubeStream(room.currentMusicVideoId)
+      if (resolved?.audioUrl) musicUrl = resolved.audioUrl
+      else if (resolved?.videoUrl) musicUrl = resolved.videoUrl
+    } catch { /* çözümleme başarısız → YouTube URL'sini koru */ }
   }
 
   return {
