@@ -4,6 +4,64 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { deleteFromR2, extractR2Key } from '@/lib/r2-storage'
+import { mapVideo } from '@/lib/short-videos'
+
+/**
+ * GET /api/short-videos/:id
+ * Auth: opsiyonel
+ * Tek bir videoyu getirir (paylaşım/deep-link için). Gizlilik uygulanır.
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const authUser = await authenticateRequest(req).catch(() => null)
+
+    const video = await prisma.shortVideo.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, username: true, name: true, image: true } },
+        music: true,
+        hashtags: { include: { hashtag: { select: { name: true } } } },
+        ...(authUser
+          ? {
+              likes: { where: { userId: authUser.id }, select: { id: true }, take: 1 },
+              views: { where: { userId: authUser.id }, select: { id: true }, take: 1 },
+              saves: { where: { userId: authUser.id }, select: { id: true }, take: 1 },
+            }
+          : {}),
+      },
+    })
+
+    if (!video) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Video bulunamadı' } },
+        { status: 404 }
+      )
+    }
+
+    // Gizlilik: herkese açık değilse sadece sahibi görebilir
+    if (video.visibility !== 'everyone' && video.userId !== authUser?.id) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'Bu videoya erişim izniniz yok' } },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { video: mapVideo(video, authUser?.id) },
+    })
+  } catch (error: any) {
+    console.error('[short-videos] Get single error:', error)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Video alınamadı' } },
+      { status: 500 }
+    )
+  }
+}
 
 /**
  * DELETE /api/short-videos/:id

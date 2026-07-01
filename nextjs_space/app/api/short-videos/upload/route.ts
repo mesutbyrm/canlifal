@@ -3,9 +3,15 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
-import prisma from '@/lib/db'
 import { uploadToR2 } from '@/lib/r2-storage'
 import { getMp4DurationSec } from '@/lib/mp4-duration'
+import {
+  normalizeVisibility,
+  normalizeCommentSetting,
+  safeFloat,
+  mapVideo,
+  createShortVideoRecord,
+} from '@/lib/short-videos'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 const MAX_DURATION_SEC = 15
@@ -39,6 +45,16 @@ export async function POST(req: NextRequest) {
     const videoFile = formData.get('video') as File | null
     const thumbnailFile = formData.get('thumbnail') as File | null
     const description = (formData.get('description') as string || '').slice(0, 500) || null
+
+    // Ek meta veriler (opsiyonel)
+    const visibility = normalizeVisibility(formData.get('visibility') as string)
+    const commentSetting = normalizeCommentSetting(formData.get('commentSetting') as string)
+    const allowDuet = (formData.get('allowDuet') as string) !== 'false'
+    const locationName = ((formData.get('locationName') as string) || '').trim() || null
+    const locationLat = safeFloat(formData.get('locationLat'))
+    const locationLng = safeFloat(formData.get('locationLng'))
+    const musicId = ((formData.get('musicId') as string) || '').trim() || null
+    const duetOfId = ((formData.get('duetOfId') as string) || '').trim() || null
 
     if (!videoFile || !(videoFile instanceof File)) {
       return NextResponse.json(
@@ -96,54 +112,27 @@ export async function POST(req: NextRequest) {
       thumbnailUrl = thumbResult.url
     }
 
-    // Create DB record
-    const video = await prisma.shortVideo.create({
-      data: {
-        userId: authUser.id,
-        videoUrl: videoResult.url,
-        thumbnailUrl,
-        description,
-        durationSec,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
+    // Ortak oluşturma mantığı (müzik/duet doğrulama, kayıt, mention+hashtag, bildirim)
+    const authorName = (authUser as any).name || (authUser as any).username || 'Bir kullanıcı'
+    const video = await createShortVideoRecord({
+      userId: authUser.id,
+      authorName,
+      videoUrl: videoResult.url,
+      thumbnailUrl,
+      description,
+      durationSec,
+      visibility,
+      commentSetting,
+      allowDuet,
+      locationName,
+      locationLat,
+      locationLng,
+      musicId,
+      duetOfId,
     })
 
     return NextResponse.json(
-      {
-        success: true,
-        data: {
-          video: {
-            id: video.id,
-            userId: video.userId,
-            videoUrl: video.videoUrl,
-            thumbnailUrl: video.thumbnailUrl,
-            description: video.description,
-            viewsCount: video.viewsCount,
-            likesCount: video.likesCount,
-            commentsCount: video.commentsCount,
-            durationSec: video.durationSec,
-            createdAt: video.createdAt.toISOString(),
-            author: {
-              id: video.user.id,
-              userId: video.user.id,
-              username: video.user.username || video.user.name || 'user',
-              displayName: video.user.name || video.user.username || 'Kullanıcı',
-              avatarUrl: video.user.image,
-            },
-            likedByMe: false,
-            viewedByMe: false,
-          },
-        },
-      },
+      { success: true, data: { video: mapVideo(video, authUser.id) } },
       { status: 201 }
     )
   } catch (error: any) {

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { createNotificationWithPush } from '@/lib/notify'
 
 /**
  * POST /api/short-videos/:id/like
@@ -26,7 +27,7 @@ export async function POST(
     // Check video exists
     const video = await prisma.shortVideo.findUnique({
       where: { id: videoId },
-      select: { id: true, likesCount: true },
+      select: { id: true, likesCount: true, userId: true },
     })
 
     if (!video) {
@@ -68,6 +69,32 @@ export async function POST(
       ])
       liked = true
       likesCount = video.likesCount + 1
+
+      // Video sahibine beğeni bildirimi (fire-and-forget, kendi videosu değilse)
+      if (video.userId !== authUser.id) {
+        ;(async () => {
+          try {
+            const liker = await prisma.user.findUnique({
+              where: { id: authUser.id },
+              select: { name: true, username: true },
+            })
+            const likerName = liker?.name || liker?.username || 'Bir kullanıcı'
+            await createNotificationWithPush({
+              userId: video.userId,
+              type: 'short_video_like',
+              title: 'Videon beğenildi',
+              message: `${likerName} videonu beğendi`,
+              fromUserId: authUser.id,
+              fromUserName: likerName,
+              targetPath: 'short_video',
+              targetId: videoId,
+              data: JSON.stringify({ videoId }),
+            })
+          } catch (e) {
+            console.error('[short-videos] like notify error (non-fatal):', e)
+          }
+        })()
+      }
     }
 
     return NextResponse.json({

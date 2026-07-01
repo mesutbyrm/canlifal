@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v4 as uuidv4 } from 'uuid'
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || ''
@@ -63,6 +64,45 @@ export async function uploadToR2(
     : `https://${R2_BUCKET_NAME}.r2.dev/${key}`
 
   return { key, url }
+}
+
+/**
+ * Build the public CDN URL for a given R2 key.
+ */
+export function buildPublicUrl(key: string): string {
+  return R2_PUBLIC_URL
+    ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${key}`
+    : `https://${R2_BUCKET_NAME}.r2.dev/${key}`
+}
+
+export interface PresignedUpload {
+  key: string
+  uploadUrl: string
+  publicUrl: string
+  expiresIn: number
+}
+
+/**
+ * Create a presigned PUT URL for direct browser -> R2 upload (background upload).
+ * The client PUTs the raw bytes to `uploadUrl` with header Content-Type = contentType.
+ */
+export async function getPresignedUploadUrl(
+  folder: string,
+  ext: string,
+  contentType: string,
+  expiresIn = 900
+): Promise<PresignedUpload> {
+  const client = getClient()
+  const safeExt = ext.startsWith('.') ? ext : `.${ext}`
+  const key = `${folder}/${uuidv4()}${safeExt}`
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+    CacheControl: 'public, max-age=31536000, immutable',
+  })
+  const uploadUrl = await getSignedUrl(client, command, { expiresIn })
+  return { key, uploadUrl, publicUrl: buildPublicUrl(key), expiresIn }
 }
 
 /**

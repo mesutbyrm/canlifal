@@ -135,6 +135,9 @@ model User {
   shortVideoLikes       ShortVideoLike[]
   shortVideoComments    ShortVideoComment[]
   shortVideoViews       ShortVideoView[]
+  shortVideoSaves       ShortVideoSave[]
+  shortVideoCommentLikes ShortVideoCommentLike[]
+  shortVideoMentions    ShortVideoMention[]  @relation("ShortVideoMentioned")
 
   @@index([referralCode])
   @@index([isBot])
@@ -2992,15 +2995,39 @@ model ShortVideo {
   viewsCount    Int      @default(0)
   likesCount    Int      @default(0)
   commentsCount Int      @default(0)
+  sharesCount   Int      @default(0)
+  savesCount    Int      @default(0)
+  // Görünürlük: everyone | followers | close_friends | private
+  visibility    String   @default("everyone")
+  // Yorum ayarı: everyone | followers | off
+  commentSetting String  @default("everyone")
+  allowDuet     Boolean  @default(true)
+  // Konum
+  locationName  String?
+  locationLat   Float?
+  locationLng   Float?
+  // Müzik
+  musicId       String?
+  music         ShortVideoMusic? @relation(fields: [musicId], references: [id], onDelete: SetNull)
+  // Duet / Remix kaynağı
+  duetOfId      String?
+  duetOf        ShortVideo?  @relation("Duet", fields: [duetOfId], references: [id], onDelete: SetNull)
+  duets         ShortVideo[] @relation("Duet")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   likes    ShortVideoLike[]
   comments ShortVideoComment[]
   views    ShortVideoView[]
+  saves    ShortVideoSave[]
+  mentions ShortVideoMention[]
+  hashtags ShortVideoHashtag[]
 
   @@index([createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([visibility, createdAt(sort: Desc)])
+  @@index([musicId])
+  @@index([duetOfId])
   @@map("short_videos")
 }
 
@@ -3025,9 +3052,18 @@ model ShortVideoComment {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content   String   @db.VarChar(500)
+  likesCount Int     @default(0)
+  isPinned  Boolean  @default(false)
+  // Yanıt (threading)
+  parentId  String?
+  parent    ShortVideoComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   ShortVideoComment[] @relation("CommentReplies")
+  likes     ShortVideoCommentLike[]
   createdAt DateTime @default(now())
 
   @@index([videoId, createdAt(sort: Desc)])
+  @@index([videoId, parentId, createdAt(sort: Desc)])
+  @@index([parentId])
   @@index([userId])
   @@map("short_video_comments")
 }
@@ -3045,4 +3081,92 @@ model ShortVideoView {
   @@index([videoId])
   @@index([userId])
   @@map("short_video_views")
+}
+
+model ShortVideoSave {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([videoId, userId])
+  @@index([videoId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("short_video_saves")
+}
+
+model ShortVideoCommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   ShortVideoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
+  @@map("short_video_comment_likes")
+}
+
+model ShortVideoMention {
+  id               String   @id @default(cuid())
+  videoId          String
+  video            ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  mentionedUserId  String
+  mentionedUser    User     @relation("ShortVideoMentioned", fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@unique([videoId, mentionedUserId])
+  @@index([videoId])
+  @@index([mentionedUserId])
+  @@map("short_video_mentions")
+}
+
+model Hashtag {
+  id          String   @id @default(cuid())
+  name        String   @unique // '#' olmadan, küçük harf normalize
+  videosCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  videos      ShortVideoHashtag[]
+
+  @@index([videosCount(sort: Desc)])
+  @@map("hashtags")
+}
+
+model ShortVideoHashtag {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  hashtagId String
+  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([videoId, hashtagId])
+  @@index([hashtagId, createdAt(sort: Desc)])
+  @@index([videoId])
+  @@map("short_video_hashtags")
+}
+
+model ShortVideoMusic {
+  id          String   @id @default(cuid())
+  title       String
+  artist      String?
+  audioUrl    String   // R2/CDN URL
+  coverUrl    String?
+  durationSec Float?
+  usesCount   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  videos      ShortVideo[]
+
+  @@index([usesCount(sort: Desc)])
+  @@index([isActive])
+  @@map("short_video_music")
 }
