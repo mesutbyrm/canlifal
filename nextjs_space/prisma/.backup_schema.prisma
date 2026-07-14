@@ -44,6 +44,9 @@ model User {
   theme                 String               @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
   jetonBalance          Int                  @default(0)
+  // Location for gift leaderboards / sender map (added, optional)
+  city                  String?
+  country               String?              @default("TR")
   // Profile customization
   specialBadges         String?              // JSON array of special badge types (vip, beta_tester, verified, etc.)
   profileEffect         String?              // Profile background effect (sparkles, fire, rainbow, etc.)
@@ -268,6 +271,8 @@ model LiveFortuneTeller {
   @@index([rating])
   @@index([applicationStatus])
   @@index([isBanned])
+  // Perf: teller list orderBy [isOnline desc, rating desc]
+  @@index([isOnline, rating(sort: Desc)])
   @@map("live_fortune_tellers")
 }
 
@@ -610,6 +615,8 @@ model SocialPost {
   @@index([userId])
   @@index([createdAt])
   @@index([postType])
+  // Perf: filtered feed (postType) sorted by createdAt desc
+  @@index([postType, createdAt(sort: Desc)])
   @@map("social_posts")
 }
 
@@ -720,6 +727,8 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([createdAt])
+  // Perf: "my notifications" list sorted by createdAt desc
+  @@index([userId, createdAt(sort: Desc)])
   @@map("notifications")
 }
 
@@ -859,6 +868,9 @@ model VideoStream {
   @@index([userId])
   @@index([status])
   @@index([startedAt])
+  // Perf: live-list query filters by status (+category) and sorts by startedAt desc
+  @@index([status, startedAt(sort: Desc)])
+  @@index([status, category, startedAt(sort: Desc)])
   @@map("video_streams")
 }
 
@@ -921,8 +933,38 @@ model GiftType {
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+  // ── Gift store: uploadable rich assets (added) ──
+  thumbnailUrl       String?  // small preview image (ready-to-use URL)
+  assetUrl           String?  // full gift asset URL (video/lottie/svga/gif/png)
+  assetType          String?  @default("image") // image | video | lottie | svga | gif
+  cloudStoragePath   String?  // internal storage key for the asset
+  thumbnailCloudPath String?  // internal storage key for the thumbnail
+  category           String?  // optional grouping (e.g. "luxury", "romantic")
+  description        String?  @db.Text
+  updatedAt          DateTime @default(now()) @updatedAt
+  // ── Premium ecosystem fields (added) ──
+  soundUrl           String?  // optional sound effect URL
+  soundCloudPath     String?  // internal storage key for the sound
+  animationDurationMs Int?    // animation duration in ms
+  isFullscreen       Boolean  @default(false) // full-screen animation gift
+  tier               String   @default("small") // small | big | huge (animation intensity)
+  isPopular          Boolean  @default(false)
+  isNew              Boolean  @default(false)
+  isSpecialEvent     Boolean  @default(false)
+  isHidden           Boolean  @default(false) // "gizli" gift — invisible until first sent/owned
+  seasonStart        DateTime? // seasonal availability window start
+  seasonEnd          DateTime? // seasonal availability window end
+  isFeatured         Boolean  @default(false) // "Hediye Günü" highlight
+  firstReleasedAt    DateTime? // album: first release date
+  // ── Admin panel: static icon image, effect color & behavior flags (added) ──
+  iconImageUrl       String?  // static PNG/webP icon shown in panel/list (distinct from emoji `icon`)
+  iconImageCloudPath String?  // internal storage key for the static icon image
+  effectColor        String?  // hex effect color, e.g. #FF6B6B
+  comboEnabled       Boolean  @default(false) // gift supports combo sending
+  isPremium          Boolean  @default(false) // premium gift
   gifts          StreamGift[]
   chatRoomGifts  ChatRoomGift[]
+  giftEvents     GiftEvent[]
 
   @@map("gift_types")
 }
@@ -934,7 +976,10 @@ model StreamGift {
   senderId    String
   giftTypeId  String
   quantity    Int         @default(1)
-  totalPrice  Int         // total credits spent
+  totalPrice  Int         // total credits spent (gross / display value)
+  // ── Revenue split (added) ──
+  receiverAmount Int      @default(0) // jetons credited to broadcaster
+  siteAmount     Int      @default(0) // jetons kept by the site
   createdAt   DateTime    @default(now())
   stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
   sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
@@ -1015,18 +1060,100 @@ model PKBattle {
   score1          Int      @default(0) // Gift points for stream1
   score2          Int      @default(0) // Gift points for stream2
   status          String   @default("pending") // pending, active, completed, cancelled, rejected
-  duration        Int      @default(180) // Duration in seconds (default 3 min)
+  duration        Int      @default(300) // Duration in seconds (default 5 min, admin-configurable)
   startedAt       DateTime?
   endedAt         DateTime?
   winnerId        String?  // Winner user ID
   createdAt       DateTime @default(now())
+  // ── Live PK realtime fields (added) ──
+  acceptedAt      DateTime?  // when the opponent accepted
+  endsAt          DateTime?  // authoritative countdown end (server clock) for synced timers
+  isDraw          Boolean    @default(false) // true when scores are equal at finish
+  winnerSide      Int?       // 1 or 2 (null on draw / not finished)
+  scoreLogs       PkScore[]
+  pkGifts         PkGift[]
 
   @@index([stream1Id])
   @@index([stream2Id])
   @@index([user1Id])
   @@index([user2Id])
   @@index([status])
+  // Perf: quickly find a live battle for a given stream/user, and expired battles to finalize
+  @@index([status, endsAt])
   @@map("pk_battles")
+}
+
+// Per-contributor score ledger inside a PK battle (for realtime aggregation & top-supporter).
+model PkScore {
+  id          String   @id @default(cuid())
+  battleId    String
+  side        Int      // 1 = left/host, 2 = right/opponent
+  contributorId String // the viewer who sent the gift that scored these points
+  points      Int      // gross jeton value added
+  createdAt   DateTime @default(now())
+  battle      PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+
+  @@index([battleId])
+  @@index([battleId, side])
+  @@index([battleId, contributorId])
+  @@map("pk_scores")
+}
+
+// Detailed gift log attributed to a PK battle side.
+model PkGift {
+  id          String   @id @default(cuid())
+  battleId    String
+  side        Int      // 1 or 2 (which side the gift scored for)
+  senderId    String   // viewer who sent
+  receiverId  String   // the broadcaster on that side
+  giftTypeId  String
+  quantity    Int      @default(1)
+  points      Int      // gross jeton value (added to that side's score)
+  createdAt   DateTime @default(now())
+  battle      PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+
+  @@index([battleId])
+  @@index([battleId, side])
+  @@index([senderId])
+  @@map("pk_gifts")
+}
+
+// Active/past multi-guest seats on a live video stream (max 8 guests).
+model LiveGuestSession {
+  id          String    @id @default(cuid())
+  streamId    String
+  userId      String
+  status      String    @default("active") // active, left, removed
+  slot        Int       // 1..8 seat index
+  isMuted     Boolean   @default(false)     // audio muted (self or by host)
+  isVideoOff  Boolean   @default(false)     // camera off
+  mutedByHost Boolean   @default(false)     // true when host force-muted
+  joinedAt    DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())      // heartbeat for reconnect detection
+  leftAt      DateTime?
+
+  @@unique([streamId, userId])
+  @@index([streamId])
+  @@index([streamId, status])
+  @@index([userId])
+  @@map("live_guest_sessions")
+}
+
+// Guest invites for multi-guest live streams.
+model LiveGuestInvite {
+  id          String    @id @default(cuid())
+  streamId    String
+  hostId      String    // stream owner who invited
+  guestId     String    // invited user
+  status      String    @default("pending") // pending, accepted, rejected, expired, cancelled
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+  expiresAt   DateTime  // invite auto-expires
+
+  @@index([streamId])
+  @@index([guestId, status])
+  @@index([status, expiresAt])
+  @@map("live_guest_invites")
 }
 
 // Fortune request types (admin configurable)
@@ -1103,6 +1230,10 @@ model DirectMessage {
   @@index([senderId])
   @@index([receiverId])
   @@index([createdAt])
+  // Perf: DM thread history (both OR branches) sorted by createdAt desc + unread count
+  @@index([senderId, receiverId, createdAt(sort: Desc)])
+  @@index([receiverId, senderId, createdAt(sort: Desc)])
+  @@index([receiverId, isRead])
   @@map("direct_messages")
 }
 
@@ -3169,4 +3300,345 @@ model ShortVideoMusic {
   @@index([usesCount(sort: Desc)])
   @@index([isActive])
   @@map("short_video_music")
+}
+
+// ============================================================
+// OKEY / OKEY101 — persistent match results & history
+// Active game state lives in Redis; only final results are persisted here.
+// ============================================================
+model OkeyMatch {
+  id            String   @id @default(cuid())
+  mode          String   // "okey" | "okey101"
+  tableName     String?
+  isPrivate     Boolean  @default(false)
+  hasPassword   Boolean  @default(false)
+  betAmount     Int      @default(0)
+  betCurrency   String   @default("FREE") // FREE | credits | jeton
+  commissionPct Int      @default(0)
+  potAmount     Int      @default(0)
+  status        String   @default("finished") // finished | abandoned | cancelled
+  winnerId      String?
+  winnerName    String?
+  reason        String?  // normal | timeout | abandon | server_recovery
+  durationSec   Int      @default(0)
+  roundCount    Int      @default(1)
+  indicatorTile String?  // gösterge
+  okeyTile      String?  // okey taşı
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  players       OkeyMatchPlayer[]
+
+  @@index([mode, status])
+  @@index([winnerId])
+  @@index([createdAt])
+  @@map("okey_matches")
+}
+
+model OkeyMatchPlayer {
+  id           String   @id @default(cuid())
+  matchId      String
+  userId       String
+  userName     String
+  seat         Int      // 0..3
+  isWinner     Boolean  @default(false)
+  score        Int      @default(0)
+  penaltyScore Int      @default(0)  // Okey101 negative scoring
+  betPaid      Int      @default(0)
+  rewardWon    Int      @default(0)
+  leftEarly    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  match        OkeyMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([userId])
+  @@map("okey_match_players")
+}
+
+// ============================================================
+// CENTRAL GIFT ECOSYSTEM (2026) — additive, do not remove
+// ============================================================
+
+// Configurable revenue rules per context (no hardcoded % in code).
+model RevenueRule {
+  id                          String   @id @default(cuid())
+  context                     String   @unique // live_stream | voice_room | video | short_video | fortune
+  label                       String   // human label, e.g. "Canlı Yayın"
+  // Primary split (applied to gross amount)
+  sitePercent                 Int      @default(50)
+  receiverPercent             Int      @default(50) // broadcaster / video owner / teller / room owner (when gift to owner)
+  // Voice-room seat/guest special handling
+  ownerCutOfRemainderPercent  Int      @default(30) // owner's cut of the (gross - site) remainder for seat gifts
+  isActive                    Boolean  @default(true)
+  updatedAt                   DateTime @default(now()) @updatedAt
+  createdAt                   DateTime @default(now())
+
+  @@map("revenue_rules")
+}
+
+// Unified ledger for EVERY gift sent across ALL modules. Single source of truth
+// for stats, leaderboards, history, map, collections, feed, battles, goals.
+model GiftEvent {
+  id             String   @id @default(cuid())
+  idempotencyKey String?  @unique // prevents double-processing / double-click
+  giftTypeId     String
+  giftType       GiftType @relation(fields: [giftTypeId], references: [id])
+  senderId       String
+  receiverId     String
+  context        String   // live_stream | voice_room | video | short_video | fortune
+  contextId      String?  // streamId | roomId | videoId | tellerId
+  quantity       Int      @default(1)
+  grossAmount    Int      // total jetons spent (display value)
+  siteAmount     Int      @default(0)
+  receiverAmount Int      @default(0)
+  ownerAmount    Int      @default(0)
+  ownerId        String?  // room owner (voice_room seat gifts)
+  recipientIsOwner Boolean @default(false)
+  senderCity     String?
+  senderCountry  String?
+  battleId       String?  // if sent during a gift battle
+  status         String   @default("completed") // completed | refunded | cancelled
+  createdAt      DateTime @default(now())
+
+  @@index([senderId, createdAt])
+  @@index([receiverId, createdAt])
+  @@index([context, createdAt])
+  @@index([giftTypeId])
+  @@index([battleId])
+  @@index([createdAt])
+  @@map("gift_events")
+}
+
+// Gift battles in live streams / voice rooms.
+model GiftBattle {
+  id          String   @id @default(cuid())
+  context     String   // live_stream | voice_room
+  contextId   String   // streamId | roomId
+  createdById String
+  status      String   @default("active") // active | finished | cancelled
+  durationSec Int      @default(180)
+  startedAt   DateTime @default(now())
+  endsAt      DateTime
+  winnerId    String?
+  totalScore  Int      @default(0)
+  createdAt   DateTime @default(now())
+  participants GiftBattleParticipant[]
+
+  @@index([context, contextId, status])
+  @@index([status, endsAt])
+  @@map("gift_battles")
+}
+
+model GiftBattleParticipant {
+  id           String     @id @default(cuid())
+  battleId     String
+  battle       GiftBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  participantId String    // the user receiving gifts (a side of the battle)
+  displayName  String?
+  score        Int        @default(0) // total gross jetons gifted to this side during the battle
+  createdAt    DateTime   @default(now())
+
+  @@unique([battleId, participantId])
+  @@index([battleId, score])
+  @@map("gift_battle_participants")
+}
+
+// Fundraising / gift goals for broadcasters and room owners.
+model GiftGoal {
+  id           String   @id @default(cuid())
+  context      String   // live_stream | voice_room
+  contextId    String
+  ownerId      String
+  title        String?
+  targetAmount Int
+  currentAmount Int     @default(0)
+  status       String   @default("active") // active | completed | cancelled
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  @@index([context, contextId, status])
+  @@map("gift_goals")
+}
+
+// Daily missions (templates) + per-user progress.
+model GiftMission {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g. first_gift, five_people, thousand_jetons
+  title       String
+  description String?
+  type        String   // count_gifts | distinct_receivers | total_jetons | context_gift
+  target      Int      @default(1)
+  context     String?  // optional context requirement
+  rewardJetons Int     @default(0)
+  rewardCredits Int    @default(0)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("gift_missions")
+}
+
+model UserMissionProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  missionId  String
+  dayKey     String   // YYYY-MM-DD (UTC) — daily reset
+  progress   Int      @default(0)
+  completed  Boolean  @default(false)
+  claimed    Boolean  @default(false)
+  updatedAt  DateTime @default(now()) @updatedAt
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, missionId, dayKey])
+  @@index([userId, dayKey])
+  @@map("user_mission_progress")
+}
+
+// ============================================================
+// PK (Battle) System — TikTok/Bigo-style broadcaster-vs-broadcaster
+// Phase 1: request/accept/reject/cancel flow, timed duration, live
+// scoring (host vs guest), final sprint (last 30s), winner/draw result.
+// Fully additive — does not touch existing GiftBattle (poll battles).
+// ============================================================
+model PkMatch {
+  id            String    @id @default(cuid())
+  // Left side (challenger / host who sent the request)
+  hostUserId    String
+  hostStreamId  String
+  hostName      String?
+  hostImage     String?
+  // Right side (opponent who receives the request)
+  guestUserId   String
+  guestStreamId String?
+  guestName     String?
+  guestImage    String?
+  // pending | accepted | live | finished | cancelled | rejected | expired
+  status        String    @default("pending")
+  durationSec   Int       @default(180) // 60 | 180 | 300 | 600
+  hostScore     Int       @default(0)   // gross jetons gifted to host side
+  guestScore    Int       @default(0)   // gross jetons gifted to guest side
+  // host_win | guest_win | draw | left_win | right_win (null until finished)
+  result        String?
+  winnerUserId  String?
+  finalSprint   Boolean   @default(false) // set true in the last 30 seconds
+  // ── Phase 2: multi-guest & team PK ──────────────────────────────
+  mode          String    @default("1v1") // 1v1 | guest | team
+  seatCount     Int        @default(2)     // total seats (guest: up to 9; team: even 2/4/6/8)
+  leftScore     Int        @default(0)      // team mode: aggregate gross for Sol team
+  rightScore    Int        @default(0)      // team mode: aggregate gross for Sağ team
+  leftName      String?                     // team label (default "Takım Sol")
+  rightName     String?                     // team label (default "Takım Sağ")
+  seats         PkSeat[]
+  requestedAt   DateTime  @default(now())
+  respondedAt   DateTime?
+  startedAt     DateTime?
+  endsAt        DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([hostUserId, status])
+  @@index([guestUserId, status])
+  @@index([status, endsAt])
+  @@index([hostStreamId])
+  @@index([guestStreamId])
+  @@index([status, mode])
+  @@map("pk_matches")
+}
+
+// A seat occupancy in a multi-guest / team PK room (Phase 2).
+model PkSeat {
+  id         String    @id @default(cuid())
+  matchId    String
+  match      PkMatch   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  seatIndex  Int       // 0-based position in the room
+  team       String    @default("none") // left | right | none (guest mode)
+  userId     String
+  userName   String?
+  userImage  String?
+  streamId   String?   // the guest's own stream if they are broadcasting
+  score      Int       @default(0) // gross jetons gifted to this guest
+  status     String    @default("active") // active | left | kicked
+  joinedAt   DateTime  @default(now())
+  leftAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([matchId, seatIndex])
+  @@index([matchId, status])
+  @@index([userId, status])
+  @@map("pk_seats")
+}
+
+// ── Phase 3: per-participant result row (written at finalize) ──────
+// One row per user per finished match. Powers leaderboards & stats.
+model PkParticipant {
+  id         String   @id @default(cuid())
+  matchId    String
+  userId     String
+  mode       String   // 1v1 | guest | team
+  side       String   // host | guest | left | right | seat
+  score      Int      @default(0) // gross jetons this user pulled in during the match
+  outcome    String   // win | loss | draw | completed
+  finishedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@unique([matchId, userId])
+  @@index([userId, finishedAt])
+  @@index([finishedAt])
+  @@index([outcome, finishedAt])
+  @@map("pk_participants")
+}
+
+// ── Phase 3: all-time aggregated PK stats per user (O(1) profile read) ──
+model PkStat {
+  userId      String   @id
+  matches     Int      @default(0)
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  draws       Int      @default(0)
+  totalScore  Int      @default(0) // cumulative gross pulled in across all PK
+  bestScore   Int      @default(0) // best single-match score
+  currentStreak Int    @default(0) // consecutive wins (resets on non-win)
+  bestStreak  Int      @default(0)
+  lastPlayedAt DateTime?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([wins])
+  @@index([totalScore])
+  @@map("pk_stats")
+}
+
+// ── Phase 3: premium in-match events (score multipliers) ───────────
+model PkEvent {
+  id         String   @id @default(cuid())
+  matchId    String
+  // lucky_gift | golden_minute | double_score | final_frenzy
+  type       String
+  multiplier Float    @default(2.0)
+  startsAt   DateTime @default(now())
+  endsAt     DateTime
+  createdBy  String   // userId (host) or admin who triggered it
+  createdAt  DateTime @default(now())
+
+  @@index([matchId, endsAt])
+  @@map("pk_events")
+}
+
+// ── Phase 3: moderation — PK ban list ──────────────────────────────
+model PkBan {
+  id        String    @id @default(cuid())
+  userId    String
+  reason    String?
+  bannedBy  String    // admin userId
+  active    Boolean   @default(true)
+  expiresAt DateTime? // null = permanent
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, active])
+  @@map("pk_bans")
 }

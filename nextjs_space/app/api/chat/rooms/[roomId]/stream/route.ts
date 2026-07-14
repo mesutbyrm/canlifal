@@ -85,6 +85,14 @@ export async function GET(
                 ...giftEvt.data
               })}\n\n`))
             }
+            // PK events
+            const pkEvents = newEvents.filter(e => e.type === 'pk')
+            for (const pkEvt of pkEvents) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'pk',
+                ...pkEvt.data
+              })}\n\n`))
+            }
             lastEventCheck = Date.now()
           }
 

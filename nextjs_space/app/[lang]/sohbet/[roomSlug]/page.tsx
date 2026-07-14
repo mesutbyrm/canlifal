@@ -7,11 +7,12 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import type { TRTC } from '@/lib/trtc-client'
-import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2, Eye } from 'lucide-react'
+import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2, Eye, Swords } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
 import dynamic from 'next/dynamic'
 const YouTubeMusicModal = dynamic(() => import('@/components/youtube-music-modal'), { ssr: false })
+const PKBattleOverlay = dynamic(() => import('@/components/pk-battle-overlay'), { ssr: false })
 
 interface Message {
   id: string
@@ -57,6 +58,7 @@ interface ChatRoom {
   activeDjId?: string | null
   whitelistedWords?: string | null
   userCount?: number
+  isActive?: boolean
 }
 
 interface MyPermissions {
@@ -203,6 +205,12 @@ export default function ChatRoomPage() {
   const [showGiftUserSelect, setShowGiftUserSelect] = useState(false)
   const [showMobileUsers, setShowMobileUsers] = useState(false)
   
+  // PK Battle system
+  const [activePKBattle, setActivePKBattle] = useState<any>(null)
+  const [incomingPKRequest, setIncomingPKRequest] = useState<any>(null)
+  const [pkSendingAction, setPkSendingAction] = useState(false)
+  const pkDismissedRef = useRef<Set<string>>(new Set())
+  
   // User balance
   const [userJetonBalance, setUserJetonBalance] = useState(0)
   const [userCfcBalance, setUserCfcBalance] = useState(0)
@@ -254,7 +262,7 @@ export default function ChatRoomPage() {
   
   // Commands panel
   const [showCommandsPanel, setShowCommandsPanel] = useState(false)
-  const [commandSubPanel, setCommandSubPanel] = useState<string | null>(null) // 'duyuru' | 'kick' | 'ban' | 'unban' | null
+  const [commandSubPanel, setCommandSubPanel] = useState<string | null>(null) // 'duyuru' | 'kick' | 'ban' | 'unban' | 'pk' | null
   const [duyuruText, setDuyuruText] = useState('')
   const [pinnedDuyuru, setPinnedDuyuru] = useState<string | null>(null)
   const pinnedDuyuruTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -2185,6 +2193,109 @@ export default function ChatRoomPage() {
       return () => clearInterval(interval)
     }
   }, [room, fetchGiftTypes, fetchLeaderboard])
+
+  // ===== PK Battle Functions =====
+  const fetchPKStatus = useCallback(async () => {
+    if (!room) return
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/pk`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.id) {
+          setActivePKBattle(data)
+          // If pending and this room's owner is user2 (opponent), show incoming request
+          if (data.status === 'pending' && data.user2Id === session?.user?.id && !pkDismissedRef.current.has(data.id)) {
+            setIncomingPKRequest(data)
+          }
+        } else {
+          setActivePKBattle(null)
+          setIncomingPKRequest(null)
+        }
+      }
+    } catch (err) { console.error('PK status fetch error:', err) }
+  }, [room, session?.user?.id])
+
+  // Poll PK status
+  useEffect(() => {
+    if (room) {
+      fetchPKStatus()
+      const interval = setInterval(fetchPKStatus, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [room, fetchPKStatus])
+
+  const handlePKCreate = useCallback(async (targetRoomId: string) => {
+    if (!room || pkSendingAction) return
+    setPkSendingAction(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room.id}/pk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', targetRoomId, duration: 180 })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'PK oluşturulamadı')
+      } else {
+        setActivePKBattle(data)
+        setCommandSubPanel(null)
+        setShowCommandsPanel(false)
+      }
+    } catch { alert('PK oluşturulurken hata oluştu') }
+    finally { setPkSendingAction(false) }
+  }, [room, pkSendingAction])
+
+  const handlePKAccept = useCallback(async (battleId: string) => {
+    if (pkSendingAction) return
+    setPkSendingAction(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room?.id || ''}/pk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept', battleId })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'PK kabul edilemedi')
+      } else {
+        setIncomingPKRequest(null)
+        setActivePKBattle(data)
+      }
+    } catch { alert('Hata oluştu') }
+    finally { setPkSendingAction(false) }
+  }, [room, pkSendingAction])
+
+  const handlePKReject = useCallback(async (battleId: string) => {
+    if (pkSendingAction) return
+    setPkSendingAction(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/${room?.id || ''}/pk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', battleId })
+      })
+      if (res.ok) {
+        pkDismissedRef.current.add(battleId)
+        setIncomingPKRequest(null)
+        setActivePKBattle(null)
+      }
+    } catch { /* ignore */ }
+    finally { setPkSendingAction(false) }
+  }, [room, pkSendingAction])
+
+  const handlePKEnd = useCallback(async (battleId: string) => {
+    if (pkSendingAction) return
+    setPkSendingAction(true)
+    try {
+      await fetch(`/api/chat/rooms/${room?.id || ''}/pk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'end', battleId })
+      })
+      setActivePKBattle(null)
+    } catch { /* ignore */ }
+    finally { setPkSendingAction(false) }
+  }, [room, pkSendingAction])
 
   const canUseVoice = () => {
     if (!session?.user?.id) return false
@@ -4502,7 +4613,8 @@ export default function ChatRoomPage() {
                   {commandSubPanel === 'duyuru' ? '📢 Duyuru Yayınla' :
                    commandSubPanel === 'kick' ? '👢 Kullanıcı At' :
                    commandSubPanel === 'ban' ? '🚫 Kullanıcı Banla' :
-                   commandSubPanel === 'unban' ? '✅ Ban Kaldır' : 'Oda Komutları'}
+                   commandSubPanel === 'unban' ? '✅ Ban Kaldır' :
+                   commandSubPanel === 'pk' ? '⚔️ PK Başlat' : 'Oda Komutları'}
                 </h3>
                 <button onClick={() => { setShowCommandsPanel(false); setCommandSubPanel(null) }} className="text-purple-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -4622,6 +4734,16 @@ export default function ChatRoomPage() {
                             <div>
                               <p className="text-xs font-medium">🎶 Müzik Aç</p>
                               <p className="text-[10px] text-fuchsia-400/60">YouTube&apos;dan müzik çal/yönet</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => setCommandSubPanel('pk')}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 bg-red-900/30 border border-red-500/20 rounded-lg text-red-300 hover:bg-red-900/50 hover:text-white transition-all text-left"
+                          >
+                            <Swords className="w-4 h-4 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs font-medium">⚔️ PK Başlat</p>
+                              <p className="text-[10px] text-red-400/60">Başka bir odaya PK isteği gönder</p>
                             </div>
                           </button>
                         </div>
@@ -4903,11 +5025,112 @@ export default function ChatRoomPage() {
                     )}
                   </div>
                 )}
+
+                {/* === PK SUB-PANEL === */}
+                {commandSubPanel === 'pk' && (
+                  <div className="space-y-3">
+                    <p className="text-purple-300/70 text-xs">PK isteği göndermek istediğiniz odayı seçin.</p>
+                    {activePKBattle && (activePKBattle.status === 'pending' || activePKBattle.status === 'active') ? (
+                      <div className="text-center py-4">
+                        <p className="text-yellow-400 text-sm">⚔️ Zaten aktif bir PK mevcut</p>
+                        <p className="text-purple-400/60 text-xs mt-1">Durum: {activePKBattle.status === 'pending' ? 'Beklemede' : 'Aktif'}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+                        {allRooms.filter(r => r.id !== room?.id).length === 0 ? (
+                          <p className="text-purple-400/50 text-sm text-center py-8">Başka aktif oda bulunamadı</p>
+                        ) : (
+                          allRooms.filter(r => r.id !== room?.id).map(targetRoom => (
+                            <button
+                              key={targetRoom.id}
+                              onClick={() => handlePKCreate(targetRoom.id)}
+                              disabled={pkSendingAction}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-red-500/20 bg-red-900/20 hover:bg-red-900/40 transition-all text-left disabled:opacity-50"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-white text-sm flex-shrink-0">
+                                {targetRoom.icon || targetRoom.nameTr?.charAt(0) || '🏠'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-red-200 text-xs font-medium truncate">{targetRoom.nameTr || targetRoom.nameEn}</p>
+                                <p className="text-red-400/50 text-[10px]">{(targetRoom as any).userCount || 0} kişi online</p>
+                              </div>
+                              <Swords className="w-4 h-4 text-red-400 flex-shrink-0" />
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* === Incoming PK Request Modal === */}
+      <AnimatePresence>
+        {incomingPKRequest && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 30 }}
+              className="bg-gradient-to-br from-gray-900 via-red-950/50 to-gray-900 border border-red-500/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl shadow-red-500/20"
+            >
+              <div className="text-center">
+                <motion.div
+                  animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="text-5xl mb-4"
+                >
+                  ⚔️
+                </motion.div>
+                <h3 className="text-xl font-bold text-red-400 mb-2">PK Daveti!</h3>
+                <p className="text-purple-200 text-sm mb-1">
+                  <span className="font-semibold text-white">{incomingPKRequest.user1?.name || 'Bir oda sahibi'}</span> sizi PK&apos;ya davet etti!
+                </p>
+                {incomingPKRequest.room1 && (
+                  <p className="text-purple-400/70 text-xs mb-4">
+                    {incomingPKRequest.room1.icon} {incomingPKRequest.room1.name} odası
+                  </p>
+                )}
+                <p className="text-purple-400/60 text-xs mb-6">Süre: {Math.floor((incomingPKRequest.duration || 180) / 60)} dakika</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handlePKReject(incomingPKRequest.id)}
+                    disabled={pkSendingAction}
+                    className="flex-1 py-3 bg-gray-800 border border-gray-600/40 rounded-xl text-gray-300 font-semibold hover:bg-gray-700 transition-all disabled:opacity-50"
+                  >
+                    ❌ Reddet
+                  </button>
+                  <button
+                    onClick={() => handlePKAccept(incomingPKRequest.id)}
+                    disabled={pkSendingAction}
+                    className="flex-1 py-3 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl text-white font-semibold hover:from-red-500 hover:to-orange-500 transition-all shadow-lg shadow-red-500/30 disabled:opacity-50"
+                  >
+                    ✅ Kabul Et
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* === Active PK Battle Overlay === */}
+      {activePKBattle && activePKBattle.status === 'active' && room && (
+        <PKBattleOverlay
+          battle={activePKBattle}
+          currentStreamId={room.id}
+          onEnd={() => handlePKEnd(activePKBattle.id)}
+        />
+      )}
 
       {/* Transfer Ownership Modal */}
       <AnimatePresence>
