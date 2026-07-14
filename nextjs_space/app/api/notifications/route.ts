@@ -22,16 +22,30 @@ export async function GET(request: NextRequest) {
       where.isRead = false
     }
 
-    const notifications = await prisma.notification.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      skip: (page - 1) * 50
-    })
-
-    const unreadCount = await prisma.notification.count({
-      where: { userId, isRead: false }
-    })
+    // Run both queries in parallel instead of sequentially
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        skip: (page - 1) * 50,
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          message: true,
+          data: true,
+          postId: true,
+          fromUserId: true,
+          fromUserName: true,
+          isRead: true,
+          createdAt: true,
+        }
+      }),
+      prisma.notification.count({
+        where: { userId, isRead: false }
+      })
+    ])
 
     return NextResponse.json({ notifications, unreadCount })
   } catch (error) {

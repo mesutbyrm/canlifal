@@ -41,42 +41,55 @@ export async function GET(
       whereClause.createdAt = { gt: new Date(after) }
     }
 
-    const messages = await prisma.chatMessage.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
-            membership: true,
-          }
-        }
-      },
-      orderBy: { createdAt: after ? 'asc' : 'desc' },
-      take: after ? 100 : limit
-    })
-
-    // Get user roles and nicknames for all message authors
-    const userIds = [...new Set(messages.map((m: any) => m.userId))]
-    const [userRoles, userPresences] = await Promise.all([
-      prisma.chatUserRole.findMany({
-        where: {
-          roomId,
-          userId: { in: userIds }
-        }
-      }),
-      prisma.chatPresence.findMany({
-        where: {
-          roomId,
-          userId: { in: userIds }
-        },
+    // Run messages query + room status in parallel
+    const [messages, room] = await Promise.all([
+      prisma.chatMessage.findMany({
+        where: whereClause,
         select: {
+          id: true,
+          roomId: true,
           userId: true,
-          nickname: true
-        }
+          content: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+              membership: true,
+            }
+          }
+        },
+        orderBy: { createdAt: after ? 'asc' : 'desc' },
+        take: after ? 100 : limit
+      }),
+      prisma.chatRoom.findUnique({
+        where: { id: roomId },
+        select: { isMuted: true }
       })
     ])
+
+    // Get user roles, nicknames and permissions in parallel
+    const userIds = [...new Set(messages.map((m: any) => m.userId))]
+    const parallelQueries: [Promise<any>, Promise<any>, Promise<any> | null, Promise<any> | null] = [
+      prisma.chatUserRole.findMany({
+        where: { roomId, userId: { in: userIds } },
+        select: { userId: true, role: true }
+      }),
+      prisma.chatPresence.findMany({
+        where: { roomId, userId: { in: userIds } },
+        select: { userId: true, nickname: true }
+      }),
+      currentUserId ? getUserPermissions(roomId, currentUserId) : null,
+      currentUserId ? prisma.chatPresence.findUnique({
+        where: { roomId_userId: { roomId, userId: currentUserId } },
+        select: { nickname: true }
+      }) : null
+    ]
+    const [userRoles, userPresences, myPermissions, myPresence] = await Promise.all(
+      parallelQueries.map(p => p || Promise.resolve(null))
+    )
+    const myNickname = myPresence?.nickname || currentUserName
 
     const roleMap = new Map(userRoles.map((r: any) => [r.userId, r.role]))
     const nicknameMap = new Map(userPresences.map((p: any) => [p.userId, p.nickname]))
@@ -100,24 +113,6 @@ export async function GET(
 
     // If not polling (initial load), reverse to show oldest first
     const orderedMessages = after ? messagesWithRoles : messagesWithRoles.reverse()
-
-    // Get room muted status and user permissions
-    const room = await prisma.chatRoom.findUnique({
-      where: { id: roomId },
-      select: { isMuted: true }
-    })
-
-    // Get user permissions if logged in
-    let myPermissions = null
-    let myNickname = null
-    if (currentUserId) {
-      myPermissions = await getUserPermissions(roomId, currentUserId)
-      const presence = await prisma.chatPresence.findUnique({
-        where: { roomId_userId: { roomId, userId: currentUserId } },
-        select: { nickname: true }
-      })
-      myNickname = presence?.nickname || currentUserName
-    }
 
     return NextResponse.json({
       messages: orderedMessages,

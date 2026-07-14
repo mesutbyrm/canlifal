@@ -49,35 +49,20 @@ export async function GET(
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    // Get follower and following counts
-    const [followerCount, followingCount] = await Promise.all([
+    // Run all counts + follow check in parallel
+    const [followerCount, followingCount, totalLikes, followRecord] = await Promise.all([
       prisma.follow.count({ where: { followingId: user.id } }),
-      prisma.follow.count({ where: { followerId: user.id } })
+      prisma.follow.count({ where: { followerId: user.id } }),
+      prisma.socialLike.count({
+        where: { post: { userId: user.id, isPublic: true } }
+      }),
+      auth?.id && auth.id !== user.id
+        ? prisma.follow.findUnique({
+            where: { followerId_followingId: { followerId: auth.id, followingId: user.id } }
+          })
+        : Promise.resolve(null)
     ])
-
-    // Get total likes on user's posts
-    const totalLikes = await prisma.socialLike.count({
-      where: {
-        post: {
-          userId: user.id,
-          isPublic: true
-        }
-      }
-    })
-
-    // Check if current user is following this user
-    let isFollowing = false
-    if (auth?.id && auth.id !== user.id) {
-      const follow = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: {
-            followerId: auth.id,
-            followingId: user.id
-          }
-        }
-      })
-      isFollowing = !!follow
-    }
+    const isFollowing = !!followRecord
 
     // Check if membership is active (null expiry = lifetime/permanent membership)
     const membershipActive = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) > new Date() : true

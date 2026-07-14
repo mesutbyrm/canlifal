@@ -21,22 +21,33 @@ export async function GET(
     const { roomId } = await params
     const presenceTimeout = new Date(Date.now() - 300000)
 
-    const presences = await prisma.chatPresence.findMany({
-      where: {
-        roomId,
-        lastSeen: { gte: presenceTimeout }
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
-            image: true
+    // Run presences + room status in parallel
+    const [presences, room] = await Promise.all([
+      prisma.chatPresence.findMany({
+        where: {
+          roomId,
+          lastSeen: { gte: presenceTimeout }
+        },
+        select: {
+          userId: true,
+          nickname: true,
+          lastSeen: true,
+          seatIndex: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+              image: true
+            }
           }
         }
-      }
-    })
+      }),
+      prisma.chatRoom.findUnique({
+        where: { id: roomId },
+        select: { isMuted: true }
+      })
+    ])
 
     // Get chat roles for all active users
     const userIds = presences.map((p: any) => p.userId)
@@ -44,16 +55,11 @@ export async function GET(
       where: {
         roomId,
         userId: { in: userIds }
-      }
+      },
+      select: { userId: true, role: true }
     })
 
     const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
-
-    // Get room muted status
-    const room = await prisma.chatRoom.findUnique({
-      where: { id: roomId },
-      select: { isMuted: true }
-    })
 
     const activeUsers = presences.map((p: any) => {
       // Global admin/moderator/site_manager gets superadmin role in chat
@@ -386,22 +392,32 @@ export async function POST(
 
     // Return updated active users
     const presenceTimeout = new Date(Date.now() - 300000)
-    const presences = await prisma.chatPresence.findMany({
-      where: {
-        roomId,
-        lastSeen: { gte: presenceTimeout }
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
-            image: true
+    const [presences, room] = await Promise.all([
+      prisma.chatPresence.findMany({
+        where: {
+          roomId,
+          lastSeen: { gte: presenceTimeout }
+        },
+        select: {
+          userId: true,
+          nickname: true,
+          lastSeen: true,
+          seatIndex: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+              image: true
+            }
           }
         }
-      }
-    })
+      }),
+      prisma.chatRoom.findUnique({
+        where: { id: roomId },
+        select: { isMuted: true }
+      })
+    ])
 
     // Get chat roles for all active users
     const userIds = presences.map((p: any) => p.userId)
@@ -409,16 +425,12 @@ export async function POST(
       where: {
         roomId,
         userId: { in: userIds }
-      }
+      },
+      select: { userId: true, role: true }
     })
 
-    const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
-
-    // Get room muted status
-    const room = await prisma.chatRoom.findUnique({
-      where: { id: roomId },
-      select: { isMuted: true }
-    })
+    const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role])
+    )
 
     const activeUsers = presences.map((p: any) => {
       const globalAdminRoles2 = ['admin', 'moderator', 'site_manager']

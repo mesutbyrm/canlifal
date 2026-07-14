@@ -25,9 +25,14 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
   else if (sort === 'price_low') orderBy = [{ isOnline: 'desc' }, { pricePerSession: 'asc' }];
   else if (sort === 'price_high') orderBy = [{ isOnline: 'desc' }, { pricePerSession: 'desc' }];
 
-  const tellers = await prisma.liveFortuneTeller.findMany({
+  // Run teller + stream queries in parallel
+  const tellerQuery = prisma.liveFortuneTeller.findMany({
     where,
-    include: {
+    select: {
+      id: true, userId: true, displayName: true, bio: true, avatar: true,
+      specialties: true, rating: true, totalSessions: true, totalReviews: true,
+      pricePerSession: true, isOnline: true, isVerified: true, isActive: true,
+      isBanned: true, applicationStatus: true, approvedAt: true, createdAt: true,
       user: { select: { name: true, image: true } },
       sessions: {
         where: { status: { in: ['active', 'pending'] } },
@@ -38,11 +43,15 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
     orderBy
   });
 
+  // We need teller userIds for stream query, so we must await tellers first
+  const tellers = await tellerQuery;
   const tellerUserIds = tellers.map((t: { userId: string }) => t.userId);
-  const activeStreams = await prisma.videoStream.findMany({
-    where: { userId: { in: tellerUserIds }, status: 'live' },
-    select: { userId: true, id: true }
-  });
+  const activeStreams = tellerUserIds.length > 0 
+    ? await prisma.videoStream.findMany({
+        where: { userId: { in: tellerUserIds }, status: 'live' },
+        select: { userId: true }
+      })
+    : [];
   const streamingUserIds = new Set(activeStreams.map((s: { userId: string }) => s.userId));
 
   return tellers.map((teller: typeof tellers[number]) => {

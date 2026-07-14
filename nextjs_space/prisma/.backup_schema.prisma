@@ -501,6 +501,7 @@ model ChatRoomGift {
   @@index([senderId])
   @@index([recipientId])
   @@index([roomId, senderId])
+  @@index([roomId, createdAt(sort: Desc)])
   @@map("chat_room_gifts")
 }
 
@@ -532,6 +533,7 @@ model ChatPresence {
 
   @@unique([roomId, userId])
   @@index([roomId])
+  @@index([roomId, lastSeen])
   @@map("chat_presences")
 }
 
@@ -729,6 +731,8 @@ model Notification {
   @@index([createdAt])
   // Perf: "my notifications" list sorted by createdAt desc
   @@index([userId, createdAt(sort: Desc)])
+  // Perf: unread notifications count + ordered list
+  @@index([userId, isRead, createdAt(sort: Desc)])
   @@map("notifications")
 }
 
