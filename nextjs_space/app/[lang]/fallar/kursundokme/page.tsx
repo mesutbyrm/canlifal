@@ -506,7 +506,7 @@ export default function KursunDokmePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={startFortune}
-              className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 text-deep-purple-950 font-semibold rounded-lg hover:from-gold-500 hover:to-gold-400 transition-all flex items-center justify-center gap-3"
+              className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 text-white font-semibold rounded-lg hover:from-gold-500 hover:to-gold-400 transition-all flex items-center justify-center gap-3"
             >
               <Droplets className="w-6 h-6" />
               {'Kurşun Dök'}

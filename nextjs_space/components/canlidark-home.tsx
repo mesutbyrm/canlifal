@@ -874,7 +874,7 @@ export default function CanliDarkHome() {
                   <div className="p-2.5">
                     <p className="text-[11px] font-semibold text-white line-clamp-2 leading-tight">{video.title}</p>
                     {video.channelName && (
-                      <p className="text-[9px] text-fuchsia-200/50 mt-1 flex items-center gap-1">
+                      <p className="text-[9px] text-fuchsia-300/80 mt-1 flex items-center gap-1">
                         <Youtube className="w-2.5 h-2.5 text-red-400" /> {video.channelName}
                       </p>
                     )}
@@ -1045,7 +1045,7 @@ export default function CanliDarkHome() {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   </div>
-                  <p className="text-[10px] font-semibold text-amber-200 text-center truncate w-full">{plan.name}</p>
+                  <p className="text-[10px] font-semibold text-amber-400 text-center truncate w-full">{plan.name}</p>
                 </Link>
               )
             })}
@@ -1061,7 +1061,7 @@ export default function CanliDarkHome() {
                       <span className="text-2xl">{label.split(' ')[0]}</span>
                     </div>
                   </div>
-                  <p className="text-[10px] font-semibold text-amber-200/60 text-center">{label.split(' ')[1]}</p>
+                  <p className="text-[10px] font-semibold text-amber-400 text-center">{label.split(' ')[1]}</p>
                 </div>
               ))}
             </div>

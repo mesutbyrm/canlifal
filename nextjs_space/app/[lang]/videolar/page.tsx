@@ -65,7 +65,7 @@ export default function VideolarPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 bg-[#0f0520]">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-gradient-to-b from-[#0f0520] via-[#0f0520]/95 to-transparent pb-3 pt-4 px-4">
         <div className="flex items-center gap-3 mb-3">

@@ -48,7 +48,9 @@ export async function GET(req: NextRequest) {
 // POST - increment view count
 export async function POST(req: NextRequest) {
   try {
-    const { videoId } = await req.json()
+    let body: any
+    try { body = await req.json() } catch { return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 }) }
+    const { videoId } = body || {}
     if (!videoId) return NextResponse.json({ error: 'Video ID gerekli' }, { status: 400 })
 
     await prisma.trendVideo.update({

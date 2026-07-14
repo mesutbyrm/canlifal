@@ -133,7 +133,7 @@ export default function HoroscopePage() {
                   onClick={() => setSelectedSign(sign.id)}
                   className={`p-2 sm:p-3 rounded-xl transition-all text-center ${
                     selectedSign === sign.id
-                      ? 'bg-gold-500 text-deep-purple-950'
+                      ? 'bg-gold-500 text-white'
                       : 'bg-deep-purple-900/50 border border-deep-purple-700 text-deep-purple-200 hover:border-gold-500/50'
                   }`}
                 >
@@ -167,7 +167,7 @@ export default function HoroscopePage() {
           <button
             onClick={handleSubmit}
             disabled={isLoading || !selectedSign}
-            className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="w-full py-4 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {isLoading ? (
               <LoadingSpinner message={'Burç yorumunuz hazırlanıyor...'} />

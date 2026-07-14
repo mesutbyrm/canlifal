@@ -103,7 +103,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="tr" className={`${inter.variable} ${cinzel.variable}`}>
+    <html lang="tr" className={`${inter.variable} ${cinzel.variable}`} data-theme="falclub">
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#1a0a2e" />
@@ -266,7 +266,7 @@ export default function RootLayout({
         />
         {/* Service worker registration is handled by OneSignal SDK (OneSignalSDKWorker.js) */}
       </head>
-      <body>
+      <body className="bg-background text-foreground">
         <SessionProviderWrapper>
           <SiteThemeWrapper>
             <LanguageProvider>

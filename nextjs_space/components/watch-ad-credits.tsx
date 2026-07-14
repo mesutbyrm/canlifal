@@ -249,7 +249,7 @@ export default function WatchAdCredits() {
                   {adStatus && adStatus.remainingAds > 0 ? (
                     <button
                       onClick={startWatchingAd}
-                      className="w-full py-3 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-deep-purple-950 font-semibold rounded-lg flex items-center justify-center gap-2 transition-all"
+                      className="w-full py-3 bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-all"
                     >
                       <Play className="w-5 h-5" />
                       {'Reklam İzle (+5 CFC)'}
@@ -278,7 +278,7 @@ export default function WatchAdCredits() {
               {result && (
                 <button
                   onClick={closeModal}
-                  className="w-full py-3 bg-gold-600 text-deep-purple-950 font-semibold rounded-lg hover:bg-gold-500 transition-all"
+                  className="w-full py-3 bg-gold-600 text-white font-semibold rounded-lg hover:bg-gold-500 transition-all"
                 >
                   {'Tamam'}
                 </button>
