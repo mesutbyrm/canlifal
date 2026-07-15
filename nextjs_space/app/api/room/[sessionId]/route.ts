@@ -108,7 +108,7 @@ export async function PATCH(
 
     const isUser = liveSession.userId === currentUserId;
     const isTeller = liveSession.teller.userId === currentUserId;
-    const sessionUserIsStaff = liveSession.user.role === 'admin' || liveSession.user.role === 'yonetici';
+    const sessionUserIsStaff = liveSession.user.role === 'yonetici';
 
     if (!isUser && !isTeller) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
@@ -185,7 +185,7 @@ export async function PATCH(
           where: { id: liveSession.userId },
           select: { jetonBalance: true, role: true }
         });
-        const addUserIsStaff = currentUser?.role === 'admin' || currentUser?.role === 'yonetici';
+        const addUserIsStaff = currentUser?.role === 'yonetici';
 
         if (!currentUser || (!addUserIsStaff && (currentUser.jetonBalance ?? 0) < jetonsNeeded)) {
           return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok' }, { status: 400 });
@@ -243,7 +243,7 @@ export async function PATCH(
           where: { id: liveSession.userId },
           select: { jetonBalance: true, role: true }
         });
-        const extUserIsStaff = extUser?.role === 'admin' || extUser?.role === 'yonetici';
+        const extUserIsStaff = extUser?.role === 'yonetici';
 
         if (!extUser || (!extUserIsStaff && (extUser.jetonBalance ?? 0) < jetonsNeeded)) {
           return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 });

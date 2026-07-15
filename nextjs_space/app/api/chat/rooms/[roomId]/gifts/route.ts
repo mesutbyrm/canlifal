@@ -73,7 +73,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     const unitPrice = giftType.price
     const price = unitPrice * quantity
-    const isStaff = sender.role === 'admin' || sender.role === 'yonetici'
+    const isStaff = sender.role === 'yonetici'
 
     // Check jeton balance (staff skip)
     if (!isStaff && (sender.jetonBalance ?? 0) < price) {

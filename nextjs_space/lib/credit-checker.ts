@@ -57,7 +57,7 @@ export async function checkAndDeductCredits(
     let useJeton = false
 
     // Staff (admin/yönetici) exempt from credit deduction
-    const isStaff = user.role === 'admin' || user.role === 'yonetici'
+    const isStaff = user.role === 'yonetici'
     if (isStaff) {
       const staffBalance = currencyType === 'jeton' ? (user.jetonBalance ?? 0) : user.credits
       return { success: true, message: 'Personel muafiyeti', newBalance: staffBalance }

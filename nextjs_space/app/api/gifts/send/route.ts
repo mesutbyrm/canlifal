@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sender not found' }, { status: 404 })
     }
 
-    const isStaff = sender.role === 'admin' || sender.role === 'yonetici'
+    const isStaff = sender.role === 'yonetici'
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
 

@@ -49,7 +49,7 @@ export async function POST(
       where: { id: authUser.id },
       select: { role: true }
     });
-    const tipperIsStaff = tipperUser?.role === 'admin' || tipperUser?.role === 'yonetici';
+    const tipperIsStaff = tipperUser?.role === 'yonetici';
 
     // Check jeton balance (staff skip)
     if (!tipperIsStaff && (liveSession.user.jetonBalance ?? 0) < amount) {

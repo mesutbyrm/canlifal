@@ -115,7 +115,7 @@ export async function POST(
       where: { id: authUser.id },
       select: { jetonBalance: true, role: true }
     })
-    const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
+    const isStaff = user?.role === 'yonetici'
     
     if (!user || (!isStaff && user.jetonBalance < fortuneType.jetonCost)) {
       return NextResponse.json({ 

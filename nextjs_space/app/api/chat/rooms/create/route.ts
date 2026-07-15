@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    const isStaff = user.role === 'admin' || user.role === 'yonetici'
+    const isStaff = user.role === 'yonetici'
 
     // Check balance (staff skip)
     if (!isStaff) {

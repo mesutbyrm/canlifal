@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       where: { id: userId },
       select: { jetonBalance: true, zodiacSign: true, risingSign: true, name: true, birthDate: true, role: true },
     })
-    const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
+    const isStaff = user?.role === 'yonetici'
     if (!user || (!isStaff && user.jetonBalance < JETON_COST)) {
       return NextResponse.json({ error: `Yetersiz jeton. Bu işlem ${JETON_COST} jeton gerektirir.`, jetonRequired: JETON_COST }, { status: 402 })
     }

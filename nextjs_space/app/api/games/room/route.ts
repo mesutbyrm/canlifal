@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     if (amount > 0) {
       const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true, jetonBalance: true, role: true } })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
-      const gameStaff = user.role === 'admin' || user.role === 'yonetici'
+      const gameStaff = user.role === 'yonetici'
       if (!gameStaff) {
         if (currency === 'CFC' && user.credits < amount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         if (currency === 'JETON' && user.jetonBalance < amount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })

@@ -121,7 +121,7 @@ export async function POST(
     })
 
     // Staff kullanıcılar (admin/yonetici) sınırsız bakiyeye sahiptir
-    const isStaff = user?.role === 'admin' || user?.role === 'yonetici'
+    const isStaff = user?.role === 'yonetici'
     if (!isStaff && (!user || (user.jetonBalance ?? 0) < totalPrice)) {
       return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
     }

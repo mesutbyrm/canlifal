@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         select: { credits: true, jetonBalance: true, name: true, role: true }
       })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
-      const sosStaff = user.role === 'admin' || user.role === 'yonetici'
+      const sosStaff = user.role === 'yonetici'
 
       if (!sosStaff) {
         if (currency === 'CFC' && user.credits < amount) {

@@ -154,7 +154,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
         select: { credits: true, jetonBalance: true, role: true }
       })
       if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
-      const sosJoinStaff = user.role === 'admin' || user.role === 'yonetici'
+      const sosJoinStaff = user.role === 'yonetici'
 
       if (!sosJoinStaff) {
         if (game.betCurrency === 'CFC' && user.credits < game.betAmount) {

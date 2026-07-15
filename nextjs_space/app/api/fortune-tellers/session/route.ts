@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    const isStaff = user.role === 'admin' || user.role === 'yonetici'
+    const isStaff = user.role === 'yonetici'
 
     if (!isStaff && (user.jetonBalance ?? 0) < totalCost) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
