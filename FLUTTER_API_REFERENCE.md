@@ -674,4 +674,105 @@ SDK: trtc_sdk (Flutter plugin)
 
 ---
 
+---
+
+## 📱 Mobil Compound Endpoint'ler
+
+Flutter uygulaması için tek istekle birden fazla veriyi dönen birleşik endpoint'ler.
+
+### GET /api/mobile/home
+Ana sayfa feed'i — tek istekle tüm ana sayfa verisini döner.
+
+**Auth:** `Authorization: Bearer <jwt>` (zorunlu)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "liveStreams": [{ "id", "title", "hostId", "hostName", "hostAvatar", "listenerCount", "isLive", "roomType" }],
+    "voiceRooms": [{ "id", "name", "description", "imageUrl", "hostId", "hostName", "isActive", "listenerCount" }],
+    "fortuneCards": [{ "id", "fortuneType", "title", "description", "iconUrl", "isActive", "sortOrder" }],
+    "homepageButtons": [{ "id", "label", "iconUrl", "linkUrl", "sortOrder", "isActive" }],
+    "announcements": [{ "id", "message", "type", "color", "userName", "expiresAt", "maxPasses" }],
+    "liveTellers": [{ "id", "user": { "name", "profileImageUrl" }, "specialties", "pricePerSession", "rating", "isActive" }],
+    "user": { "id", "name", "profileImageUrl", "jetons", "credits", "level", "unreadNotifications" }
+  }
+}
+```
+
+---
+
+### GET /api/mobile/fortune-menu
+Fal menüsü — tüm fal türlerini, fiyatlarını ve kullanıcı bakiyesini döner.
+
+**Auth:** `Authorization: Bearer <jwt>` (zorunlu)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "fortuneTypes": [{
+      "id", "slug", "nameTr", "nameEn", "descriptionTr", "descriptionEn",
+      "iconUrl", "creditCost", "estimatedMinutes", "isActive", "sortOrder",
+      "requiredImages", "category"
+    }],
+    "fortuneCards": [{ "id", "fortuneType", "title", "description", "iconUrl", "isActive" }],
+    "userCredits": { "jetons": 0, "credits": 0 },
+    "creditsPerMinute": 1
+  }
+}
+```
+
+---
+
+### GET /api/mobile/user-profile/{userId}
+Kullanıcı profili — profil bilgisi, istatistikler, takip/engel durumu, başarılar.
+
+**Auth:** `Authorization: Bearer <jwt>` (zorunlu)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id", "name", "profileImageUrl", "bio", "gender", "birthDate",
+      "level", "xp", "zodiacSign", "isOnline", "lastSeen", "role",
+      "badges": [{ "id", "badgeId", "earnedAt", "badge": { "nameTr", "nameEn", "iconUrl" } }]
+    },
+    "stats": {
+      "followerCount": 0, "followingCount": 0, "totalFortunesReceived": 0,
+      "totalGiftsSent": 0, "totalGiftsReceived": 0,
+      "shortVideoCount": 0, "postCount": 0
+    },
+    "relationship": {
+      "isFollowing": false, "isFollowedBy": false, "isBlocked": false, "isBlockedBy": false
+    },
+    "isOwnProfile": false,
+    "achievements": [{ "id", "achievementId", "earnedAt", "progress", "isCompleted" }],
+    "recentActivity": {
+      "shortVideos": [{ "id", "title", "thumbnailUrl", "viewCount", "createdAt" }],
+      "posts": [{ "id", "content", "createdAt", "likeCount", "commentCount" }]
+    }
+  }
+}
+```
+
+---
+
+### 🔄 Önerilen Mobil Akış
+
+```
+1. Kullanıcı giriş → POST /api/auth/mobile-login → JWT token al
+2. Ana sayfa → GET /api/mobile/home → Tek istekle tüm feed verisi
+3. Fal menüsü → GET /api/mobile/fortune-menu → Fal türleri + bakiye
+4. Kullanıcı profili → GET /api/mobile/user-profile/{userId}
+5. Bildirimler → GET /api/notifications
+6. Canlı yayın → GET /api/live/rooms → POST /api/live/join-room
+```
+
+---
+
 *Bu döküman CanlıFal Flutter ekibi için hazırlanmıştır.*
