@@ -75,8 +75,8 @@ Header: Authorization: Bearer <accessToken>
 
 | Eksik | Durum | Öncelik |
 |-------|-------|---------|
-| Apple Sign-In endpoint | ❌ Yok | 🔴 Kritik (iOS zorunlu) |
-| change-password dual auth | ⚠️ Web-only | 🟡 Orta |
+| Apple Sign-In endpoint | ✅ Eklendi (`/api/auth/mobile-apple`) | 🟢 Tamamlandı |
+| change-password dual auth | ✅ Eklendi | 🟢 Tamamlandı |
 | Token blacklist (logout all devices) | ❌ Yok | 🟡 Orta |
 | Device session yönetimi | ❌ Yok (FCM token var) | 🟢 Düşük |
 
@@ -601,7 +601,7 @@ POST   /api/user/watch-ad                    - Reklam izle + ödül
 
 | Endpoint | Neden | Çözüm |
 |----------|-------|-------|
-| `POST /api/auth/change-password` | getServerSession only | `authenticateRequest` ekle |
+| `POST /api/auth/change-password` | ✅ Düzeltildi | Dual auth eklendi |
 | `POST /api/auth/reclaim-device` | getServerSession only | `authenticateRequest` ekle |
 | `GET /api/auth/verify-device` | getServerSession only | `authenticateRequest` ekle |
 | `GET /api/share-card` | HTML render (server-side) | Flutter'da client-side render |
@@ -618,10 +618,10 @@ POST   /api/user/watch-ad                    - Reklam izle + ödül
 
 | Endpoint | Açıklama |
 |----------|----------|
-| `POST /api/auth/mobile-apple` | Apple Sign-In (iOS App Store zorunluluğu) |
-| `GET /api/mobile/config` | Uygulama konfigürasyonu (min version, maintenance mode, feature flags) |
-| `POST /api/user/block` | Kullanıcı engelle (mevcut: sadece engel kaldırma) |
-| `POST /api/user/report` | Kullanıcı raporla |
+| `POST /api/auth/mobile-apple` | ✅ Eklendi — Apple Sign-In |
+| `GET /api/mobile/config` | ✅ Eklendi — Uygulama konfigürasyonu |
+| `POST /api/user/block` | ✅ Eklendi — Kullanıcı engelle/engeli kaldır |
+| `POST /api/user/report` | ✅ Eklendi — Kullanıcı raporla |
 
 ### 6.2 Önerilen İyileştirmeler 🟡
 

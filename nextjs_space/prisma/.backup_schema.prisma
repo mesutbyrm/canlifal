@@ -141,6 +141,10 @@ model User {
   shortVideoSaves       ShortVideoSave[]
   shortVideoCommentLikes ShortVideoCommentLike[]
   shortVideoMentions    ShortVideoMention[]  @relation("ShortVideoMentioned")
+  blockedUsers          UserBlock[]          @relation("Blocker")
+  blockedByUsers        UserBlock[]          @relation("Blocked")
+  reportsMade           UserReport[]         @relation("Reporter")
+  reportsReceived       UserReport[]         @relation("Reported")
 
   @@index([referralCode])
   @@index([isBot])
@@ -3645,4 +3649,38 @@ model PkBan {
 
   @@index([userId, active])
   @@map("pk_bans")
+}
+
+// User-level blocks (profile level, not room/stream specific)
+model UserBlock {
+  id          String   @id @default(cuid())
+  blockerId   String
+  blockedId   String
+  createdAt   DateTime @default(now())
+  blocker     User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked     User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+// User reports
+model UserReport {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reportedId  String
+  reason      String
+  details     String?  @db.Text
+  status      String   @default("pending") // pending, reviewed, dismissed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User     @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([reportedId])
+  @@index([status])
+  @@map("user_reports")
 }

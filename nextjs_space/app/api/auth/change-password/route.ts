@@ -1,13 +1,14 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+export const dynamic = 'force-dynamic'
+
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const auth = await authenticateRequest(req)
+    if (!auth) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       select: { password: true }
     })
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     const newDeviceToken = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: auth.id },
       data: { 
         password: hashedPassword,
         activeDeviceToken: newDeviceToken
