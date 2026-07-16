@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 
 /**
  * Per-stream PK battle alias.
@@ -18,13 +19,16 @@ export async function GET(
     const streamId = params.streamId
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
 
+    // Expire stale pending PKs
+    await expireAllStalePKs()
+
     const battle = await prisma.pKBattle.findFirst({
       where: {
         AND: [
           { OR: [{ stream1Id: streamId }, { stream2Id: streamId }] },
           { OR: [
             { status: { in: ['pending', 'active'] } },
-            { status: 'completed', endedAt: { gte: fiveMinAgo } }
+            { status: { in: ['completed', 'expired'] }, endedAt: { gte: fiveMinAgo } }
           ]}
         ]
       },
@@ -32,6 +36,10 @@ export async function GET(
     })
 
     if (!battle) return NextResponse.json(null)
+
+    // Check if pending PK has expired
+    const checkedBattle = await expirePendingPK(battle)
+    if (!checkedBattle) return NextResponse.json(null)
 
     const [user1, user2, stream1, stream2] = await Promise.all([
       prisma.user.findUnique({ where: { id: battle.user1Id }, select: { id: true, name: true, image: true } }),
@@ -95,6 +103,16 @@ export async function POST(
         }
       })
 
+      // Schedule auto-expiry after 60 seconds
+      setTimeout(async () => {
+        try {
+          const pk = await prisma.pKBattle.findUnique({ where: { id: battle.id } })
+          if (pk && pk.status === 'pending') {
+            await expirePendingPK(pk)
+          }
+        } catch (e) { console.error('PK auto-expire timer error:', e) }
+      }, PK_TIMEOUT_MS)
+
       return NextResponse.json(battle)
     }
 
@@ -104,6 +122,13 @@ export async function POST(
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
       if (battle.user2Id !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       if (battle.status !== 'pending') return NextResponse.json({ error: 'Bu PK zaten kabul edilmiş' }, { status: 400 })
+
+      // Check if PK has expired (60s timeout)
+      const acceptElapsed = Date.now() - new Date(battle.createdAt).getTime()
+      if (acceptElapsed >= PK_TIMEOUT_MS) {
+        await expirePendingPK(battle)
+        return NextResponse.json({ error: 'PK isteği zaman aşımına uğradı (60 saniye)' }, { status: 400 })
+      }
 
       const updated = await prisma.pKBattle.update({
         where: { id: battleId },

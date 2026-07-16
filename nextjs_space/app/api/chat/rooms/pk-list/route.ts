@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { expireAllStalePKs } from '@/lib/pk-expiry'
 
 /**
  * GET /api/chat/rooms/pk-list
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status') || 'active'
+
+    // Expire stale pending PKs
+    await expireAllStalePKs()
 
     const battles = await prisma.pKBattle.findMany({
       where: {

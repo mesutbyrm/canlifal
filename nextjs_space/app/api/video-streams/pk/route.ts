@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -14,7 +15,10 @@ export async function GET(req: NextRequest) {
     const streamId = searchParams.get('streamId')
     if (!streamId) return NextResponse.json({ error: 'streamId gerekli' }, { status: 400 })
 
-    // Include recently completed battles (last 5 min) so PK result screen stays visible
+    // First, expire any stale pending PKs
+    await expireAllStalePKs()
+
+    // Include recently completed/expired battles (last 5 min) so PK result screen stays visible
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
     const battle = await prisma.pKBattle.findFirst({
       where: {
@@ -22,7 +26,7 @@ export async function GET(req: NextRequest) {
           { OR: [{ stream1Id: streamId }, { stream2Id: streamId }] },
           { OR: [
             { status: { in: ['pending', 'active'] } },
-            { status: 'completed', endedAt: { gte: fiveMinAgo } }
+            { status: { in: ['completed', 'expired'] }, endedAt: { gte: fiveMinAgo } }
           ]}
         ]
       },
@@ -30,6 +34,10 @@ export async function GET(req: NextRequest) {
     })
 
     if (!battle) return NextResponse.json(null)
+
+    // Check if pending PK has expired
+    const checkedBattle = await expirePendingPK(battle)
+    if (!checkedBattle) return NextResponse.json(null)
 
     // Fetch user info for both sides
     const [user1, user2, stream1, stream2] = await Promise.all([
@@ -114,6 +122,16 @@ export async function POST(req: NextRequest) {
         }
       })
 
+      // Schedule auto-expiry after 60 seconds (fire and forget)
+      setTimeout(async () => {
+        try {
+          const pk = await prisma.pKBattle.findUnique({ where: { id: battle.id } })
+          if (pk && pk.status === 'pending') {
+            await expirePendingPK(pk)
+          }
+        } catch (e) { console.error('PK auto-expire timer error:', e) }
+      }, PK_TIMEOUT_MS)
+
       // 3) Send push notification to opponent
       const challenger = await prisma.user.findUnique({ where: { id: currentUserId }, select: { name: true } })
       createNotificationWithPush({
@@ -162,6 +180,13 @@ export async function POST(req: NextRequest) {
       
       if (!canAccept) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       if (battle.status !== 'pending') return NextResponse.json({ error: 'Bu PK zaten kabul edilmiş' }, { status: 400 })
+
+      // Check if PK has expired (60s timeout)
+      const acceptElapsed = Date.now() - new Date(battle.createdAt).getTime()
+      if (acceptElapsed >= PK_TIMEOUT_MS) {
+        await expirePendingPK(battle)
+        return NextResponse.json({ error: 'PK isteği zaman aşımına uğradı (60 saniye)' }, { status: 400 })
+      }
 
       const endTime = new Date(Date.now() + (battle.duration || 180) * 1000)
       const updated = await prisma.pKBattle.update({

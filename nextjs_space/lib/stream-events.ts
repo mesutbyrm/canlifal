@@ -5,7 +5,7 @@
 
 interface StreamEvent {
   timestamp: number
-  type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift'
+  type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift' | 'pk'
   data: any
 }
 

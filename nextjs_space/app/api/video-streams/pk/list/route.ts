@@ -2,10 +2,14 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { expireAllStalePKs } from '@/lib/pk-expiry'
 
 // GET - List active PK battles (for viewers to see which streams have PKs)
 export async function GET(req: NextRequest) {
   try {
+    // Expire stale pending PKs
+    await expireAllStalePKs()
+
     const battles = await prisma.pKBattle.findMany({
       where: { status: 'active' },
       orderBy: { startedAt: 'desc' },

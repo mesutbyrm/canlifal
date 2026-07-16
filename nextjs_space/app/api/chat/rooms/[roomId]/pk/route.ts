@@ -7,6 +7,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { emitChatEvent } from '@/lib/chat-events'
+import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 
 /**
  * PK Battle endpoints for Chat Rooms.
@@ -24,13 +25,16 @@ export async function GET(
     const { roomId } = params
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
 
+    // First, expire any stale pending PKs
+    await expireAllStalePKs()
+
     const battle = await prisma.pKBattle.findFirst({
       where: {
         AND: [
           { OR: [{ stream1Id: roomId }, { stream2Id: roomId }] },
           { OR: [
             { status: { in: ['pending', 'active'] } },
-            { status: 'completed', endedAt: { gte: fiveMinAgo } }
+            { status: { in: ['completed', 'expired'] }, endedAt: { gte: fiveMinAgo } }
           ]}
         ]
       },
@@ -38,6 +42,10 @@ export async function GET(
     })
 
     if (!battle) return NextResponse.json(null)
+
+    // Check if pending PK has expired
+    const checkedBattle = await expirePendingPK(battle)
+    if (!checkedBattle) return NextResponse.json(null)
 
     // Fetch user info and room info for both sides
     const [user1, user2, room1, room2] = await Promise.all([
@@ -148,6 +156,16 @@ export async function POST(
         }
       })
 
+      // Schedule auto-expiry after 60 seconds (fire and forget)
+      setTimeout(async () => {
+        try {
+          const pk = await prisma.pKBattle.findUnique({ where: { id: battle.id } })
+          if (pk && pk.status === 'pending') {
+            await expirePendingPK(pk)
+          }
+        } catch (e) { console.error('PK auto-expire timer error:', e) }
+      }, PK_TIMEOUT_MS)
+
       // Push notification to opponent room owner
       const challenger = await prisma.user.findUnique({ where: { id: currentUserId }, select: { name: true } })
       createNotificationWithPush({
@@ -179,6 +197,8 @@ export async function POST(
         challengerName: challenger?.name,
         duration: battle.duration,
         status: 'pending',
+        expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString(),
+        timeoutSeconds: PK_TIMEOUT_MS / 1000,
       }
       emitChatEvent(roomId, 'pk', pkEventData)
       emitChatEvent(targetRoomId, 'pk', pkEventData)
@@ -213,6 +233,13 @@ export async function POST(
 
       if (!canAccept) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       if (battle.status !== 'pending') return NextResponse.json({ error: 'Bu PK zaten kabul edilmiş veya iptal' }, { status: 400 })
+
+      // Check if PK has expired (60s timeout)
+      const elapsed = Date.now() - new Date(battle.createdAt).getTime()
+      if (elapsed >= PK_TIMEOUT_MS) {
+        await expirePendingPK(battle)
+        return NextResponse.json({ error: 'PK isteği zaman aşımına uğradı (60 saniye)' }, { status: 400 })
+      }
 
       const updated = await prisma.pKBattle.update({
         where: { id: battleId },
