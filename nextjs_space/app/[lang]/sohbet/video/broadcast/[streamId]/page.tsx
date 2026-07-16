@@ -256,7 +256,7 @@ export default function BroadcastPage() {
   const [beautySettings, setBeautySettings] = useState<BeautySettings>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('agoraBeautySettings')
+        const saved = localStorage.getItem('beautySettings')
         if (saved) return JSON.parse(saved)
       } catch {}
     }
@@ -674,7 +674,7 @@ export default function BroadcastPage() {
           .filter((cb: CoBroadcaster) => cb.status === 'active')
           .slice(0, MAX_GUESTS)
         
-        // Track guests (Agora handles connections automatically)
+        // Track guests (TRTC handles connections automatically)
         for (const guest of currentActive) {
           if (!processedGuestsRef.current.has(guest.userId)) {
             console.log('🎬 New guest joined:', guest.userId)
@@ -830,7 +830,7 @@ export default function BroadcastPage() {
   // Beauty effect handlers (placeholder - TRTC beauty requires separate plugin)
   const updateBeautySettings = async (newSettings: BeautySettings) => {
     setBeautySettings(newSettings)
-    localStorage.setItem('agoraBeautySettings', JSON.stringify(newSettings))
+    localStorage.setItem('beautySettings', JSON.stringify(newSettings))
     // Note: TRTC beauty effects require TRTCBeautyPlugin - kept as UI-only for now
   }
 

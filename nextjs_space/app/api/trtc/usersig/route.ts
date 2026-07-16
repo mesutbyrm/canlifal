@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
     const TLSSigAPIv2 = require('tls-sig-api-v2')
     const api = new TLSSigAPIv2.Api(sdkAppId, secretKey)
 
-    // UserSig valid for 24 hours
-    const expireTime = 86400
+    // UserSig expiry from env (default 24 hours)
+    const expireTime = parseInt(process.env.TRTC_EXPIRE || '86400')
     const userSig = api.genSig(userId, expireTime)
 
     return NextResponse.json({

@@ -7,11 +7,25 @@ import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { getMediaConstraints } from '@/lib/webrtc-config'
-import {
-  BEAUTY_PRESETS,
-  DEFAULT_BEAUTY_SETTINGS,
-  type AgoraBeautySettings,
-} from '@/lib/agora-client'
+// Beauty settings (local types, no Agora dependency)
+interface BeautySettings {
+  enabled: boolean
+  smoothnessLevel: number
+  lighteningLevel: number
+  rednessLevel: number
+  lighteningContrastLevel: 0 | 1 | 2
+}
+const DEFAULT_BEAUTY_SETTINGS: BeautySettings = {
+  enabled: false, smoothnessLevel: 0.5, lighteningLevel: 0.3, rednessLevel: 0.1, lighteningContrastLevel: 1,
+}
+const BEAUTY_PRESETS = [
+  { name: 'Doğal', nameEn: 'Natural', icon: '✨', settings: { smoothnessLevel: 0, lighteningLevel: 0, rednessLevel: 0, lighteningContrastLevel: 1 as const } },
+  { name: 'Yumuşak', nameEn: 'Soft', icon: '🌸', settings: { smoothnessLevel: 0.4, lighteningLevel: 0.3, rednessLevel: 0.1, lighteningContrastLevel: 1 as const } },
+  { name: 'Glamour', nameEn: 'Glamour', icon: '💎', settings: { smoothnessLevel: 0.6, lighteningLevel: 0.5, rednessLevel: 0.2, lighteningContrastLevel: 2 as const } },
+  { name: 'Parlak', nameEn: 'Bright', icon: '☀️', settings: { smoothnessLevel: 0.3, lighteningLevel: 0.7, rednessLevel: 0.05, lighteningContrastLevel: 2 as const } },
+  { name: 'Romantik', nameEn: 'Romantic', icon: '💕', settings: { smoothnessLevel: 0.5, lighteningLevel: 0.4, rednessLevel: 0.4, lighteningContrastLevel: 1 as const } },
+  { name: 'Serin', nameEn: 'Cool', icon: '❄️', settings: { smoothnessLevel: 0.3, lighteningLevel: 0.6, rednessLevel: 0.0, lighteningContrastLevel: 0 as const } },
+]
 import {
   Video,
   VideoOff,
@@ -74,10 +88,10 @@ export default function StreamSetupPage() {
   const [showEffects, setShowEffects] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<StreamCategory | null>(null)
-  const [beautySettings, setBeautySettings] = useState<AgoraBeautySettings>(() => {
+  const [beautySettings, setBeautySettings] = useState<BeautySettings>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('agoraBeautySettings')
+        const saved = localStorage.getItem('beautySettings')
         if (saved) return JSON.parse(saved)
       } catch {}
     }
@@ -149,7 +163,7 @@ export default function StreamSetupPage() {
 
   // Save beauty settings to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('agoraBeautySettings', JSON.stringify(beautySettings))
+    localStorage.setItem('beautySettings', JSON.stringify(beautySettings))
   }, [beautySettings])
 
   const handleVideoLoaded = () => {
@@ -233,11 +247,11 @@ export default function StreamSetupPage() {
         ctx.setTransform(1, 0, 0, 1, 0, 0)
       }
 
-      // Apply beauty filters using CSS filters on canvas (preview of Agora effects)
+      // Apply beauty filters using CSS filters on canvas
       const { smoothnessLevel, lighteningLevel, rednessLevel, lighteningContrastLevel, enabled } = beautySettings
       
       if (enabled) {
-        // Map Agora settings to canvas filter approximations
+        // Map beauty settings to canvas filter approximations
         let filterString = ''
         filterString += `brightness(${1 + lighteningLevel * 0.4}) `
         const contrastBoost = lighteningContrastLevel === 0 ? -0.1 : lighteningContrastLevel === 2 ? 0.15 : 0
@@ -322,8 +336,8 @@ export default function StreamSetupPage() {
     
     setIsStarting(true)
     
-    // Store beauty settings in localStorage for broadcast page (Agora format)
-    localStorage.setItem('agoraBeautySettings', JSON.stringify(beautySettings))
+    // Store beauty settings in localStorage for broadcast page
+    localStorage.setItem('beautySettings', JSON.stringify(beautySettings))
     localStorage.setItem('streamCategory', JSON.stringify(selectedCategory))
     
     try {
@@ -360,7 +374,7 @@ export default function StreamSetupPage() {
     }
   }
 
-  const updateBeauty = (partial: Partial<AgoraBeautySettings>) => {
+  const updateBeauty = (partial: Partial<BeautySettings>) => {
     setBeautySettings(prev => ({ ...prev, ...partial }))
   }
 

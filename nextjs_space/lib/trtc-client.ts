@@ -1,10 +1,8 @@
 'use client'
 
 /**
- * TRTC (Tencent Real-Time Communication) client helper.
- * Replaces Agora SDK for live streaming and voice chat.
- * 
- * Usage mirrors the old agora-client.ts API for easy migration:
+ * TRTC (Tencent Real-Time Communication) client for live streaming and voice chat.
+ *
  *   import { createTRTCInstance, fetchTRTCCredentials, ... } from '@/lib/trtc-client'
  */
 

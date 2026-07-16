@@ -41,13 +41,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get active voice users
     const voiceSessions = await prisma.voiceSession.findMany({
       where: { roomId, isActive: true },
-      select: { userId: true, userName: true, agoraUid: true, joinedAt: true }
+      select: { userId: true, userName: true, joinedAt: true }
     })
 
     const voiceUsers = voiceSessions.map((s: any) => ({
       id: s.userId,
       name: s.userName,
-      agoraUid: s.agoraUid || 0,
       joinedAt: s.joinedAt.getTime()
     }))
 
@@ -113,12 +112,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           roomId,
           userId: voiceUserId,
           userName,
-          agoraUid: numericUid, // Legacy field, kept for DB compat
+          agoraUid: numericUid, // Legacy DB field
           isActive: true
         },
         update: {
           userName,
-          agoraUid: numericUid,
           isActive: true,
           lastPing: new Date(),
           joinedAt: new Date()
