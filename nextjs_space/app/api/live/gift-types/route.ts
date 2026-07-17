@@ -42,11 +42,25 @@ export async function GET(request: NextRequest) {
       return giftTypes
     })
 
+    // Normalize: ensure no null in any field
+    const safeTypes = (data || []).map((g: any) => ({
+      id: g.id || '',
+      name: g.name || '',
+      nameEn: g.nameEn || '',
+      icon: g.icon || '',
+      animation: g.animation || '',
+      price: typeof g.price === 'number' ? g.price : 0,
+      sortOrder: typeof g.sortOrder === 'number' ? g.sortOrder : 0,
+      thumbnailUrl: g.thumbnailUrl || '',
+      assetUrl: g.assetUrl || '',
+      assetType: g.assetType || '',
+    }))
+
     return NextResponse.json({
       success: true,
       data: {
-        giftTypes: data,
-        totalCount: data.length
+        giftTypes: safeTypes,
+        totalCount: safeTypes.length
       }
     })
   } catch (error) {

@@ -130,21 +130,27 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         stream: {
-          id: stream.id,
-          roomId: stream.roomId,
-          title: stream.title,
-          description: stream.description,
-          category: stream.category,
-          status: stream.status,
-          thumbnailUrl: stream.thumbnailUrl,
-          startedAt: stream.startedAt,
+          id: stream.id || '',
+          roomId: stream.roomId || '',
+          title: stream.title || '',
+          description: stream.description || '',
+          category: stream.category || 'general',
+          status: stream.status || 'live',
+          thumbnailUrl: stream.thumbnailUrl || '',
+          startedAt: stream.startedAt?.toISOString?.() || stream.startedAt || '',
           host: {
-            id: stream.user.id,
-            name: stream.user.name,
-            image: stream.user.image,
+            id: stream.user?.id || '',
+            name: stream.user?.name || 'Anonim',
+            image: stream.user?.image || '',
           }
         },
-        trtc,
+        trtc: trtc ? {
+          sdkAppId: trtc.sdkAppId || 0,
+          userId: trtc.userId || '',
+          userSig: trtc.userSig || '',
+          roomId: trtc.roomId || '',
+          expireTime: trtc.expireTime || 86400,
+        } : null,
       }
     })
   } catch (error) {

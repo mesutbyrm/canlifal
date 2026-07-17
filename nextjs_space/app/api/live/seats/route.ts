@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       })
       return NextResponse.json({
         success: true,
-        data: { seatIndex: -1, message: 'Koltuktan ayrıldınız' }
+        data: { seatIndex: -1, targetUserId: '', message: 'Koltuktan ayrıldınız' }
       })
     }
 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       })
       return NextResponse.json({
         success: true,
-        data: { seatIndex, message: `Koltuk ${seatIndex} alındı` }
+        data: { seatIndex, targetUserId: '', message: `Koltuk ${seatIndex} alındı` }
       })
     }
 
@@ -229,11 +229,13 @@ export async function GET(request: NextRequest) {
     })
 
     const seats = presences.map((p: any) => ({
-      seatIndex: p.seatIndex,
-      userId: p.userId,
+      seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : 0,
+      userId: p.userId || '',
       userName: p.nickname || p.user?.name || 'Anonim',
-      userImage: p.user?.image || null,
-      isMicOn: false
+      name: p.nickname || p.user?.name || 'Anonim',
+      userImage: p.user?.image || '',
+      image: p.user?.image || '',
+      isMicOn: false,
     }))
 
     return NextResponse.json({

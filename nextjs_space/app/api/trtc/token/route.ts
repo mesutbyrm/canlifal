@@ -58,11 +58,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        sdkAppId,
-        userId: authUser.id,
-        userSig,
-        roomId,
-        expireTime,
+        sdkAppId: sdkAppId || 0,
+        userId: authUser.id || '',
+        userSig: userSig || '',
+        roomId: roomId || '',
+        expireTime: expireTime || 86400,
         role: role || 'audience',
       }
     })

@@ -72,14 +72,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
-          id: comment.id,
-          roomId,
+          id: comment.id || '',
+          roomId: roomId || '',
           roomType: 'stream',
-          userId: authUser.id,
+          userId: authUser.id || '',
           userName: comment.user?.name || 'Anonim',
-          userImage: comment.user?.image || null,
-          content: comment.content,
-          createdAt: comment.createdAt
+          userImage: comment.user?.image || '',
+          content: comment.content || '',
+          chatRole: '',
+          roleSymbol: '',
+          createdAt: comment.createdAt?.toISOString?.() || comment.createdAt || '',
         }
       })
     } else {
@@ -143,16 +145,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
-          id: message.id,
-          roomId,
+          id: message.id || '',
+          roomId: roomId || '',
           roomType: 'voice',
-          userId: authUser.id,
+          userId: authUser.id || '',
           userName: message.user?.name || 'Anonim',
-          userImage: message.user?.image || null,
-          content: message.content,
-          chatRole: userRole !== 'none' ? userRole : null,
-          roleSymbol,
-          createdAt: message.createdAt
+          userImage: message.user?.image || '',
+          content: message.content || '',
+          chatRole: userRole !== 'none' ? userRole : '',
+          roleSymbol: roleSymbol || '',
+          createdAt: message.createdAt?.toISOString?.() || message.createdAt || '',
         }
       })
     }
@@ -208,14 +210,16 @@ export async function GET(request: NextRequest) {
       })
 
       const messages = (after ? comments : comments.reverse()).map((c: any) => ({
-        id: c.id,
-        roomId,
+        id: c.id || '',
+        roomId: roomId || '',
         roomType: 'stream',
-        userId: c.userId,
+        userId: c.userId || '',
         userName: c.user?.name || 'Anonim',
-        userImage: c.user?.image || null,
-        content: c.content,
-        createdAt: c.createdAt
+        userImage: c.user?.image || '',
+        content: c.content || '',
+        chatRole: '',
+        roleSymbol: '',
+        createdAt: c.createdAt?.toISOString?.() || c.createdAt || '',
       }))
 
       return NextResponse.json({ success: true, data: { messages, totalCount: messages.length } })
@@ -253,16 +257,16 @@ export async function GET(request: NextRequest) {
         const chatRole = roleMap.get(m.userId) || (globalAdminRoles.includes(m.user?.role) ? 'superadmin' : null)
         const roleSymbol = chatRole ? ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '' : ''
         return {
-          id: m.id,
-          roomId,
+          id: m.id || '',
+          roomId: roomId || '',
           roomType: 'voice',
-          userId: m.userId,
+          userId: m.userId || '',
           userName: nickMap.get(m.userId) || m.user?.name || 'Anonim',
-          userImage: m.user?.image || null,
-          content: m.content,
-          chatRole,
-          roleSymbol,
-          createdAt: m.createdAt
+          userImage: m.user?.image || '',
+          content: m.content || '',
+          chatRole: chatRole || '',
+          roleSymbol: roleSymbol || '',
+          createdAt: m.createdAt?.toISOString?.() || m.createdAt || '',
         }
       })
 

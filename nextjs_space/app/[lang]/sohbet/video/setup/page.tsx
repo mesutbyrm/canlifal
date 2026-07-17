@@ -7,7 +7,7 @@ import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { getMediaConstraints } from '@/lib/webrtc-config'
-// Beauty settings (local types, no Agora dependency)
+// Beauty settings (local types)
 interface BeautySettings {
   enabled: boolean
   smoothnessLevel: number

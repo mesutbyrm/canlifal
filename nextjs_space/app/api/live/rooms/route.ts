@@ -72,19 +72,28 @@ export async function GET(request: NextRequest) {
       for (const s of streams) {
         const vc = vcMap.get(s.id) || 0
         rooms.push({
-          id: s.id,
+          id: s.id || '',
           roomType: 'stream',
+          slug: '',
           title: s.title || 'Canlı Yayın',
-          hostId: s.userId,
+          titleEn: '',
+          description: '',
+          descriptionEn: '',
+          icon: '',
+          hostId: s.userId || '',
           hostName: s.user?.name || 'Anonim',
-          hostImage: s.user?.image || null,
-          thumbnailUrl: s.thumbnailUrl || s.broadcastImage || null,
+          hostImage: s.user?.image || '',
+          thumbnailUrl: s.thumbnailUrl || (s as any).broadcastImage || '',
+          backgroundImage: '',
+          bannerImage: '',
+          roomAccessType: '',
+          tags: [] as string[],
           viewerCount: vc,
           likeCount: (s as any)._count?.likes || 0,
           commentCount: (s as any)._count?.comments || 0,
           isLive: true,
-          startedAt: s.startedAt,
-          createdAt: s.createdAt
+          startedAt: s.startedAt?.toISOString?.() || s.startedAt || '',
+          createdAt: s.createdAt?.toISOString?.() || s.createdAt || '',
         })
       }
     }
@@ -139,24 +148,28 @@ export async function GET(request: NextRequest) {
 
       for (const r of chatRooms) {
         rooms.push({
-          id: r.id,
+          id: r.id || '',
           roomType: 'voice',
-          slug: r.slug,
-          title: r.nameTr || r.nameEn,
-          titleEn: r.nameEn,
-          description: r.descTr || r.descEn,
-          descriptionEn: r.descEn,
-          icon: r.icon,
-          hostId: r.ownerId || null,
-          hostName: r.owner?.name || null,
-          hostImage: r.owner?.image || null,
-          backgroundImage: r.backgroundImage || null,
-          bannerImage: r.bannerImage || null,
-          roomAccessType: r.roomType, // FREE, NORMAL, VIP
+          slug: r.slug || '',
+          title: r.nameTr || r.nameEn || '',
+          titleEn: r.nameEn || '',
+          description: r.descTr || r.descEn || '',
+          descriptionEn: r.descEn || '',
+          icon: r.icon || '',
+          hostId: r.ownerId || '',
+          hostName: r.owner?.name || '',
+          hostImage: r.owner?.image || '',
+          thumbnailUrl: r.backgroundImage || '',
+          backgroundImage: r.backgroundImage || '',
+          bannerImage: r.bannerImage || '',
+          roomAccessType: r.roomType || 'FREE',
           tags: r.tags ? r.tags.split(',').map((t: string) => t.trim()) : [],
           viewerCount: ocMap.get(r.id) || 0,
+          likeCount: 0,
+          commentCount: 0,
           isLive: (ocMap.get(r.id) || 0) > 0,
-          createdAt: null // ChatRoom createdAt not selected for privacy
+          startedAt: '',
+          createdAt: '',
         })
       }
     }

@@ -105,9 +105,16 @@ export async function POST(request: NextRequest) {
       })
 
       participants = viewers.map((v: any) => ({
-        userId: v.viewerId,
-        nickname: v.nickname,
-        joinedAt: v.joinedAt,
+        userId: v.viewerId || '',
+        name: '',
+        nickname: v.nickname || '',
+        image: '',
+        role: '',
+        membership: '',
+        seatIndex: -1,
+        joinedAt: v.joinedAt?.toISOString?.() || v.joinedAt || '',
+        lastSeen: '',
+        isMicOn: false,
       }))
 
       // Top gift senders
@@ -130,33 +137,45 @@ export async function POST(request: NextRequest) {
           const sender = senderMap.get(g.senderId)
           return {
             rank: idx + 1,
-            userId: g.senderId,
+            userId: g.senderId || '',
             name: sender?.name || 'Anonim',
-            image: sender?.image || null,
+            image: sender?.image || '',
             totalAmount: g._sum.totalPrice || 0
           }
         })
       }
 
       roomInfo = {
-        id: stream.id,
-        roomId: stream.roomId,
-        title: stream.title,
-        description: stream.description,
-        status: stream.status,
-        category: stream.category,
-        thumbnailUrl: stream.thumbnailUrl,
-        backgroundUrl: stream.backgroundUrl,
-        isImageMode: stream.isImageMode,
+        id: stream.id || '',
+        roomId: stream.roomId || '',
+        slug: '',
+        name: stream.title || 'Canlı Yayın',
+        nameEn: '',
+        title: stream.title || 'Canlı Yayın',
+        description: stream.description || '',
+        descriptionEn: '',
+        status: stream.status || 'live',
+        category: stream.category || 'general',
+        icon: '',
+        thumbnailUrl: stream.thumbnailUrl || '',
+        backgroundUrl: stream.backgroundUrl || '',
+        backgroundImage: '',
+        bannerImage: '',
+        isImageMode: stream.isImageMode === true,
+        isMuted: false,
+        roomType: 'stream',
+        roomAccessType: '',
+        welcomeMessage: '',
+        pinnedAnnouncement: '',
         viewerCount: viewers.length,
-        likeCount: stream.likeCount,
-        startedAt: stream.startedAt,
+        likeCount: stream.likeCount || 0,
+        startedAt: stream.startedAt?.toISOString?.() || stream.startedAt || '',
         host: {
-          id: stream.user.id,
-          name: stream.user.name,
-          image: stream.user.image,
-          role: stream.user.role,
-          membership: stream.user.membership,
+          id: stream.user?.id || '',
+          name: stream.user?.name || 'Anonim',
+          image: stream.user?.image || '',
+          role: stream.user?.role || '',
+          membership: stream.user?.membership || '',
         }
       }
 
@@ -220,24 +239,29 @@ export async function POST(request: NextRequest) {
       })
 
       participants = presences.map((p: any) => ({
-        userId: p.user.id,
-        name: p.user.name,
-        nickname: p.nickname || p.user.name,
-        image: p.user.image,
-        role: p.user.role,
-        membership: p.user.membership,
-        seatIndex: p.seatIndex ?? -1,
-        lastSeen: p.lastSeen,
+        userId: p.user?.id || p.userId || '',
+        name: p.user?.name || 'Anonim',
+        nickname: p.nickname || p.user?.name || 'Anonim',
+        image: p.user?.image || '',
+        role: p.user?.role || '',
+        membership: p.user?.membership || '',
+        seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : -1,
+        joinedAt: '',
+        lastSeen: p.lastSeen?.toISOString?.() || p.lastSeen || '',
+        isMicOn: false,
       }))
 
       // Seat map (occupied seats)
       seats = presences
         .filter((p: any) => (p.seatIndex ?? -1) >= 0)
         .map((p: any) => ({
-          seatIndex: p.seatIndex,
-          userId: p.user.id,
-          name: p.nickname || p.user.name,
-          image: p.user.image,
+          seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : 0,
+          userId: p.user?.id || p.userId || '',
+          userName: p.nickname || p.user?.name || 'Anonim',
+          name: p.nickname || p.user?.name || 'Anonim',
+          image: p.user?.image || '',
+          userImage: p.user?.image || '',
+          isMicOn: false,
         }))
 
       // Top gift senders in this room
@@ -260,33 +284,45 @@ export async function POST(request: NextRequest) {
           const sender = senderMap.get(g.senderId)
           return {
             rank: idx + 1,
-            userId: g.senderId,
+            userId: g.senderId || '',
             name: sender?.name || 'Anonim',
-            image: sender?.image || null,
+            image: sender?.image || '',
             totalAmount: g._sum.totalPrice || 0
           }
         })
       }
 
       roomInfo = {
-        id: room.id,
-        slug: room.slug,
-        name: room.nameTr,
-        nameEn: room.nameEn,
-        description: room.descTr,
-        descriptionEn: room.descEn,
-        icon: room.icon,
-        backgroundImage: room.backgroundImage,
-        bannerImage: room.bannerImage,
-        roomType: room.roomType,
-        isMuted: room.isMuted,
-        welcomeMessage: room.welcomeMessage,
-        pinnedAnnouncement: room.pinnedAnnouncement,
-        userCount: participants.length,
+        id: room.id || '',
+        roomId: room.id || '',
+        slug: room.slug || '',
+        name: room.nameTr || room.nameEn || '',
+        nameEn: room.nameEn || '',
+        title: room.nameTr || room.nameEn || '',
+        description: room.descTr || room.descEn || '',
+        descriptionEn: room.descEn || '',
+        status: 'active',
+        category: '',
+        icon: room.icon || '',
+        thumbnailUrl: room.backgroundImage || '',
+        backgroundUrl: room.backgroundImage || '',
+        backgroundImage: room.backgroundImage || '',
+        bannerImage: room.bannerImage || '',
+        isImageMode: false,
+        isMuted: room.isMuted === true,
+        roomType: 'voice',
+        roomAccessType: room.roomType || 'FREE',
+        welcomeMessage: room.welcomeMessage || '',
+        pinnedAnnouncement: room.pinnedAnnouncement || '',
+        viewerCount: participants.length,
+        likeCount: 0,
+        startedAt: '',
         host: {
-          id: room.owner?.id,
-          name: room.owner?.name,
-          image: room.owner?.image,
+          id: room.owner?.id || '',
+          name: room.owner?.name || 'Anonim',
+          image: room.owner?.image || '',
+          role: '',
+          membership: '',
         }
       }
     }
@@ -298,21 +334,23 @@ export async function POST(request: NextRequest) {
       data: {
         room: roomInfo,
         trtc: {
-          sdkAppId,
-          userId: authUser.id,
-          userSig,
-          roomId: roomType === 'stream' ? (roomInfo.roomId || roomId) : roomId,
-          expireTime,
+          sdkAppId: sdkAppId || 0,
+          userId: authUser.id || '',
+          userSig: userSig || '',
+          roomId: roomType === 'stream' ? (roomInfo.roomId || roomId || '') : (roomId || ''),
+          expireTime: expireTime || 86400,
         },
         user: {
-          id: authUser.id,
-          name: authUser.name,
-          role: authUser.role,
-          isHost,
+          id: authUser.id || '',
+          name: authUser.name || '',
+          image: authUser.image || '',
+          role: authUser.role || '',
+          isHost: isHost === true,
+          isBanned: false,
         },
-        participants,
-        seats,
-        giftRanking,
+        participants: participants || [],
+        seats: seats || [],
+        giftRanking: giftRanking || [],
       }
     })
 

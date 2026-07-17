@@ -358,15 +358,19 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         gift: {
-          id: giftRecord?.id,
-          giftTypeId: giftType.id,
-          giftName: giftType.name,
-          giftIcon: giftType.icon,
-          quantity,
-          totalPrice,
+          id: giftRecord?.id || '',
+          giftTypeId: giftType.id || '',
+          giftName: giftType.name || '',
+          giftIcon: giftType.icon || '',
+          quantity: quantity || 1,
+          totalPrice: totalPrice || 0,
         },
-        newBalance,
-        pkUpdate,
+        newBalance: typeof newBalance === 'number' ? newBalance : 0,
+        pkUpdate: pkUpdate ? {
+          battleId: pkUpdate.battleId || '',
+          score1: pkUpdate.score1 || 0,
+          score2: pkUpdate.score2 || 0,
+        } : null,
       }
     })
 

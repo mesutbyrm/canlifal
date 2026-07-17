@@ -65,13 +65,13 @@ export async function GET(request: NextRequest) {
       users = viewers.map((v: any) => {
         const u = userMap.get(v.viewerId)
         return {
-          userId: v.viewerId,
+          userId: v.viewerId || '',
           userName: v.viewerName || u?.name || 'Anonim',
-          userImage: u?.image || null,
-          joinedAt: v.joinedAt,
-          seatIndex: null,
+          userImage: u?.image || '',
+          joinedAt: v.joinedAt?.toISOString?.() || v.joinedAt || '',
+          seatIndex: -1,
           isMicOn: false,
-          nickname: null
+          nickname: '',
         }
       })
     } else {
@@ -94,13 +94,13 @@ export async function GET(request: NextRequest) {
       ])
       totalCount = count
       users = presences.map((p: any) => ({
-        userId: p.userId,
+        userId: p.userId || '',
         userName: p.nickname || p.user?.name || 'Anonim',
-        userImage: p.user?.image || null,
-        joinedAt: p.lastSeen,
-        seatIndex: p.seatIndex ?? -1,
+        userImage: p.user?.image || '',
+        joinedAt: p.lastSeen?.toISOString?.() || p.lastSeen || '',
+        seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : -1,
         isMicOn: false,
-        nickname: p.nickname || null
+        nickname: p.nickname || '',
       }))
     }
 

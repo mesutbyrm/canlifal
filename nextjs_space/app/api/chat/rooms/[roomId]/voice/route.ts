@@ -112,7 +112,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           roomId,
           userId: voiceUserId,
           userName,
-          agoraUid: numericUid, // Legacy DB field
+          agoraUid: numericUid, // Legacy DB field — TRTC numeric UID
           isActive: true
         },
         update: {
