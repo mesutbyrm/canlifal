@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
       tips.push('Son dönem puanınız düşme eğiliminde. Hizmet kalitenizi artırmayı düşünün.')
     }
     if (tips.length === 0) {
-      tips.push('Harika gidiyorsunuz! Aktif kalmaya devam edin. \u2728')
+      tips.push('Harika gidiyorsunuz! Aktif kalmaya devam edin. ✨')
     }
 
     return NextResponse.json({

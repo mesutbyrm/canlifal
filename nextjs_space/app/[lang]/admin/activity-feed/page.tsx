@@ -116,13 +116,13 @@ export default function ActivityFeedAdminPage() {
   if (!config) return null
 
   const groups = [
-    { key: 'visibleToGuests' as const, label: 'Kayıtsız Kullanıcılar', emoji: '\ud83d\udc64', desc: 'Giriş yapmamış ziyaretçiler' },
-    { key: 'visibleToBasic' as const, label: 'Basic Üyeler', emoji: '\u2b50', desc: 'Temel üyelik' },
-    { key: 'visibleToPremium' as const, label: 'Premium Üyeler', emoji: '\ud83d\udc8e', desc: 'Premium üyelik' },
-    { key: 'visibleToGold' as const, label: 'Gold Üyeler', emoji: '\ud83e\udd47', desc: 'Gold üyelik' },
-    { key: 'visibleToDiamond' as const, label: 'Diamond Üyeler', emoji: '\ud83d\udc8e', desc: 'Diamond üyelik' },
-    { key: 'visibleToModerator' as const, label: 'Moderatörler', emoji: '\ud83d\udee1\ufe0f', desc: 'Moderatör rolü' },
-    { key: 'visibleToAdmin' as const, label: 'Yöneticiler', emoji: '\ud83d\udc51', desc: 'Admin & Yönetici' },
+    { key: 'visibleToGuests' as const, label: 'Kayıtsız Kullanıcılar', emoji: '👤', desc: 'Giriş yapmamış ziyaretçiler' },
+    { key: 'visibleToBasic' as const, label: 'Basic Üyeler', emoji: '⭐', desc: 'Temel üyelik' },
+    { key: 'visibleToPremium' as const, label: 'Premium Üyeler', emoji: '💎', desc: 'Premium üyelik' },
+    { key: 'visibleToGold' as const, label: 'Gold Üyeler', emoji: '🥇', desc: 'Gold üyelik' },
+    { key: 'visibleToDiamond' as const, label: 'Diamond Üyeler', emoji: '💎', desc: 'Diamond üyelik' },
+    { key: 'visibleToModerator' as const, label: 'Moderatörler', emoji: '🛡️', desc: 'Moderatör rolü' },
+    { key: 'visibleToAdmin' as const, label: 'Yöneticiler', emoji: '👑', desc: 'Admin & Yönetici' },
   ]
 
   return (
@@ -266,7 +266,7 @@ export default function ActivityFeedAdminPage() {
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : saved ? (
             <>
-              <span className="text-green-300">\u2713</span> Kaydedildi!
+              <span className="text-green-300">✓</span> Kaydedildi!
             </>
           ) : (
             <>

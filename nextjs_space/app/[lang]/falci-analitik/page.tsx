@@ -89,10 +89,10 @@ export default function TellerAnalyticsPage() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Seans', value: summary.totalSessions30d, icon: '\ud83d\udcca', sub: '30 gün' },
-          { label: 'Kazanç', value: `${summary.totalEarnings30d} J`, icon: '\ud83d\udcb0', sub: '30 gün' },
-          { label: 'Ort. Süre', value: `${summary.avgDuration} dk`, icon: '\u23f1\ufe0f', sub: 'seans başı' },
-          { label: 'Puan', value: summary.avgRating.toFixed(1), icon: '\u2b50', sub: 'son dönem' },
+          { label: 'Seans', value: summary.totalSessions30d, icon: '📊', sub: '30 gün' },
+          { label: 'Kazanç', value: `${summary.totalEarnings30d} J`, icon: '💰', sub: '30 gün' },
+          { label: 'Ort. Süre', value: `${summary.avgDuration} dk`, icon: '⏱️', sub: 'seans başı' },
+          { label: 'Puan', value: summary.avgRating.toFixed(1), icon: '⭐', sub: 'son dönem' },
         ].map((s, i) => (
           <div key={i} className={`${cardBg} rounded-xl p-3 text-center`}>
             <div className="text-xl mb-1">{s.icon}</div>
@@ -183,7 +183,7 @@ export default function TellerAnalyticsPage() {
           <div className="space-y-2">
             {tips.map((tip, i) => (
               <div key={i} className={`flex gap-2 text-xs ${textSecondary}`}>
-                <span className="flex-shrink-0">\ud83d\udca1</span>
+                <span className="flex-shrink-0">💡</span>
                 <span>{tip}</span>
               </div>
             ))}

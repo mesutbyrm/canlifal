@@ -71,7 +71,7 @@ function AnswerCard({ answer, isBest }: { answer: SBAnswer; isBest: boolean }) {
           </div>
           <span className="text-[11px] text-white/40 flex items-center gap-1">
             <Clock className="w-3 h-3" />{timeAgo(answer.createdAt)}
-            {answer.author.role !== 'user' && <span className="ml-1">\u00b7 Seviye {answer.author.level}</span>}
+            {answer.author.role !== 'user' && <span className="ml-1">· Seviye {answer.author.level}</span>}
           </span>
         </div>
       </div>
@@ -311,7 +311,7 @@ export default function QuestionDetailPage() {
 
               {/* Community Rules */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <h3 className="text-sm font-bold text-white mb-2">\ud83d\udee1\ufe0f Topluluk Kuralları</h3>
+                <h3 className="text-sm font-bold text-white mb-2">🛡️ Topluluk Kuralları</h3>
                 <ul className="space-y-1.5 text-[11px] text-white/40">
                   <li>• Saygılı ve yapıcı olun</li>
                   <li>• Kişisel bilgi paylaşmayın</li>

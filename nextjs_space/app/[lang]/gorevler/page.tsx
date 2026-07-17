@@ -64,7 +64,7 @@ export default function DailyMissionsPage() {
       })
       const d = await res.json()
       if (res.ok) {
-        setClaimMsg(`+${d.creditsEarned} kredi kazanıldı! \u2728`)
+        setClaimMsg(`+${d.creditsEarned} kredi kazanıldı! ✨`)
         fetchMissions()
       } else {
         setClaimMsg(d.error || 'Hata oluştu')
@@ -95,7 +95,7 @@ export default function DailyMissionsPage() {
         </Link>
         <div className="flex-1">
           <h1 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
-            \ud83c\udfaf Günlük Görevler
+            🎯 Günlük Görevler
           </h1>
           <p className={`${textSecondary} text-xs`}>Her gün görevleri tamamla, ödül kazan!</p>
         </div>
@@ -167,7 +167,7 @@ export default function DailyMissionsPage() {
               </div>
               <div className="text-right flex-shrink-0">
                 {m.completed ? (
-                  <span className="text-green-400 text-xs font-bold">+{m.reward} \u2705</span>
+                  <span className="text-green-400 text-xs font-bold">+{m.reward} ✅</span>
                 ) : (
                   <button
                     onClick={() => claimMission(m.type)}
@@ -189,21 +189,21 @@ export default function DailyMissionsPage() {
               className={`${cardBg} rounded-xl p-4 text-center ring-2 ${isFacebook ? 'ring-blue-500' : isCosmic ? 'ring-blue-400' : 'ring-fuchsia-500'}`}
             >
               <Gift className={`w-8 h-8 ${accentColor} mx-auto mb-2`} />
-              <h3 className={`font-bold ${textPrimary} mb-1`}>Tüm Görevler Tamamlandı! \ud83c\udf89</h3>
+              <h3 className={`font-bold ${textPrimary} mb-1`}>Tüm Görevler Tamamlandı! 🎉</h3>
               <p className={`text-xs ${textSecondary} mb-3`}>Ekstra 25 kredi bonusınu al</p>
               <button
                 onClick={() => claimMission('all_complete_bonus')}
                 disabled={claiming === 'all_complete_bonus'}
                 className={`px-6 py-2 rounded-xl ${btnPrimary} font-medium text-sm`}
               >
-                {claiming === 'all_complete_bonus' ? <Loader2 className="w-4 h-4 animate-spin" /> : '\ud83c\udf81 +25 Kredi Al'}
+                {claiming === 'all_complete_bonus' ? <Loader2 className="w-4 h-4 animate-spin" /> : '🎁 +25 Kredi Al'}
               </button>
             </motion.div>
           )}
 
           {allBonusClaimed && (
             <div className={`${cardBg} rounded-xl p-4 text-center`}>
-              <p className={`text-sm ${accentColor} font-bold`}>\u2728 Bugünkü tüm görevler ve bonus tamamlandı!</p>
+              <p className={`text-sm ${accentColor} font-bold`}>✨ Bugünkü tüm görevler ve bonus tamamlandı!</p>
               <p className={`text-xs ${textSecondary} mt-1`}>Yarın yeni görevler seni bekliyor</p>
             </div>
           )}

@@ -134,7 +134,7 @@ export default function AdminTrendVideos() {
   }
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Bu kategoriyi ve t\u00fcm videolar\u0131n\u0131 silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu kategoriyi ve tüm videolarını silmek istediğinize emin misiniz?')) return
     await fetch('/api/admin/trend-videos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -157,7 +157,7 @@ export default function AdminTrendVideos() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setSearchError(data.error || 'Arama ba\u015far\u0131s\u0131z')
+        setSearchError(data.error || 'Arama başarısız')
         return
       }
       // Filter out already added videos
@@ -229,7 +229,7 @@ export default function AdminTrendVideos() {
   }
 
   const handleDeleteVideo = async (id: string) => {
-    if (!confirm('Bu videoyu silmek istedi\u011finize emin misiniz?')) return
+    if (!confirm('Bu videoyu silmek istediğinize emin misiniz?')) return
     await fetch('/api/admin/trend-videos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -291,8 +291,8 @@ export default function AdminTrendVideos() {
         {showNewCat && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-              <input value={newCatTitle} onChange={e => setNewCatTitle(e.target.value)} placeholder="Kategori ba\u015fl\u0131\u011f\u0131 (\u00f6r: Komik Videolar)" className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50" />
-              <input value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)} placeholder="A\u00e7\u0131klama (opsiyonel)" className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50" />
+              <input value={newCatTitle} onChange={e => setNewCatTitle(e.target.value)} placeholder="Kategori başlığı (ör: Komik Videolar)" className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50" />
+              <input value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)} placeholder="Açıklama (opsiyonel)" className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50" />
               <div className="flex gap-2">
                 <button onClick={() => setShowNewCat(false)} className="px-4 py-2 bg-white/5 border border-white/10 text-white/60 rounded-lg text-sm">İptal</button>
                 <button onClick={handleCreateCategory} disabled={savingCat || !newCatTitle.trim()} className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 disabled:opacity-50 text-white rounded-lg text-sm font-semibold flex items-center gap-2">
