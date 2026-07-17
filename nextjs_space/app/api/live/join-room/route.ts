@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { redisCache } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -328,6 +329,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[LIVE/join-room] userId=${authUser.id} roomId=${roomId} roomType=${roomType} isHost=${isHost}`)
+
+    // Track user in cache for instant online status
+    redisCache.sadd(`room:${roomId}:users`, authUser.id)
+    redisCache.hset(`user:${authUser.id}:presence`, 'roomId', roomId)
+    redisCache.hset(`user:${authUser.id}:presence`, 'roomType', roomType)
+    redisCache.hset(`user:${authUser.id}:presence`, 'joinedAt', new Date().toISOString())
+    redisCache.expire(`user:${authUser.id}:presence`, 600) // 10 min TTL, refreshed by heartbeat
 
     return NextResponse.json({
       success: true,

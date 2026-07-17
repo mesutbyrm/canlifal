@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { redisCache } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,6 +130,11 @@ export async function POST(request: NextRequest) {
         where: { roomId: room.id, lastSeen: { gte: presenceTimeout } }
       })
     }
+
+    // Refresh cache presence TTL
+    redisCache.sadd(`room:${roomId}:users`, authUser.id)
+    redisCache.hset(`user:${authUser.id}:presence`, 'lastSeen', new Date().toISOString())
+    redisCache.expire(`user:${authUser.id}:presence`, 600)
 
     return NextResponse.json({
       success: true,

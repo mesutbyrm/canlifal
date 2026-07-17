@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import prisma from '@/lib/db'
+import { redisCache } from '@/lib/cache'
 
 /* ────────────────────────────────────────────────────────────────────
  *  Tencent TRTC Event Callback Endpoint
@@ -133,6 +134,12 @@ async function handleMemberEnter(info: any) {
 
   console.log(`[TRTC-Webhook] User ${userId} entered room ${roomId} (role: ${role})`)
 
+  // Track in cache immediately
+  redisCache.sadd(`room:${roomId}:users`, userId)
+  redisCache.hset(`user:${userId}:presence`, 'roomId', roomId)
+  redisCache.hset(`user:${userId}:presence`, 'lastSeen', new Date().toISOString())
+  redisCache.expire(`user:${userId}:presence`, 600)
+
   // Find stream by roomId
   const stream = await prisma.videoStream.findFirst({
     where: { roomId, status: 'live' },
@@ -167,6 +174,10 @@ async function handleMemberLeave(info: any) {
   if (!roomId || !userId) return
 
   console.log(`[TRTC-Webhook] User ${userId} left room ${roomId} (reason: ${reason})`)
+
+  // Remove from cache immediately
+  redisCache.srem(`room:${roomId}:users`, userId)
+  redisCache.del(`user:${userId}:presence`)
 
   // Find stream by roomId
   const stream = await prisma.videoStream.findFirst({

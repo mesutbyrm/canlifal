@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { redisCache } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,6 +98,10 @@ export async function POST(request: NextRequest) {
         console.log(`[LIVE/leave-room] User left voice room. roomId=${room.id} userId=${authUser.id}`)
       }
     }
+
+    // Remove user from cache
+    redisCache.srem(`room:${roomId}:users`, authUser.id)
+    redisCache.del(`user:${authUser.id}:presence`)
 
     return NextResponse.json({ success: true, data: { message: 'Odadan çıkıldı' } })
 
