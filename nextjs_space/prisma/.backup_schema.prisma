@@ -3636,6 +3636,26 @@ model PkEvent {
   @@map("pk_events")
 }
 
+// ── TRTC Webhook Event Log ─────────────────────────────────────────
+model TrtcWebhookLog {
+  id             String   @id @default(cuid())
+  eventGroupId   Int      // 1=Room, 2=Media, 3=Recording, 4=Relay
+  eventType      Int      // 101=RoomCreated, 102=RoomDissolved, 103=Enter, 104=Leave, 105=RoleSwitch
+  sdkAppId       Int
+  roomId         String?  // TRTC room ID
+  userId         String?  // TRTC user ID (our user cuid)
+  payload        String   @db.Text // full JSON body
+  processedOk    Boolean  @default(true)
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  @@index([eventGroupId, eventType])
+  @@index([roomId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("trtc_webhook_logs")
+}
+
 // ── Phase 3: moderation — PK ban list ──────────────────────────────
 model PkBan {
   id        String    @id @default(cuid())
