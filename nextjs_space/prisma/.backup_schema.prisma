@@ -480,6 +480,9 @@ model ChatRoom {
   chatGifts             ChatRoomGift[]
   revenueLogs           RoomRevenueLog[]
 
+  @@index([isActive, createdAt])
+  @@index([ownerId])
+  @@index([roomType])
   @@map("chat_rooms")
 }
 
