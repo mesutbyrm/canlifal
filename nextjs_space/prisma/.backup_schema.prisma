@@ -12,139 +12,145 @@ datasource db {
 }
 
 model User {
-  id                    String               @id @default(cuid())
-  email                 String               @unique
-  emailVerified         DateTime?
-  password              String?
-  name                  String
-  username              String?              @unique
-  phone                 String?
-  image                 String?
-  preferredLanguage     String               @default("tr")
-  credits               Int                  @default(50)
-  role                  String               @default("user")
-  membership            String               @default("basic") // basic, premium, gold
-  membershipExpiresAt   DateTime?
-  createdAt             DateTime             @default(now())
-  referralCode          String?              @unique
-  referralCreditsEarned Int                  @default(0)
-  referredById          String?
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  emailVerified          DateTime?
+  password               String?
+  name                   String
+  username               String?                 @unique
+  phone                  String?
+  image                  String?
+  preferredLanguage      String                  @default("tr")
+  credits                Int                     @default(50)
+  role                   String                  @default("user")
+  membership             String                  @default("basic") // basic, premium, gold
+  membershipExpiresAt    DateTime?
+  createdAt              DateTime                @default(now())
+  referralCode           String?                 @unique
+  referralCreditsEarned  Int                     @default(0)
+  referredById           String?
   // Profile fields
-  bio                   String?              // User bio/about text
-  birthDate             DateTime?
-  birthTime             String?              // HH:mm format for rising sign calculation
-  zodiacSign            String?
-  risingSign            String?
-  favoriteTeam          String?
-  lastHoroscopeDate     DateTime?            // Track when daily horoscope was last generated
+  bio                    String? // User bio/about text
+  birthDate              DateTime?
+  birthTime              String? // HH:mm format for rising sign calculation
+  zodiacSign             String?
+  risingSign             String?
+  favoriteTeam           String?
+  lastHoroscopeDate      DateTime? // Track when daily horoscope was last generated
   // Privacy settings
-  messagePrivacy        String               @default("everyone") // everyone, followers, nobody
-  hideProfileViews      Boolean              @default(false) // hide from profile view tracking
+  messagePrivacy         String                  @default("everyone") // everyone, followers, nobody
+  hideProfileViews       Boolean                 @default(false) // hide from profile view tracking
   // Theme preference
-  theme                 String               @default("mystical") // mystical, facebook
+  theme                  String                  @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
-  jetonBalance          Int                  @default(0)
+  jetonBalance           Int                     @default(0)
   // Location for gift leaderboards / sender map (added, optional)
-  city                  String?
-  country               String?              @default("TR")
+  city                   String?
+  country                String?                 @default("TR")
   // Profile customization
-  specialBadges         String?              // JSON array of special badge types (vip, beta_tester, verified, etc.)
-  profileEffect         String?              // Profile background effect (sparkles, fire, rainbow, etc.)
-  profileFrameId        String?              // Selected profile frame ID
-  profileFrame          ProfileFrame?        @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
-  adminAssignedFrameId  String?              // Admin-assigned profile frame (overrides user selection)
-  adminAssignedFrame    ProfileFrame?        @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
+  specialBadges          String? // JSON array of special badge types (vip, beta_tester, verified, etc.)
+  profileEffect          String? // Profile background effect (sparkles, fire, rainbow, etc.)
+  profileFrameId         String? // Selected profile frame ID
+  profileFrame           ProfileFrame?           @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
+  adminAssignedFrameId   String? // Admin-assigned profile frame (overrides user selection)
+  adminAssignedFrame     ProfileFrame?           @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
+  // Cosmetic selections (Part 13 premium cosmetics) - plain id/key references, no relation
+  nameEffect             String? // Selected name-text effect key (gold, silver, neon, rainbow, ...)
+  entranceEffectId       String? // Selected entrance (room-join) effect id
+  chatBubbleId           String? // Selected chat bubble skin id
+  micFrameId             String? // Selected microphone frame id
+  avatarAccessoryIds     String? // JSON array of selected avatar accessory ids
   // Withdrawal settings (admin-controlled)
-  withdrawalLimit       Int                  @default(0) // 0 means cannot withdraw
+  withdrawalLimit        Int                     @default(0) // 0 means cannot withdraw
   // Statistics
-  totalTimeSpentMinutes Int                  @default(0)
-  lastActiveAt          DateTime?
-  activeDeviceToken     String?
-  accounts              Account[]
-  bannedOthers          ChatBan[]            @relation("Banner")
-  bannedIn              ChatBan[]            @relation("BannedUser")
-  chatMessages          ChatMessage[]
-  mutedOthers           ChatMute[]           @relation("Muter")
-  mutedIn               ChatMute[]           @relation("MutedUser")
-  chatPresences         ChatPresence[]
-  chatRoles             ChatUserRole[]
-  ownedChatRooms        ChatRoom[]           @relation("RoomOwner")
-  beneficiaryRooms      ChatRoom[]           @relation("RoomGiftBeneficiary")
-  fortunes              Fortune[]
-  fortuneTellerProfile  LiveFortuneTeller?
-  liveSessions          LiveSession[]        @relation("SessionUser")
-  notifications         Notification[]
-  passwordResets        PasswordResetToken[]
-  referredHistory       Referral[]           @relation("Referred")
-  referralHistory       Referral[]           @relation("Referrer")
-  sessions              Session[]
-  socialComments        SocialComment[]
-  socialLikes           SocialLike[]
-  socialPosts           SocialPost[]
-  payments              Payment[]
-  referredBy            User?                @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals             User[]               @relation("UserReferrals")
-  videoStreams          VideoStream[]
-  videoStreamComments   VideoStreamComment[]
-  videoStreamLikes      VideoStreamLike[]
-  streamGifts           StreamGift[]
-  sentChatRoomGifts     ChatRoomGift[]       @relation("ChatGiftSender")
-  receivedChatRoomGifts ChatRoomGift[]       @relation("ChatGiftRecipient")
-  followers             Follow[]             @relation("Following")
-  following             Follow[]             @relation("Follower")
-  sentMessages          DirectMessage[]      @relation("SentMessages")
-  receivedMessages      DirectMessage[]      @relation("ReceivedMessages")
-  conversationsAsUser1  Conversation[]       @relation("ConversationUser1")
-  conversationsAsUser2  Conversation[]       @relation("ConversationUser2")
-  sentRequests          MessageRequest[]     @relation("SentRequests")
-  receivedRequests      MessageRequest[]     @relation("ReceivedRequests")
-  dreamComments         DreamComment[]
-  dreamFavorites        DreamFavorite[]
-  dreamViews            DreamView[]
-  dreamDiaryEntries     DreamDiaryEntry[]
-  dailyLoginRewards     DailyLoginReward[]
-  dreamContestEntries   DreamContestEntry[]
-  dreamContestVotes     DreamContestVote[]
-  weeklyDreamReports    WeeklyDreamReport[]
-  liveActivities        LiveActivity[]       @relation("userActivities")
+  totalTimeSpentMinutes  Int                     @default(0)
+  lastActiveAt           DateTime?
+  activeDeviceToken      String?
+  accounts               Account[]
+  bannedOthers           ChatBan[]               @relation("Banner")
+  bannedIn               ChatBan[]               @relation("BannedUser")
+  chatMessages           ChatMessage[]
+  mutedOthers            ChatMute[]              @relation("Muter")
+  mutedIn                ChatMute[]              @relation("MutedUser")
+  chatPresences          ChatPresence[]
+  chatRoles              ChatUserRole[]
+  ownedChatRooms         ChatRoom[]              @relation("RoomOwner")
+  beneficiaryRooms       ChatRoom[]              @relation("RoomGiftBeneficiary")
+  fortunes               Fortune[]
+  fortuneTellerProfile   LiveFortuneTeller?
+  liveSessions           LiveSession[]           @relation("SessionUser")
+  notifications          Notification[]
+  passwordResets         PasswordResetToken[]
+  referredHistory        Referral[]              @relation("Referred")
+  referralHistory        Referral[]              @relation("Referrer")
+  sessions               Session[]
+  socialComments         SocialComment[]
+  socialLikes            SocialLike[]
+  socialPosts            SocialPost[]
+  payments               Payment[]
+  referredBy             User?                   @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals              User[]                  @relation("UserReferrals")
+  videoStreams           VideoStream[]
+  videoStreamComments    VideoStreamComment[]
+  videoStreamLikes       VideoStreamLike[]
+  streamGifts            StreamGift[]
+  sentChatRoomGifts      ChatRoomGift[]          @relation("ChatGiftSender")
+  receivedChatRoomGifts  ChatRoomGift[]          @relation("ChatGiftRecipient")
+  followers              Follow[]                @relation("Following")
+  following              Follow[]                @relation("Follower")
+  sentMessages           DirectMessage[]         @relation("SentMessages")
+  receivedMessages       DirectMessage[]         @relation("ReceivedMessages")
+  conversationsAsUser1   Conversation[]          @relation("ConversationUser1")
+  conversationsAsUser2   Conversation[]          @relation("ConversationUser2")
+  sentRequests           MessageRequest[]        @relation("SentRequests")
+  receivedRequests       MessageRequest[]        @relation("ReceivedRequests")
+  dreamComments          DreamComment[]
+  dreamFavorites         DreamFavorite[]
+  dreamViews             DreamView[]
+  dreamDiaryEntries      DreamDiaryEntry[]
+  dailyLoginRewards      DailyLoginReward[]
+  dreamContestEntries    DreamContestEntry[]
+  dreamContestVotes      DreamContestVote[]
+  weeklyDreamReports     WeeklyDreamReport[]
+  liveActivities         LiveActivity[]          @relation("userActivities")
   // XP & Level system
-  xp                    Int                  @default(0)
-  level                 Int                  @default(1)
-  loginStreak           Int                  @default(0)
-  lastLoginRewardDate   DateTime?            @db.Date
+  xp                     Int                     @default(0)
+  level                  Int                     @default(1)
+  loginStreak            Int                     @default(0)
+  lastLoginRewardDate    DateTime?               @db.Date
   // Agency system
-  agencyMembership      AgencyUser?
-  agencyLeaveRequests   AgencyLeaveRequest[]
+  agencyMembership       AgencyUser?
+  agencyLeaveRequests    AgencyLeaveRequest[]
   // Celebrity follows
-  celebrityFollows      CelebrityFollow[]
+  celebrityFollows       CelebrityFollow[]
   // Fan clubs
-  fanClubMemberships    FanClubMember[]
-  fanClubPosts          FanClubPost[]
-  fanClubPostLikes      FanClubPostLike[]
-  fanClubPolls          FanClubPoll[]
-  fanClubPollVotes      FanClubPollVote[]
+  fanClubMemberships     FanClubMember[]
+  fanClubPosts           FanClubPost[]
+  fanClubPostLikes       FanClubPostLike[]
+  fanClubPolls           FanClubPoll[]
+  fanClubPollVotes       FanClubPollVote[]
   // Celebrity posts
-  celebrityPostLikes    CelebrityPostLike[]
-  celebrityPostComments CelebrityPostComment[]
-  stories               UserStory[]
+  celebrityPostLikes     CelebrityPostLike[]
+  celebrityPostComments  CelebrityPostComment[]
+  stories                UserStory[]
   // Bot system
-  isBot                 Boolean              @default(false)
-  botProfile            BotProfile?
+  isBot                  Boolean                 @default(false)
+  botProfile             BotProfile?
   // CFC (CanlıFal Coin) balance
-  cfcBalance            Int                  @default(0)
-  cfcPaymentRequests    CfcPaymentRequest[]
-  devices               UserDevice[]
-  shortVideos           ShortVideo[]
-  shortVideoLikes       ShortVideoLike[]
-  shortVideoComments    ShortVideoComment[]
-  shortVideoViews       ShortVideoView[]
-  shortVideoSaves       ShortVideoSave[]
+  cfcBalance             Int                     @default(0)
+  cfcPaymentRequests     CfcPaymentRequest[]
+  devices                UserDevice[]
+  shortVideos            ShortVideo[]
+  shortVideoLikes        ShortVideoLike[]
+  shortVideoComments     ShortVideoComment[]
+  shortVideoViews        ShortVideoView[]
+  shortVideoSaves        ShortVideoSave[]
   shortVideoCommentLikes ShortVideoCommentLike[]
-  shortVideoMentions    ShortVideoMention[]  @relation("ShortVideoMentioned")
-  blockedUsers          UserBlock[]          @relation("Blocker")
-  blockedByUsers        UserBlock[]          @relation("Blocked")
-  reportsMade           UserReport[]         @relation("Reporter")
-  reportsReceived       UserReport[]         @relation("Reported")
+  shortVideoMentions     ShortVideoMention[]     @relation("ShortVideoMentioned")
+  blockedUsers           UserBlock[]             @relation("Blocker")
+  blockedByUsers         UserBlock[]             @relation("Blocked")
+  reportsMade            UserReport[]            @relation("Reporter")
+  reportsReceived        UserReport[]            @relation("Reported")
 
   @@index([referralCode])
   @@index([isBot])
@@ -155,20 +161,20 @@ model User {
 
 // Follow relationship between users
 model BotProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  personality     String   // shy, aggressive, funny, flirty, serious
-  age             Int
-  city            String
-  interests       String?  @db.Text // JSON array
-  activityLevel   String   @default("medium") // low, medium, high
-  activeHoursStart Int     @default(9)  // 0-23
-  activeHoursEnd  Int      @default(23) // 0-23
-  isActive        Boolean  @default(true) // admin can enable/disable
-  lastActionAt    DateTime?
-  totalActions    Int      @default(0)
-  createdAt       DateTime @default(now())
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personality      String // shy, aggressive, funny, flirty, serious
+  age              Int
+  city             String
+  interests        String?   @db.Text // JSON array
+  activityLevel    String    @default("medium") // low, medium, high
+  activeHoursStart Int       @default(9) // 0-23
+  activeHoursEnd   Int       @default(23) // 0-23
+  isActive         Boolean   @default(true) // admin can enable/disable
+  lastActionAt     DateTime?
+  totalActions     Int       @default(0)
+  createdAt        DateTime  @default(now())
 
   @@index([isActive])
   @@index([personality])
@@ -177,8 +183,8 @@ model BotProfile {
 
 model Follow {
   id          String   @id @default(cuid())
-  followerId  String   // The user who is following
-  followingId String   // The user being followed
+  followerId  String // The user who is following
+  followingId String // The user being followed
   createdAt   DateTime @default(now())
   follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
@@ -219,56 +225,56 @@ model PasswordResetToken {
 }
 
 model LiveFortuneTeller {
-  id                String             @id @default(cuid())
-  userId            String             @unique
-  displayName       String
-  bio               String?
-  specialties       String[]
-  pricePerSession   Int                @default(100)
-  rating            Float              @default(5.0)
-  totalSessions     Int                @default(0)
-  totalReviews      Int                @default(0)
-  isOnline          Boolean            @default(false)
-  isVerified        Boolean            @default(false)
-  isActive          Boolean            @default(true)
-  avatar            String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  applicationNote   String?
-  applicationStatus String             @default("pending")
-  approvedAt        DateTime?
-  banReason         String?
-  bannedAt          DateTime?
-  bonusCredits      Int                @default(0)
-  freezeReason      String?
-  frozenAt          DateTime?
-  isBanned          Boolean            @default(false)
-  isFrozen          Boolean            @default(false)
-  rejectedAt        DateTime?
-  totalEarnings     Int                @default(0)
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  displayName        String
+  bio                String?
+  specialties        String[]
+  pricePerSession    Int                @default(100)
+  rating             Float              @default(5.0)
+  totalSessions      Int                @default(0)
+  totalReviews       Int                @default(0)
+  isOnline           Boolean            @default(false)
+  isVerified         Boolean            @default(false)
+  isActive           Boolean            @default(true)
+  avatar             String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  applicationNote    String?
+  applicationStatus  String             @default("pending")
+  approvedAt         DateTime?
+  banReason          String?
+  bannedAt           DateTime?
+  bonusCredits       Int                @default(0)
+  freezeReason       String?
+  frozenAt           DateTime?
+  isBanned           Boolean            @default(false)
+  isFrozen           Boolean            @default(false)
+  rejectedAt         DateTime?
+  totalEarnings      Int                @default(0)
   // Level system: bronze, silver, gold, diamond
-  tellerLevel       String             @default("bronze") // bronze, silver, gold, diamond
-  levelPoints       Int                @default(0) // Accumulated points for level calculation
-  levelUpdatedAt    DateTime?
+  tellerLevel        String             @default("bronze") // bronze, silver, gold, diamond
+  levelPoints        Int                @default(0) // Accumulated points for level calculation
+  levelUpdatedAt     DateTime?
   // Teller permissions (admin controlled)
-  canGoOnline       Boolean            @default(true)
-  canChat           Boolean            @default(true)
-  canStartSession   Boolean            @default(true)
-  canSetPrice       Boolean            @default(false)
-  canEditProfile    Boolean            @default(true)
-  canViewEarnings   Boolean            @default(true)
-  canWithdraw       Boolean            @default(false)
+  canGoOnline        Boolean            @default(true)
+  canChat            Boolean            @default(true)
+  canStartSession    Boolean            @default(true)
+  canSetPrice        Boolean            @default(false)
+  canEditProfile     Boolean            @default(true)
+  canViewEarnings    Boolean            @default(true)
+  canWithdraw        Boolean            @default(false)
   // Kimlik doğrulama
   verificationDocUrl String?
   verificationStatus String             @default("none") // none, pending, approved, rejected
   verificationNote   String?
-  maxSessionsPerDay Int                @default(10)
-  commissionRate    Int                @default(20)
-  adminNotes        String?
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions          LiveSession[]
-  reviews           LiveTellerReview[]
-  warnings          TellerWarning[]
+  maxSessionsPerDay  Int                @default(10)
+  commissionRate     Int                @default(20)
+  adminNotes         String?
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions           LiveSession[]
+  reviews            LiveTellerReview[]
+  warnings           TellerWarning[]
 
   @@index([isOnline])
   @@index([isVerified])
@@ -327,15 +333,15 @@ model LiveSession {
 
 // WebRTC Signaling for real-time communication
 model RoomSignal {
-  id          String      @id @default(cuid())
-  sessionId   String
-  senderId    String
-  receiverId  String
-  signalType  String      // offer, answer, ice-candidate
-  signalData  String      // JSON string of WebRTC signal data
-  processed   Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id         String      @id @default(cuid())
+  sessionId  String
+  senderId   String
+  receiverId String
+  signalType String // offer, answer, ice-candidate
+  signalData String // JSON string of WebRTC signal data
+  processed  Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  session    LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([receiverId, processed])
@@ -442,36 +448,36 @@ model VerificationToken {
 }
 
 model ChatRoom {
-  id                    String         @id @default(cuid())
-  slug                  String         @unique
+  id                    String           @id @default(cuid())
+  slug                  String           @unique
   nameEn                String
   nameTr                String
   descEn                String
   descTr                String
   icon                  String
-  isActive              Boolean        @default(true)
-  isMuted               Boolean        @default(false)
-  ownerId               String?        // User who purchased/owns this room
-  owner                 User?          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  giftCommissionPercent Int            @default(0) // 0-100, percentage of gift value going to beneficiary
-  giftBeneficiaryId     String?        // Who receives the commission (null = room owner)
-  giftBeneficiary       User?          @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
-  backgroundImage       String?        // Background image URL for room
-  bannedWords           String?        @db.Text // JSON array of custom banned words set by room owner
-  currentMusicVideoId   String?        // Currently playing YouTube video ID
-  currentMusicTitle     String?        // Currently playing music title
-  currentMusicStartedAt DateTime?      // When the music started playing
-  currentMusicDuration  String?        // Duration string from YouTube (e.g. "3:45")
-  djUserIds             String?        @db.Text // JSON array of user IDs who can DJ (max 5)
-  activeDjId            String?        // Currently active DJ user ID (who has permission to play right now)
-  whitelistedWords      String?        @db.Text // JSON array of words marked as safe (not profanity)
-  roomType              String         @default("FREE") // FREE, NORMAL, VIP
-  password              String?        // Room password (NORMAL, VIP only)
-  welcomeMessage        String?        // Welcome message for users joining
-  pinnedAnnouncement    String?        // Pinned announcement text
-  tags                  String?        // Comma-separated tags
-  bannerImage           String?        // Room banner image URL
-  createdAt             DateTime       @default(now())
+  isActive              Boolean          @default(true)
+  isMuted               Boolean          @default(false)
+  ownerId               String? // User who purchased/owns this room
+  owner                 User?            @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  giftCommissionPercent Int              @default(0) // 0-100, percentage of gift value going to beneficiary
+  giftBeneficiaryId     String? // Who receives the commission (null = room owner)
+  giftBeneficiary       User?            @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
+  backgroundImage       String? // Background image URL for room
+  bannedWords           String?          @db.Text // JSON array of custom banned words set by room owner
+  currentMusicVideoId   String? // Currently playing YouTube video ID
+  currentMusicTitle     String? // Currently playing music title
+  currentMusicStartedAt DateTime? // When the music started playing
+  currentMusicDuration  String? // Duration string from YouTube (e.g. "3:45")
+  djUserIds             String?          @db.Text // JSON array of user IDs who can DJ (max 5)
+  activeDjId            String? // Currently active DJ user ID (who has permission to play right now)
+  whitelistedWords      String?          @db.Text // JSON array of words marked as safe (not profanity)
+  roomType              String           @default("FREE") // FREE, NORMAL, VIP
+  password              String? // Room password (NORMAL, VIP only)
+  welcomeMessage        String? // Welcome message for users joining
+  pinnedAnnouncement    String? // Pinned announcement text
+  tags                  String? // Comma-separated tags
+  bannerImage           String? // Room banner image URL
+  createdAt             DateTime         @default(now())
   bans                  ChatBan[]
   messages              ChatMessage[]
   mutes                 ChatMute[]
@@ -494,10 +500,10 @@ model ChatRoomGift {
   recipientId      String
   giftTypeId       String
   quantity         Int      @default(1)
-  totalPrice       Int      // total cost
+  totalPrice       Int // total cost
   currencyType     String   @default("jeton") // "jeton" or "cfc"
   commissionAmount Int      @default(0) // amount taken as commission
-  beneficiaryId    String?  // who received commission (null if no commission)
+  beneficiaryId    String? // who received commission (null if no commission)
   createdAt        DateTime @default(now())
   room             ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   sender           User     @relation("ChatGiftSender", fields: [senderId], references: [id], onDelete: Cascade)
@@ -692,7 +698,7 @@ model SitePresence {
   lastSeen   DateTime @default(now())
   userAgent  String?
   path       String?
-  deviceType String?  // mobile, tablet, desktop
+  deviceType String? // mobile, tablet, desktop
   isBot      Boolean  @default(false)
   botName    String?
 
@@ -745,40 +751,40 @@ model Notification {
 
 // Credit Package for purchasing credits
 model CreditPackage {
-  id           String    @id @default(cuid())
-  name         String
-  nameEn       String?
-  credits      Int
-  price        Float
-  currency     String    @default("TRY")
+  id            String    @id @default(cuid())
+  name          String
+  nameEn        String?
+  credits       Int
+  price         Float
+  currency      String    @default("TRY")
   stripePriceId String?
-  isActive     Boolean   @default(true)
-  isFeatured   Boolean   @default(false)
-  bonusCredits Int       @default(0)
-  sortOrder    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  payments     Payment[]
+  isActive      Boolean   @default(true)
+  isFeatured    Boolean   @default(false)
+  bonusCredits  Int       @default(0)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payments      Payment[]
 
   @@map("credit_packages")
 }
 
 // Payment/Purchase tracking
 model Payment {
-  id                String        @id @default(cuid())
-  userId            String
-  packageId         String?
-  stripeSessionId   String?       @unique
-  stripePaymentIntentId String?   @unique
-  amount            Float
-  currency          String        @default("TRY")
-  creditsAwarded    Int
-  status            String        @default("pending") // pending, completed, failed, refunded
-  paymentMethod     String?
-  createdAt         DateTime      @default(now())
-  completedAt       DateTime?
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  package           CreditPackage? @relation(fields: [packageId], references: [id])
+  id                    String         @id @default(cuid())
+  userId                String
+  packageId             String?
+  stripeSessionId       String?        @unique
+  stripePaymentIntentId String?        @unique
+  amount                Float
+  currency              String         @default("TRY")
+  creditsAwarded        Int
+  status                String         @default("pending") // pending, completed, failed, refunded
+  paymentMethod         String?
+  createdAt             DateTime       @default(now())
+  completedAt           DateTime?
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package               CreditPackage? @relation(fields: [packageId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -788,43 +794,43 @@ model Payment {
 
 // Payment Methods Configuration
 model PaymentMethod {
-  id          String   @id @default(cuid())
-  type        String   @unique // credit_card, bitcoin, bank_transfer
-  name        String
-  nameEn      String?
-  description String?
+  id            String   @id @default(cuid())
+  type          String   @unique // credit_card, bitcoin, bank_transfer
+  name          String
+  nameEn        String?
+  description   String?
   descriptionEn String?
-  isActive    Boolean  @default(true)
-  config      String?  // JSON string for configuration (bank details, wallet address, etc.)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive      Boolean  @default(true)
+  config        String? // JSON string for configuration (bank details, wallet address, etc.)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("payment_methods")
 }
 
 // Platform settings for admin
 model PlatformSettings {
-  id                    String   @id @default(cuid())
-  key                   String   @unique
-  value                 String
-  description           String?
-  updatedAt             DateTime @updatedAt
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
 
   @@map("platform_settings")
 }
 
 // Live Chat Session between user and fortune teller
 model TellerChatSession {
-  id              String              @id @default(cuid())
-  liveSessionId   String              @unique
-  userId          String
-  tellerId        String
-  status          String              @default("active") // active, closed
-  createdAt       DateTime            @default(now())
-  closedAt        DateTime?
-  liveSession     LiveSession         @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
-  messages        TellerChatMessage[]
+  id            String              @id @default(cuid())
+  liveSessionId String              @unique
+  userId        String
+  tellerId      String
+  status        String              @default("active") // active, closed
+  createdAt     DateTime            @default(now())
+  closedAt      DateTime?
+  liveSession   LiveSession         @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  messages      TellerChatMessage[]
 
   @@index([userId])
   @@index([tellerId])
@@ -837,7 +843,7 @@ model TellerChatMessage {
   id            String            @id @default(cuid())
   chatSessionId String
   senderId      String
-  senderType    String            // "user" or "teller"
+  senderType    String // "user" or "teller"
   content       String
   messageType   String            @default("text") // text, image
   imageUrl      String?
@@ -852,29 +858,29 @@ model TellerChatMessage {
 
 // TikTok-style Video Stream
 model VideoStream {
-  id              String              @id @default(cuid())
-  userId          String
-  title           String?
-  description     String?
-  status          String              @default("live") // live, ended
-  viewerCount     Int                 @default(0)
-  likeCount       Int                 @default(0)
-  roomId          String              @unique @default(cuid())
-  category        String?             // fortune, chat, general
-  thumbnailUrl    String?
-  broadcastImage  String?             // Image URL for image-only broadcast mode
-  isImageMode     Boolean             @default(false) // Whether broadcasting with image instead of video
-  backgroundUrl   String?             // Background image URL for the broadcast
-  lastGiftAt      DateTime?           // Last gift received timestamp (for auto-close)
-  autoClosedAt    DateTime?           // When stream was auto-closed due to no gifts
-  startedAt       DateTime            @default(now())
-  endedAt         DateTime?
-  createdAt       DateTime            @default(now())
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments        VideoStreamComment[]
-  likes           VideoStreamLike[]
-  viewers         VideoStreamViewer[]
-  gifts           StreamGift[]
+  id             String               @id @default(cuid())
+  userId         String
+  title          String?
+  description    String?
+  status         String               @default("live") // live, ended
+  viewerCount    Int                  @default(0)
+  likeCount      Int                  @default(0)
+  roomId         String               @unique @default(cuid())
+  category       String? // fortune, chat, general
+  thumbnailUrl   String?
+  broadcastImage String? // Image URL for image-only broadcast mode
+  isImageMode    Boolean              @default(false) // Whether broadcasting with image instead of video
+  backgroundUrl  String? // Background image URL for the broadcast
+  lastGiftAt     DateTime? // Last gift received timestamp (for auto-close)
+  autoClosedAt   DateTime? // When stream was auto-closed due to no gifts
+  startedAt      DateTime             @default(now())
+  endedAt        DateTime?
+  createdAt      DateTime             @default(now())
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments       VideoStreamComment[]
+  likes          VideoStreamLike[]
+  viewers        VideoStreamViewer[]
+  gifts          StreamGift[]
 
   @@index([userId])
   @@index([status])
@@ -887,15 +893,15 @@ model VideoStream {
 
 // Comments on video streams
 model VideoStreamComment {
-  id          String      @id @default(cuid())
-  streamId    String
-  userId      String
-  content     String
-  nickname    String?     // Optional custom nickname for the comment
-  isHidden    Boolean     @default(false) // Whether viewer is hidden in this stream
-  createdAt   DateTime    @default(now())
-  stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String      @id @default(cuid())
+  streamId  String
+  userId    String
+  content   String
+  nickname  String? // Optional custom nickname for the comment
+  isHidden  Boolean     @default(false) // Whether viewer is hidden in this stream
+  createdAt DateTime    @default(now())
+  stream    VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([streamId])
   @@index([createdAt])
@@ -922,7 +928,7 @@ model VideoStreamViewer {
   streamId   String
   viewerId   String
   viewerName String?
-  nickname   String?     // Custom nickname for this stream
+  nickname   String? // Custom nickname for this stream
   isHidden   Boolean     @default(false) // Whether viewer wants to be hidden
   joinedAt   DateTime    @default(now())
   leftAt     DateTime?
@@ -935,66 +941,66 @@ model VideoStreamViewer {
 
 // Gift types available for purchase
 model GiftType {
-  id          String   @id @default(cuid())
-  name        String
-  nameEn      String
-  icon        String   // emoji or icon name
-  animation   String?  // animation type
-  price       Int      // price in credits
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id                  String         @id @default(cuid())
+  name                String
+  nameEn              String
+  icon                String // emoji or icon name
+  animation           String? // animation type
+  price               Int // price in credits
+  sortOrder           Int            @default(0)
+  isActive            Boolean        @default(true)
+  createdAt           DateTime       @default(now())
   // ── Gift store: uploadable rich assets (added) ──
-  thumbnailUrl       String?  // small preview image (ready-to-use URL)
-  assetUrl           String?  // full gift asset URL (video/lottie/svga/gif/png)
-  assetType          String?  @default("image") // image | video | lottie | svga | gif
-  cloudStoragePath   String?  // internal storage key for the asset
-  thumbnailCloudPath String?  // internal storage key for the thumbnail
-  category           String?  // optional grouping (e.g. "luxury", "romantic")
-  description        String?  @db.Text
-  updatedAt          DateTime @default(now()) @updatedAt
+  thumbnailUrl        String? // small preview image (ready-to-use URL)
+  assetUrl            String? // full gift asset URL (video/lottie/svga/gif/png)
+  assetType           String?        @default("image") // image | video | lottie | svga | gif
+  cloudStoragePath    String? // internal storage key for the asset
+  thumbnailCloudPath  String? // internal storage key for the thumbnail
+  category            String? // optional grouping (e.g. "luxury", "romantic")
+  description         String?        @db.Text
+  updatedAt           DateTime       @default(now()) @updatedAt
   // ── Premium ecosystem fields (added) ──
-  soundUrl           String?  // optional sound effect URL
-  soundCloudPath     String?  // internal storage key for the sound
-  animationDurationMs Int?    // animation duration in ms
-  isFullscreen       Boolean  @default(false) // full-screen animation gift
-  tier               String   @default("small") // small | big | huge (animation intensity)
-  isPopular          Boolean  @default(false)
-  isNew              Boolean  @default(false)
-  isSpecialEvent     Boolean  @default(false)
-  isHidden           Boolean  @default(false) // "gizli" gift — invisible until first sent/owned
-  seasonStart        DateTime? // seasonal availability window start
-  seasonEnd          DateTime? // seasonal availability window end
-  isFeatured         Boolean  @default(false) // "Hediye Günü" highlight
-  firstReleasedAt    DateTime? // album: first release date
+  soundUrl            String? // optional sound effect URL
+  soundCloudPath      String? // internal storage key for the sound
+  animationDurationMs Int? // animation duration in ms
+  isFullscreen        Boolean        @default(false) // full-screen animation gift
+  tier                String         @default("small") // small | big | huge (animation intensity)
+  isPopular           Boolean        @default(false)
+  isNew               Boolean        @default(false)
+  isSpecialEvent      Boolean        @default(false)
+  isHidden            Boolean        @default(false) // "gizli" gift — invisible until first sent/owned
+  seasonStart         DateTime? // seasonal availability window start
+  seasonEnd           DateTime? // seasonal availability window end
+  isFeatured          Boolean        @default(false) // "Hediye Günü" highlight
+  firstReleasedAt     DateTime? // album: first release date
   // ── Admin panel: static icon image, effect color & behavior flags (added) ──
-  iconImageUrl       String?  // static PNG/webP icon shown in panel/list (distinct from emoji `icon`)
-  iconImageCloudPath String?  // internal storage key for the static icon image
-  effectColor        String?  // hex effect color, e.g. #FF6B6B
-  comboEnabled       Boolean  @default(false) // gift supports combo sending
-  isPremium          Boolean  @default(false) // premium gift
-  gifts          StreamGift[]
-  chatRoomGifts  ChatRoomGift[]
-  giftEvents     GiftEvent[]
+  iconImageUrl        String? // static PNG/webP icon shown in panel/list (distinct from emoji `icon`)
+  iconImageCloudPath  String? // internal storage key for the static icon image
+  effectColor         String? // hex effect color, e.g. #FF6B6B
+  comboEnabled        Boolean        @default(false) // gift supports combo sending
+  isPremium           Boolean        @default(false) // premium gift
+  gifts               StreamGift[]
+  chatRoomGifts       ChatRoomGift[]
+  giftEvents          GiftEvent[]
 
   @@map("gift_types")
 }
 
 // Gifts sent during streams
 model StreamGift {
-  id          String      @id @default(cuid())
-  streamId    String
-  senderId    String
-  giftTypeId  String
-  quantity    Int         @default(1)
-  totalPrice  Int         // total credits spent (gross / display value)
+  id             String      @id @default(cuid())
+  streamId       String
+  senderId       String
+  giftTypeId     String
+  quantity       Int         @default(1)
+  totalPrice     Int // total credits spent (gross / display value)
   // ── Revenue split (added) ──
-  receiverAmount Int      @default(0) // jetons credited to broadcaster
-  siteAmount     Int      @default(0) // jetons kept by the site
-  createdAt   DateTime    @default(now())
-  stream      VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
-  sender      User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  giftType    GiftType    @relation(fields: [giftTypeId], references: [id])
+  receiverAmount Int         @default(0) // jetons credited to broadcaster
+  siteAmount     Int         @default(0) // jetons kept by the site
+  createdAt      DateTime    @default(now())
+  stream         VideoStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  sender         User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  giftType       GiftType    @relation(fields: [giftTypeId], references: [id])
 
   @@index([streamId])
   @@index([senderId])
@@ -1003,14 +1009,14 @@ model StreamGift {
 
 // WebRTC signaling for video streams
 model VideoStreamSignal {
-  id          String   @id @default(cuid())
-  streamId    String
-  senderId    String
-  receiverId  String?
-  signalType  String   // offer, answer, ice-candidate, join
-  signalData  String   @db.Text
-  processed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  streamId   String
+  senderId   String
+  receiverId String?
+  signalType String // offer, answer, ice-candidate, join
+  signalData String   @db.Text
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   @@index([streamId])
   @@index([receiverId, processed])
@@ -1019,15 +1025,15 @@ model VideoStreamSignal {
 
 // Co-broadcasters in video streams
 model StreamCoBroadcaster {
-  id          String      @id @default(cuid())
-  streamId    String
-  userId      String
-  status      String      @default("invited") // invited, active, ended
-  isMuted     Boolean     @default(false)
-  isVideoOff  Boolean     @default(false)
-  invitedAt   DateTime    @default(now())
-  joinedAt    DateTime?
-  leftAt      DateTime?
+  id         String    @id @default(cuid())
+  streamId   String
+  userId     String
+  status     String    @default("invited") // invited, active, ended
+  isMuted    Boolean   @default(false)
+  isVideoOff Boolean   @default(false)
+  invitedAt  DateTime  @default(now())
+  joinedAt   DateTime?
+  leftAt     DateTime?
 
   @@unique([streamId, userId])
   @@index([streamId])
@@ -1037,11 +1043,11 @@ model StreamCoBroadcaster {
 
 // Banned users from streams
 model StreamBan {
-  id            String   @id @default(cuid())
-  streamId      String
-  bannedUserId  String
-  reason        String?
-  bannedAt      DateTime @default(now())
+  id           String   @id @default(cuid())
+  streamId     String
+  bannedUserId String
+  reason       String?
+  bannedAt     DateTime @default(now())
 
   @@unique([streamId, bannedUserId])
   @@index([streamId])
@@ -1050,11 +1056,11 @@ model StreamBan {
 
 // Stream moderators (max 10 per stream, can mute users)
 model StreamModerator {
-  id         String   @id @default(cuid())
-  streamId   String
-  userId     String
-  addedAt    DateTime @default(now())
-  
+  id       String   @id @default(cuid())
+  streamId String
+  userId   String
+  addedAt  DateTime @default(now())
+
   @@unique([streamId, userId])
   @@index([streamId])
   @@index([userId])
@@ -1063,26 +1069,26 @@ model StreamModerator {
 
 // PK Battle between two streamers (TikTok-style)
 model PKBattle {
-  id              String   @id @default(cuid())
-  stream1Id       String   // Challenger stream
-  stream2Id       String   // Opponent stream
-  user1Id         String   // Challenger user
-  user2Id         String   // Opponent user
-  score1          Int      @default(0) // Gift points for stream1
-  score2          Int      @default(0) // Gift points for stream2
-  status          String   @default("pending") // pending, active, completed, cancelled, rejected
-  duration        Int      @default(300) // Duration in seconds (default 5 min, admin-configurable)
-  startedAt       DateTime?
-  endedAt         DateTime?
-  winnerId        String?  // Winner user ID
-  createdAt       DateTime @default(now())
+  id         String    @id @default(cuid())
+  stream1Id  String // Challenger stream
+  stream2Id  String // Opponent stream
+  user1Id    String // Challenger user
+  user2Id    String // Opponent user
+  score1     Int       @default(0) // Gift points for stream1
+  score2     Int       @default(0) // Gift points for stream2
+  status     String    @default("pending") // pending, active, completed, cancelled, rejected
+  duration   Int       @default(300) // Duration in seconds (default 5 min, admin-configurable)
+  startedAt  DateTime?
+  endedAt    DateTime?
+  winnerId   String? // Winner user ID
+  createdAt  DateTime  @default(now())
   // ── Live PK realtime fields (added) ──
-  acceptedAt      DateTime?  // when the opponent accepted
-  endsAt          DateTime?  // authoritative countdown end (server clock) for synced timers
-  isDraw          Boolean    @default(false) // true when scores are equal at finish
-  winnerSide      Int?       // 1 or 2 (null on draw / not finished)
-  scoreLogs       PkScore[]
-  pkGifts         PkGift[]
+  acceptedAt DateTime? // when the opponent accepted
+  endsAt     DateTime? // authoritative countdown end (server clock) for synced timers
+  isDraw     Boolean   @default(false) // true when scores are equal at finish
+  winnerSide Int? // 1 or 2 (null on draw / not finished)
+  scoreLogs  PkScore[]
+  pkGifts    PkGift[]
 
   @@index([stream1Id])
   @@index([stream2Id])
@@ -1096,13 +1102,13 @@ model PKBattle {
 
 // Per-contributor score ledger inside a PK battle (for realtime aggregation & top-supporter).
 model PkScore {
-  id          String   @id @default(cuid())
-  battleId    String
-  side        Int      // 1 = left/host, 2 = right/opponent
+  id            String   @id @default(cuid())
+  battleId      String
+  side          Int // 1 = left/host, 2 = right/opponent
   contributorId String // the viewer who sent the gift that scored these points
-  points      Int      // gross jeton value added
-  createdAt   DateTime @default(now())
-  battle      PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  points        Int // gross jeton value added
+  createdAt     DateTime @default(now())
+  battle        PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
 
   @@index([battleId])
   @@index([battleId, side])
@@ -1112,16 +1118,16 @@ model PkScore {
 
 // Detailed gift log attributed to a PK battle side.
 model PkGift {
-  id          String   @id @default(cuid())
-  battleId    String
-  side        Int      // 1 or 2 (which side the gift scored for)
-  senderId    String   // viewer who sent
-  receiverId  String   // the broadcaster on that side
-  giftTypeId  String
-  quantity    Int      @default(1)
-  points      Int      // gross jeton value (added to that side's score)
-  createdAt   DateTime @default(now())
-  battle      PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  battleId   String
+  side       Int // 1 or 2 (which side the gift scored for)
+  senderId   String // viewer who sent
+  receiverId String // the broadcaster on that side
+  giftTypeId String
+  quantity   Int      @default(1)
+  points     Int // gross jeton value (added to that side's score)
+  createdAt  DateTime @default(now())
+  battle     PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
 
   @@index([battleId])
   @@index([battleId, side])
@@ -1135,12 +1141,12 @@ model LiveGuestSession {
   streamId    String
   userId      String
   status      String    @default("active") // active, left, removed
-  slot        Int       // 1..8 seat index
-  isMuted     Boolean   @default(false)     // audio muted (self or by host)
-  isVideoOff  Boolean   @default(false)     // camera off
-  mutedByHost Boolean   @default(false)     // true when host force-muted
+  slot        Int // 1..8 seat index
+  isMuted     Boolean   @default(false) // audio muted (self or by host)
+  isVideoOff  Boolean   @default(false) // camera off
+  mutedByHost Boolean   @default(false) // true when host force-muted
   joinedAt    DateTime  @default(now())
-  lastSeenAt  DateTime  @default(now())      // heartbeat for reconnect detection
+  lastSeenAt  DateTime  @default(now()) // heartbeat for reconnect detection
   leftAt      DateTime?
 
   @@unique([streamId, userId])
@@ -1154,12 +1160,12 @@ model LiveGuestSession {
 model LiveGuestInvite {
   id          String    @id @default(cuid())
   streamId    String
-  hostId      String    // stream owner who invited
-  guestId     String    // invited user
+  hostId      String // stream owner who invited
+  guestId     String // invited user
   status      String    @default("pending") // pending, accepted, rejected, expired, cancelled
   createdAt   DateTime  @default(now())
   respondedAt DateTime?
-  expiresAt   DateTime  // invite auto-expires
+  expiresAt   DateTime // invite auto-expires
 
   @@index([streamId])
   @@index([guestId, status])
@@ -1170,39 +1176,39 @@ model LiveGuestInvite {
 // Fortune request types (admin configurable)
 model FortuneRequestType {
   id          String   @id @default(cuid())
-  name        String   // Turkish name
-  nameEn      String   // English name
+  name        String // Turkish name
+  nameEn      String // English name
   icon        String   @default("☕") // Emoji icon
-  jetonCost   Int      // Required jetons
-  description String?  // Description
+  jetonCost   Int // Required jetons
+  description String? // Description
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   fortuneRequests StreamFortuneRequest[]
-  
+
   @@map("fortune_request_types")
 }
 
 // Fortune requests in video streams (sorted by jeton amount)
 model StreamFortuneRequest {
-  id               String    @id @default(cuid())
-  streamId         String
-  userId           String
-  typeId           String?   // Fortune request type
-  nickname         String?   // Optional nickname to show instead of real name
-  isHidden         Boolean   @default(false) // Whether user wants to be hidden
-  question         String?   @db.Text // User's custom question
-  jetonAmount      Int       @default(0) // Jetons spent for this request
-  status           String    @default("pending") // pending, selected, completed, refunded
-  refundedAt       DateTime? // When tokens were refunded (if applicable)
-  createdAt        DateTime  @default(now())
-  selectedAt       DateTime?
-  completedAt      DateTime?
-  
-  type             FortuneRequestType? @relation(fields: [typeId], references: [id])
-  
+  id          String    @id @default(cuid())
+  streamId    String
+  userId      String
+  typeId      String? // Fortune request type
+  nickname    String? // Optional nickname to show instead of real name
+  isHidden    Boolean   @default(false) // Whether user wants to be hidden
+  question    String?   @db.Text // User's custom question
+  jetonAmount Int       @default(0) // Jetons spent for this request
+  status      String    @default("pending") // pending, selected, completed, refunded
+  refundedAt  DateTime? // When tokens were refunded (if applicable)
+  createdAt   DateTime  @default(now())
+  selectedAt  DateTime?
+  completedAt DateTime?
+
+  type FortuneRequestType? @relation(fields: [typeId], references: [id])
+
   @@unique([streamId, userId])
   @@index([streamId])
   @@index([userId])
@@ -1213,14 +1219,14 @@ model StreamFortuneRequest {
 
 // Muted viewers in streams (by broadcaster or moderator)
 model StreamMutedViewer {
-  id         String    @id @default(cuid())
-  streamId   String
-  viewerId   String
-  mutedBy    String    // userId of who muted them
-  reason     String?
-  mutedAt    DateTime  @default(now())
-  expiresAt  DateTime? // null = permanent
-  
+  id        String    @id @default(cuid())
+  streamId  String
+  viewerId  String
+  mutedBy   String // userId of who muted them
+  reason    String?
+  mutedAt   DateTime  @default(now())
+  expiresAt DateTime? // null = permanent
+
   @@unique([streamId, viewerId])
   @@index([streamId])
   @@map("stream_muted_viewers")
@@ -1228,15 +1234,15 @@ model StreamMutedViewer {
 
 // Direct Messages between users
 model DirectMessage {
-  id          String   @id @default(cuid())
-  senderId    String
-  receiverId  String
-  content     String   @db.Text
-  imageUrl    String?
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String   @db.Text
+  imageUrl   String?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([receiverId])
@@ -1268,15 +1274,15 @@ model Conversation {
 
 // Message request (for users with restricted messaging)
 model MessageRequest {
-  id          String   @id @default(cuid())
-  senderId    String
-  receiverId  String
-  status      String   @default("pending") // pending, accepted, rejected
-  message     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  sender      User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver    User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String   @default("pending") // pending, accepted, rejected
+  message    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
   @@index([senderId])
@@ -1287,13 +1293,13 @@ model MessageRequest {
 
 // User Activity Statistics - tracks login sessions
 model UserLoginSession {
-  id          String   @id @default(cuid())
-  userId      String
-  loginAt     DateTime @default(now())
-  logoutAt    DateTime?
-  duration    Int      @default(0) // in minutes
-  deviceType  String?  // mobile, desktop, tablet
-  browser     String?
+  id         String    @id @default(cuid())
+  userId     String
+  loginAt    DateTime  @default(now())
+  logoutAt   DateTime?
+  duration   Int       @default(0) // in minutes
+  deviceType String? // mobile, desktop, tablet
+  browser    String?
 
   @@index([userId])
   @@index([loginAt])
@@ -1302,16 +1308,16 @@ model UserLoginSession {
 
 // Daily activity tracking
 model UserDailyActivity {
-  id              String   @id @default(cuid())
-  userId          String
-  date            DateTime @db.Date
-  minutesSpent    Int      @default(0)
-  fortunesViewed  Int      @default(0)
-  postsCreated    Int      @default(0)
-  messagesCount   Int      @default(0)
-  streamsWatched  Int      @default(0)
-  creditsSpent    Int      @default(0)
-  creditsEarned   Int      @default(0)
+  id             String   @id @default(cuid())
+  userId         String
+  date           DateTime @db.Date
+  minutesSpent   Int      @default(0)
+  fortunesViewed Int      @default(0)
+  postsCreated   Int      @default(0)
+  messagesCount  Int      @default(0)
+  streamsWatched Int      @default(0)
+  creditsSpent   Int      @default(0)
+  creditsEarned  Int      @default(0)
 
   @@unique([userId, date])
   @@index([userId])
@@ -1321,11 +1327,11 @@ model UserDailyActivity {
 
 // Hourly activity pattern tracking
 model UserHourlyActivity {
-  id          String @id @default(cuid())
-  userId      String
-  hour        Int    // 0-23
-  totalMinutes Int   @default(0)
-  loginCount   Int   @default(0)
+  id           String @id @default(cuid())
+  userId       String
+  hour         Int // 0-23
+  totalMinutes Int    @default(0)
+  loginCount   Int    @default(0)
 
   @@unique([userId, hour])
   @@index([userId])
@@ -1336,11 +1342,11 @@ model UserHourlyActivity {
 model CreditTransaction {
   id          String   @id @default(cuid())
   userId      String
-  amount      Int      // positive for earned, negative for spent
-  type        String   // purchase, gift_sent, gift_received, fortune, stream, reward, referral
+  amount      Int // positive for earned, negative for spent
+  type        String // purchase, gift_sent, gift_received, fortune, stream, reward, referral
   description String?
-  relatedId   String?  // related fortune/stream/gift id
-  balance     Int      // balance after transaction
+  relatedId   String? // related fortune/stream/gift id
+  balance     Int // balance after transaction
   createdAt   DateTime @default(now())
 
   @@index([userId])
@@ -1351,14 +1357,14 @@ model CreditTransaction {
 
 // Fortune satisfaction/accuracy ratings
 model FortuneRating {
-  id            String   @id @default(cuid())
-  fortuneId     String   @unique
-  userId        String
-  satisfaction  Int?     // 1-5 rating
-  accuracy      Int?     // 1-5 rating (can be updated later)
-  feedback      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  fortuneId    String   @unique
+  userId       String
+  satisfaction Int? // 1-5 rating
+  accuracy     Int? // 1-5 rating (can be updated later)
+  feedback     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([userId])
   @@index([fortuneId])
@@ -1381,39 +1387,39 @@ model UserAchievement {
 
 // Achievement definitions
 model Achievement {
-  id           String   @id @default(cuid())
-  code         String   @unique
-  nameTr       String
-  nameEn       String
+  id            String   @id @default(cuid())
+  code          String   @unique
+  nameTr        String
+  nameEn        String
   descriptionTr String
   descriptionEn String
-  icon         String
-  category     String   // fortune, social, stream, coin, activity
-  targetValue  Int      // target to complete
-  rewardCredits Int     @default(0)
-  sortOrder    Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  icon          String
+  category      String // fortune, social, stream, coin, activity
+  targetValue   Int // target to complete
+  rewardCredits Int      @default(0)
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
   @@map("achievements")
 }
 
 // Bana Özel - Personalized Fortune Content Items
 model BanaOzelItem {
-  id           String   @id @default(cuid())
-  slug         String   @unique
-  nameTr       String
-  nameEn       String
-  descTr       String?
-  descEn       String?
-  icon         String   // emoji icon
-  jetonCost    Int      @default(5)
-  category     String   @default("fortune") // fortune, tarot, astrology, spiritual
-  isActive     Boolean  @default(true)
-  sortOrder    Int      @default(0)
-  contentPool  String?  @db.Text // JSON array of possible content/prompts
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameTr      String
+  nameEn      String
+  descTr      String?
+  descEn      String?
+  icon        String // emoji icon
+  jetonCost   Int      @default(5)
+  category    String   @default("fortune") // fortune, tarot, astrology, spiritual
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  contentPool String?  @db.Text // JSON array of possible content/prompts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([isActive])
   @@index([sortOrder])
@@ -1422,15 +1428,15 @@ model BanaOzelItem {
 
 // User jeton (token) balance and transactions
 model JetonTransaction {
-  id          String   @id @default(cuid())
-  userId      String
-  amount      Int      // positive for earned, negative for spent
-  type        String   // spend, daily_bonus, streak_bonus, task, purchase, welcome
-  description String?
-  itemSlug    String?  // related BanaOzelItem slug
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Int // positive for earned, negative for spent
+  type          String // spend, daily_bonus, streak_bonus, task, purchase, welcome
+  description   String?
+  itemSlug      String? // related BanaOzelItem slug
   balanceBefore Int
   balanceAfter  Int
-  createdAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   @@index([userId])
   @@index([type])
@@ -1440,12 +1446,12 @@ model JetonTransaction {
 
 // Daily fortune streak tracking
 model UserFortuneStreak {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  currentStreak Int      @default(0)
-  longestStreak Int      @default(0)
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
   lastFortuneDate DateTime?
-  totalFortunes Int      @default(0)
+  totalFortunes   Int       @default(0)
 
   @@index([userId])
   @@map("user_fortune_streaks")
@@ -1455,7 +1461,7 @@ model UserFortuneStreak {
 model DailyTask {
   id          String   @id @default(cuid())
   userId      String
-  taskType    String   // login, open_fortune, share, watch_stream, profile_complete
+  taskType    String // login, open_fortune, share, watch_stream, profile_complete
   completedAt DateTime @default(now())
   jetonEarned Int      @default(0)
   date        DateTime @db.Date
@@ -1483,7 +1489,7 @@ model BanaOzelHistory {
 
 // Profile views tracking
 model ProfileView {
-  id          String   @id @default(cuid())
+  id           String   @id @default(cuid())
   viewedUserId String
   viewerId     String?
   viewedAt     DateTime @default(now())
@@ -1496,28 +1502,28 @@ model ProfileView {
 // Gold Membership Plans
 model MembershipPlan {
   id              String   @id @default(cuid())
-  name            String   // Plan name (e.g., "Gold 1 Aylık")
-  nameEn          String?  // English name
+  name            String // Plan name (e.g., "Gold 1 Aylık")
+  nameEn          String? // English name
   description     String?  @db.Text
   descriptionEn   String?  @db.Text
-  tier            String   // basic, premium, gold, diamond
-  durationDays    Int      // Duration in days
-  priceType       String   // jeton, money
-  price           Int      // Price in jetons or currency minor units (kuruş)
+  tier            String // basic, premium, gold, diamond
+  durationDays    Int // Duration in days
+  priceType       String // jeton, money
+  price           Int // Price in jetons or currency minor units (kuruş)
   currency        String   @default("TRY") // For money payments
   features        String?  @db.Text // JSON array of features
   bonusJetons     Int      @default(0) // Bonus jetons on purchase
   discountPercent Int      @default(0) // Discount on fortune readings
   prioritySupport Boolean  @default(false)
-  exclusiveBadge  String?  // Badge icon/text
+  exclusiveBadge  String? // Badge icon/text
   sortOrder       Int      @default(0)
   isActive        Boolean  @default(true)
   isFeatured      Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  purchases       MembershipPurchase[]
-  
+  purchases MembershipPurchase[]
+
   @@index([tier])
   @@index([priceType])
   @@index([isActive])
@@ -1526,18 +1532,18 @@ model MembershipPlan {
 
 // Membership Purchase History
 model MembershipPurchase {
-  id              String   @id @default(cuid())
-  userId          String
-  planId          String?
-  plan            MembershipPlan? @relation(fields: [planId], references: [id])
-  priceType       String   // jeton, money
-  pricePaid       Int      // Amount paid
-  currency        String   @default("TRY")
-  startsAt        DateTime @default(now())
-  expiresAt       DateTime
-  status          String   @default("active") // active, expired, cancelled
-  createdAt       DateTime @default(now())
-  grantedBy       String?  // Admin who granted the membership (for free grants)
+  id        String          @id @default(cuid())
+  userId    String
+  planId    String?
+  plan      MembershipPlan? @relation(fields: [planId], references: [id])
+  priceType String // jeton, money
+  pricePaid Int // Amount paid
+  currency  String          @default("TRY")
+  startsAt  DateTime        @default(now())
+  expiresAt DateTime
+  status    String          @default("active") // active, expired, cancelled
+  createdAt DateTime        @default(now())
+  grantedBy String? // Admin who granted the membership (for free grants)
 
   @@index([userId])
   @@index([planId])
@@ -1548,19 +1554,19 @@ model MembershipPurchase {
 
 // Payment Notifications (user notifies admin about payment)
 model PaymentNotification {
-  id              String   @id @default(cuid())
-  userId          String
-  username        String   // User's username at time of submission
-  paymentMethod   String   // papara, bank_transfer, etc.
-  amount          Float    // Amount paid in TRY
-  transactionId   String?  // Transaction/Reference ID
-  senderName      String?  // Name of sender (for bank transfers)
-  notes           String?  @db.Text // Additional notes
-  status          String   @default("pending") // pending, approved, rejected
-  jetonLoaded     Int?     // Jeton amount loaded by admin
-  processedBy     String?  // Admin who processed
-  processedAt     DateTime?
-  createdAt       DateTime @default(now())
+  id            String    @id @default(cuid())
+  userId        String
+  username      String // User's username at time of submission
+  paymentMethod String // papara, bank_transfer, etc.
+  amount        Float // Amount paid in TRY
+  transactionId String? // Transaction/Reference ID
+  senderName    String? // Name of sender (for bank transfers)
+  notes         String?   @db.Text // Additional notes
+  status        String    @default("pending") // pending, approved, rejected
+  jetonLoaded   Int? // Jeton amount loaded by admin
+  processedBy   String? // Admin who processed
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
 
   @@index([userId])
   @@index([status])
@@ -1570,19 +1576,19 @@ model PaymentNotification {
 
 // Room Revenue Log - tracks all financial transactions in chat rooms
 model RoomRevenueLog {
-  id              String   @id @default(cuid())
-  roomId          String
-  room            ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  eventType       String   // gift, music_request, etc.
-  totalAmount     Int      // total jeton amount of the transaction
-  receiverAmount  Int      @default(0) // amount given to gift receiver
-  ownerAmount     Int      @default(0) // amount given to room owner
-  siteAmount      Int      @default(0) // amount taken by site
-  senderId        String?  // who initiated the transaction
-  receiverId      String?  // gift receiver (if applicable)
-  ownerId         String?  // room owner at the time
-  metadata        String?  @db.Text // JSON: extra info like giftName, videoTitle etc.
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  roomId         String
+  room           ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  eventType      String // gift, music_request, etc.
+  totalAmount    Int // total jeton amount of the transaction
+  receiverAmount Int      @default(0) // amount given to gift receiver
+  ownerAmount    Int      @default(0) // amount given to room owner
+  siteAmount     Int      @default(0) // amount taken by site
+  senderId       String? // who initiated the transaction
+  receiverId     String? // gift receiver (if applicable)
+  ownerId        String? // room owner at the time
+  metadata       String?  @db.Text // JSON: extra info like giftName, videoTitle etc.
+  createdAt      DateTime @default(now())
 
   @@index([roomId, createdAt])
   @@index([eventType])
@@ -1591,14 +1597,14 @@ model RoomRevenueLog {
 
 // Voice Chat Session - tracks who's in voice chat
 model VoiceSession {
-  id        String   @id @default(cuid())
-  roomId    String
-  userId    String
-  userName  String
-  agoraUid  Int      @default(0)
-  joinedAt  DateTime @default(now())
-  lastPing  DateTime @default(now())
-  isActive  Boolean  @default(true)
+  id       String   @id @default(cuid())
+  roomId   String
+  userId   String
+  userName String
+  agoraUid Int      @default(0)
+  joinedAt DateTime @default(now())
+  lastPing DateTime @default(now())
+  isActive Boolean  @default(true)
 
   @@unique([roomId, userId])
   @@index([roomId])
@@ -1609,15 +1615,15 @@ model VoiceSession {
 
 // Voice Signals - WebRTC signaling data
 model VoiceSignal {
-  id          String   @id @default(cuid())
-  roomId      String
-  fromUserId  String
+  id           String   @id @default(cuid())
+  roomId       String
+  fromUserId   String
   fromUserName String
-  toUserId    String?  // null means broadcast
-  type        String   // offer, answer, ice-candidate, join, leave
-  data        String?  @db.Text
-  processed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  toUserId     String? // null means broadcast
+  type         String // offer, answer, ice-candidate, join, leave
+  data         String?  @db.Text
+  processed    Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
   @@index([roomId])
   @@index([toUserId])
@@ -1625,7 +1631,6 @@ model VoiceSignal {
   @@index([createdAt])
   @@map("voice_signals")
 }
-
 
 // Ticker Messages - Admin-defined scrolling messages on homepage
 model TickerMessage {
@@ -1644,7 +1649,7 @@ model TickerMessage {
 // Homepage Fortune Cards - admin-editable fortune type cards on homepage
 model HomepageFortuneCard {
   id        String   @id @default(cuid())
-  name      String   // Display name e.g. "Kahve Falı"
+  name      String // Display name e.g. "Kahve Falı"
   icon      String   @default("🔮") // Emoji icon
   image     String   @default("") // Image URL for card
   href      String   @default("/fallar") // Link destination
@@ -1659,25 +1664,25 @@ model HomepageFortuneCard {
 
 // Withdrawal Requests - users/tellers request money withdrawal
 model WithdrawalRequest {
-  id              String    @id @default(cuid())
-  userId          String
-  amount          Int       // Amount in jetons to withdraw
-  amountTL        Float     // Equivalent TL amount
-  method          String    // bank_transfer, papara, etc.
-  accountDetails  String?   @db.Text // JSON: IBAN, name, etc.
+  id               String    @id @default(cuid())
+  userId           String
+  amount           Int // Amount in jetons to withdraw
+  amountTL         Float // Equivalent TL amount
+  method           String // bank_transfer, papara, etc.
+  accountDetails   String?   @db.Text // JSON: IBAN, name, etc.
   // 3-stage approval: pending → agency_approved → approved/rejected
-  status          String    @default("pending") // pending, agency_approved, approved, rejected, processing, completed
+  status           String    @default("pending") // pending, agency_approved, approved, rejected, processing, completed
   // Agency approval stage
-  agencyId        String?   // Agency of the teller (if any)
-  agencyApprovedBy String?  // Agency owner/manager who approved
+  agencyId         String? // Agency of the teller (if any)
+  agencyApprovedBy String? // Agency owner/manager who approved
   agencyApprovedAt DateTime?
-  agencyNote      String?
+  agencyNote       String?
   // Admin approval stage
-  adminNote       String?
-  processedBy     String?
-  processedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  adminNote        String?
+  processedBy      String?
+  processedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([userId])
   @@index([agencyId])
@@ -1688,14 +1693,14 @@ model WithdrawalRequest {
 
 // Teller Awards - medium of the day/week/month
 model TellerAward {
-  id          String   @id @default(cuid())
-  tellerId    String
-  awardType   String   // medium_of_day, medium_of_week, medium_of_month
-  title       String?
-  awardedBy   String?  // admin who awarded
-  startDate   DateTime @default(now())
-  endDate     DateTime // When the award expires
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  tellerId  String
+  awardType String // medium_of_day, medium_of_week, medium_of_month
+  title     String?
+  awardedBy String? // admin who awarded
+  startDate DateTime @default(now())
+  endDate   DateTime // When the award expires
+  createdAt DateTime @default(now())
 
   @@index([tellerId])
   @@index([awardType])
@@ -1705,23 +1710,24 @@ model TellerAward {
 
 // Teller Gifts - gifts sent specifically to tellers (not stream gifts)
 model TellerGift {
-  id          String   @id @default(cuid())
-  tellerId    String
-  senderId    String
-  giftTypeId  String
-  quantity    Int      @default(1)
-  totalPrice  Int      // total jetons spent
-  message     String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  tellerId   String
+  senderId   String
+  giftTypeId String
+  quantity   Int      @default(1)
+  totalPrice Int // total jetons spent
+  message    String?
+  createdAt  DateTime @default(now())
 
   @@index([tellerId])
   @@index([senderId])
   @@index([createdAt])
   @@map("teller_gifts")
 }
+
 model SiteAnnouncement {
   id        String   @id @default(cuid())
-  type      String   // login, custom
+  type      String // login, custom
   message   String
   color     String   @default("red") // red, gold, etc.
   userId    String?
@@ -1751,11 +1757,12 @@ model MiniGame {
   minReward   Int      @default(5)
   maxReward   Int      @default(50)
   sortOrder   Int      @default(0)
-  config      String?  // JSON config for game-specific settings
+  config      String? // JSON config for game-specific settings
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  plays       GamePlay[]
+  plays GamePlay[]
+
   @@index([slug])
   @@index([isActive])
   @@map("mini_games")
@@ -1763,15 +1770,15 @@ model MiniGame {
 
 // Individual game play records
 model GamePlay {
-  id         String   @id @default(cuid())
-  userId     String
-  gameId     String
-  reward     Int      @default(0) // jetons earned
-  score      Int?     // optional score
-  result     String?  // JSON result data
-  playedAt   DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  gameId   String
+  reward   Int      @default(0) // jetons earned
+  score    Int? // optional score
+  result   String? // JSON result data
+  playedAt DateTime @default(now())
 
-  game       MiniGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game MiniGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([gameId])
@@ -1782,33 +1789,33 @@ model GamePlay {
 
 // SOS Game - multiplayer with betting
 model SosGame {
-  id            String   @id @default(cuid())
-  gridSize      Int      @default(6)           // 6, 8, 10
-  player1Id     String
-  player2Id     String?                         // null = waiting or AI
-  isAI          Boolean  @default(false)
-  betAmount     Int      @default(0)            // 0 = free
-  betCurrency   String   @default("FREE")       // FREE, CFC, JETON
-  board         String   @default("[]")         // JSON: grid state
-  lines         String   @default("[]")         // JSON: scored SOS lines
-  currentTurn   Int      @default(1)            // 1 or 2
-  player1Score  Int      @default(0)
-  player2Score  Int      @default(0)
-  status        String   @default("waiting")    // waiting, active, completed, cancelled
-  winnerId      String?
-  player1Name   String   @default("Oyuncu 1")
-  player2Name   String   @default("Oyuncu 2")
-  turnTimer     Int      @default(0)            // 0=no timer, 10/15/20 seconds
-  chatEnabled   Boolean  @default(true)
-  lastMoveAt    DateTime?                       // for timer enforcement
-  disconnectedPlayerId String?                  // Track which player disconnected (for AI takeover & reconnection)
-  player1LastSeen DateTime?                     // Last poll time for player 1
-  player2LastSeen DateTime?                     // Last poll time for player 2
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  gridSize             Int       @default(6) // 6, 8, 10
+  player1Id            String
+  player2Id            String? // null = waiting or AI
+  isAI                 Boolean   @default(false)
+  betAmount            Int       @default(0) // 0 = free
+  betCurrency          String    @default("FREE") // FREE, CFC, JETON
+  board                String    @default("[]") // JSON: grid state
+  lines                String    @default("[]") // JSON: scored SOS lines
+  currentTurn          Int       @default(1) // 1 or 2
+  player1Score         Int       @default(0)
+  player2Score         Int       @default(0)
+  status               String    @default("waiting") // waiting, active, completed, cancelled
+  winnerId             String?
+  player1Name          String    @default("Oyuncu 1")
+  player2Name          String    @default("Oyuncu 2")
+  turnTimer            Int       @default(0) // 0=no timer, 10/15/20 seconds
+  chatEnabled          Boolean   @default(true)
+  lastMoveAt           DateTime? // for timer enforcement
+  disconnectedPlayerId String? // Track which player disconnected (for AI takeover & reconnection)
+  player1LastSeen      DateTime? // Last poll time for player 1
+  player2LastSeen      DateTime? // Last poll time for player 2
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  chatMessages  SosGameChat[]
-  viewers       SosGameViewer[]
+  chatMessages SosGameChat[]
+  viewers      SosGameViewer[]
 
   @@index([status])
   @@index([player1Id])
@@ -1825,20 +1832,20 @@ model SosGameChat {
   message   String
   createdAt DateTime @default(now())
 
-  game      SosGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game SosGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@index([gameId, createdAt])
   @@map("sos_game_chats")
 }
 
 model SosGameViewer {
-  id        String   @id @default(cuid())
-  gameId    String
-  userId    String
-  userName  String
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  gameId   String
+  userId   String
+  userName String
+  joinedAt DateTime @default(now())
 
-  game      SosGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game SosGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, userId])
   @@index([gameId])
@@ -1847,32 +1854,32 @@ model SosGameViewer {
 
 // Generic multiplayer game room (XOX, Tombala, Tavla, Pişti, Sayı Tahmin, Zar)
 model GameRoom {
-  id            String   @id @default(cuid())
-  gameType      String                            // xox, tombala, tavla, pisti, sayi_tahmin, zar
-  player1Id     String
-  player2Id     String?
-  isAI          Boolean  @default(false)
-  betAmount     Int      @default(0)
-  betCurrency   String   @default("FREE")
-  state         String   @default("{}")           // JSON game state
-  currentTurn   Int      @default(1)
-  player1Score  Int      @default(0)
-  player2Score  Int      @default(0)
-  status        String   @default("waiting")
-  winnerId      String?
-  player1Name   String   @default("Oyuncu 1")
-  player2Name   String   @default("Oyuncu 2")
-  turnTimer     Int      @default(0)
-  chatEnabled   Boolean  @default(true)
-  lastMoveAt    DateTime?
-  disconnectedPlayerId String?                    // Track which player disconnected (for AI takeover & reconnection)
-  player1LastSeen DateTime?                       // Last poll time for player 1
-  player2LastSeen DateTime?                       // Last poll time for player 2
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  gameType             String // xox, tombala, tavla, pisti, sayi_tahmin, zar
+  player1Id            String
+  player2Id            String?
+  isAI                 Boolean   @default(false)
+  betAmount            Int       @default(0)
+  betCurrency          String    @default("FREE")
+  state                String    @default("{}") // JSON game state
+  currentTurn          Int       @default(1)
+  player1Score         Int       @default(0)
+  player2Score         Int       @default(0)
+  status               String    @default("waiting")
+  winnerId             String?
+  player1Name          String    @default("Oyuncu 1")
+  player2Name          String    @default("Oyuncu 2")
+  turnTimer            Int       @default(0)
+  chatEnabled          Boolean   @default(true)
+  lastMoveAt           DateTime?
+  disconnectedPlayerId String? // Track which player disconnected (for AI takeover & reconnection)
+  player1LastSeen      DateTime? // Last poll time for player 1
+  player2LastSeen      DateTime? // Last poll time for player 2
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  chatMessages  GameRoomChat[]
-  viewers       GameRoomViewer[]
+  chatMessages GameRoomChat[]
+  viewers      GameRoomViewer[]
 
   @@index([gameType, status])
   @@index([status])
@@ -1889,17 +1896,19 @@ model GameRoomChat {
   message   String
   createdAt DateTime @default(now())
   room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
   @@index([roomId, createdAt])
   @@map("game_room_chats")
 }
 
 model GameRoomViewer {
-  id        String   @id @default(cuid())
-  roomId    String
-  userId    String
-  userName  String
-  joinedAt  DateTime @default(now())
-  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  roomId   String
+  userId   String
+  userName String
+  joinedAt DateTime @default(now())
+  room     GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
   @@unique([roomId, userId])
   @@index([roomId])
   @@map("game_room_viewers")
@@ -1907,12 +1916,12 @@ model GameRoomViewer {
 
 // Daily login rewards & streak tracking
 model DailyReward {
-  id            String   @id @default(cuid())
-  userId        String
-  rewardDate    DateTime @db.Date
-  streak        Int      @default(1)
-  jetonReward   Int      @default(5)
-  claimedAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  rewardDate  DateTime @db.Date
+  streak      Int      @default(1)
+  jetonReward Int      @default(5)
+  claimedAt   DateTime @default(now())
 
   @@unique([userId, rewardDate])
   @@index([userId])
@@ -1921,15 +1930,15 @@ model DailyReward {
 
 // Daily quests tracking
 model DailyQuest {
-  id          String   @id @default(cuid())
-  userId      String
-  questDate   DateTime @db.Date
-  questType   String   // daily_login, play_3_games, buy_fortune
-  progress    Int      @default(0)
-  target      Int      @default(1)
-  reward      Int      @default(10)
-  claimed     Boolean  @default(false)
-  claimedAt   DateTime?
+  id        String    @id @default(cuid())
+  userId    String
+  questDate DateTime  @db.Date
+  questType String // daily_login, play_3_games, buy_fortune
+  progress  Int       @default(0)
+  target    Int       @default(1)
+  reward    Int       @default(10)
+  claimed   Boolean   @default(false)
+  claimedAt DateTime?
 
   @@unique([userId, questDate, questType])
   @@index([userId])
@@ -1939,19 +1948,19 @@ model DailyQuest {
 
 // Blog posts managed by admin
 model BlogCategory {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  nameTr      String
-  nameEn      String   @default("")
-  descTr      String   @default("")
-  descEn      String   @default("")
-  icon        String   @default("BookOpen")
-  color       String   @default("#8B5CF6")
-  coverImage  String   @default("")
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  postCount   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  nameTr     String
+  nameEn     String   @default("")
+  descTr     String   @default("")
+  descEn     String   @default("")
+  icon       String   @default("BookOpen")
+  color      String   @default("#8B5CF6")
+  coverImage String   @default("")
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  postCount  Int      @default(0)
+  createdAt  DateTime @default(now())
 
   @@map("blog_categories")
 }
@@ -1999,17 +2008,17 @@ model BlogPost {
 }
 
 model BlogComment {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  userName  String   @default("Anonim")
-  userAvatar String  @default("")
-  content   String   @db.Text
-  isApproved Boolean @default(true)
-  likes     Int      @default(0)
-  parentId  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  postId     String
+  userId     String
+  userName   String   @default("Anonim")
+  userAvatar String   @default("")
+  content    String   @db.Text
+  isApproved Boolean  @default(true)
+  likes      Int      @default(0)
+  parentId   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([postId])
   @@index([userId])
@@ -2042,18 +2051,18 @@ model BlogFavorite {
 
 // User game level & XP tracking
 model UserGameProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  totalJetons    Int      @default(0) // lifetime jetons earned from games
-  totalGames     Int      @default(0)
-  level          Int      @default(1)
-  levelTitle     String   @default("Yeni Üye")
-  dailySpinsUsed Int      @default(0) // daily free spin count
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  totalJetons    Int       @default(0) // lifetime jetons earned from games
+  totalGames     Int       @default(0)
+  level          Int       @default(1)
+  levelTitle     String    @default("Yeni Üye")
+  dailySpinsUsed Int       @default(0) // daily free spin count
   lastSpinDate   DateTime? @db.Date
-  referralCode   String?  @unique
-  referralCount  Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  referralCode   String?   @unique
+  referralCount  Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([userId])
   @@index([totalJetons])
@@ -2062,13 +2071,13 @@ model UserGameProfile {
 
 // Admin-uploaded images for broadcasters to use as screen capture
 model BroadcastImage {
-  id          String   @id @default(cuid())
-  name        String   // Display name for the image
-  imageUrl    String   // URL to the image
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String // Display name for the image
+  imageUrl  String // URL to the image
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive, sortOrder])
   @@map("broadcast_images")
@@ -2077,13 +2086,13 @@ model BroadcastImage {
 // Custom Badges - admin can create badges and assign to tiers or users
 model CustomBadge {
   id          String   @id @default(cuid())
-  name        String   // Badge display name
-  icon        String   // Emoji or icon identifier
+  name        String // Badge display name
+  icon        String // Emoji or icon identifier
   color       String   @default("#fbbf24") // Badge color (hex)
   bgColor     String   @default("#78350f") // Background color (hex)
-  description String?  // Description of badge
-  tier        String?  // If set, auto-assigned to this membership tier (basic, premium, gold, diamond)
-  userId      String?  // If set, assigned to specific user
+  description String? // Description of badge
+  tier        String? // If set, auto-assigned to this membership tier (basic, premium, gold, diamond)
+  userId      String? // If set, assigned to specific user
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -2097,18 +2106,18 @@ model CustomBadge {
 
 // Site Pages - admin managed pages (About, Privacy, etc.)
 model SitePage {
-  id          String   @id @default(cuid())
-  title       String   // Page title
-  titleEn     String?  // English title
-  slug        String   @unique // URL slug
-  content     String   @db.Text // HTML content
-  contentEn   String?  @db.Text // English content
-  isPublished Boolean  @default(true)
-  showInFooter Boolean @default(true)
-  showInHeader Boolean @default(false)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  title        String // Page title
+  titleEn      String? // English title
+  slug         String   @unique // URL slug
+  content      String   @db.Text // HTML content
+  contentEn    String?  @db.Text // English content
+  isPublished  Boolean  @default(true)
+  showInFooter Boolean  @default(true)
+  showInHeader Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([slug])
   @@index([isPublished])
@@ -2118,23 +2127,23 @@ model SitePage {
 
 // Push Notification Log - tracks all notifications sent via admin panel
 model PushNotificationLog {
-  id              String   @id @default(cuid())
-  onesignalId     String?  // OneSignal notification ID for tracking
-  title           String
-  message         String   @db.Text
-  url             String?
-  imageUrl        String?
-  targetType      String   // all, segment, tag, player_id, quick_action
-  targetValue     String?  // segment name, tag filter, player_id, etc.
-  scheduledAt     DateTime? // null = sent immediately
-  status          String   @default("sent") // sent, scheduled, failed, cancelled
-  recipientCount  Int      @default(0)
-  deliveredCount  Int      @default(0)
-  clickedCount    Int      @default(0)
-  errorMessage    String?
-  createdBy       String   // admin user id
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(cuid())
+  onesignalId    String? // OneSignal notification ID for tracking
+  title          String
+  message        String    @db.Text
+  url            String?
+  imageUrl       String?
+  targetType     String // all, segment, tag, player_id, quick_action
+  targetValue    String? // segment name, tag filter, player_id, etc.
+  scheduledAt    DateTime? // null = sent immediately
+  status         String    @default("sent") // sent, scheduled, failed, cancelled
+  recipientCount Int       @default(0)
+  deliveredCount Int       @default(0)
+  clickedCount   Int       @default(0)
+  errorMessage   String?
+  createdBy      String // admin user id
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -2143,13 +2152,13 @@ model PushNotificationLog {
 }
 
 model UserDevice {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   // FCM or APNs token
-  platform  String   @default("android") // android | ios | web
+  id         String   @id @default(cuid())
+  userId     String
+  token      String // FCM or APNs token
+  platform   String   @default("android") // android | ios | web
   appVersion String? // e.g. "1.2.3"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2160,19 +2169,19 @@ model UserDevice {
 }
 
 model DreamInterpretation {
-  id              String           @id @default(cuid())
+  id              String          @id @default(cuid())
   title           String
-  slug            String           @unique
-  content         String           @db.Text
-  summary         String?          @db.Text
-  keywords        String[]         @default([])
+  slug            String          @unique
+  content         String          @db.Text
+  summary         String?         @db.Text
+  keywords        String[]        @default([])
   metaDescription String?
-  category        String           @default("genel")
-  views           Int              @default(0)
-  isPublished     Boolean          @default(true)
-  isAiGenerated   Boolean          @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  category        String          @default("genel")
+  views           Int             @default(0)
+  isPublished     Boolean         @default(true)
+  isAiGenerated   Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   comments        DreamComment[]
   favorites       DreamFavorite[]
   dreamViews      DreamView[]
@@ -2191,7 +2200,7 @@ model DreamComment {
   userId         String
   dreamId        String
   experienceType String              @default("yorum") // yorum | deneyim
-  didComeTrue    Boolean?            // null = belirtilmedi, true = gerçekleşti, false = gerçekleşmedi
+  didComeTrue    Boolean? // null = belirtilmedi, true = gerçekleşti, false = gerçekleşmedi
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2235,7 +2244,7 @@ model DreamSymbol {
   id              String   @id @default(cuid())
   name            String   @unique
   slug            String   @unique
-  letter          String   // First letter for A-Z grouping
+  letter          String // First letter for A-Z grouping
   meaning         String   @db.Text
   detailedMeaning String?  @db.Text
   relatedSymbols  String[] @default([])
@@ -2251,18 +2260,18 @@ model DreamSymbol {
 
 // Dream Diary - Personal Dream Journal
 model DreamDiaryEntry {
-  id          String   @id @default(cuid())
-  userId      String
-  dreamDate   DateTime @db.Date
-  title       String
-  content     String   @db.Text
-  symbols     String[] @default([])
-  mood        String?  // happy, sad, scared, confused, neutral
-  lucidity    Int?     // 1-5 lucidity scale
-  aiAnalysis  String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  dreamDate  DateTime @db.Date
+  title      String
+  content    String   @db.Text
+  symbols    String[] @default([])
+  mood       String? // happy, sad, scared, confused, neutral
+  lucidity   Int? // 1-5 lucidity scale
+  aiAnalysis String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dreamDate])
   @@index([userId, dreamDate])
@@ -2305,15 +2314,15 @@ model DreamContest {
 }
 
 model DreamContestEntry {
-  id            String            @id @default(cuid())
-  contestId     String
-  userId        String
-  interpretation String           @db.Text
-  voteCount     Int               @default(0)
-  createdAt     DateTime          @default(now())
-  contest       DreamContest      @relation(fields: [contestId], references: [id], onDelete: Cascade)
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  votes         DreamContestVote[]
+  id             String             @id @default(cuid())
+  contestId      String
+  userId         String
+  interpretation String             @db.Text
+  voteCount      Int                @default(0)
+  createdAt      DateTime           @default(now())
+  contest        DreamContest       @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes          DreamContestVote[]
 
   @@unique([contestId, userId])
   @@index([contestId, voteCount])
@@ -2337,15 +2346,15 @@ model DreamContestVote {
 
 // Weekly Dream Report (AI-generated)
 model WeeklyDreamReport {
-  id          String   @id @default(cuid())
-  userId      String
-  weekStart   DateTime @db.Date
-  weekEnd     DateTime @db.Date
-  reportContent String @db.Text
-  dreamCount  Int      @default(0)
-  topSymbols  String[] @default([])
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  weekStart     DateTime @db.Date
+  weekEnd       DateTime @db.Date
+  reportContent String   @db.Text
+  dreamCount    Int      @default(0)
+  topSymbols    String[] @default([])
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, weekStart])
   @@index([userId])
@@ -2358,14 +2367,14 @@ model WeeklyDreamReport {
 
 // Sections that appear on the online-fal page (fallar, bana-ozel, custom_buttons)
 model OnlineFalSection {
-  id          String   @id @default(cuid())
-  key         String   @unique // e.g. "fortune_types", "bana_ozel", "custom_buttons"
-  title       String   // Display title
-  icon        String   @default("✨") // Emoji icon
-  isVisible   Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  key       String   @unique // e.g. "fortune_types", "bana_ozel", "custom_buttons"
+  title     String // Display title
+  icon      String   @default("✨") // Emoji icon
+  isVisible Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sortOrder])
   @@map("online_fal_sections")
@@ -2374,9 +2383,9 @@ model OnlineFalSection {
 // Custom buttons on the online-fal page (game center, send gift, blog, etc.)
 model OnlineFalButton {
   id          String   @id @default(cuid())
-  label       String   // Button label
+  label       String // Button label
   icon        String   @default("🔗") // Emoji icon
-  href        String   // Destination URL/path
+  href        String // Destination URL/path
   isVisible   Boolean  @default(true)
   sortOrder   Int      @default(0)
   bgColor     String   @default("from-purple-600/30 to-fuchsia-600/30") // Gradient classes
@@ -2393,53 +2402,52 @@ model OnlineFalButton {
 // Homepage Buttons (fully admin-managed)
 // ==========================================
 model HomepageButton {
-  id          String   @id @default(cuid())
-  key         String   @unique // unique identifier e.g. "games", "gifts", "custom_1"
-  label       String   // Display label
-  icon        String   @default("🔗") // Emoji icon
-  href        String   // Destination URL/path (relative)
-  isVisible   Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  id              String   @id @default(cuid())
+  key             String   @unique // unique identifier e.g. "games", "gifts", "custom_1"
+  label           String // Display label
+  icon            String   @default("🔗") // Emoji icon
+  href            String // Destination URL/path (relative)
+  isVisible       Boolean  @default(true)
+  sortOrder       Int      @default(0)
   specialBehavior String? // null for normal link, "bana-ozel" for popup, "teller" for role-based
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([sortOrder])
   @@map("homepage_buttons")
 }
 
 model AdminPopup {
-  id              String   @id @default(cuid())
-  title           String   // Popup title/heading
-  message         String   // Main message text
-  buttons         String   @default("[]") // JSON array: [{label, href, color?}]
-  isActive        Boolean  @default(true)
-  showTo          String   @default("all") // all, logged_in, guests
-  popupType       String   @default("custom") // custom, live_streams, chat_rooms
-  priority        Int      @default(0) // higher = shown first
-  maxShowCount    Int      @default(1) // 0 = unlimited, otherwise max times per user
-  showOnRefresh   Boolean  @default(false) // false = show only once per session (tab)
-  showDelaySeconds Int     @default(1) // seconds to wait before showing popup
-  lastSentAt      DateTime @default(now()) // Updated when admin re-sends popup
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String // Popup title/heading
+  message          String // Main message text
+  buttons          String   @default("[]") // JSON array: [{label, href, color?}]
+  isActive         Boolean  @default(true)
+  showTo           String   @default("all") // all, logged_in, guests
+  popupType        String   @default("custom") // custom, live_streams, chat_rooms
+  priority         Int      @default(0) // higher = shown first
+  maxShowCount     Int      @default(1) // 0 = unlimited, otherwise max times per user
+  showOnRefresh    Boolean  @default(false) // false = show only once per session (tab)
+  showDelaySeconds Int      @default(1) // seconds to wait before showing popup
+  lastSentAt       DateTime @default(now()) // Updated when admin re-sends popup
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([isActive, priority])
   @@index([isActive, lastSentAt])
   @@map("admin_popups")
 }
 
-
 // Profile Frames for user avatars
 model ProfileFrame {
-  id          String   @id @default(cuid())
-  name        String   // Frame display name
-  imageUrl    String   // URL to frame image (PNG with transparency)
-  tier        String   @default("gold") // free, gold, admin_only
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String // Frame display name
+  imageUrl  String // URL to frame image (PNG with transparency)
+  tier      String   @default("gold") // free, gold, admin_only
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   usersSelected User[] @relation("UserProfileFrame")
   usersAssigned User[] @relation("UserAdminFrame")
@@ -2448,17 +2456,16 @@ model ProfileFrame {
   @@map("profile_frames")
 }
 
-
 // Membership badge images - admin uploads banners per tier, text is overlaid
 model MembershipBadge {
-  id          String   @id @default(cuid())
-  name        String   // Display name (e.g., "Gold Şerit", "Premium Rozet")
-  tier        String   // basic, premium, gold, diamond, admin
-  imageUrl    String   // URL to banner/ribbon image
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String // Display name (e.g., "Gold Şerit", "Premium Rozet")
+  tier      String // basic, premium, gold, diamond, admin
+  imageUrl  String // URL to banner/ribbon image
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tier, isActive])
   @@map("membership_badges")
@@ -2482,16 +2489,16 @@ model IpFortuneUsage {
 
 // Admin-configurable ad networks
 model AdNetwork {
-  id          String   @id @default(cuid())
-  name        String   // Display name (Google AdSense, Unity Ads, etc.)
-  provider    String   @unique // google_adsense, google_admob, unity_ads, facebook_audience, applovin, ironsource, vungle, chartboost, adcolony, tapjoy, mintegral, inmobi, startio
-  adCode      String?  @db.Text // Ad code/script from the provider
-  adUnitId    String?  // Ad unit/slot ID
-  appId       String?  // App ID (for SDK-based networks)
-  isActive    Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String // Display name (Google AdSense, Unity Ads, etc.)
+  provider  String   @unique // google_adsense, google_admob, unity_ads, facebook_audience, applovin, ironsource, vungle, chartboost, adcolony, tapjoy, mintegral, inmobi, startio
+  adCode    String?  @db.Text // Ad code/script from the provider
+  adUnitId  String? // Ad unit/slot ID
+  appId     String? // App ID (for SDK-based networks)
+  isActive  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive])
   @@map("ad_networks")
@@ -2501,7 +2508,7 @@ model AdNetwork {
 model CurrencyConfig {
   id           String   @id @default(cuid())
   area         String   @unique // fortune_tarot, fortune_coffee, live_session, live_gift, chat_gift, stream_gift, bana_ozel etc.
-  areaName     String   // Display name in Turkish
+  areaName     String // Display name in Turkish
   currencyType String   @default("cfc") // cfc, jeton, free
   cost         Int      @default(0) // Cost in the specified currency
   isActive     Boolean  @default(true)
@@ -2513,14 +2520,14 @@ model CurrencyConfig {
 }
 
 model LiveActivity {
-  id          String   @id @default(cuid())
-  userId      String?  // null for anonymous users
-  userName    String   // display name (can be anonymous)
-  userAvatar  String?  // avatar URL
-  activityType String  // fortune_read, chat_join, dream_shared, stream_started, gift_sent, signup, blog_read, etc.
-  detail      String?  // e.g. "Tarot Falı baktırdı", "Sohbete katıldı"
-  targetUrl   String?  // link to related page
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String? // null for anonymous users
+  userName     String // display name (can be anonymous)
+  userAvatar   String? // avatar URL
+  activityType String // fortune_read, chat_join, dream_shared, stream_started, gift_sent, signup, blog_read, etc.
+  detail       String? // e.g. "Tarot Falı baktırdı", "Sohbete katıldı"
+  targetUrl    String? // link to related page
+  createdAt    DateTime @default(now())
 
   user User? @relation("userActivities", fields: [userId], references: [id], onDelete: SetNull)
 
@@ -2530,21 +2537,21 @@ model LiveActivity {
 }
 
 model ActivityFeedConfig {
-  id              String   @id @default(cuid())
-  isEnabled       Boolean  @default(true)
-  maxItems        Int      @default(20) // max items to show
+  id                 String   @id @default(cuid())
+  isEnabled          Boolean  @default(true)
+  maxItems           Int      @default(20) // max items to show
   // Visibility - which groups can see
-  visibleToGuests     Boolean @default(true)  // kayıtsız kullanıcılar
-  visibleToBasic      Boolean @default(true)  // basic üyeler
-  visibleToPremium    Boolean @default(true)  // premium üyeler
-  visibleToGold       Boolean @default(true)  // gold üyeler
-  visibleToDiamond    Boolean @default(true)  // diamond üyeler
-  visibleToModerator  Boolean @default(true)  // moderatörler
-  visibleToAdmin      Boolean @default(true)  // adminler
+  visibleToGuests    Boolean  @default(true) // kayıtsız kullanıcılar
+  visibleToBasic     Boolean  @default(true) // basic üyeler
+  visibleToPremium   Boolean  @default(true) // premium üyeler
+  visibleToGold      Boolean  @default(true) // gold üyeler
+  visibleToDiamond   Boolean  @default(true) // diamond üyeler
+  visibleToModerator Boolean  @default(true) // moderatörler
+  visibleToAdmin     Boolean  @default(true) // adminler
   // Specific user IDs (comma-separated) - if set, ONLY these users see it
-  specificUserIds     String? // comma-separated user IDs
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  specificUserIds    String? // comma-separated user IDs
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("activity_feed_config")
 }
@@ -2552,39 +2559,39 @@ model ActivityFeedConfig {
 // ========== AGENCY SYSTEM ==========
 
 model Agency {
-  id                  String          @id @default(cuid())
-  name                String          @unique
-  description         String?
-  ownerId             String          // User who applied
-  ownerName           String
-  status              String          @default("pending") // pending, approved, rejected, suspended
-  commissionRate      Float           @default(5.0)  // Agency commission % on member earnings
-  contactEmail        String?
-  contactPhone        String?
-  logoUrl             String?
+  id               String               @id @default(cuid())
+  name             String               @unique
+  description      String?
+  ownerId          String // User who applied
+  ownerName        String
+  status           String               @default("pending") // pending, approved, rejected, suspended
+  commissionRate   Float                @default(5.0) // Agency commission % on member earnings
+  contactEmail     String?
+  contactPhone     String?
+  logoUrl          String?
   // Performance
-  totalEarnings       Float           @default(0)
-  totalMembers        Int             @default(0)
-  activeMembers       Int             @default(0)
-  performanceScore    Float           @default(0) // APS: 0-100
+  totalEarnings    Float                @default(0)
+  totalMembers     Int                  @default(0)
+  activeMembers    Int                  @default(0)
+  performanceScore Float                @default(0) // APS: 0-100
   // Penalty tracking
-  penaltyLevel        Int             @default(0) // 0=clean, 1=warning, 2=invites_disabled, 3=commission_reduced, 4=suspended
-  penaltyNote         String?
-  invitesDisabled     Boolean         @default(false)
+  penaltyLevel     Int                  @default(0) // 0=clean, 1=warning, 2=invites_disabled, 3=commission_reduced, 4=suspended
+  penaltyNote      String?
+  invitesDisabled  Boolean              @default(false)
   // Metadata
-  approvedAt          DateTime?
-  rejectedAt          DateTime?
-  rejectedReason      String?
-  suspendedAt         DateTime?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  approvedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectedReason   String?
+  suspendedAt      DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
   // Relations
-  members             AgencyUser[]
-  earnings            AgencyEarning[]
-  inviteCodes         InviteCode[]
-  tasks               AgencyTask[]
-  penalties           AgencyPenalty[]
-  leaveRequests       AgencyLeaveRequest[]
+  members          AgencyUser[]
+  earnings         AgencyEarning[]
+  inviteCodes      InviteCode[]
+  tasks            AgencyTask[]
+  penalties        AgencyPenalty[]
+  leaveRequests    AgencyLeaveRequest[]
 
   @@index([ownerId])
   @@index([status])
@@ -2593,22 +2600,22 @@ model Agency {
 }
 
 model AgencyUser {
-  id              String    @id @default(cuid())
-  agencyId        String
-  userId          String    @unique // One user can only be in one agency
-  role            String    @default("member") // owner, manager, member
-  joinedVia       String?   // invite_code, referral_link, direct
-  inviteCodeId    String?
-  totalEarnings   Float     @default(0) // Total earnings contributed to agency
-  isActive        Boolean   @default(true)
-  joinedAt        DateTime  @default(now())
-  leftAt          DateTime?
+  id            String      @id @default(cuid())
+  agencyId      String
+  userId        String      @unique // One user can only be in one agency
+  role          String      @default("member") // owner, manager, member
+  joinedVia     String? // invite_code, referral_link, direct
+  inviteCodeId  String?
+  totalEarnings Float       @default(0) // Total earnings contributed to agency
+  isActive      Boolean     @default(true)
+  joinedAt      DateTime    @default(now())
+  leftAt        DateTime?
   // Fraud tracking
-  joinIp          String?
-  joinDeviceId    String?
-  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  inviteCode      InviteCode? @relation(fields: [inviteCodeId], references: [id])
+  joinIp        String?
+  joinDeviceId  String?
+  agency        Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteCode    InviteCode? @relation(fields: [inviteCodeId], references: [id])
 
   @@index([agencyId])
   @@index([userId])
@@ -2617,16 +2624,16 @@ model AgencyUser {
 }
 
 model AgencyEarning {
-  id              String   @id @default(cuid())
-  agencyId        String
-  userId          String   // The member who generated the earning
-  amount          Float    // Commission amount earned by agency
-  sourceType      String   // chat_gift, stream_gift, direct_gift, tip, bonus
-  sourceId        String?  // Gift/transaction ID
-  originalAmount  Float    // Original gift amount before commission
-  commissionRate  Float    // Rate applied at the time
-  createdAt       DateTime @default(now())
-  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  agencyId       String
+  userId         String // The member who generated the earning
+  amount         Float // Commission amount earned by agency
+  sourceType     String // chat_gift, stream_gift, direct_gift, tip, bonus
+  sourceId       String? // Gift/transaction ID
+  originalAmount Float // Original gift amount before commission
+  commissionRate Float // Rate applied at the time
+  createdAt      DateTime @default(now())
+  agency         Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@index([agencyId])
   @@index([userId])
@@ -2636,17 +2643,17 @@ model AgencyEarning {
 }
 
 model InviteCode {
-  id              String       @id @default(cuid())
-  agencyId        String
-  code            String       @unique
-  createdById     String       // User who created the code
-  maxUses         Int          @default(0) // 0 = unlimited
-  usedCount       Int          @default(0)
-  isActive        Boolean      @default(true)
-  expiresAt       DateTime?
-  createdAt       DateTime     @default(now())
-  agency          Agency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  usedBy          AgencyUser[]
+  id          String       @id @default(cuid())
+  agencyId    String
+  code        String       @unique
+  createdById String // User who created the code
+  maxUses     Int          @default(0) // 0 = unlimited
+  usedCount   Int          @default(0)
+  isActive    Boolean      @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime     @default(now())
+  agency      Agency       @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  usedBy      AgencyUser[]
 
   @@index([agencyId])
   @@index([code])
@@ -2654,25 +2661,25 @@ model InviteCode {
 }
 
 model AgencyTask {
-  id              String   @id @default(cuid())
-  agencyId        String
-  weekStart       DateTime // Monday of the task week
-  weekEnd         DateTime // Sunday of the task week
+  id                String   @id @default(cuid())
+  agencyId          String
+  weekStart         DateTime // Monday of the task week
+  weekEnd           DateTime // Sunday of the task week
   // Dynamic targets
-  earningsTarget  Float    @default(0)
-  newUsersTarget  Int      @default(0)
-  activeUsersTarget Int    @default(0)
+  earningsTarget    Float    @default(0)
+  newUsersTarget    Int      @default(0)
+  activeUsersTarget Int      @default(0)
   // Actual values
-  earningsActual  Float    @default(0)
-  newUsersActual  Int      @default(0)
-  activeUsersActual Int    @default(0)
+  earningsActual    Float    @default(0)
+  newUsersActual    Int      @default(0)
+  activeUsersActual Int      @default(0)
   // Scoring
-  completionPercent Float  @default(0)
-  bonusAwarded    Float    @default(0)
-  status          String   @default("active") // active, completed, failed
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  completionPercent Float    @default(0)
+  bonusAwarded      Float    @default(0)
+  status            String   @default("active") // active, completed, failed
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  agency            Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@unique([agencyId, weekStart])
   @@index([agencyId])
@@ -2682,17 +2689,17 @@ model AgencyTask {
 }
 
 model AgencyPenalty {
-  id              String   @id @default(cuid())
-  agencyId        String
-  level           Int      // 1=warning, 2=disable_invites, 3=reduce_commission, 4=suspend
-  reason          String
-  appliedBy       String?  // Admin userId or 'system'
-  isActive        Boolean  @default(true)
-  resolvedAt      DateTime?
-  resolvedBy      String?
-  resolvedNote    String?
-  createdAt       DateTime @default(now())
-  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  agencyId     String
+  level        Int // 1=warning, 2=disable_invites, 3=reduce_commission, 4=suspend
+  reason       String
+  appliedBy    String? // Admin userId or 'system'
+  isActive     Boolean   @default(true)
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  resolvedNote String?
+  createdAt    DateTime  @default(now())
+  agency       Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 
   @@index([agencyId])
   @@index([isActive])
@@ -2701,17 +2708,17 @@ model AgencyPenalty {
 
 // Ajanstan Çıkma Talepleri
 model AgencyLeaveRequest {
-  id              String    @id @default(cuid())
-  agencyId        String
-  userId          String
-  reason          String?
-  status          String    @default("pending") // pending, approved, rejected
-  reviewedBy      String?   // Agency owner/manager who reviewed
-  reviewNote      String?
-  createdAt       DateTime  @default(now())
-  reviewedAt      DateTime?
-  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  agencyId   String
+  userId     String
+  reason     String?
+  status     String    @default("pending") // pending, approved, rejected
+  reviewedBy String? // Agency owner/manager who reviewed
+  reviewNote String?
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  agency     Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([agencyId])
   @@index([userId])
@@ -2728,10 +2735,10 @@ model WeeklyTournament {
   title       String
   description String?
   status      String   @default("active") // active, completed
-  rewards     String?  // JSON: [{ rank: 1, prize: 500 }, ...]
+  rewards     String? // JSON: [{ rank: 1, prize: 500 }, ...]
   createdAt   DateTime @default(now())
 
-  entries     WeeklyTournamentEntry[]
+  entries WeeklyTournamentEntry[]
 
   @@unique([weekStart, type])
   @@index([status])
@@ -2748,7 +2755,7 @@ model WeeklyTournamentEntry {
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
 
-  tournament   WeeklyTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournament WeeklyTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, userId])
   @@index([tournamentId])
@@ -2769,29 +2776,28 @@ model FavoriteTeller {
   @@map("favorite_tellers")
 }
 
-
 // Celebrity profiles for famous people
 model Celebrity {
-  id              String            @id @default(cuid())
-  name            String
-  slug            String            @unique
-  category        String            // oyuncu, sarkici, futbolcu, youtuber, influencer, yonetmen, diger
-  bio             String?           @db.Text
-  profileImage    String?
-  coverImage      String?
-  isVerified      Boolean           @default(true)
-  isActive        Boolean           @default(true)
-  followerCount   Int               @default(0)
-  birthDate       DateTime?
-  birthPlace      String?
-  zodiacSign      String?
-  socialLinks     String?           @db.Text // JSON: {instagram, twitter, youtube, tiktok, website}
-  achievements    String?           @db.Text // JSON array of notable achievements
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  followers       CelebrityFollow[]
-  fanClub         FanClub?
-  posts           CelebrityPost[]
+  id            String            @id @default(cuid())
+  name          String
+  slug          String            @unique
+  category      String // oyuncu, sarkici, futbolcu, youtuber, influencer, yonetmen, diger
+  bio           String?           @db.Text
+  profileImage  String?
+  coverImage    String?
+  isVerified    Boolean           @default(true)
+  isActive      Boolean           @default(true)
+  followerCount Int               @default(0)
+  birthDate     DateTime?
+  birthPlace    String?
+  zodiacSign    String?
+  socialLinks   String?           @db.Text // JSON: {instagram, twitter, youtube, tiktok, website}
+  achievements  String?           @db.Text // JSON array of notable achievements
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  followers     CelebrityFollow[]
+  fanClub       FanClub?
+  posts         CelebrityPost[]
 
   @@index([category])
   @@index([isActive])
@@ -2802,11 +2808,11 @@ model Celebrity {
 
 // User follows on celebrities
 model CelebrityFollow {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   celebrityId String
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   celebrity   Celebrity @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
 
   @@unique([userId, celebrityId])
@@ -2817,19 +2823,19 @@ model CelebrityFollow {
 
 // Fan club for a celebrity
 model FanClub {
-  id            String          @id @default(cuid())
-  celebrityId   String          @unique
-  celebrity     Celebrity       @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
-  description   String?         @db.Text
-  rules         String?         @db.Text // JSON array of rules
-  coverImage    String?
-  memberCount   Int             @default(0)
-  isActive      Boolean         @default(true)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  members       FanClubMember[]
-  posts         FanClubPost[]
-  polls         FanClubPoll[]
+  id          String          @id @default(cuid())
+  celebrityId String          @unique
+  celebrity   Celebrity       @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
+  description String?         @db.Text
+  rules       String?         @db.Text // JSON array of rules
+  coverImage  String?
+  memberCount Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  members     FanClubMember[]
+  posts       FanClubPost[]
+  polls       FanClubPoll[]
 
   @@index([isActive])
   @@map("fan_clubs")
@@ -2855,16 +2861,16 @@ model FanClubMember {
 
 // Fan club polls/surveys (Anket)
 model FanClubPoll {
-  id        String           @id @default(cuid())
+  id        String            @id @default(cuid())
   fanClubId String
   userId    String
   question  String
-  options   Json             // Array of { text: string }
-  isActive  Boolean          @default(true)
+  options   Json // Array of { text: string }
+  isActive  Boolean           @default(true)
   endsAt    DateTime?
-  createdAt DateTime         @default(now())
-  fanClub   FanClub          @relation(fields: [fanClubId], references: [id], onDelete: Cascade)
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+  fanClub   FanClub           @relation(fields: [fanClubId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   votes     FanClubPollVote[]
 
   @@index([fanClubId, isActive])
@@ -2873,13 +2879,13 @@ model FanClubPoll {
 }
 
 model FanClubPollVote {
-  id       String      @id @default(cuid())
-  pollId   String
-  userId   String
+  id          String      @id @default(cuid())
+  pollId      String
+  userId      String
   optionIndex Int
-  createdAt DateTime   @default(now())
-  poll     FanClubPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  poll        FanClubPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([pollId, userId])
   @@index([pollId])
@@ -2909,12 +2915,12 @@ model FanClubPost {
 
 // Like on fan club post
 model FanClubPostLike {
-  id     String      @id @default(cuid())
-  postId String
-  userId String
-  createdAt DateTime @default(now())
-  post   FanClubPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String      @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime    @default(now())
+  post      FanClubPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([postId])
@@ -2922,27 +2928,26 @@ model FanClubPostLike {
   @@map("fan_club_post_likes")
 }
 
-
 // Trending topics / platform trends
 model TrendingTopic {
-  id          String   @id @default(cuid())
-  title       String   // Topic title
-  slug        String   @unique
-  category    String   // burc, fal, unlu, genel, oyun, etkinlik
-  description String?  @db.Text
-  image       String?  // Cover image URL
-  icon        String?  // Emoji or icon
-  trendScore  Int      @default(0) // Calculated popularity score
-  viewCount   Int      @default(0)
-  likeCount   Int      @default(0)
-  isActive    Boolean  @default(true)
-  isPinned    Boolean  @default(false) // Admin pinned
-  relatedUrl  String?  // Link to related page
-  tags        String?  @db.Text // JSON array of tags
-  startDate   DateTime @default(now())
+  id          String    @id @default(cuid())
+  title       String // Topic title
+  slug        String    @unique
+  category    String // burc, fal, unlu, genel, oyun, etkinlik
+  description String?   @db.Text
+  image       String? // Cover image URL
+  icon        String? // Emoji or icon
+  trendScore  Int       @default(0) // Calculated popularity score
+  viewCount   Int       @default(0)
+  likeCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  isPinned    Boolean   @default(false) // Admin pinned
+  relatedUrl  String? // Link to related page
+  tags        String?   @db.Text // JSON array of tags
+  startDate   DateTime  @default(now())
   endDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([category])
   @@index([isActive, trendScore])
@@ -2950,25 +2955,24 @@ model TrendingTopic {
   @@map("trending_topics")
 }
 
-
 // Celebrity social media posts (admin-managed)
 model CelebrityPost {
-  id            String                 @id @default(cuid())
-  celebrityId   String
-  celebrity     Celebrity              @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
-  platform      String                 // instagram, x, youtube, tiktok
-  postType      String                 @default("photo") // photo, video, reel, story, tweet, short
-  content       String?                @db.Text
-  mediaUrl      String?                // Image or video thumbnail URL
-  externalUrl   String?                // Link to original post
-  likeCount     Int                    @default(0)
-  commentCount  Int                    @default(0)
-  isActive      Boolean                @default(true)
-  isPinned      Boolean                @default(false)
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  likes         CelebrityPostLike[]
-  comments      CelebrityPostComment[]
+  id           String                 @id @default(cuid())
+  celebrityId  String
+  celebrity    Celebrity              @relation(fields: [celebrityId], references: [id], onDelete: Cascade)
+  platform     String // instagram, x, youtube, tiktok
+  postType     String                 @default("photo") // photo, video, reel, story, tweet, short
+  content      String?                @db.Text
+  mediaUrl     String? // Image or video thumbnail URL
+  externalUrl  String? // Link to original post
+  likeCount    Int                    @default(0)
+  commentCount Int                    @default(0)
+  isActive     Boolean                @default(true)
+  isPinned     Boolean                @default(false)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  likes        CelebrityPostLike[]
+  comments     CelebrityPostComment[]
 
   @@index([celebrityId, createdAt])
   @@index([platform])
@@ -3024,7 +3028,6 @@ model UserStory {
   @@map("user_stories")
 }
 
-
 // Video categories for trend videos
 model TrendVideoCategory {
   id          String       @id @default(cuid())
@@ -3047,10 +3050,10 @@ model TrendVideo {
   categoryId   String
   category     TrendVideoCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   title        String
-  youtubeId    String             // YouTube video ID
-  thumbnailUrl String?            // YouTube thumbnail
+  youtubeId    String // YouTube video ID
+  thumbnailUrl String? // YouTube thumbnail
   channelName  String?
-  duration     String?            // e.g. "12:34"
+  duration     String? // e.g. "12:34"
   viewCount    Int                @default(0)
   sortOrder    Int                @default(0)
   isActive     Boolean            @default(true)
@@ -3062,17 +3065,16 @@ model TrendVideo {
   @@map("trend_videos")
 }
 
-
 // TikTok embedded videos
 model TikTokCategory {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   title       String
-  slug        String   @unique
-  description String?  @db.Text
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  slug        String        @unique
+  description String?       @db.Text
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   videos      TikTokVideo[]
 
   @@index([isActive, sortOrder])
@@ -3081,40 +3083,39 @@ model TikTokCategory {
 
 model TikTokVideo {
   id           String          @id @default(cuid())
-  tiktokUrl    String   // Full TikTok video URL
-  tiktokId     String?  // Extracted video ID
+  tiktokUrl    String // Full TikTok video URL
+  tiktokId     String? // Extracted video ID
   title        String?
   authorName   String?
   authorAvatar String?
   thumbnailUrl String?
-  embedHtml    String?  @db.Text
+  embedHtml    String?         @db.Text
   categoryId   String?
   category     TikTokCategory? @relation(fields: [categoryId], references: [id])
-  sortOrder    Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sortOrder    Int             @default(0)
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   @@index([isActive, sortOrder])
   @@index([categoryId])
   @@map("tiktok_videos")
 }
 
-
 // CFC (CanlıFal Coin) Payment Requests
 model CfcPaymentRequest {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount        Int      // CFC amount requested
-  method        String   // whatsapp, papara, bank_transfer
-  senderInfo    String?  // Sender name or phone for verification
-  notes         String?  @db.Text
-  status        String   @default("pending") // pending, approved, rejected
-  reviewedBy    String?  // Admin user id who reviewed
-  reviewNote    String?  // Admin note on approval/rejection
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     Int // CFC amount requested
+  method     String // whatsapp, papara, bank_transfer
+  senderInfo String? // Sender name or phone for verification
+  notes      String?  @db.Text
+  status     String   @default("pending") // pending, approved, rejected
+  reviewedBy String? // Admin user id who reviewed
+  reviewNote String? // Admin note on approval/rejection
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -3127,36 +3128,36 @@ model CfcPaymentRequest {
 // ═══════════════════════════════════════════════════════════
 
 model ShortVideo {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videoUrl      String   // R2/CDN full URL
-  thumbnailUrl  String?  // R2/CDN thumbnail URL
-  description   String?  @db.VarChar(500)
-  durationSec   Float?
-  viewsCount    Int      @default(0)
-  likesCount    Int      @default(0)
-  commentsCount Int      @default(0)
-  sharesCount   Int      @default(0)
-  savesCount    Int      @default(0)
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoUrl       String // R2/CDN full URL
+  thumbnailUrl   String? // R2/CDN thumbnail URL
+  description    String?          @db.VarChar(500)
+  durationSec    Float?
+  viewsCount     Int              @default(0)
+  likesCount     Int              @default(0)
+  commentsCount  Int              @default(0)
+  sharesCount    Int              @default(0)
+  savesCount     Int              @default(0)
   // Görünürlük: everyone | followers | close_friends | private
-  visibility    String   @default("everyone")
+  visibility     String           @default("everyone")
   // Yorum ayarı: everyone | followers | off
-  commentSetting String  @default("everyone")
-  allowDuet     Boolean  @default(true)
+  commentSetting String           @default("everyone")
+  allowDuet      Boolean          @default(true)
   // Konum
-  locationName  String?
-  locationLat   Float?
-  locationLng   Float?
+  locationName   String?
+  locationLat    Float?
+  locationLng    Float?
   // Müzik
-  musicId       String?
-  music         ShortVideoMusic? @relation(fields: [musicId], references: [id], onDelete: SetNull)
+  musicId        String?
+  music          ShortVideoMusic? @relation(fields: [musicId], references: [id], onDelete: SetNull)
   // Duet / Remix kaynağı
-  duetOfId      String?
-  duetOf        ShortVideo?  @relation("Duet", fields: [duetOfId], references: [id], onDelete: SetNull)
-  duets         ShortVideo[] @relation("Duet")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  duetOfId       String?
+  duetOf         ShortVideo?      @relation("Duet", fields: [duetOfId], references: [id], onDelete: SetNull)
+  duets          ShortVideo[]     @relation("Duet")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   likes    ShortVideoLike[]
   comments ShortVideoComment[]
@@ -3174,12 +3175,12 @@ model ShortVideo {
 }
 
 model ShortVideoLike {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   videoId   String
   video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
 
   @@unique([videoId, userId])
   @@index([videoId])
@@ -3188,20 +3189,20 @@ model ShortVideoLike {
 }
 
 model ShortVideoComment {
-  id        String   @id @default(cuid())
-  videoId   String
-  video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String   @db.VarChar(500)
-  likesCount Int     @default(0)
-  isPinned  Boolean  @default(false)
+  id         String                  @id @default(cuid())
+  videoId    String
+  video      ShortVideo              @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String                  @db.VarChar(500)
+  likesCount Int                     @default(0)
+  isPinned   Boolean                 @default(false)
   // Yanıt (threading)
-  parentId  String?
-  parent    ShortVideoComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   ShortVideoComment[] @relation("CommentReplies")
-  likes     ShortVideoCommentLike[]
-  createdAt DateTime @default(now())
+  parentId   String?
+  parent     ShortVideoComment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    ShortVideoComment[]     @relation("CommentReplies")
+  likes      ShortVideoCommentLike[]
+  createdAt  DateTime                @default(now())
 
   @@index([videoId, createdAt(sort: Desc)])
   @@index([videoId, parentId, createdAt(sort: Desc)])
@@ -3211,13 +3212,13 @@ model ShortVideoComment {
 }
 
 model ShortVideoView {
-  id         String   @id @default(cuid())
+  id         String     @id @default(cuid())
   videoId    String
   video      ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   watchedSec Float?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime   @default(now())
 
   @@unique([videoId, userId])
   @@index([videoId])
@@ -3226,12 +3227,12 @@ model ShortVideoView {
 }
 
 model ShortVideoSave {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   videoId   String
   video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
 
   @@unique([videoId, userId])
   @@index([videoId])
@@ -3240,12 +3241,12 @@ model ShortVideoSave {
 }
 
 model ShortVideoCommentLike {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   commentId String
   comment   ShortVideoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
 
   @@unique([commentId, userId])
   @@index([commentId])
@@ -3254,12 +3255,12 @@ model ShortVideoCommentLike {
 }
 
 model ShortVideoMention {
-  id               String   @id @default(cuid())
-  videoId          String
-  video            ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  mentionedUserId  String
-  mentionedUser    User     @relation("ShortVideoMentioned", fields: [mentionedUserId], references: [id], onDelete: Cascade)
-  createdAt        DateTime @default(now())
+  id              String     @id @default(cuid())
+  videoId         String
+  video           ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  mentionedUserId String
+  mentionedUser   User       @relation("ShortVideoMentioned", fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime   @default(now())
 
   @@unique([videoId, mentionedUserId])
   @@index([videoId])
@@ -3274,19 +3275,19 @@ model Hashtag {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  videos      ShortVideoHashtag[]
+  videos ShortVideoHashtag[]
 
   @@index([videosCount(sort: Desc)])
   @@map("hashtags")
 }
 
 model ShortVideoHashtag {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   videoId   String
   video     ShortVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
   hashtagId String
-  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  hashtag   Hashtag    @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
 
   @@unique([videoId, hashtagId])
   @@index([hashtagId, createdAt(sort: Desc)])
@@ -3298,7 +3299,7 @@ model ShortVideoMusic {
   id          String   @id @default(cuid())
   title       String
   artist      String?
-  audioUrl    String   // R2/CDN URL
+  audioUrl    String // R2/CDN URL
   coverUrl    String?
   durationSec Float?
   usesCount   Int      @default(0)
@@ -3306,7 +3307,7 @@ model ShortVideoMusic {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  videos      ShortVideo[]
+  videos ShortVideo[]
 
   @@index([usesCount(sort: Desc)])
   @@index([isActive])
@@ -3319,7 +3320,7 @@ model ShortVideoMusic {
 // ============================================================
 model OkeyMatch {
   id            String   @id @default(cuid())
-  mode          String   // "okey" | "okey101"
+  mode          String // "okey" | "okey101"
   tableName     String?
   isPrivate     Boolean  @default(false)
   hasPassword   Boolean  @default(false)
@@ -3330,16 +3331,16 @@ model OkeyMatch {
   status        String   @default("finished") // finished | abandoned | cancelled
   winnerId      String?
   winnerName    String?
-  reason        String?  // normal | timeout | abandon | server_recovery
+  reason        String? // normal | timeout | abandon | server_recovery
   durationSec   Int      @default(0)
   roundCount    Int      @default(1)
-  indicatorTile String?  // gösterge
-  okeyTile      String?  // okey taşı
+  indicatorTile String? // gösterge
+  okeyTile      String? // okey taşı
   startedAt     DateTime @default(now())
   finishedAt    DateTime @default(now())
   createdAt     DateTime @default(now())
 
-  players       OkeyMatchPlayer[]
+  players OkeyMatchPlayer[]
 
   @@index([mode, status])
   @@index([winnerId])
@@ -3352,16 +3353,16 @@ model OkeyMatchPlayer {
   matchId      String
   userId       String
   userName     String
-  seat         Int      // 0..3
+  seat         Int // 0..3
   isWinner     Boolean  @default(false)
   score        Int      @default(0)
-  penaltyScore Int      @default(0)  // Okey101 negative scoring
+  penaltyScore Int      @default(0) // Okey101 negative scoring
   betPaid      Int      @default(0)
   rewardWon    Int      @default(0)
   leftEarly    Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  match        OkeyMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match OkeyMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   @@index([matchId])
   @@index([userId])
@@ -3374,17 +3375,17 @@ model OkeyMatchPlayer {
 
 // Configurable revenue rules per context (no hardcoded % in code).
 model RevenueRule {
-  id                          String   @id @default(cuid())
-  context                     String   @unique // live_stream | voice_room | video | short_video | fortune
-  label                       String   // human label, e.g. "Canlı Yayın"
+  id                         String   @id @default(cuid())
+  context                    String   @unique // live_stream | voice_room | video | short_video | fortune
+  label                      String // human label, e.g. "Canlı Yayın"
   // Primary split (applied to gross amount)
-  sitePercent                 Int      @default(50)
-  receiverPercent             Int      @default(50) // broadcaster / video owner / teller / room owner (when gift to owner)
+  sitePercent                Int      @default(50)
+  receiverPercent            Int      @default(50) // broadcaster / video owner / teller / room owner (when gift to owner)
   // Voice-room seat/guest special handling
-  ownerCutOfRemainderPercent  Int      @default(30) // owner's cut of the (gross - site) remainder for seat gifts
-  isActive                    Boolean  @default(true)
-  updatedAt                   DateTime @default(now()) @updatedAt
-  createdAt                   DateTime @default(now())
+  ownerCutOfRemainderPercent Int      @default(30) // owner's cut of the (gross - site) remainder for seat gifts
+  isActive                   Boolean  @default(true)
+  updatedAt                  DateTime @default(now()) @updatedAt
+  createdAt                  DateTime @default(now())
 
   @@map("revenue_rules")
 }
@@ -3392,26 +3393,26 @@ model RevenueRule {
 // Unified ledger for EVERY gift sent across ALL modules. Single source of truth
 // for stats, leaderboards, history, map, collections, feed, battles, goals.
 model GiftEvent {
-  id             String   @id @default(cuid())
-  idempotencyKey String?  @unique // prevents double-processing / double-click
-  giftTypeId     String
-  giftType       GiftType @relation(fields: [giftTypeId], references: [id])
-  senderId       String
-  receiverId     String
-  context        String   // live_stream | voice_room | video | short_video | fortune
-  contextId      String?  // streamId | roomId | videoId | tellerId
-  quantity       Int      @default(1)
-  grossAmount    Int      // total jetons spent (display value)
-  siteAmount     Int      @default(0)
-  receiverAmount Int      @default(0)
-  ownerAmount    Int      @default(0)
-  ownerId        String?  // room owner (voice_room seat gifts)
-  recipientIsOwner Boolean @default(false)
-  senderCity     String?
-  senderCountry  String?
-  battleId       String?  // if sent during a gift battle
-  status         String   @default("completed") // completed | refunded | cancelled
-  createdAt      DateTime @default(now())
+  id               String   @id @default(cuid())
+  idempotencyKey   String?  @unique // prevents double-processing / double-click
+  giftTypeId       String
+  giftType         GiftType @relation(fields: [giftTypeId], references: [id])
+  senderId         String
+  receiverId       String
+  context          String // live_stream | voice_room | video | short_video | fortune
+  contextId        String? // streamId | roomId | videoId | tellerId
+  quantity         Int      @default(1)
+  grossAmount      Int // total jetons spent (display value)
+  siteAmount       Int      @default(0)
+  receiverAmount   Int      @default(0)
+  ownerAmount      Int      @default(0)
+  ownerId          String? // room owner (voice_room seat gifts)
+  recipientIsOwner Boolean  @default(false)
+  senderCity       String?
+  senderCountry    String?
+  battleId         String? // if sent during a gift battle
+  status           String   @default("completed") // completed | refunded | cancelled
+  createdAt        DateTime @default(now())
 
   @@index([senderId, createdAt])
   @@index([receiverId, createdAt])
@@ -3424,17 +3425,17 @@ model GiftEvent {
 
 // Gift battles in live streams / voice rooms.
 model GiftBattle {
-  id          String   @id @default(cuid())
-  context     String   // live_stream | voice_room
-  contextId   String   // streamId | roomId
-  createdById String
-  status      String   @default("active") // active | finished | cancelled
-  durationSec Int      @default(180)
-  startedAt   DateTime @default(now())
-  endsAt      DateTime
-  winnerId    String?
-  totalScore  Int      @default(0)
-  createdAt   DateTime @default(now())
+  id           String                  @id @default(cuid())
+  context      String // live_stream | voice_room
+  contextId    String // streamId | roomId
+  createdById  String
+  status       String                  @default("active") // active | finished | cancelled
+  durationSec  Int                     @default(180)
+  startedAt    DateTime                @default(now())
+  endsAt       DateTime
+  winnerId     String?
+  totalScore   Int                     @default(0)
+  createdAt    DateTime                @default(now())
   participants GiftBattleParticipant[]
 
   @@index([context, contextId, status])
@@ -3443,13 +3444,13 @@ model GiftBattle {
 }
 
 model GiftBattleParticipant {
-  id           String     @id @default(cuid())
-  battleId     String
-  battle       GiftBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
-  participantId String    // the user receiving gifts (a side of the battle)
-  displayName  String?
-  score        Int        @default(0) // total gross jetons gifted to this side during the battle
-  createdAt    DateTime   @default(now())
+  id            String     @id @default(cuid())
+  battleId      String
+  battle        GiftBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  participantId String // the user receiving gifts (a side of the battle)
+  displayName   String?
+  score         Int        @default(0) // total gross jetons gifted to this side during the battle
+  createdAt     DateTime   @default(now())
 
   @@unique([battleId, participantId])
   @@index([battleId, score])
@@ -3458,16 +3459,16 @@ model GiftBattleParticipant {
 
 // Fundraising / gift goals for broadcasters and room owners.
 model GiftGoal {
-  id           String   @id @default(cuid())
-  context      String   // live_stream | voice_room
-  contextId    String
-  ownerId      String
-  title        String?
-  targetAmount Int
-  currentAmount Int     @default(0)
-  status       String   @default("active") // active | completed | cancelled
-  startedAt    DateTime @default(now())
-  completedAt  DateTime?
+  id            String    @id @default(cuid())
+  context       String // live_stream | voice_room
+  contextId     String
+  ownerId       String
+  title         String?
+  targetAmount  Int
+  currentAmount Int       @default(0)
+  status        String    @default("active") // active | completed | cancelled
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
 
   @@index([context, contextId, status])
   @@map("gift_goals")
@@ -3475,32 +3476,32 @@ model GiftGoal {
 
 // Daily missions (templates) + per-user progress.
 model GiftMission {
-  id          String   @id @default(cuid())
-  code        String   @unique // e.g. first_gift, five_people, thousand_jetons
-  title       String
-  description String?
-  type        String   // count_gifts | distinct_receivers | total_jetons | context_gift
-  target      Int      @default(1)
-  context     String?  // optional context requirement
-  rewardJetons Int     @default(0)
-  rewardCredits Int    @default(0)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  code          String   @unique // e.g. first_gift, five_people, thousand_jetons
+  title         String
+  description   String?
+  type          String // count_gifts | distinct_receivers | total_jetons | context_gift
+  target        Int      @default(1)
+  context       String? // optional context requirement
+  rewardJetons  Int      @default(0)
+  rewardCredits Int      @default(0)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
 
   @@map("gift_missions")
 }
 
 model UserMissionProgress {
-  id         String   @id @default(cuid())
-  userId     String
-  missionId  String
-  dayKey     String   // YYYY-MM-DD (UTC) — daily reset
-  progress   Int      @default(0)
-  completed  Boolean  @default(false)
-  claimed    Boolean  @default(false)
-  updatedAt  DateTime @default(now()) @updatedAt
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  missionId String
+  dayKey    String // YYYY-MM-DD (UTC) — daily reset
+  progress  Int      @default(0)
+  completed Boolean  @default(false)
+  claimed   Boolean  @default(false)
+  updatedAt DateTime @default(now()) @updatedAt
+  createdAt DateTime @default(now())
 
   @@unique([userId, missionId, dayKey])
   @@index([userId, dayKey])
@@ -3528,19 +3529,19 @@ model PkMatch {
   // pending | accepted | live | finished | cancelled | rejected | expired
   status        String    @default("pending")
   durationSec   Int       @default(180) // 60 | 180 | 300 | 600
-  hostScore     Int       @default(0)   // gross jetons gifted to host side
-  guestScore    Int       @default(0)   // gross jetons gifted to guest side
+  hostScore     Int       @default(0) // gross jetons gifted to host side
+  guestScore    Int       @default(0) // gross jetons gifted to guest side
   // host_win | guest_win | draw | left_win | right_win (null until finished)
   result        String?
   winnerUserId  String?
   finalSprint   Boolean   @default(false) // set true in the last 30 seconds
   // ── Phase 2: multi-guest & team PK ──────────────────────────────
   mode          String    @default("1v1") // 1v1 | guest | team
-  seatCount     Int        @default(2)     // total seats (guest: up to 9; team: even 2/4/6/8)
-  leftScore     Int        @default(0)      // team mode: aggregate gross for Sol team
-  rightScore    Int        @default(0)      // team mode: aggregate gross for Sağ team
-  leftName      String?                     // team label (default "Takım Sol")
-  rightName     String?                     // team label (default "Takım Sağ")
+  seatCount     Int       @default(2) // total seats (guest: up to 9; team: even 2/4/6/8)
+  leftScore     Int       @default(0) // team mode: aggregate gross for Sol team
+  rightScore    Int       @default(0) // team mode: aggregate gross for Sağ team
+  leftName      String? // team label (default "Takım Sol")
+  rightName     String? // team label (default "Takım Sağ")
   seats         PkSeat[]
   requestedAt   DateTime  @default(now())
   respondedAt   DateTime?
@@ -3561,21 +3562,21 @@ model PkMatch {
 
 // A seat occupancy in a multi-guest / team PK room (Phase 2).
 model PkSeat {
-  id         String    @id @default(cuid())
-  matchId    String
-  match      PkMatch   @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  seatIndex  Int       // 0-based position in the room
-  team       String    @default("none") // left | right | none (guest mode)
-  userId     String
-  userName   String?
-  userImage  String?
-  streamId   String?   // the guest's own stream if they are broadcasting
-  score      Int       @default(0) // gross jetons gifted to this guest
-  status     String    @default("active") // active | left | kicked
-  joinedAt   DateTime  @default(now())
-  leftAt     DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  matchId   String
+  match     PkMatch   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  seatIndex Int // 0-based position in the room
+  team      String    @default("none") // left | right | none (guest mode)
+  userId    String
+  userName  String?
+  userImage String?
+  streamId  String? // the guest's own stream if they are broadcasting
+  score     Int       @default(0) // gross jetons gifted to this guest
+  status    String    @default("active") // active | left | kicked
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@unique([matchId, seatIndex])
   @@index([matchId, status])
@@ -3589,10 +3590,10 @@ model PkParticipant {
   id         String   @id @default(cuid())
   matchId    String
   userId     String
-  mode       String   // 1v1 | guest | team
-  side       String   // host | guest | left | right | seat
+  mode       String // 1v1 | guest | team
+  side       String // host | guest | left | right | seat
   score      Int      @default(0) // gross jetons this user pulled in during the match
-  outcome    String   // win | loss | draw | completed
+  outcome    String // win | loss | draw | completed
   finishedAt DateTime @default(now())
   createdAt  DateTime @default(now())
 
@@ -3605,18 +3606,18 @@ model PkParticipant {
 
 // ── Phase 3: all-time aggregated PK stats per user (O(1) profile read) ──
 model PkStat {
-  userId      String   @id
-  matches     Int      @default(0)
-  wins        Int      @default(0)
-  losses      Int      @default(0)
-  draws       Int      @default(0)
-  totalScore  Int      @default(0) // cumulative gross pulled in across all PK
-  bestScore   Int      @default(0) // best single-match score
-  currentStreak Int    @default(0) // consecutive wins (resets on non-win)
-  bestStreak  Int      @default(0)
-  lastPlayedAt DateTime?
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
+  userId        String    @id
+  matches       Int       @default(0)
+  wins          Int       @default(0)
+  losses        Int       @default(0)
+  draws         Int       @default(0)
+  totalScore    Int       @default(0) // cumulative gross pulled in across all PK
+  bestScore     Int       @default(0) // best single-match score
+  currentStreak Int       @default(0) // consecutive wins (resets on non-win)
+  bestStreak    Int       @default(0)
+  lastPlayedAt  DateTime?
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
 
   @@index([wins])
   @@index([totalScore])
@@ -3632,7 +3633,7 @@ model PkEvent {
   multiplier Float    @default(2.0)
   startsAt   DateTime @default(now())
   endsAt     DateTime
-  createdBy  String   // userId (host) or admin who triggered it
+  createdBy  String // userId (host) or admin who triggered it
   createdAt  DateTime @default(now())
 
   @@index([matchId, endsAt])
@@ -3641,16 +3642,16 @@ model PkEvent {
 
 // ── TRTC Webhook Event Log ─────────────────────────────────────────
 model TrtcWebhookLog {
-  id             String   @id @default(cuid())
-  eventGroupId   Int      // 1=Room, 2=Media, 3=Recording, 4=Relay
-  eventType      Int      // 101=RoomCreated, 102=RoomDissolved, 103=Enter, 104=Leave, 105=RoleSwitch
-  sdkAppId       Int
-  roomId         String?  // TRTC room ID
-  userId         String?  // TRTC user ID (our user cuid)
-  payload        String   @db.Text // full JSON body
-  processedOk    Boolean  @default(true)
-  errorMessage   String?
-  createdAt      DateTime @default(now())
+  id           String   @id @default(cuid())
+  eventGroupId Int // 1=Room, 2=Media, 3=Recording, 4=Relay
+  eventType    Int // 101=RoomCreated, 102=RoomDissolved, 103=Enter, 104=Leave, 105=RoleSwitch
+  sdkAppId     Int
+  roomId       String? // TRTC room ID
+  userId       String? // TRTC user ID (our user cuid)
+  payload      String   @db.Text // full JSON body
+  processedOk  Boolean  @default(true)
+  errorMessage String?
+  createdAt    DateTime @default(now())
 
   @@index([eventGroupId, eventType])
   @@index([roomId])
@@ -3664,7 +3665,7 @@ model PkBan {
   id        String    @id @default(cuid())
   userId    String
   reason    String?
-  bannedBy  String    // admin userId
+  bannedBy  String // admin userId
   active    Boolean   @default(true)
   expiresAt DateTime? // null = permanent
   createdAt DateTime  @default(now())
@@ -3676,12 +3677,12 @@ model PkBan {
 
 // User-level blocks (profile level, not room/stream specific)
 model UserBlock {
-  id          String   @id @default(cuid())
-  blockerId   String
-  blockedId   String
-  createdAt   DateTime @default(now())
-  blocker     User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
-  blocked     User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@unique([blockerId, blockedId])
   @@index([blockerId])
@@ -3691,19 +3692,132 @@ model UserBlock {
 
 // User reports
 model UserReport {
-  id          String   @id @default(cuid())
-  reporterId  String
-  reportedId  String
-  reason      String
-  details     String?  @db.Text
-  status      String   @default("pending") // pending, reviewed, dismissed
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  reported    User     @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  reporterId String
+  reportedId String
+  reason     String
+  details    String?  @db.Text
+  status     String   @default("pending") // pending, reviewed, dismissed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reporter   User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User     @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
 
   @@index([reporterId])
   @@index([reportedId])
   @@index([status])
   @@map("user_reports")
+}
+
+// ============================================================
+// PART 13 PREMIUM COSMETIC CATALOGS (additive, admin-managed)
+// ============================================================
+
+model NameEffect {
+  id        String   @id @default(cuid())
+  key       String   @unique // gold, silver, diamond, neon, rainbow, fire, crystal, glass, hologram
+  name      String
+  tier      String   @default("gold") // free, gold, admin_only
+  cssPreset String?  @db.Text // JSON: colors/gradient/animation params for clients
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier, isActive])
+  @@map("name_effects")
+}
+
+model EntranceEffect {
+  id         String    @id @default(cuid())
+  name       String
+  assetUrl   String // lottie/svga/mp4/gif URL
+  assetType  String    @default("lottie") // lottie, svga, gif, video, image
+  tier       String    @default("gold")
+  durationMs Int       @default(3000)
+  isActive   Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  activeFrom DateTime?
+  activeTo   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tier, isActive])
+  @@map("entrance_effects")
+}
+
+model ChatBubbleSkin {
+  id        String   @id @default(cuid())
+  name      String
+  assetUrl  String // background image / 9-patch asset
+  tier      String   @default("gold")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier, isActive])
+  @@map("chat_bubble_skins")
+}
+
+model MicFrame {
+  id        String   @id @default(cuid())
+  name      String
+  assetUrl  String // PNG/Lottie overlay around mic seat avatar
+  tier      String   @default("gold")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier, isActive])
+  @@map("mic_frames")
+}
+
+model EmojiPack {
+  id        String   @id @default(cuid())
+  name      String
+  coverUrl  String // pack cover image
+  emojis    String   @db.Text // JSON array of { key, imageUrl }
+  tier      String   @default("gold")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier, isActive])
+  @@map("emoji_packs")
+}
+
+model AvatarAccessory {
+  id        String   @id @default(cuid())
+  name      String
+  slot      String   @default("hat") // hat, crown, glasses, wings, mask, other
+  assetUrl  String
+  tier      String   @default("gold")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slot, isActive])
+  @@index([tier, isActive])
+  @@map("avatar_accessories")
+}
+
+model RoomTheme {
+  id            String    @id @default(cuid())
+  name          String
+  backgroundUrl String // static image / lottie / mp4
+  assetType     String    @default("image") // image, lottie, video
+  tier          String    @default("free")
+  isActive      Boolean   @default(true)
+  activeFrom    DateTime? // seasonal themes window
+  activeTo      DateTime?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tier, isActive])
+  @@map("room_themes")
 }

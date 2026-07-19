@@ -38,6 +38,11 @@ export async function GET(request: NextRequest) {
         adminAssignedFrameId: true,
         profileFrame: { select: { id: true, name: true, imageUrl: true } },
         adminAssignedFrame: { select: { id: true, name: true, imageUrl: true } },
+        nameEffect: true,
+        entranceEffectId: true,
+        chatBubbleId: true,
+        micFrameId: true,
+        avatarAccessoryIds: true,
         createdAt: true,
         _count: {
           select: {

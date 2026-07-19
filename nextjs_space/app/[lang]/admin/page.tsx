@@ -10,7 +10,8 @@ import {
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
   DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
-  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award, HardDrive
+  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award, HardDrive,
+  Smile, Wand2, Frame
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -147,6 +148,13 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management', emoji: '🏅', desc: 'Rozetleri oluştur & ata' },
       { href: `/admin/profile-frames`, icon: Shield, trLabel: 'Profil Çerçeve Yönetimi', enLabel: 'Profile Frame Management', emoji: '🖼️', desc: 'Profil çerçeveleri' },
       { href: `/admin/membership-badges`, icon: Award, trLabel: 'Üyelik Rozetleri', enLabel: 'Membership Badges', emoji: '🎖️', desc: 'Üyelik seviye rozetleri' },
+      { href: `/admin/name-effects`, icon: Wand2, trLabel: 'İsim Efektleri', enLabel: 'Name Effects', emoji: '✨', desc: 'Renkli/animasyonlu isim stilleri' },
+      { href: `/admin/entrance-effects`, icon: Zap, trLabel: 'Giriş Efektleri', enLabel: 'Entrance Effects', emoji: '⚡', desc: 'Odaya giriş animasyonları' },
+      { href: `/admin/chat-bubbles`, icon: MessageCircle, trLabel: 'Sohbet Balonları', enLabel: 'Chat Bubbles', emoji: '💬', desc: 'Mesaj balonu görünümleri' },
+      { href: `/admin/mic-frames`, icon: Mic, trLabel: 'Mikrofon Çerçeveleri', enLabel: 'Mic Frames', emoji: '🎤', desc: 'Koltuk/mikrofon çerçeveleri' },
+      { href: `/admin/emoji-packs`, icon: Smile, trLabel: 'Emoji Paketleri', enLabel: 'Emoji Packs', emoji: '😄', desc: 'Özel emoji koleksiyonları' },
+      { href: `/admin/avatar-accessories`, icon: Frame, trLabel: 'Avatar Aksesuarları', enLabel: 'Avatar Accessories', emoji: '🎩', desc: 'Şapka, gözlük, taç vb.' },
+      { href: `/admin/room-themes`, icon: ImageIcon, trLabel: 'Oda Temaları', enLabel: 'Room Themes', emoji: '🏞️', desc: 'Oda arka plan temaları' },
       { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation', emoji: '🛡️', desc: 'Raporlanan içerikler' },
     ],
   },
