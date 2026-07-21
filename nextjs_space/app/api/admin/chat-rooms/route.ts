@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { emitRoomClosed } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -141,6 +142,11 @@ export async function PUT(req: NextRequest) {
       }
     })
 
+    // If the room was just deactivated, tell everyone it closed (web + Flutter)
+    if (isActive === false) {
+      emitRoomClosed(roomId)
+    }
+
     return NextResponse.json({ success: true, room })
   } catch (error) {
     console.error('Admin update room error:', error)
@@ -171,6 +177,9 @@ export async function DELETE(req: NextRequest) {
     if (!roomId) {
       return NextResponse.json({ error: 'Room ID required' }, { status: 400 })
     }
+
+    // Tell everyone the room is closing before we tear it down (web + Flutter)
+    emitRoomClosed(roomId)
 
     // Delete related records first
     await prisma.chatRoomGift.deleteMany({ where: { roomId } })

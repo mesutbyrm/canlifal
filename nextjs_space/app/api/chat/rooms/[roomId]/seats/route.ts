@@ -4,8 +4,63 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
+import { emitSeatChanged } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
+
+// GET - standardized seat map for the room (used by web + Flutter).
+// Returns 15 seats (0-14). Each element is null (empty) or the occupant.
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const { roomId } = await params
+    const presenceTimeout = new Date(Date.now() - 300000)
+    const seated = await prisma.chatPresence.findMany({
+      where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: 15 } },
+      select: {
+        userId: true,
+        seatIndex: true,
+        nickname: true,
+        user: { select: { id: true, name: true, image: true } }
+      }
+    })
+    const activeUserIds = seated.map((s: { userId: string }) => s.userId)
+    const micSessions = activeUserIds.length > 0
+      ? await prisma.voiceSession.findMany({
+          where: { roomId, userId: { in: activeUserIds }, isActive: true },
+          select: { userId: true }
+        })
+      : []
+    const micOnSet = new Set(micSessions.map((v: { userId: string }) => v.userId))
+
+    const seats: Array<null | {
+      seatIndex: number
+      userId: string
+      name: string
+      nickname: string
+      image: string | null
+      micOn: boolean
+    }> = new Array(15).fill(null)
+    for (const s of seated) {
+      if (s.seatIndex !== null && s.seatIndex >= 0 && s.seatIndex < 15) {
+        seats[s.seatIndex] = {
+          seatIndex: s.seatIndex,
+          userId: s.userId,
+          name: s.user.name,
+          nickname: s.nickname || s.user.name,
+          image: s.user.image || null,
+          micOn: micOnSet.has(s.userId)
+        }
+      }
+    }
+    return NextResponse.json({ success: true, seats })
+  } catch (error) {
+    console.error('Error fetching seats:', error)
+    return NextResponse.json({ error: 'Koltuklar getirilemedi' }, { status: 500 })
+  }
+}
 
 // PATCH - Move a user to a different seat (admin/owner only) or claim a seat for self
 export async function PATCH(
@@ -95,12 +150,21 @@ export async function PATCH(
       }
     }
 
+    // Capture previous seat for the realtime event
+    const prevPresence = await prisma.chatPresence.findUnique({
+      where: { roomId_userId: { roomId, userId: actualTargetId } },
+      select: { seatIndex: true }
+    })
+
     // Update the target user's seat (upsert in case no presence record yet)
     await prisma.chatPresence.upsert({
       where: { roomId_userId: { roomId, userId: actualTargetId } },
       update: { seatIndex, lastSeen: new Date() },
       create: { roomId, userId: actualTargetId, seatIndex, lastSeen: new Date() }
     })
+
+    // Broadcast the seat change (web + Flutter via SSE)
+    emitSeatChanged(roomId, actualTargetId, seatIndex, prevPresence?.seatIndex ?? -1)
 
     return NextResponse.json({ success: true, seatIndex })
   } catch (error) {

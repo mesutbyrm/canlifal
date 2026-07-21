@@ -93,6 +93,16 @@ export async function GET(
                 ...pkEvt.data
               })}\n\n`))
             }
+            // Voice-room realtime events (user_joined/left, mic_changed, seat_changed,
+            // room_closed, owner_changed). Forwarded as `room_event` so both web
+            // (ignores unknown types) and Flutter (switches on .event) can consume them.
+            const roomEvents = newEvents.filter(e => e.type === 'room')
+            for (const roomEvt of roomEvents) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'room_event',
+                ...roomEvt.data
+              })}\n\n`))
+            }
             lastEventCheck = Date.now()
           }
 
@@ -106,11 +116,19 @@ export async function GET(
                 lastSeen: { gte: new Date(Date.now() - 300000) }
               },
               include: {
-                user: { select: { id: true, name: true, role: true } }
+                user: { select: { id: true, name: true, role: true, image: true } }
               }
             })
 
             const activeUserIds = presences.map((p: { userId: string }) => p.userId)
+            // Active voice/mic sessions in this room (drives micOn flag)
+            const activeVoiceSessions = activeUserIds.length > 0
+              ? await prisma.voiceSession.findMany({
+                  where: { roomId, userId: { in: activeUserIds }, isActive: true },
+                  select: { userId: true }
+                })
+              : []
+            const micOnSet = new Set(activeVoiceSessions.map((v: { userId: string }) => v.userId))
             const activeUserRoles = activeUserIds.length > 0
               ? await prisma.chatUserRole.findMany({
                   where: { roomId, userId: { in: activeUserIds } }
@@ -121,15 +139,18 @@ export async function GET(
             const roleLevels: Record<string, number> = { superadmin: 6, founder: 5, sop: 4, admin: 4, op: 3, voice: 2 }
             const roleSymbolsActive: Record<string, string> = ROLE_SYMBOLS as Record<string, string>
             const globalAdminRolesP = ['admin', 'moderator', 'site_manager']
-            const activeUsers = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; user: { name: string; role: string } }) => {
+            const activeUsers = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; seatIndex: number | null; user: { name: string; role: string; image: string | null } }) => {
               const isGlobalAdminP = globalAdminRolesP.includes(p.user.role)
               const chatRole = activeRoleMap.get(p.userId) || (isGlobalAdminP ? 'superadmin' : null)
               const roleLevel = chatRole && typeof chatRole === 'string' ? roleLevels[chatRole] || 0 : 0
               return {
                 id: p.userId,
                 name: p.user.name,
+                image: p.user.image,
                 nickname: p.nickname || p.user.name,
                 lastSeen: p.lastSeen.toISOString(),
+                seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : -1,
+                micOn: micOnSet.has(p.userId),
                 chatRole,
                 roleSymbol: chatRole && typeof chatRole === 'string' ? roleSymbolsActive[chatRole] : null,
                 roleLevel,

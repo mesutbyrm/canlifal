@@ -3,17 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { userIdToNumericUid } from '@/lib/trtc-room'
+import { emitMicChanged } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
-
-// Deterministic hash of a user ID → stable numeric UID (legacy, kept for DB compat)
-function userIdToNumericUid(uid: string): number {
-  let hash = 0
-  for (let i = 0; i < uid.length; i++) {
-    hash = ((hash << 5) - hash + uid.charCodeAt(i)) | 0
-  }
-  return Math.abs(hash) % 1000000000
-}
 
 // Cleanup inactive voice sessions (no ping in 30 seconds)
 async function cleanupInactiveSessions(roomId: string) {
@@ -123,12 +116,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
       })
 
+      // Broadcast mic ON (web + Flutter via SSE)
+      emitMicChanged(roomId, voiceUserId, true, userName)
+
       return NextResponse.json({ success: true, timestamp: Date.now() })
     } else if (type === 'leave') {
       await prisma.voiceSession.updateMany({
         where: { roomId, userId: voiceUserId },
         data: { isActive: false }
       })
+
+      // Broadcast mic OFF (web + Flutter via SSE)
+      emitMicChanged(roomId, voiceUserId, false, userName)
 
       return NextResponse.json({ success: true, timestamp: Date.now() })
     }

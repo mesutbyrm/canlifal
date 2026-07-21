@@ -7,6 +7,7 @@ import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissio
 import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
+import { emitUserJoined, emitUserLeft } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -207,6 +208,11 @@ export async function POST(
         // Create leave message only on intentional leave
         if (isLeave) {
           const displayName = presenceRecord?.nickname || userName || 'Kullanıcı'
+          // Deactivate any voice/mic session in this room
+          await prisma.voiceSession.updateMany({
+            where: { roomId, userId, isActive: true },
+            data: { isActive: false }
+          }).catch(() => {})
           // Delete all previous leave messages, keep only the latest
           await prisma.chatMessage.deleteMany({
             where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
@@ -218,6 +224,8 @@ export async function POST(
               content: `[SYSTEM_LEAVE]${displayName}`
             }
           })
+          // Broadcast the leave (web + Flutter via SSE)
+          emitUserLeft(roomId, userId, displayName)
         }
       } catch { /* ignore */ }
       return NextResponse.json({ success: true })
@@ -325,6 +333,27 @@ export async function POST(
       }
     }
     
+    // GHOST PREVENTION: on a NEW join, force-leave any OTHER room this user is
+    // still marked present in (single presence). Also deactivate any voice/mic
+    // sessions elsewhere so a user can never occupy two rooms at once. This is
+    // shared by web AND Flutter since both hit this endpoint.
+    if (isNewJoin) {
+      try {
+        await prisma.chatPresence.updateMany({
+          where: { userId, roomId: { not: roomId }, lastSeen: { gte: new Date(Date.now() - 300000) } },
+          data: { lastSeen: new Date(0), seatIndex: -1 }
+        })
+        await prisma.voiceSession.updateMany({
+          where: { userId, roomId: { not: roomId }, isActive: true },
+          data: { isActive: false }
+        })
+      } catch (e) {
+        console.error('[PRESENCE] ghost-cleanup failed', e)
+      }
+      // Broadcast the join to everyone in this room (web + Flutter via SSE)
+      emitUserJoined(roomId, userId, nickname || userName || 'Kullanıcı', userImage)
+    }
+
     // Log chat join activity (only on new joins)
     if (isNewJoin) {
       logActivity({
@@ -523,6 +552,11 @@ export async function DELETE(
     
     // Only create exit message if this is an intentional leave (page close/navigate away)
     if (isIntentionalLeave) {
+      // Deactivate any voice/mic session in this room
+      await prisma.voiceSession.updateMany({
+        where: { roomId, userId: delUserId, isActive: true },
+        data: { isActive: false }
+      }).catch(() => {})
       // Delete all previous leave messages, keep only the latest
       await prisma.chatMessage.deleteMany({
         where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
@@ -534,6 +568,8 @@ export async function DELETE(
           content: `[SYSTEM_LEAVE]${displayName}`
         }
       })
+      // Broadcast the leave (web + Flutter via SSE)
+      emitUserLeft(roomId, delUserId, displayName)
     }
     
     return NextResponse.json({ success: true })

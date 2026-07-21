@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { emitOwnerChanged } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,6 +87,9 @@ export async function POST(
         grantedBy: authUser.id
       }
     })
+
+    // Broadcast the ownership change (web + Flutter via SSE)
+    emitOwnerChanged(roomId, newOwnerId, newOwner.name || newOwner.username || undefined)
 
     return NextResponse.json({
       success: true,

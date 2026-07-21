@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,6 +57,9 @@ export async function POST(request: NextRequest) {
       userId,
       userSig,
       roomId,
+      // Canonical TRTC string room id shared by web + Flutter (idempotent).
+      trtcRoomId: voiceTrtcRoomId(String(roomId)),
+      numericUid: userIdToNumericUid(String(userId)),
     })
   } catch (error) {
     console.error('TRTC UserSig generation error:', error)

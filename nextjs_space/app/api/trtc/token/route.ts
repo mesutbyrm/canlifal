@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,6 +63,11 @@ export async function POST(request: NextRequest) {
         userId: authUser.id || '',
         userSig: userSig || '',
         roomId: roomId || '',
+        // Canonical TRTC string room id — BOTH web and Flutter must use this to
+        // land in the same TRTC room (idempotent if already prefixed).
+        trtcRoomId: voiceTrtcRoomId(String(roomId)),
+        // Stable numeric uid for SDK paths that require a numeric identity.
+        numericUid: userIdToNumericUid(authUser.id),
         expireTime: expireTime || 86400,
         role: role || 'audience',
       }
