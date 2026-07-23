@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { emitSeatChanged } from '@/lib/voice-room-events'
+import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,7 @@ export async function GET(
         })
       : []
     const micOnSet = new Set(micSessions.map((v: { userId: string }) => v.userId))
+    const receivedJetonMap = await getReceivedJetonTotals(roomId, activeUserIds)
 
     const seats: Array<null | {
       seatIndex: number
@@ -42,6 +44,7 @@ export async function GET(
       nickname: string
       image: string | null
       micOn: boolean
+      receivedJetons: number
     }> = new Array(15).fill(null)
     for (const s of seated) {
       if (s.seatIndex !== null && s.seatIndex >= 0 && s.seatIndex < 15) {
@@ -51,7 +54,8 @@ export async function GET(
           name: s.user.name,
           nickname: s.nickname || s.user.name,
           image: s.user.image || null,
-          micOn: micOnSet.has(s.userId)
+          micOn: micOnSet.has(s.userId),
+          receivedJetons: receivedJetonMap.get(s.userId) || 0
         }
       }
     }

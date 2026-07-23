@@ -40,6 +40,7 @@ interface ActiveUser {
   roleLevel: number
   isAdmin: boolean
   seatIndex: number
+  receivedJetons?: number
 }
 
 interface ChatRoom {
@@ -3123,6 +3124,15 @@ export default function ChatRoomPage() {
                         >
                           {getDisplayName(seatUser)}
                         </p>
+                        {/* Received jeton total under the seated user */}
+                        {(seatUser.receivedJetons ?? 0) > 0 && (
+                          <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/90 to-yellow-500/90 shadow-md shadow-amber-900/40 -mt-0.5">
+                            <Coins className="w-2.5 h-2.5 text-white" />
+                            <span className="text-[8px] font-black text-white leading-none">
+                              {(seatUser.receivedJetons ?? 0) >= 1000 ? `${((seatUser.receivedJetons ?? 0) / 1000).toFixed(1)}K` : (seatUser.receivedJetons ?? 0)}
+                            </span>
+                          </div>
+                        )}
                         {/* Admin: kick from seat button */}
                         {canManageSeats && !isMe && (
                           <button 
@@ -4269,6 +4279,12 @@ export default function ChatRoomPage() {
                       <span className="mx-2 text-white/40">→</span>
                       <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-400">{anim.recipientName}</span>
                     </p>
+                    {anim.amount > 0 && (
+                      <p className="mt-1 flex items-center justify-center gap-1 text-sm font-black text-amber-300">
+                        <Coins className="w-3.5 h-3.5" />
+                        {anim.amount.toLocaleString('tr-TR')} Jeton
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               </div>

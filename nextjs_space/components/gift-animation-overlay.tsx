@@ -318,6 +318,13 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
                     {activeGift.giftName} gönderdi ✨
                   </p>
                 </div>
+                {/* Jeton amount - visible to everyone */}
+                <div className="flex items-center gap-1 bg-black/40 rounded-full px-3 py-1 border border-yellow-400/40 ml-1">
+                  <span className="text-base">🪙</span>
+                  <span className="text-yellow-300 font-extrabold text-base leading-none">
+                    {activeGift.giftPrice * (activeGift.quantity || 1)}
+                  </span>
+                </div>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -383,6 +390,7 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
               ) : (
                 <span className="text-lg">{activeGift.giftIcon || '🎁'}</span>
               )}
+              <span className="flex items-center gap-0.5 text-yellow-300 text-xs font-bold">🪙{activeGift.giftPrice * (activeGift.quantity || 1)}</span>
             </div>
           </motion.div>
         )}

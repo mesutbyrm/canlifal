@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
 import { 
   Video, VideoOff, Mic, MicOff, Phone, MessageSquare, 
-  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer, Gift, Heart
+  Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer, Gift, Heart, Star, Coins, CheckCircle2
 } from 'lucide-react';
 import {
   getRTCConfiguration,
@@ -90,6 +90,16 @@ export default function LiveRoomPage() {
   const [tipNotification, setTipNotification] = useState<{ amount: number; name: string } | null>(null);
   const [tipThanks, setTipThanks] = useState<{ amount: number; name: string } | null>(null);
   const processedTipIdsRef = useRef<Set<string>>(new Set());
+
+  // Session-end summary + review state
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewDone, setReviewDone] = useState(false);
+  const summaryShownRef = useRef(false);
   
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -101,6 +111,7 @@ export default function LiveRoomPage() {
   const pingRef = useRef<NodeJS.Timeout | null>(null);
   const signalPollRef = useRef<NodeJS.Timeout | null>(null);
   const messagePollRef = useRef<NodeJS.Timeout | null>(null);
+  const completionPollRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageTimeRef = useRef<string | null>(null);
   const messageIdsRef = useRef<Set<string>>(new Set());
   const roomDataRef = useRef<RoomData | null>(null);
@@ -668,28 +679,7 @@ export default function LiveRoomPage() {
       'Seansı sonlandırmak istediğinize emin misiniz?'
     );
     if (!confirm) return;
-
-    try {
-      const res = await fetch(`/api/room/${sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'end' })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        // Show refund info if there was a refund
-        if (data.refundAmount > 0 && roomDataRef.current?.isUser) {
-          alert(`Görüşme ${data.actualMinutesUsed} dakika sürdü.\n${data.refundAmount} jeton hesabınıza iade edildi.`);
-        }
-      }
-
-      // Cleanup
-      cleanup();
-      router.push(`/panel`);
-    } catch (err) {
-      console.error('End session error:', err);
-    }
+    await finalizeSession();
   };
 
   // Toggle video
@@ -767,6 +757,7 @@ export default function LiveRoomPage() {
     if (pingRef.current) clearInterval(pingRef.current);
     if (signalPollRef.current) clearInterval(signalPollRef.current);
     if (messagePollRef.current) clearInterval(messagePollRef.current);
+    if (completionPollRef.current) clearInterval(completionPollRef.current);
     
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
@@ -776,6 +767,91 @@ export default function LiveRoomPage() {
       peerConnectionRef.current.close();
     }
   }, []);
+
+  // Fetch the end-of-session summary from the server and show the summary modal.
+  // Works identically for teller (earnings) and client/danışan (spend + review).
+  const showSessionSummary = useCallback(async (endData?: any) => {
+    if (summaryShownRef.current) return;
+    summaryShownRef.current = true;
+    cleanup();
+    let summary: any = null;
+    try {
+      const res = await fetch(`/api/room/${sessionId}/summary`);
+      if (res.ok) summary = await res.json();
+    } catch { /* ignore */ }
+    if (!summary) {
+      // Fallback to numbers returned by the end action if the summary fetch failed
+      const isTeller = !!roomDataRef.current?.isTeller;
+      summary = {
+        role: isTeller ? 'teller' : 'user',
+        minutesUsed: endData?.actualMinutesUsed ?? 0,
+        creditsCharged: endData?.actualCost ?? 0,
+        clientSpentTl: endData?.clientSpentTl ?? 0,
+        tellerEarnings: endData?.tellerEarnings ?? 0,
+        tellerEarningsTl: endData?.tellerEarningsTl ?? 0,
+        jetonTlRate: endData?.jetonTlRate ?? 0.5,
+        canReview: !isTeller,
+        teller: { displayName: roomDataRef.current?.teller?.displayName || '' },
+      };
+    }
+    setSessionSummary(summary);
+    setShowSummaryModal(true);
+  }, [sessionId, cleanup]);
+
+  // End the session on the server, then show the summary to this user.
+  const finalizeSession = useCallback(async () => {
+    if (summaryShownRef.current) return;
+    try {
+      const res = await fetch(`/api/room/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'end' })
+      });
+      let data: any = null;
+      if (res.ok) data = await res.json();
+      await showSessionSummary(data);
+    } catch (err) {
+      console.error('Finalize session error:', err);
+      await showSessionSummary();
+    }
+  }, [sessionId, showSessionSummary]);
+
+  // Lightweight poll to detect when the OTHER party ends the session.
+  const pollCompletion = useCallback(async () => {
+    if (summaryShownRef.current) return;
+    try {
+      const res = await fetch(`/api/room/${sessionId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.status === 'completed') {
+        await showSessionSummary();
+      }
+    } catch { /* ignore */ }
+  }, [sessionId, showSessionSummary]);
+
+  // Submit the client's star rating + comment for the teller.
+  const submitReview = useCallback(async () => {
+    if (reviewRating < 1 || reviewSubmitting) return;
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch(`/api/room/${sessionId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
+      });
+      if (res.ok) {
+        setReviewDone(true);
+        setTimeout(() => router.push('/panel'), 1500);
+      } else {
+        const e = await res.json().catch(() => ({}));
+        alert(e.error || 'Değerlendirme kaydedilemedi');
+        setReviewSubmitting(false);
+      }
+    } catch (err) {
+      console.error('Submit review error:', err);
+      setReviewSubmitting(false);
+    }
+  }, [sessionId, reviewRating, reviewComment, reviewSubmitting, router]);
 
   // Initialize on mount - use ref to prevent double initialization
   const hasInitRef = useRef(false);
@@ -821,8 +897,7 @@ export default function LiveRoomPage() {
               
               // Auto-end if time is up
               if (remaining <= 0) {
-                cleanup();
-                router.push(`/panel`);
+                finalizeSession();
               }
               return newElapsed;
             });
@@ -838,6 +913,9 @@ export default function LiveRoomPage() {
         
         // Poll for messages every 8 seconds
         messagePollRef.current = setInterval(fetchMessages, 8000);
+        
+        // Poll every 5 seconds to detect when the other party ends the session
+        completionPollRef.current = setInterval(pollCompletion, 5000);
         
         // Initial fetch
         fetchMessages();
@@ -904,6 +982,124 @@ export default function LiveRoomPage() {
           >
             {'Panele Dön'}
           </button>
+        </div>
+      </div>
+    );
+  }
+  // Session-end summary screen (shown to both teller and client after the session ends)
+  if (showSummaryModal && sessionSummary) {
+    const s = sessionSummary;
+    const isTeller = s.role === 'teller';
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-deep-purple-900 via-purple-900 to-black">
+        <div className="w-full max-w-md bg-gradient-to-br from-purple-900/90 to-deep-purple-900/90 rounded-3xl p-6 border border-gold-500/40 shadow-2xl">
+          {reviewDone ? (
+            <div className="text-center py-8">
+              <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-white mb-2">Teşekkürler!</h3>
+              <p className="text-gray-300">Değerlendirmeniz kaydedildi.</p>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-gold-500 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 className="w-9 h-9 text-black" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Seans Tamamlandı</h3>
+                <p className="text-gray-300 text-sm mt-1">{s.minutesUsed} dakika sürdü</p>
+              </div>
+
+              {/* Numbers */}
+              <div className="bg-black/30 rounded-2xl p-4 mb-5 space-y-3">
+                {isTeller ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300 flex items-center gap-2"><Coins className="w-4 h-4 text-gold-400" /> Kazandığınız Jeton</span>
+                      <span className="text-gold-400 font-bold text-lg">{s.tellerEarnings}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">Tutarı</span>
+                      <span className="text-green-400 font-bold text-lg">~{s.tellerEarningsTl} ₺</span>
+                    </div>
+                    {typeof s.commissionAmount === 'number' && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">Platform komisyonu (%{s.commissionRate ?? ''})</span>
+                        <span className="text-gray-400">{s.commissionAmount} jeton</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300 flex items-center gap-2"><Coins className="w-4 h-4 text-gold-400" /> Harcanan Jeton</span>
+                      <span className="text-gold-400 font-bold text-lg">{s.creditsCharged}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">Ücret</span>
+                      <span className="text-green-400 font-bold text-lg">~{s.clientSpentTl} ₺</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Review (client only) */}
+              {!isTeller && s.canReview ? (
+                <div className="mb-4">
+                  <p className="text-white text-center font-semibold mb-3">
+                    {s.teller?.displayName ? `${s.teller.displayName} falcıyı değerlendirin` : 'Falcıyı değerlendirin'}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        onMouseEnter={() => setReviewHover(star)}
+                        onMouseLeave={() => setReviewHover(0)}
+                        className="transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`w-9 h-9 ${(reviewHover || reviewRating) >= star ? 'text-gold-400 fill-gold-400' : 'text-gray-600'}`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Yorumunuzu yazın (isteğe bağlı)..."
+                    maxLength={1000}
+                    rows={3}
+                    className="w-full rounded-xl bg-black/40 border border-purple-500/40 text-white text-sm p-3 mb-4 focus:outline-none focus:border-gold-500 resize-none placeholder-gray-500"
+                  />
+                  <button
+                    onClick={submitReview}
+                    disabled={reviewRating < 1 || reviewSubmitting}
+                    className={`w-full py-3 rounded-xl font-semibold transition-all ${
+                      reviewRating >= 1 && !reviewSubmitting
+                        ? 'bg-gradient-to-r from-gold-500 to-amber-500 text-black hover:from-gold-400 hover:to-amber-400'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {reviewSubmitting ? 'Gönderiliyor...' : 'Değerlendir ve Bitir'}
+                  </button>
+                  <button
+                    onClick={() => router.push('/panel')}
+                    className="w-full py-2 mt-2 text-gray-400 hover:text-white text-sm transition-all"
+                  >
+                    Değerlendirmeden çık
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.push('/panel')}
+                  className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-gold-500 to-amber-500 text-black hover:from-gold-400 hover:to-amber-400 transition-all"
+                >
+                  Panele Dön
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     );

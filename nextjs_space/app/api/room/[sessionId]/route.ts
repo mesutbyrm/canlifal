@@ -333,6 +333,11 @@ export async function PATCH(
         const commissionRate = parseInt(commRateStr);
         const commissionAmount = Math.floor(actualCost * commissionRate / 100);
         const tellerEarnings = actualCost - commissionAmount;
+        // Jeton -> TL rate for monetary display ("ne kadar tutuyor" / "ücret")
+        const jetonTlRateStr = await getCachedPlatformSetting('jeton_tl_rate', '0.5');
+        const jetonTlRate = parseFloat(jetonTlRateStr) || 0.5;
+        const tellerEarningsTl = Math.round(tellerEarnings * jetonTlRate * 100) / 100;
+        const clientSpentTl = Math.round(actualCost * jetonTlRate * 100) / 100;
 
         // Update teller earnings
         await prisma.liveFortuneTeller.update({
@@ -371,6 +376,11 @@ export async function PATCH(
           actualMinutesUsed,
           actualCost,
           refundAmount,
+          tellerEarnings,
+          commissionAmount,
+          tellerEarningsTl,
+          clientSpentTl,
+          jetonTlRate,
           endedBy: isTeller ? 'teller' : 'user'
         });
         // Clear event buffer after a short delay to let SSE deliver
@@ -381,6 +391,11 @@ export async function PATCH(
           actualMinutesUsed, 
           actualCost, 
           refundAmount,
+          tellerEarnings,
+          commissionAmount,
+          tellerEarningsTl,
+          clientSpentTl,
+          jetonTlRate,
           endedBy: isTeller ? 'teller' : 'user'
         });
       }

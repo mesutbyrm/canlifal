@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
+import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,6 +80,7 @@ export async function GET(
 
     const roleMap = new Map(chatRoles.map((r: { userId: string; role: string }) => [r.userId, r.role]))
     const micOnSet = new Set(micSessions.map((v: { userId: string }) => v.userId))
+    const receivedJetonMap = await getReceivedJetonTotals(roomId, activeUserIds)
     const globalAdminRoles = ['admin', 'moderator', 'site_manager']
 
     const participants = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; seatIndex: number | null; user: { id: string; name: string; role: string; image: string | null } }) => {
@@ -98,7 +100,8 @@ export async function GET(
         roleSymbol,
         roleLevel,
         isAdmin: isGlobalAdmin,
-        isOwner: room.ownerId === p.userId
+        isOwner: room.ownerId === p.userId,
+        receivedJetons: receivedJetonMap.get(p.userId) || 0
       }
     })
 
@@ -109,7 +112,7 @@ export async function GET(
     })
 
     // 15-slot seat map
-    const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean }> = new Array(15).fill(null)
+    const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean; receivedJetons: number }> = new Array(15).fill(null)
     for (const p of participants) {
       if (p.seatIndex >= 0 && p.seatIndex < 15) {
         seats[p.seatIndex] = {
@@ -118,7 +121,8 @@ export async function GET(
           name: p.name,
           nickname: p.nickname,
           image: p.image,
-          micOn: p.micOn
+          micOn: p.micOn,
+          receivedJetons: p.receivedJetons
         }
       }
     }

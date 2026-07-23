@@ -8,6 +8,7 @@ import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
 import { emitUserJoined, emitUserLeft } from '@/lib/voice-room-events'
+import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,6 +62,7 @@ export async function GET(
     })
 
     const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
+    const receivedJetonMap = await getReceivedJetonTotals(roomId, userIds)
 
     const activeUsers = presences.map((p: any) => {
       // Global admin/moderator/site_manager gets superadmin role in chat
@@ -80,7 +82,8 @@ export async function GET(
         roleSymbol,
         roleLevel,
         isAdmin: isGlobalAdmin,
-        seatIndex: p.seatIndex ?? -1
+        seatIndex: p.seatIndex ?? -1,
+        receivedJetons: receivedJetonMap.get(p.user.id) || 0
       }
     })
 
