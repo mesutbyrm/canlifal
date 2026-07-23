@@ -280,6 +280,21 @@ export default function AdminGiftCatalogPage() {
   const [showCollections, setShowCollections] = useState(false);
   const [newCollection, setNewCollection] = useState({ name: '', nameEn: '', iconEmoji: '', slug: '' });
 
+  // Stats modal
+  const [statsGiftId, setStatsGiftId] = useState<string | null>(null);
+  const [statsData, setStatsData] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const fetchStats = async (giftId: string) => {
+    setStatsGiftId(giftId);
+    setStatsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/gifts/stats?giftId=${giftId}`);
+      const data = await res.json();
+      setStatsData(data);
+    } catch {} finally { setStatsLoading(false); }
+  };
+
   // ── Fetch gifts ──
   const fetchGifts = useCallback(async () => {
     setLoading(true);
@@ -530,6 +545,8 @@ export default function AdminGiftCatalogPage() {
               <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
                 <button onClick={(e) => { e.stopPropagation(); setEditing({ ...g }); }}
                   className="p-1.5 bg-purple-600 rounded-md"><Edit size={12} /></button>
+                <button onClick={(e) => { e.stopPropagation(); fetchStats(g.id); }}
+                  className="p-1.5 bg-blue-600 rounded-md" title="İstatistikler"><Layers size={12} /></button>
                 <button onClick={(e) => { e.stopPropagation(); handleDelete(g.id); }}
                   className="p-1.5 bg-red-600 rounded-md"><Trash2 size={12} /></button>
               </div>
@@ -882,6 +899,120 @@ export default function AdminGiftCatalogPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ═══ STATS MODAL ═══ */}
+      <AnimatePresence>
+        {statsGiftId && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center overflow-y-auto p-4"
+            onClick={() => { setStatsGiftId(null); setStatsData(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-2xl bg-gray-900 border border-white/10 rounded-2xl shadow-2xl my-8"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Layers size={18} className="text-blue-400" /> Hediye İstatistikleri
+                </h2>
+                <button onClick={() => { setStatsGiftId(null); setStatsData(null); }}
+                  className="p-2 rounded-lg hover:bg-white/10"><X size={18} /></button>
+              </div>
+              <div className="p-4">
+                {statsLoading ? <p className="text-center text-white/40 py-8">Yükleniyor...</p> : !statsData ? <p className="text-center text-white/40 py-8">Veri yok</p> : (
+                  <div className="space-y-4">
+                    {/* Overview cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[{ label: 'Toplam Gönderim', value: statsData.sendCount?.toLocaleString() || '0', color: 'text-blue-400' },
+                        { label: 'Toplam Jeton', value: `${(statsData.totalJetons || 0).toLocaleString()} 🪙`, color: 'text-yellow-400' },
+                        { label: 'Site Kazancı', value: `${(statsData.totalSiteEarnings || 0).toLocaleString()} 🪙`, color: 'text-green-400' },
+                        { label: 'Alıcı Kazancı', value: `${(statsData.totalReceiverEarnings || 0).toLocaleString()} 🪙`, color: 'text-purple-400' },
+                      ].map((c, i) => (
+                        <div key={i} className="bg-white/5 rounded-xl p-3 text-center">
+                          <p className="text-xs text-white/50">{c.label}</p>
+                          <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Context breakdown */}
+                    {statsData.contextBreakdown?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2">Kullanıldığı Yerler</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {statsData.contextBreakdown.map((c: any, i: number) => (
+                            <div key={i} className="bg-white/5 rounded-lg p-2 flex justify-between">
+                              <span className="text-sm capitalize">{c.context?.replace('_', ' ') || 'Bilinmeyen'}</span>
+                              <span className="text-sm font-bold text-blue-300">{c.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Daily trend */}
+                    {statsData.dailyTrend?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2">Son 7 Gün Trend</h3>
+                        <div className="flex gap-1 items-end h-24">
+                          {statsData.dailyTrend.map((d: any, i: number) => {
+                            const maxCount = Math.max(...statsData.dailyTrend.map((x: any) => x.count || 1));
+                            const h = Math.max(((d.count || 0) / maxCount) * 100, 5);
+                            return (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                                <span className="text-[10px] text-white/40">{d.count}</span>
+                                <div className="w-full bg-blue-500/60 rounded-t" style={{ height: `${h}%` }} />
+                                <span className="text-[8px] text-white/30">{String(d.day).slice(5, 10)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top senders */}
+                    {statsData.topSenders?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2">En Çok Gönderenler</h3>
+                        <div className="space-y-1">
+                          {statsData.topSenders.slice(0, 5).map((s: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2 bg-white/5 rounded-lg p-2">
+                              <span className="text-xs font-bold text-white/50 w-5">{i + 1}.</span>
+                              <span className="text-sm flex-1 truncate">{s.user?.name || 'Bilinmeyen'}</span>
+                              <span className="text-xs text-yellow-300">{s.count}× • {(s.totalSpent || 0).toLocaleString()} 🪙</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top receivers */}
+                    {statsData.topReceivers?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2">En Çok Alanlar</h3>
+                        <div className="space-y-1">
+                          {statsData.topReceivers.slice(0, 5).map((r: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2 bg-white/5 rounded-lg p-2">
+                              <span className="text-xs font-bold text-white/50 w-5">{i + 1}.</span>
+                              <span className="text-sm flex-1 truncate">{r.user?.name || 'Bilinmeyen'}</span>
+                              <span className="text-xs text-green-300">{r.count}× • {(r.totalReceived || 0).toLocaleString()} 🪙</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ PREVIEW MODAL ═══ */}
+      {/* Preview is shown inline in the editor modal — the gift card + media are visible there */}
     </div>
   );
 }
