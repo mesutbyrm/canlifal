@@ -1024,6 +1024,8 @@ model GiftType {
   // ── Müzik / ek ses dosyası ──
   musicUrl            String?        // hediye özel müzik
   musicCloudPath      String?        // müzik cloud key
+  // ── Şanslı Hediye (Lucky Gift) ──
+  isLucky             Boolean        @default(false) // şanslı hediye — gönderiminde jeton ödülü kazandırır
   // ── Senkronizasyon ──
   contentVersion      Int            @default(1) // her değişiklikte artar
   // ── Relations ──
@@ -1054,6 +1056,48 @@ model GiftCollection {
   gifts       GiftType[]
 
   @@map("gift_collections")
+}
+
+// ── Şanslı Hediye ödül kademeleri (admin tarafından yapılandırılır) ──
+model LuckyGiftTier {
+  id         String   @id @default(cuid())
+  name       String   // "2x", "Jackpot 500x"...
+  nameEn     String   @default("")
+  multiplier Int      // ödül çarpanı — kazanılan jeton = betJetons * multiplier (0 = ödül yok)
+  weight     Int      @default(1) // ağırlıklı olasılık payı (yüksek = daha olası)
+  isJackpot  Boolean  @default(false) // jackpot kademesi — oda geneli duyuru tetikler
+  color      String?  // hex renk, ör. #FFD700
+  icon       String?  // emoji/ikon
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  contentVersion Int   @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([isActive])
+  @@map("lucky_gift_tiers")
+}
+
+// ── Şanslı Hediye gönderim sonuçları (log + kazanç akışı) ──
+model LuckyGiftReward {
+  id         String   @id @default(cuid())
+  userId     String
+  giftTypeId String
+  context    String?  // voice_room | live_stream | pk | profile | messaging
+  contextId  String?  // roomId | streamId
+  betJetons  Int      // harcanan jeton (hediye fiyatı * adet)
+  quantity   Int      @default(1)
+  multiplier Int      // uygulanan çarpan
+  wonJetons  Int      // kazanılan jeton
+  netJetons  Int      // wonJetons - betJetons (kar/zarar)
+  isJackpot  Boolean  @default(false)
+  tierId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([isJackpot, createdAt])
+  @@index([createdAt])
+  @@map("lucky_gift_rewards")
 }
 
 // Gifts sent during streams

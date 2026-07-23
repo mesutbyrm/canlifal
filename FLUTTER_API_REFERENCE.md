@@ -1,7 +1,7 @@
 # 🔮 CanlıFal — Flutter Backend API Referansı
 
 > **Base URL:** `https://canlifal.com`  
-> **Son Güncelleme:** 16 Temmuz 2026  
+> **Son Güncelleme:** 23 Temmuz 2026  
 > **Auth:** Tüm endpoint'ler JWT Bearer token gerektirir
 
 ---
@@ -15,6 +15,8 @@
 5. [Koltuk Yönetimi](#5-koltuk-yönetimi)
 6. [Mesajlaşma](#6-mesajlaşma)
 7. [Hediye Sistemi](#7-hediye-sistemi)
+   - 7.1 [Hediye Kataloğu Senkronizasyonu (CMS)](#71-hediye-kataloğu-senkronizasyonu-cms)
+   - 7.2 [🍀 Şanslı Hediye (Lucky Gift)](#72--şanslı-hediye-lucky-gift--talih-kutusu)
 8. [PK Battle](#8-pk-battle)
 9. [Çevrimiçi Kullanıcılar](#9-çevrimiçi-kullanıcılar)
 10. [Hata Kodları](#10-hata-kodları)
@@ -496,6 +498,266 @@ Hediye gönderir. Hem stream hem voice room destekler.
 - `INSUFFICIENT_BALANCE` — Yetersiz jeton bakiyesi
 - `GIFT_NOT_FOUND` — Geçersiz giftTypeId
 - `SELF_GIFT` — Kendine hediye gönderemezsiniz
+
+---
+
+## 7.1 Hediye Kataloğu Senkronizasyonu (CMS)
+
+Hediyeler ve koleksiyonlar admin panelinden dinamik yönetilir. Flutter uygulaması önce hafif **versiyon kontrolü** yapmalı, versiyon değiştiyse tam kataloğu çekmelidir. Böylece gereksiz veri transferi önlenir.
+
+### `GET /api/gifts/version`
+
+Hediye ve tema kataloğunun güncel versiyonunu döndürür. Çok hafiftir, sık çağrılabilir (60 sn CDN cache). Uygulama açılışında ve periyodik olarak çağırın.
+
+**Auth:** Gerekmez (public).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "giftVersion": 42,
+    "themeVersion": 7,
+    "giftCount": 18,
+    "themeCount": 5,
+    "timestamp": "2026-07-23T10:00:00.000Z"
+  }
+}
+```
+
+**Flutter kullanımı:** Yerelde sakladığınız `giftVersion` ile karşılaştırın. Sunucudaki değer daha büyükse `/api/gifts/catalog` çağrısı ile kataloğu güncelleyin.
+
+---
+
+### `GET /api/gifts/catalog`
+
+Tam hediye kataloğunu ve koleksiyonları döndürür. Kimlik doğrulama gerektirir (dual-auth: JWT Bearer veya web oturumu).
+
+**Query Parametreleri:**
+
+| Parametre | Tip | Açıklama |
+|-----------|-----|----------|
+| `sinceVersion` | number (ops.) | Belirtilirse yalnızca bu versiyondan yeni değişimleri döndürür (delta senkronizasyon). |
+| `context` | string (ops.) | Belirli bir bağlamda gösterilecek hediyeleri filtreler. |
+
+**Geçerli `context` değerleri:** `voice_room`, `live_stream`, `pk`, `profile`, `messaging`, `trend`, `stories`, `fortune`, `notification`, `mini`, `fullscreen`.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "gifts": [
+      {
+        "id": "...",
+        "name": "Gül",
+        "nameEn": "Rose",
+        "icon": "🌹",
+        "price": 20,
+        "animation": "sparkle",
+        "assetUrl": "https://i.pinimg.com/originals/c8/e6/38/c8e6380d1dfe08469e08e6e780798b52.gif",
+        "assetType": "image",
+        "thumbnailUrl": "https://i.etsystatic.com/39568032/r/il/4e68b1/7262830997/il_300x300.7262830997_q2au.jpg",
+        "isPremium": false,
+        "isLucky": false,
+        "sortOrder": 4,
+        "collectionId": "...",
+        "collection": { "id": "...", "name": "Klasik", "nameEn": "Classic" }
+      }
+    ],
+    "collections": [
+      { "id": "...", "name": "Klasik", "nameEn": "Classic", "sortOrder": 1 }
+    ],
+    "currentVersion": 42,
+    "totalGifts": 18,
+    "timestamp": "2026-07-23T10:00:00.000Z"
+  }
+}
+```
+
+**Not:** `isLucky: true` olan hediyeler **Şanslı Hediye** (aşağıdaki bölüm) mekaniğini tetikler. Bu hediyeler normal `gift/send` yerine `gifts/lucky/send` ile gönderilmelidir.
+
+**Olası Hatalar:**
+- `401 UNAUTHORIZED` — Kimlik doğrulama başarısız.
+
+---
+
+## 7.2 🍀 Şanslı Hediye (Lucky Gift / Talih Kutusu)
+
+Bazı hediyeler "şanslı hediye" olarak işaretlenir (`isLucky: true`). Kullanıcı böyle bir hediye gönderdiğinde, gönderdiği jeton bir **çarpan** ile ödüllendirilir. Çarpan, admin tarafından yapılandırılan ağırlıklı-rastgele **ödül kademelerinden** (tier) seçilir. En yüksek kademe **JACKPOT** olup site genelinde kayan bir duyuru tetikler.
+
+> **Ekonomi:** Kazanç = `gönderilen_jeton × çarpan`. Net değişim = `kazanç − gönderilen_jeton`. Örn. 100 jeton bahis, ×2 çarpan → 200 kazanç, net +100 jeton.
+
+### `GET /api/gifts/lucky/config`
+
+Şanslı hediye sisteminin yapılandırmasını döndürür: aktif ödül kademeleri, kazanma olasılıkları, şanslı hediye listesi ve RTP (ortalama geri dönüş oranı). Kademe olasılıklarını kullanıcıya şeffaf göstermek için kullanılır.
+
+**Auth:** Dual-auth (opsiyonel — kimliksiz de okunabilir; `authed` alanı durumu belirtir).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "enabled": true,
+    "tiers": [
+      {
+        "id": "...",
+        "name": "Kayıp",
+        "nameEn": "Miss",
+        "multiplier": 0,
+        "isJackpot": false,
+        "color": "#9ca3af",
+        "icon": "💨",
+        "oddsPercent": 40.0
+      },
+      {
+        "id": "...",
+        "name": "JACKPOT",
+        "nameEn": "JACKPOT",
+        "multiplier": 500,
+        "isJackpot": true,
+        "color": "#f59e0b",
+        "icon": "👑",
+        "oddsPercent": 0.1
+      }
+    ],
+    "luckyGifts": [
+      { "id": "...", "name": "Talih Kutusu", "nameEn": "Lucky Box", "icon": "🎁", "price": 100 }
+    ],
+    "rtp": 0.95,
+    "version": 42,
+    "authed": true
+  }
+}
+```
+
+**Alan açıklamaları:**
+- `oddsPercent` — Kademenin ağırlığa göre hesaplanmış kazanma yüzdesi (tüm kademeler toplamı 100).
+- `rtp` — Return To Player. Ortalama olarak bahis başına geri dönen jeton oranı (1.0 = başabaş). Uygulamada bilgi amaçlı gösterilebilir.
+- `enabled` — En az bir aktif kademe ve bir şanslı hediye varsa `true`.
+
+---
+
+### `POST /api/gifts/lucky/send`
+
+Bir şanslı hediye gönderir ve ödül kademesini çevirir (spin). Sonuç anında döner.
+
+**Auth:** Dual-auth (zorunlu — JWT Bearer veya web oturumu).
+
+**Request Body:**
+```json
+{
+  "giftTypeId": "string (zorunlu, isLucky olmalı)",
+  "quantity": "number (opsiyonel, varsayılan: 1)",
+  "context": "string (opsiyonel: voice_room | live_stream | pk | profile ...)",
+  "contextId": "string (opsiyonel, oda/yayın kimliği)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "rewardId": "...",
+    "result": {
+      "tierName": "5 Kat",
+      "multiplier": 5,
+      "betJetons": 100,
+      "wonJetons": 500,
+      "netJetons": 400,
+      "isJackpot": false,
+      "color": "#22c55e",
+      "icon": "🍀",
+      "isWin": true
+    },
+    "newBalance": 1400
+  }
+}
+```
+
+**Alan açıklamaları:**
+- `betJetons` — Gönderilen (bahis yapılan) toplam jeton (`hediye fiyatı × quantity`).
+- `wonJetons` — Kazanılan jeton (`betJetons × multiplier`).
+- `netJetons` — Net değişim (`wonJetons − betJetons`). Negatif olabilir (kayıp).
+- `isJackpot: true` → Site genelinde kayan duyuru tetiklenir; tüm kullanıcılar görür.
+- `isWin` — `multiplier >= 1` ise `true`.
+
+**Animasyon önerisi (Flutter):** `result` döndüğünde bir çark/kutu açılış animasyonu oynatın, ardından `tierName` + `wonJetons` sonucunu `color` ve `icon` ile gösterin. `isJackpot` ise özel kutlama efekti (konfeti) tetikleyin.
+
+**Olası Hatalar:**
+- `401 UNAUTHORIZED` — Kimlik doğrulama başarısız.
+- `400 INVALID_GIFT` — Hediye bulunamadı veya `isLucky` değil / aktif değil.
+- `400 INSUFFICIENT_BALANCE` — Yetersiz jeton bakiyesi.
+- `503 NOT_CONFIGURED` — Şanslı hediye kademeleri henüz yapılandırılmamış.
+
+> **Not:** Personel/yönetici hesapları (finanstan muaf) için bakiye değişmez; sonuç yine de gösterilir.
+
+---
+
+### `GET /api/gifts/lucky/history`
+
+Şanslı hediye geçmişini döndürür. İki mod desteklenir.
+
+**Auth:** Dual-auth (zorunlu).
+
+**Query Parametreleri:**
+
+| Parametre | Tip | Açıklama |
+|-----------|-----|----------|
+| `scope` | string | `me` (varsayılan) = kullanıcının kendi geçmişi + özet; `global` = son büyük kazançlar/jackpot akışı. |
+| `limit` | number (ops.) | Döndürülecek kayıt sayısı (varsayılan makul bir değer). |
+
+**Response (`scope=me`):**
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "totalPlays": 24,
+      "totalBet": 2400,
+      "totalWon": 2650,
+      "netJetons": 250,
+      "bestMultiplier": 50
+    },
+    "history": [
+      {
+        "id": "...",
+        "giftName": "Talih Kutusu",
+        "betJetons": 100,
+        "multiplier": 5,
+        "wonJetons": 500,
+        "netJetons": 400,
+        "isJackpot": false,
+        "createdAt": "2026-07-23T09:55:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Response (`scope=global`):**
+```json
+{
+  "success": true,
+  "data": {
+    "feed": [
+      {
+        "id": "...",
+        "user": { "id": "...", "name": "Mehmet", "avatar": "https://..." },
+        "giftName": "Talih Kutusu",
+        "multiplier": 500,
+        "wonJetons": 50000,
+        "isJackpot": true,
+        "createdAt": "2026-07-23T09:40:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Flutter kullanımı:** `scope=global` akışını canlı yayın/oda içinde "Son Büyük Kazançlar" şeridi olarak gösterebilirsiniz. `scope=me` ise kullanıcının profil/cüzdan ekranında istatistik olarak gösterilir.
 
 ---
 

@@ -138,6 +138,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     links: [
       { href: `/admin/gifts`, icon: Gift, trLabel: 'Hediye Kataloğu', enLabel: 'Gift Catalog', emoji: '🎁', desc: 'Hediye türlerini oluştur, düzenle, medya yükle' },
       { href: `/admin/room-themes/backgrounds`, icon: ImageIcon, trLabel: 'Arka Plan Yönetimi', enLabel: 'Background Management', emoji: '🌅', desc: 'Sesli oda arka planları — VIP, Premium, efektli' },
+      { href: `/admin/lucky-gifts`, icon: Sparkles, trLabel: 'Şanslı Hediye', enLabel: 'Lucky Gifts', emoji: '🍀', desc: 'Ödül kademeleri, jackpot ve kazanma olasılıkları' },
     ],
   },
   {

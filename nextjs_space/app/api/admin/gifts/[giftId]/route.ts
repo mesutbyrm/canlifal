@@ -61,7 +61,7 @@ export async function PATCH(
       'name', 'nameEn', 'icon', 'animation', 'sortOrder', 'isActive',
       'assetType', 'category', 'description', 'tier',
       'isPopular', 'isNew', 'isSpecialEvent', 'isHidden', 'isFeatured',
-      'effectColor', 'comboEnabled', 'isPremium', 'isFullscreen',
+      'effectColor', 'comboEnabled', 'isPremium', 'isLucky', 'isFullscreen',
       'visibleInVoiceRoom', 'visibleInLiveStream', 'visibleInPK',
       'visibleInProfile', 'visibleInMessaging', 'visibleInTrend',
       'visibleInStories', 'visibleInFortune', 'visibleInNotification',

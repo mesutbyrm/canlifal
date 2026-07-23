@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
         effectColor: body.effectColor,
         comboEnabled: body.comboEnabled ?? false,
         isPremium: body.isPremium ?? false,
+        isLucky: body.isLucky ?? false,
         // Visibility
         visibleInVoiceRoom: body.visibleInVoiceRoom ?? true,
         visibleInLiveStream: body.visibleInLiveStream ?? true,

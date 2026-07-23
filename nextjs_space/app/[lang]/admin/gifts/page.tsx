@@ -28,7 +28,7 @@ interface GiftItem {
   animationDurationMs?: number; isFullscreen: boolean;
   tier: string; isPopular: boolean; isNew: boolean;
   isSpecialEvent: boolean; isHidden: boolean; isPremium: boolean;
-  isFeatured: boolean; effectColor?: string; comboEnabled: boolean;
+  isFeatured: boolean; effectColor?: string; comboEnabled: boolean; isLucky: boolean;
   displayType: string; screenPosition: string;
   visibleInVoiceRoom: boolean; visibleInLiveStream: boolean;
   visibleInPK: boolean; visibleInProfile: boolean;
@@ -125,6 +125,7 @@ const PROPERTY_FIELDS = [
   { key: 'isSeasonal', label: 'Sezonluk' },
   { key: 'isReusable', label: 'Tekrar Kullanılabilir' },
   { key: 'comboEnabled', label: 'Kombo' },
+  { key: 'isLucky', label: '🍀 Şanslı Hediye' },
   { key: 'isPopular', label: 'Popüler' },
   { key: 'isNew', label: 'Yeni' },
   { key: 'isSpecialEvent', label: 'Özel Etkinlik' },
@@ -145,7 +146,7 @@ const emptyGift: Partial<GiftItem> = {
   isPremium: false, requiresVip: false, eventOnly: false,
   pkOnly: false, liveOnly: false, voiceOnly: false,
   newUserOnly: false, timedCampaign: false, isHidden: false,
-  isSeasonal: false, isReusable: true, comboEnabled: false,
+  isSeasonal: false, isReusable: true, comboEnabled: false, isLucky: false,
   isPopular: false, isNew: true, isSpecialEvent: false,
   isFeatured: false, isFullscreen: false,
   repeatCount: 1, volume: 100,
