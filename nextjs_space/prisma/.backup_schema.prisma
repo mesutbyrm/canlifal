@@ -979,11 +979,81 @@ model GiftType {
   effectColor         String? // hex effect color, e.g. #FF6B6B
   comboEnabled        Boolean        @default(false) // gift supports combo sending
   isPremium           Boolean        @default(false) // premium gift
+  // ── Görüneceği Yerler (visibility locations) ──
+  visibleInVoiceRoom  Boolean        @default(true)
+  visibleInLiveStream Boolean        @default(true)
+  visibleInPK         Boolean        @default(true)
+  visibleInProfile    Boolean        @default(false)
+  visibleInMessaging  Boolean        @default(false)
+  visibleInTrend      Boolean        @default(false)
+  visibleInStories    Boolean        @default(false)
+  visibleInFortune    Boolean        @default(false)
+  visibleInNotification Boolean      @default(false)
+  visibleAsMini       Boolean        @default(false) // mini animasyon
+  visibleAsFullscreen Boolean        @default(false) // tam ekran animasyon
+  // ── Hediye Türü (gift display type) ──
+  displayType         String         @default("static") // static|animation|video|3d|lottie|effect|fullscreen|mini|continuous|play_once
+  // ── Hediye Özellikleri (gift properties) ──
+  requiresVip         Boolean        @default(false)
+  eventOnly           Boolean        @default(false)
+  pkOnly              Boolean        @default(false)
+  liveOnly            Boolean        @default(false)
+  voiceOnly           Boolean        @default(false)
+  newUserOnly         Boolean        @default(false)
+  timedCampaign       Boolean        @default(false)
+  campaignStart       DateTime?
+  campaignEnd         DateTime?
+  isSeasonal          Boolean        @default(false)
+  isReusable          Boolean        @default(true)
+  dailySendLimit      Int?           // null = sınırsız
+  // ── Animasyon Ayarları ──
+  startDelayMs        Int?           // animasyon başlangıç gecikmesi (ms)
+  displayDurationMs   Int?           // ekranda kalma süresi (ms)
+  repeatCount         Int            @default(1) // tekrar sayısı (0 = sonsuz)
+  volume              Int            @default(100) // ses seviyesi 0-100
+  particleEffect      String?        // confetti|heart|star|light|glow|none
+  hasVibration        Boolean        @default(false)
+  hasColorChange      Boolean        @default(false)
+  // ── Ekrandaki Konumu ──
+  screenPosition      String         @default("center") // bottom|top|center|right|left|above_seat|user_avatar|room_center|fullscreen|background|message_area|header|footer
+  animStartPoint      String?        // animasyon başlangıç noktası
+  animEndPoint        String?        // animasyon bitiş noktası
+  // ── Koleksiyon İlişkisi ──
+  collectionId        String?
+  collection          GiftCollection? @relation(fields: [collectionId], references: [id])
+  // ── Müzik / ek ses dosyası ──
+  musicUrl            String?        // hediye özel müzik
+  musicCloudPath      String?        // müzik cloud key
+  // ── Senkronizasyon ──
+  contentVersion      Int            @default(1) // her değişiklikte artar
+  // ── Relations ──
   gifts               StreamGift[]
   chatRoomGifts       ChatRoomGift[]
   giftEvents          GiftEvent[]
 
+  @@index([collectionId])
+  @@index([displayType])
+  @@index([contentVersion])
   @@map("gift_types")
+}
+
+// ── Hediye Koleksiyonları ──
+model GiftCollection {
+  id          String     @id @default(cuid())
+  name        String     // Romantik, VIP, Komik, Lüks...
+  nameEn      String     @default("")
+  slug        String     @unique
+  description String?    @db.Text
+  iconEmoji   String?    // 💕, 👑, 🎉...
+  iconUrl     String?    // opsiyonel ikon görseli
+  iconCloudPath String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+  gifts       GiftType[]
+
+  @@map("gift_collections")
 }
 
 // Gifts sent during streams

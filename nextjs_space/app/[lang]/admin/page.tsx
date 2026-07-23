@@ -133,6 +133,13 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     ],
   },
   {
+    groupLabel: '🎁 Hediye & Koleksiyon',
+    groupIcon: '🎁',
+    links: [
+      { href: `/admin/gifts`, icon: Gift, trLabel: 'Hediye Kataloğu', enLabel: 'Gift Catalog', emoji: '🎁', desc: 'Hediye türlerini oluştur, düzenle, medya yükle' },
+    ],
+  },
+  {
     groupLabel: '🏢 Ajans Yönetimi',
     groupIcon: '🏢',
     links: [
