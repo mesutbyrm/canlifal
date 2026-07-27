@@ -9,7 +9,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
 import { emitUserJoined, emitUserLeft } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { SEAT_COUNT, findFirstFreeSeat } from '@/lib/voice-room-constants'
+import { SEAT_COUNT, findFirstFreeSeat, seatStaleThreshold } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -326,9 +326,10 @@ export async function POST(
     // seated users they stay a listener (seatIndex -1). Heartbeats never trigger
     // this because seatIndex stays undefined and isNewJoin is false.
     if (isNewJoin && seatIndex === undefined) {
-      const presenceTimeout = new Date(Date.now() - 300000)
+      // Use the short seat-stale window so seats freed by users who left
+      // (ghosts) are re-assignable immediately.
       const seated = await prisma.chatPresence.findMany({
-        where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT }, userId: { not: userId } },
+        where: { roomId, lastSeen: { gte: seatStaleThreshold() }, seatIndex: { gte: 0, lt: SEAT_COUNT }, userId: { not: userId } },
         select: { seatIndex: true }
       })
       const freeSeat = findFirstFreeSeat(seated.map((s) => s.seatIndex as number))
@@ -339,12 +340,11 @@ export async function POST(
     
     // If user wants a seat, validate it's not taken
     if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < SEAT_COUNT) {
-      const presenceTimeout = new Date(Date.now() - 300000)
       const seatTaken = await prisma.chatPresence.findFirst({
         where: {
           roomId,
           seatIndex,
-          lastSeen: { gte: presenceTimeout },
+          lastSeen: { gte: seatStaleThreshold() },
           userId: { not: userId }
         }
       })

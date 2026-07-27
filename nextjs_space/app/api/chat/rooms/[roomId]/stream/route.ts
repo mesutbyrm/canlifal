@@ -43,6 +43,16 @@ export async function GET(
   let lastDjCheck = 0 // Start at 0 so first poll cycle sends DJ state immediately
   let isActive = true
 
+  // Last-Event-ID support: on reconnect the client (web EventSource or Flutter)
+  // sends the id of the last event it received. We resume the in-memory event
+  // bus from that timestamp so no realtime events (gift/seat/join/leave/mic/etc.)
+  // are missed across a dropped connection. Event ids ARE the bus timestamps.
+  const lastEventIdHeader =
+    request.headers.get('last-event-id') ||
+    request.headers.get('Last-Event-ID') ||
+    request.nextUrl.searchParams.get('lastEventId')
+  const parsedLastEventId = lastEventIdHeader ? parseInt(lastEventIdHeader, 10) : NaN
+
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
@@ -52,7 +62,12 @@ export async function GET(
 
       // DJ state will be sent on the first poll cycle (2s) — no blocking initial payload
 
-      let lastEventCheck = Date.now()
+      // Resume from the client-supplied Last-Event-ID when valid, otherwise
+      // start from now (only future events). The bus keeps a 2-min / 200-event
+      // buffer so short reconnects replay cleanly.
+      let lastEventCheck = !isNaN(parsedLastEventId) && parsedLastEventId > 0
+        ? parsedLastEventId
+        : Date.now()
       let presenceCheckCount = 0
 
       const checkForUpdates = async () => {
@@ -103,7 +118,12 @@ export async function GET(
                 ...roomEvt.data
               })}\n\n`))
             }
-            lastEventCheck = Date.now()
+            // Advance the cursor to the newest event we actually consumed and
+            // publish it as the SSE event id so a reconnecting client can send
+            // it back via Last-Event-ID and resume exactly here.
+            const newestTs = Math.max(...newEvents.map(e => e.timestamp))
+            lastEventCheck = newestTs
+            controller.enqueue(encoder.encode(`id: ${newestTs}\n\n`))
           }
 
           // 2. Presence: only check DB every 10 seconds (was 5s)

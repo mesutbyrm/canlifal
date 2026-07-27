@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
-import { SEAT_COUNT, MAX_SEAT_INDEX } from '@/lib/voice-room-constants'
+import { SEAT_COUNT, MAX_SEAT_INDEX, seatStaleThreshold } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +50,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const presenceTimeout = new Date(Date.now() - 300000) // 5 min stale
+    // Seat occupancy uses the short stale window (SEAT_STALE_MS) so ghost
+    // seats free up fast after an unclean leave — fixes "seat looks empty
+    // but I can't sit".
+    const presenceTimeout = seatStaleThreshold()
 
     // ── ACTION: leave ──
     if (action === 'leave') {
@@ -213,7 +216,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const presenceTimeout = new Date(Date.now() - 300000)
+    // Seats list uses the short stale window so freed seats show as empty.
+    const presenceTimeout = seatStaleThreshold()
     const presences = await prisma.chatPresence.findMany({
       where: {
         roomId,

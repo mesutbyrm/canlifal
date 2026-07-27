@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
-import { SEAT_COUNT, findFirstFreeSeat } from '@/lib/voice-room-constants'
+import { SEAT_COUNT, findFirstFreeSeat, seatStaleThreshold } from '@/lib/voice-room-constants'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 
 export const dynamic = 'force-dynamic'
@@ -216,7 +216,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Determine if this is a fresh join (vs. a reconnect/heartbeat)
-      const presenceTimeoutJoin = new Date(Date.now() - 300000)
+      // Auto-seat free-slot search uses the short stale window so ghost seats
+      // (unclean leavers) don't block the next joiner.
+      const presenceTimeoutJoin = seatStaleThreshold()
       const existingPresence = await prisma.chatPresence.findUnique({
         where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
         select: { seatIndex: true, lastSeen: true }
@@ -298,9 +300,11 @@ export async function POST(request: NextRequest) {
         isMicOn: false,
       }))
 
-      // Seat map (occupied seats)
+      // Seat map (occupied seats). Only show a seat as taken if the occupant's
+      // heartbeat is still fresh (SEAT_STALE_MS) so freed seats appear empty.
+      const seatStaleMs = seatStaleThreshold().getTime()
       seats = presences
-        .filter((p: any) => (p.seatIndex ?? -1) >= 0)
+        .filter((p: any) => (p.seatIndex ?? -1) >= 0 && new Date(p.lastSeen).getTime() >= seatStaleMs)
         .map((p: any) => ({
           seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : 0,
           userId: p.user?.id || p.userId || '',

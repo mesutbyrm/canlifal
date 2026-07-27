@@ -6,7 +6,7 @@ import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { SEAT_COUNT } from '@/lib/voice-room-constants'
+import { SEAT_COUNT, seatStaleThreshold } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -112,10 +112,14 @@ export async function GET(
       return (a.nickname || a.name).localeCompare(b.nickname || b.name)
     })
 
-    // SEAT_COUNT-slot seat map
+    // SEAT_COUNT-slot seat map. A seat is only shown as occupied if its
+    // occupant's heartbeat is still fresh (< SEAT_STALE_MS). This frees
+    // ghost seats fast so re-join works even after an unclean leave.
+    const seatStaleMs = seatStaleThreshold().getTime()
     const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean; receivedJetons: number }> = new Array(SEAT_COUNT).fill(null)
     for (const p of participants) {
-      if (p.seatIndex >= 0 && p.seatIndex < SEAT_COUNT) {
+      const seatFresh = new Date(p.lastSeen).getTime() >= seatStaleMs
+      if (seatFresh && p.seatIndex >= 0 && p.seatIndex < SEAT_COUNT) {
         seats[p.seatIndex] = {
           seatIndex: p.seatIndex,
           userId: p.id,

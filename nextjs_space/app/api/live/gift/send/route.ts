@@ -188,12 +188,15 @@ export async function POST(request: NextRequest) {
         streamId: stream.id,
         gift: {
           id: gift.id,
+          giftId: gift.id,
+          senderId: sender.id,
           senderName: sender.name,
           senderImage: sender.image,
           giftName: giftType.name,
           giftIcon: giftType.icon,
           quantity,
           totalPrice: senderExcluded ? 0 : totalPrice,
+          timestamp: Date.now(),
           ...(giftRenderMeta || {}),
         }
       })
@@ -332,13 +335,17 @@ export async function POST(request: NextRequest) {
         roomId: room.id,
         gift: {
           id: gift.id,
+          giftId: gift.id,
+          senderId: sender.id,
           senderName: sender.name,
           senderImage: sender.image,
+          recipientId: recipient.id,
           recipientName: recipient.name,
           giftName: giftType.name,
           giftIcon: giftType.icon,
           quantity,
           totalPrice,
+          timestamp: Date.now(),
           ...(giftRenderMeta || {}),
         }
       })

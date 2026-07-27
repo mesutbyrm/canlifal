@@ -272,6 +272,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     // Emit gift event to SSE via in-memory chat event bus
     emitChatEvent(roomId, 'gift', {
+      giftId: gift.id,
+      roomId,
       senderId: sender.id,
       senderName: sender.name,
       recipientId: recipient.id,
@@ -282,6 +284,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       quantity,
       amount: price,
       currencyType: paymentType,
+      timestamp: Date.now(),
       ...renderMeta,
     })
 
@@ -289,6 +292,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       success: true,
       gift: {
         id: gift.id,
+        giftId: gift.id,
         senderId: sender.id,
         senderName: sender.name,
         recipientId: recipient.id,
@@ -298,6 +302,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         quantity,
         amount: price,
         currencyType: paymentType,
+        timestamp: Date.now(),
         ...renderMeta,
       },
       pkUpdate

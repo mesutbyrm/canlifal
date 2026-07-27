@@ -138,9 +138,22 @@ Backend, her hediye olayında (SSE + HTTP yanıtı) artık **render meta verisi*
 ### 3.2 Render meta alanları (hepsi olayda/yanıtta gelir)
 | Alan | Tip | Anlamı |
 |---|---|---|
+| `giftId` | string | **Olayın tekil kimliği** — animasyonu tekilleştirmek (dedupe) için |
+| `timestamp` | int | Olayın backend zaman damgası (ms). Katılımdan **önceki** hediyeleri elemek için |
+| `senderId` | string | Gönderen kullanıcı id |
+| `recipientId` / `receiverId` | string? | Alıcı kullanıcı id (varsa) |
 | `giftIcon` | string | Küçük ikon/emoji |
 | `assetUrl` | string? | Oynatılacak asset (resim/video/lottie/svga) URL'i |
 | `assetType` | string? | `image` \| `video` \| `lottie` \| `svga` \| `gif` |
+| `assetFormat` | string? | **Kesin format** (backend türetir): `png` \| `jpeg` \| `webp` \| `avif` \| `gif` \| `svga` \| `lottie` \| `mp4` \| `webm`. Oynatıcı seçimini **buna göre** yap |
+| `imageUrl` | string? | Resim/animasyon asset URL'i (png/gif/webp/lottie/svga) |
+| `videoUrl` | string? | Yalnızca `mp4`/`webm` için video URL'i |
+| `thumbnailUrl` | string? | Küçük önizleme/placeholder (precache + video poster) |
+| `animationType` | string? | Animasyon tipi/isim (`giftType.animation` ?? `displayType`) |
+| `animationDurationMs` | int? | Animasyon süresi (ms) |
+| `startDelayMs` | int? | Başlangıç gecikmesi (ms) |
+| `effectColor` | string? | Efekt/parıltı rengi (opsiyonel) |
+| `musicUrl` | string? | Hediye müziği (opsiyonel) |
 | `displayType` | string? | `static` \| `animation` \| `video` \| `fullscreen` \| `mini` \| `continuous` \| `play_once` \| ... |
 | `isFullscreen` | bool | `true` → **kenarları tam dolduran** tam ekran gösterim |
 | `visibleAsFullscreen` | bool | Tam ekran gösterime uygun mu |
@@ -290,3 +303,177 @@ Backend bildirimleri OneSignal push + DB kaydı olarak gönderir ve **derin bağ
 | Bildirimler | `GET /api/notifications` | `data` (JSON) derin bağlantı taşır |
 
 > Tüm iş/finans mantığı backend'de; Flutter sadece bu verileri render eder ve kullanıcı aksiyonlarını bu endpoint'lere iletir.
+
+---
+
+## 9. CANLI ODA SİSTEMİ — KRİTİK HATA DÜZELTMELERİ (ZORUNLU)
+
+> Bu bölüm **canlı oda** (sesli oda + canlı yayın) sistemindeki kritik hataları giderir. Kural: **hiçbir şey lokal çalışmaz** — tüm hediye, koltuk ve senkron durumu **backend olaylarından** (SSE) sürülür. Flutter yalnızca render eder. Bu bölüm §3 ve §5 ile birlikte uygulanır.
+
+### 9.1 Hediye senkronizasyonu — animasyon YALNIZCA backend olayıyla başlar
+
+**Backend akış sırası (değiştirilemez):** jeton düş → `GiftTransaction` → `GiftHistory` → `RoomGiftEvent` → **SSE ile odadaki/yayındaki HERKESE** yayınla. Yani gönderen dahil herkes animasyonu **aynı anda** ve aynı SSE olayından görür.
+
+**Flutter kuralları (KESİN):**
+1. **Hediye butonuna basınca lokal animasyon BAŞLATMA.** Sadece `POST /api/live/gift/send` (veya ilgili gönderim endpoint'i) çağrılır. Animasyon, o çağrının HTTP yanıtından değil, **SSE `type:'gift'` olayı** geldiğinde başlar. Böylece gönderenin cihazı da diğerleriyle **birebir aynı anda** oynatır.
+2. **Dedupe (tekilleştirme):** Her olayın `giftId` alanı vardır. Gösterilen `giftId`'leri bir `Set<String> _shownGiftIds` içinde tut; aynı `giftId` tekrar gelirse (reconnect replay vb.) **yeniden oynatma**.
+3. **Geç bağlananlar eski hediyeyi GÖRMEZ:** Odaya/yayına girerken `joinTimestamp = DateTime.now().millisecondsSinceEpoch` sakla. Gelen `gift` olayında `event.timestamp < joinTimestamp` ise **animasyonu atla** (yalnızca gönderen paneli/sayaç için sessizce kullanılabilir, ama tam ekran/koltuk animasyonu oynatılmaz). Late-joiner asla eski hediye animasyonu görmez.
+4. **`GET .../gifts` (recentGifts) ile ASLA animasyon başlatma.** O endpoint yalnızca "gönderenler paneli" ve lider tablosu içindir. Animasyonun **tek** tetikleyicisi SSE'dir.
+
+```dart
+final Set<String> _shownGiftIds = {};
+late final int _joinTimestamp; // odaya girerken set edilir
+
+void onSseGift(GiftEvent e) {
+  // 1) katılımdan önceki hediyeler animasyon oynatmaz
+  if (e.timestamp < _joinTimestamp) { _updateSenderPanelOnly(e); return; }
+  // 2) tekilleştir
+  if (!_shownGiftIds.add(e.giftId)) return; // zaten oynatıldı
+  // 3) animasyonu backend metasına göre oynat (§9.2)
+  _playGift(e);
+  _updateSenderPanel(e); // §4 gönderen paneli + sayaç
+}
+```
+
+### 9.2 Video/animasyonlu hediyeler — `assetFormat`'a göre oynatıcı seç
+
+Backend artık **kesin format**ı `assetFormat` ile gönderiyor. Oynatıcıyı **buna göre** seç (assetType değil, `assetFormat` esas):
+
+| `assetFormat` | Flutter oynatıcı |
+|---|---|
+| `png` / `jpeg` / `webp` / `avif` | `CachedNetworkImage` (`imageUrl`) |
+| `gif` | `Image.network` **veya** `CachedNetworkImage` (`imageUrl`) |
+| `svga` | `svga` / `svgaplayer_flutter` (`imageUrl`) |
+| `lottie` | `lottie` paketi (`imageUrl`) |
+| `mp4` / `webm` | `video_player` (`videoUrl`) — **preload + oynat + bitince dispose** |
+
+**Video kuralları (bellek sızıntısı yok):**
+```dart
+Future<void> _playVideoGift(GiftEvent e) async {
+  final controller = VideoPlayerController.networkUrl(Uri.parse(e.videoUrl!));
+  await controller.initialize();          // preload
+  controller.setLooping(false);
+  await controller.play();
+  controller.addListener(() async {
+    if (controller.value.position >= controller.value.duration) {
+      await controller.pause();
+      await controller.dispose();          // bitince MUTLAKA dispose — bellekte tutma
+      _removeOverlay(e.giftId);
+    }
+  });
+}
+```
+- Aynı anda en fazla 1–2 tam ekran video overlay tut; kuyruk (queue) ile sırala.
+- `thumbnailUrl` varsa video hazırlanana kadar poster olarak göster (siyah ekran olmasın).
+- Tam ekran / koltuk-altı / küçük yerleşim kuralları **§3.3** ile aynıdır; yalnızca oynatıcı seçimi `assetFormat`'a taşınır.
+
+### 9.3 Jeton metni — sadece sayı
+
+Bakiye/jeton gösteriminde **"Toplam" ve "Jeton" kelimelerini kaldır**, yalnızca sayıyı göster.
+- ~~`Toplam 999 Jeton`~~ → **`999`** (istenirse yanında küçük 💎 ikon).
+- Bu tüm ekranlarda geçerli (üst bar, cüzdan, hediye gönderim paneli). Sayı formatı: binlik ayraç uygulanabilir (`1.250`), ama kelime yok.
+
+### 9.4 Odadan çıkış / yeniden girme (ghost koltuk hatası)
+
+**Hata:** çıkıp tekrar girince koltuk boş görünüyor ama oturulamıyordu. **Backend düzeltmesi:** koltuk doluluğu artık **kısa "stale" penceresi** (`SEAT_STALE_MS = 45sn`) ile kontrol edilir. Yani bir kullanıcı 2 heartbeat (>45sn) kaçırırsa koltuğu **anında** boşa düşer. **Flutter bu yüzden düzenli heartbeat göndermeli ve çıkışta her şeyi temizlemeli.**
+
+**Heartbeat:** odada iken her **~15 saniyede bir** `POST /api/chat/rooms/{roomId}/presence` (veya join-room heartbeat) çağır. (Backend eşiği 45sn = 3 heartbeat toleransı.)
+
+**Odadan çıkışta ZORUNLU teardown sırası:**
+```dart
+Future<void> leaveRoom() async {
+  // 1) Backend'e bildir — koltuğu ve presence'ı bırak
+  await api.post('/api/live/seats', {'action': 'leave', 'roomId': roomId}); // koltuğu bırak
+  await api.leaveRoom(roomId); // presence delete (?leave=1) → backend participant_left yayınlar, 30sn beklemez
+  // 2) TRTC
+  await trtc.stopLocalAudio();
+  await trtc.exitRoom();
+  await trtc.dispose();           // TRTC instance dispose
+  // 3) SSE
+  await _sseSubscription?.cancel();
+  _sseClient?.close();
+  // 4) Zamanlayıcılar
+  _heartbeatTimer?.cancel();
+  _giftQueueTimer?.cancel();
+  // 5) Controller / animasyon / video
+  for (final c in _videoControllers) { await c.dispose(); }
+  _videoControllers.clear();
+  _lottieController?.dispose();
+  _seatScrollController?.dispose();
+  _messageFocusNode?.dispose();
+  // 6) Cache temizle (§9.6)
+  _clearAllRoomCaches();
+}
+```
+- Çıkışta backend **beklemeden** `room_event: user_left` yayınlar; diğer istemciler koltuğu hemen boşaltır.
+- Yeniden girişte `POST /api/live/join-room` → boş koltuk varsa **otomatik oturur** (§1.2), `POST /api/live/seats action:'take'` da çalışır. 45sn stale sayesinde eski hayalet kayıt engel olmaz.
+
+### 9.5 Tek SSE bağlantısı + Last-Event-ID ile kesintisiz reconnect
+
+- Oda başına **TEK** SSE bağlantısı aç (`GET /api/chat/rooms/{roomId}/stream`). Tüm olaylar (gift/seat/join/leave/mic/admin/mute/kick/music/pk/message/system/room_event) **bu tek akıştan** dinlenir. Ayrı ayrı bağlantı açma.
+- **Last-Event-ID:** Backend her olay grubunda `id: <timestamp>` gönderir. Bağlantı koparsa, en son alınan id ile yeniden bağlan:
+  - Web `EventSource` bunu otomatik yapar.
+  - Flutter'da (özel SSE istemcisi) son `id`'yi sakla ve reconnect'te **`Last-Event-ID: <sonId>`** header'ı (veya `?lastEventId=<sonId>` query) ile bağlan. Backend o zaman damgasından sonra kaçırılan olayları **tekrar oynatır** → hiçbir olay kaçmaz.
+- Reconnect stratejisi: exponential backoff (1s, 2s, 4s… max ~15s). Yeniden bağlanınca ek olarak `GET .../state` ile koltuk/katılımcı haritasını tazele (kesin doğruluk için).
+
+```dart
+String? _lastEventId;
+StreamSubscription? _sseSubscription;
+
+void _connectSse() {
+  final headers = {'Authorization': 'Bearer $jwt'};
+  if (_lastEventId != null) headers['Last-Event-ID'] = _lastEventId!;
+  _sseSubscription = sseClient.connect(streamUrl, headers: headers).listen(
+    (frame) {
+      if (frame.id != null) _lastEventId = frame.id;   // sonra reconnect'te geri gönder
+      _dispatchEvent(frame);                            // tek switch: type'a göre
+    },
+    onError: (_) => _scheduleReconnectWithBackoff(),
+    onDone: () => _scheduleReconnectWithBackoff(),
+  );
+}
+```
+
+### 9.6 Bellek temizliği + cache yönetimi (sızıntı yok)
+
+Odadan çıkışta / oda değiştirirken **her şeyi** temizle:
+- **Controller'lar:** video, lottie, animation, scroll, text, seat controller → `dispose()`.
+- **Stream/subscription:** SSE, mesaj stream, presence stream → `cancel()`.
+- **Timer'lar:** heartbeat, gift queue, animasyon süreleri → `cancel()`.
+- **Focus/audio/rtc/player:** focus node dispose, audio session stop, TRTC dispose, video player dispose.
+- **Cache'ler (tümü):** `RoomCache`, `GiftCache`, `SeatCache`, `ParticipantCache`, `MessageCache`, `AnimationCache` → temizle. Ayrıca `_shownGiftIds.clear()`.
+```dart
+void _clearAllRoomCaches() {
+  roomCache.clear(); giftCache.clear(); seatCache.clear();
+  participantCache.clear(); messageCache.clear(); animationCache.clear();
+  _shownGiftIds.clear(); _recentSenders.clear();
+}
+```
+- **Görüntü cache limiti:** uygulama başında `PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20; // 100MB`. Oda değişiminde büyük asset'ler için `imageCache.clear()`/`clearLiveImages()` çağrılabilir.
+
+### 9.7 Performans (donma/kasma yok)
+
+- **State yönetimi:** Riverpod veya Bloc kullan; `setState` ile tüm ekranı yeniden çizme. Koltuk, mesaj, hediye katmanlarını ayrı provider/bloc ile böl.
+- **`const` widget'lar:** değişmeyen widget'ları `const` yap.
+- **`AutomaticKeepAlive`:** yalnızca gerçekten gereken (ör. sekme içeriği) yerlerde kullan; her yerde değil.
+- **`RepaintBoundary`:** hediye animasyon overlay'i, koltuk grid'i ve mesaj listesi gibi sık çizilen katmanları `RepaintBoundary` ile sar → gereksiz repaint yayılmasın.
+- **Sanal liste (virtual scroll):** mesaj/katılımcı/hediye listelerinde `ListView.builder` (lazy). Tümünü belleğe alma.
+- **Lazy loading:** ağır asset'leri (video/lottie) yalnızca gösterileceği anda yükle; önizleme için `thumbnailUrl`.
+
+### 9.8 Görüntü performansı
+
+- **Formatlar:** PNG/WebP/AVIF desteği (`assetFormat`'a göre). Mümkünse WebP/AVIF tercih et (daha küçük).
+- **Thumbnail:** liste ve poster için `thumbnailUrl` kullan; tam çözünürlüğü yalnızca gerektiğinde.
+- **`CachedNetworkImage`:** tüm ağ görselleri için; `placeholder` = `thumbnailUrl` veya shimmer, `errorWidget` = ikon/emoji fallback.
+- **Precache:** odaya girerken sık kullanılan koltuk/hediye ikonlarını `precacheImage` ile önceden yükle → ilk gösterimde takılma olmaz.
+
+### 9.9 Sonuç (bu bölümün kabul kriterleri)
+
+- [ ] Hediye animasyonu **yalnızca SSE `gift` olayıyla** başlar; gönderen dahil **tüm cihazlarda aynı anda** oynar; lokal başlatma yok.
+- [ ] Aynı `giftId` iki kez oynatılmaz (dedupe); katılımdan önceki hediyeler (`timestamp < joinTimestamp`) animasyon oynatmaz.
+- [ ] Video hediyeler (`mp4`/`webm`) oynar; bitince controller **dispose** edilir; bellek şişmez. `svga`/`lottie`/`gif`/`png` doğru oynatıcıyla gösterilir (`assetFormat`).
+- [ ] Jeton metninde "Toplam" ve "Jeton" **yok**; sadece sayı görünür.
+- [ ] Odadan çıkıp tekrar girince koltuğa **oturulabiliyor** (45sn stale + tam teardown); koltuklar gerçek zamanlı doğru.
+- [ ] Oda başına **tek** SSE bağlantısı; kopunca **Last-Event-ID** ile kaçırılan olaylar tekrar alınır.
+- [ ] Odadan çıkışta tüm controller/stream/timer/cache **temizlenir**; bellek sızıntısı yok.
+- [ ] Uygulama akıcı (Riverpod/Bloc + const + RepaintBoundary + sanal liste + lazy load); donma yok.

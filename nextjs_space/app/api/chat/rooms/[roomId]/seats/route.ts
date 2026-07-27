@@ -6,7 +6,7 @@ import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { emitSeatChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { SEAT_COUNT } from '@/lib/voice-room-constants'
+import { SEAT_COUNT, seatStaleThreshold } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +18,8 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params
-    const presenceTimeout = new Date(Date.now() - 300000)
+    // Short seat-stale window: ghost seats (users who left) free up fast.
+    const presenceTimeout = seatStaleThreshold()
     const seated = await prisma.chatPresence.findMany({
       where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
       select: {
@@ -122,7 +123,7 @@ export async function PATCH(
 
     // Check the seat is available (if claiming a seat, not vacating)
     if (seatIndex >= 0) {
-      const presenceTimeout = new Date(Date.now() - 300000)
+      const presenceTimeout = seatStaleThreshold()
       const seatTaken = await prisma.chatPresence.findFirst({
         where: {
           roomId,

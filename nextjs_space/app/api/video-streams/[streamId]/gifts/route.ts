@@ -275,11 +275,13 @@ export async function POST(
       streamId: params.streamId,
       gift: {
         id: gift.id,
+        giftId: gift.id,
         senderName: userName,
         giftName: giftType.name,
         giftIcon: giftType.icon,
         quantity,
         totalPrice: senderExcluded ? 0 : totalPrice,
+        timestamp: Date.now(),
         ...renderMeta,
       }
     })
