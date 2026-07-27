@@ -8,6 +8,7 @@ import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { emitChatEvent } from '@/lib/chat-events'
+import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 
 export const dynamic = 'force-dynamic'
@@ -265,6 +266,10 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       } catch (pkErr) { console.error('Chat gift PK score error:', pkErr) }
     }
 
+    // Render metadata so ALL clients (web + Flutter) display the gift the same
+    // way and it is visible to everyone in the room.
+    const renderMeta = buildGiftRenderMeta(giftType)
+
     // Emit gift event to SSE via in-memory chat event bus
     emitChatEvent(roomId, 'gift', {
       senderId: sender.id,
@@ -277,6 +282,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       quantity,
       amount: price,
       currencyType: paymentType,
+      ...renderMeta,
     })
 
     return NextResponse.json({
@@ -291,7 +297,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         giftName: giftType.name,
         quantity,
         amount: price,
-        currencyType: paymentType
+        currencyType: paymentType,
+        ...renderMeta,
       },
       pkUpdate
     })
@@ -383,7 +390,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       include: {
         sender: { select: { id: true, name: true, username: true } },
         recipient: { select: { id: true, name: true, username: true } },
-        giftType: { select: { id: true, name: true, icon: true, price: true } }
+        giftType: true
       },
       orderBy: { createdAt: 'asc' },
       take: 20
@@ -399,9 +406,11 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       giftName: g.giftType.name,
       giftIcon: g.giftType.icon,
       giftImage: '',
+      quantity: g.quantity ?? 1,
       amount: g.totalPrice,
       currencyType: g.currencyType,
-      createdAt: g.createdAt.toISOString()
+      createdAt: g.createdAt.toISOString(),
+      ...buildGiftRenderMeta(g.giftType),
     }))
 
     return NextResponse.json({ leaderboard, recentGifts: recentGiftsFormatted })

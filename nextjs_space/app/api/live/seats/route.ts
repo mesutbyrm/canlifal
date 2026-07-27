@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
+import { SEAT_COUNT, MAX_SEAT_INDEX } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic'
  * Body: { roomId, action: 'take' | 'leave' | 'swap' | 'force', seatIndex?, targetUserId? }
  *
  * Actions:
- *  - take:  Current user claims seatIndex (0-14)
+ *  - take:  Current user claims seatIndex (0..SEAT_COUNT-1)
  *  - leave: Current user vacates their seat (seatIndex = -1)
  *  - swap:  Admin/owner moves targetUserId to seatIndex (displaces if occupied)
  *  - force: Admin/owner forces targetUserId off their seat (seatIndex = -1)
@@ -91,9 +92,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ── validate seatIndex for take/swap ──
-    if (typeof seatIndex !== 'number' || seatIndex < 0 || seatIndex > 14) {
+    if (typeof seatIndex !== 'number' || seatIndex < 0 || seatIndex > MAX_SEAT_INDEX) {
       return NextResponse.json(
-        { success: false, error: { code: 'INVALID_SEAT', message: 'Geçersiz koltuk numarası (0-14)' } },
+        { success: false, error: { code: 'INVALID_SEAT', message: `Geçersiz koltuk numarası (0-${MAX_SEAT_INDEX})` } },
         { status: 400 }
       )
     }
@@ -152,12 +153,12 @@ export async function POST(request: NextRequest) {
       if (occupant) {
         // Displace occupant to next available seat
         const allPresences = await prisma.chatPresence.findMany({
-          where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: 15 } },
+          where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
           select: { seatIndex: true }
         })
         const occupied = new Set(allPresences.map((p: any) => p.seatIndex))
         let nextSeat = -1
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < SEAT_COUNT; i++) {
           if (i !== seatIndex && !occupied.has(i)) { nextSeat = i; break }
         }
         await prisma.chatPresence.update({
@@ -240,7 +241,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: { roomId, seats, totalSeats: 15 }
+      data: { roomId, seats, totalSeats: SEAT_COUNT }
     })
   } catch (error) {
     console.error('Error in GET /api/live/seats:', error)

@@ -10,6 +10,7 @@ import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commis
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { buildGiftRenderMeta } from '@/lib/gift-render'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -264,6 +265,10 @@ export async function POST(
     const giftSenderName = user?.name || 'Bir kullanıcı'
     triggerEventAnnouncement('gift_sent', { user: giftSenderName, gift: giftType.name }, user?.id, giftSenderName, user?.role || 'free').catch(() => {})
 
+    // Render metadata so ALL viewers (web + Flutter) display the gift the same
+    // way (fullscreen edge-fill for big gifts) and it is visible to everyone.
+    const renderMeta = buildGiftRenderMeta(giftType)
+
     // Emit gift event to SSE listeners
     emitStreamEvent(params.streamId, 'gift', {
       type: 'gift',
@@ -275,12 +280,14 @@ export async function POST(
         giftIcon: giftType.icon,
         quantity,
         totalPrice: senderExcluded ? 0 : totalPrice,
+        ...renderMeta,
       }
     })
 
     return NextResponse.json({
       success: true,
       gift,
+      giftRender: renderMeta,
       newBalance: senderExcluded ? (user?.jetonBalance ?? 0) : (user?.jetonBalance ?? 0) - totalPrice,
       pkUpdate
     })

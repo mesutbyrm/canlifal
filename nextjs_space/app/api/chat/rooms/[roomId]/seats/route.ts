@@ -6,11 +6,12 @@ import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { emitSeatChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
+import { SEAT_COUNT } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
 // GET - standardized seat map for the room (used by web + Flutter).
-// Returns 15 seats (0-14). Each element is null (empty) or the occupant.
+// Returns SEAT_COUNT seats (0..SEAT_COUNT-1). Each element is null (empty) or the occupant.
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
@@ -19,7 +20,7 @@ export async function GET(
     const { roomId } = await params
     const presenceTimeout = new Date(Date.now() - 300000)
     const seated = await prisma.chatPresence.findMany({
-      where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: 15 } },
+      where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
       select: {
         userId: true,
         seatIndex: true,
@@ -45,9 +46,9 @@ export async function GET(
       image: string | null
       micOn: boolean
       receivedJetons: number
-    }> = new Array(15).fill(null)
+    }> = new Array(SEAT_COUNT).fill(null)
     for (const s of seated) {
-      if (s.seatIndex !== null && s.seatIndex >= 0 && s.seatIndex < 15) {
+      if (s.seatIndex !== null && s.seatIndex >= 0 && s.seatIndex < SEAT_COUNT) {
         seats[s.seatIndex] = {
           seatIndex: s.seatIndex,
           userId: s.userId,
@@ -84,7 +85,7 @@ export async function PATCH(
     const body = await request.json()
     const { targetUserId, seatIndex, forceThrone, forceAssign } = body
 
-    if (typeof seatIndex !== 'number' || seatIndex < -1 || seatIndex >= 15) {
+    if (typeof seatIndex !== 'number' || seatIndex < -1 || seatIndex >= SEAT_COUNT) {
       return NextResponse.json({ error: 'Geçersiz koltuk numarası' }, { status: 400 })
     }
 
@@ -135,12 +136,12 @@ export async function PATCH(
         if ((forceThrone && seatIndex === 0) || forceAssign) {
           // Find next empty seat for displaced user
           const allPresences = await prisma.chatPresence.findMany({
-            where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: 15 } },
+            where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
             select: { seatIndex: true }
           })
           const occupiedSet = new Set(allPresences.map(p => p.seatIndex))
           let nextSeat = -1
-          for (let i = 1; i < 15; i++) {
+          for (let i = 1; i < SEAT_COUNT; i++) {
             if (!occupiedSet.has(i)) { nextSeat = i; break }
           }
           // Move displaced user to next seat (or -1 if all full)

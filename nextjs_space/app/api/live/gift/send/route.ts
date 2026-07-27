@@ -7,6 +7,7 @@ import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commis
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { emitChatEvent } from '@/lib/chat-events'
+import { buildGiftRenderMeta } from '@/lib/gift-render'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +56,8 @@ export async function POST(request: NextRequest) {
     }
 
     const totalPrice = giftType.price * quantity
+    // Render metadata for identical display on every client (web + Flutter)
+    const giftRenderMeta = buildGiftRenderMeta(giftType)
 
     // Get sender
     const sender = await prisma.user.findUnique({
@@ -191,6 +194,7 @@ export async function POST(request: NextRequest) {
           giftIcon: giftType.icon,
           quantity,
           totalPrice: senderExcluded ? 0 : totalPrice,
+          ...(giftRenderMeta || {}),
         }
       })
 
@@ -335,6 +339,7 @@ export async function POST(request: NextRequest) {
           giftIcon: giftType.icon,
           quantity,
           totalPrice,
+          ...(giftRenderMeta || {}),
         }
       })
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
+import { SEAT_COUNT, findFirstFreeSeat } from '@/lib/voice-room-constants'
+import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { roomId, roomType, nickname } = body
+    const { roomId, roomType, nickname, password: providedPassword } = body
 
     if (!roomId || !roomType) {
       return NextResponse.json(
@@ -213,18 +215,62 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Determine if this is a fresh join (vs. a reconnect/heartbeat)
+      const presenceTimeoutJoin = new Date(Date.now() - 300000)
+      const existingPresence = await prisma.chatPresence.findUnique({
+        where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
+        select: { seatIndex: true, lastSeen: true }
+      })
+      const isFreshJoin = !existingPresence || existingPresence.lastSeen < new Date(Date.now() - 30000)
+
+      // ── Password gate for NORMAL / VIP rooms (owner + staff bypass) ──
+      const roomAccess = room.roomType || 'FREE'
+      const needsPassword = (roomAccess === 'VIP' || roomAccess === 'NORMAL') && !!room.password
+      if (needsPassword && isFreshJoin) {
+        let bypass = isHost
+        if (!bypass) {
+          const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(authUser.role || '')
+          if (isGlobalAdmin) {
+            bypass = true
+          } else {
+            const myRole = await prisma.chatUserRole.findUnique({
+              where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
+              select: { role: true }
+            }).catch(() => null)
+            const myLevel = myRole ? (ROLE_HIERARCHY[myRole.role as keyof typeof ROLE_HIERARCHY] || 0) : 0
+            bypass = myLevel >= ROLE_HIERARCHY['sop']
+          }
+        }
+        if (!bypass && providedPassword !== room.password) {
+          return NextResponse.json(
+            { success: false, error: { code: 'INVALID_ROOM_PASSWORD', message: 'Oda şifresi hatalı' } },
+            { status: 403 }
+          )
+        }
+      }
+
+      // ── Auto-seat on fresh join: assign first free seat (0..SEAT_COUNT-1) ──
+      let autoSeatIndex = -1
+      if (isFreshJoin && (existingPresence?.seatIndex ?? -1) < 0) {
+        const seatedNow = await prisma.chatPresence.findMany({
+          where: { roomId: room.id, lastSeen: { gte: presenceTimeoutJoin }, seatIndex: { gte: 0, lt: SEAT_COUNT }, userId: { not: authUser.id } },
+          select: { seatIndex: true }
+        })
+        autoSeatIndex = findFirstFreeSeat(seatedNow.map((s: any) => s.seatIndex as number))
+      }
+
       // Upsert presence
       try {
         await prisma.chatPresence.upsert({
           where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-          update: { lastSeen: new Date(), ...(nickname ? { nickname } : {}) },
-          create: { roomId: room.id, userId: authUser.id, nickname: nickname || null, seatIndex: -1 }
+          update: { lastSeen: new Date(), ...(nickname ? { nickname } : {}), ...(autoSeatIndex >= 0 ? { seatIndex: autoSeatIndex } : {}) },
+          create: { roomId: room.id, userId: authUser.id, nickname: nickname || null, seatIndex: autoSeatIndex >= 0 ? autoSeatIndex : -1 }
         })
       } catch (e: any) {
         if (e?.code === 'P2002') {
           await prisma.chatPresence.update({
             where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-            data: { lastSeen: new Date(), ...(nickname ? { nickname } : {}) }
+            data: { lastSeen: new Date(), ...(nickname ? { nickname } : {}), ...(autoSeatIndex >= 0 ? { seatIndex: autoSeatIndex } : {}) }
           })
         } else { throw e }
       }

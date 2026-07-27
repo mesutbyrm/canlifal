@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
+import { SEAT_COUNT } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,7 @@ export const dynamic = 'force-dynamic'
  *   - room       : room metadata (name, type, owner, cover, muted...)
  *   - participants: active users (sorted identically to /presence), with
  *                   seatIndex, micOn, chatRole, roleSymbol, isAdmin
- *   - seats      : 15-slot seat map (null = empty)
+ *   - seats      : SEAT_COUNT-slot seat map (null = empty)
  *   - me         : the caller's own presence/role snapshot
  *   - trtc       : canonical TRTC join info (sdkAppId, trtcRoomId, numericUid)
  *
@@ -111,10 +112,10 @@ export async function GET(
       return (a.nickname || a.name).localeCompare(b.nickname || b.name)
     })
 
-    // 15-slot seat map
-    const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean; receivedJetons: number }> = new Array(15).fill(null)
+    // SEAT_COUNT-slot seat map
+    const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean; receivedJetons: number }> = new Array(SEAT_COUNT).fill(null)
     for (const p of participants) {
-      if (p.seatIndex >= 0 && p.seatIndex < 15) {
+      if (p.seatIndex >= 0 && p.seatIndex < SEAT_COUNT) {
         seats[p.seatIndex] = {
           seatIndex: p.seatIndex,
           userId: p.id,

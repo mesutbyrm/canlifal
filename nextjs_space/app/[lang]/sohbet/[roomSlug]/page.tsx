@@ -1364,7 +1364,7 @@ export default function ChatRoomPage() {
     autoSeatClaimedRef.current = true
     
     // Build occupied seats
-    const TOTAL_SEATS = 15
+    const TOTAL_SEATS = 11
     const occupiedSeats = new Set<number>()
     for (const u of activeUsers) {
       if (u.seatIndex >= 0 && u.seatIndex < TOTAL_SEATS) {
@@ -2957,7 +2957,7 @@ export default function ChatRoomPage() {
 
         {/* ── Dynamic Seat Grid (only show occupied rows + 1 extra) ── */}
         {(() => {
-          const TOTAL_SEATS = 15
+          const TOTAL_SEATS = 11
           const COLS = 5
           
           // Build seats — sorted by authority rank (highest first)
@@ -3297,7 +3297,7 @@ export default function ChatRoomPage() {
                       ) : (
                         <button
                           onClick={() => {
-                            const emptySeat = Array.from({length: 15}, (_, i) => i).find(i => !activeUsers.some(u => u.seatIndex === i))
+                            const emptySeat = Array.from({length: 11}, (_, i) => i).find(i => !activeUsers.some(u => u.seatIndex === i))
                             if (emptySeat !== undefined) { handleAssignSeat(userActionTarget.id, emptySeat); setUserActionTarget(null) }
                             else alert('Boş koltuk yok')
                           }}

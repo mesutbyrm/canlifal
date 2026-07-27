@@ -9,6 +9,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
 import { emitUserJoined, emitUserLeft } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
+import { SEAT_COUNT, findFirstFreeSeat } from '@/lib/voice-room-constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -234,14 +235,18 @@ export async function POST(
       return NextResponse.json({ success: true })
     }
 
-    // Parse body for nickname and seatIndex
+    // Parse body for nickname, seatIndex and (optional) room password
     let nickname: string | undefined
     let seatIndex: number | undefined
+    let providedPassword: string | undefined
     try {
       const body = await request.json()
       nickname = body.nickname
       if (typeof body.seatIndex === 'number') {
         seatIndex = body.seatIndex
+      }
+      if (typeof body.password === 'string') {
+        providedPassword = body.password
       }
     } catch {
       // Body might be empty for GET-like requests
@@ -258,14 +263,51 @@ export async function POST(
       where: { roomId_userId: { roomId, userId: userId } }
     })
 
-    // Enforce max user limit based on room type (only on new joins)
+    // Enforce max user limit + password gate based on room type (only on new joins)
     const thirtySecondsAgoCheck = new Date(Date.now() - 30000)
-    if (!existingPresence || existingPresence.lastSeen < thirtySecondsAgoCheck) {
+    const isNewJoinForGate = !existingPresence || existingPresence.lastSeen < thirtySecondsAgoCheck
+    if (isNewJoinForGate) {
       const room = await prisma.chatRoom.findUnique({
         where: { id: roomId },
-        select: { roomType: true }
+        select: { roomType: true, password: true, ownerId: true }
       })
-      const maxUsers = await getMaxUsersForRoomType(room?.roomType || 'FREE')
+
+      // ── Password gate for NORMAL / VIP rooms ──
+      // Owner and staff (admin/moderator level) bypass. Everyone else must
+      // provide the correct password on their first join. Shared by web + Flutter.
+      const roomType = room?.roomType || 'FREE'
+      const needsPassword = (roomType === 'VIP' || roomType === 'NORMAL') && !!room?.password
+      if (needsPassword) {
+        const isOwner = room?.ownerId === userId
+        let bypass = isOwner
+        if (!bypass) {
+          // Global site staff bypass the room password
+          const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { role: true }
+          })
+          const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(currentUser?.role || '')
+          if (isGlobalAdmin) {
+            bypass = true
+          } else {
+            // Per-room staff (sop and above) bypass the room password
+            const myRole = await prisma.chatUserRole.findUnique({
+              where: { roomId_userId: { roomId, userId } },
+              select: { role: true }
+            }).catch(() => null)
+            const myLevel = myRole ? (ROLE_HIERARCHY[myRole.role as keyof typeof ROLE_HIERARCHY] || 0) : 0
+            bypass = myLevel >= ROLE_HIERARCHY['sop']
+          }
+        }
+        if (!bypass && providedPassword !== room?.password) {
+          return NextResponse.json(
+            { error: 'Oda şifresi hatalı', code: 'INVALID_ROOM_PASSWORD' },
+            { status: 403 }
+          )
+        }
+      }
+
+      const maxUsers = await getMaxUsersForRoomType(roomType)
       const presenceTimeout = new Date(Date.now() - 300000)
       const activeCount = await prisma.chatPresence.count({
         where: { roomId, lastSeen: { gte: presenceTimeout } }
@@ -277,9 +319,26 @@ export async function POST(
     
     const thirtySecondsAgo = new Date(Date.now() - 30000)
     const isNewJoin = !existingPresence || existingPresence.lastSeen < thirtySecondsAgo
+
+    // ── Auto-seat on NEW join ──
+    // When a permitted user joins and did not explicitly request a seat, place
+    // them on the first free seat (0..SEAT_COUNT-1). If the room is full of
+    // seated users they stay a listener (seatIndex -1). Heartbeats never trigger
+    // this because seatIndex stays undefined and isNewJoin is false.
+    if (isNewJoin && seatIndex === undefined) {
+      const presenceTimeout = new Date(Date.now() - 300000)
+      const seated = await prisma.chatPresence.findMany({
+        where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT }, userId: { not: userId } },
+        select: { seatIndex: true }
+      })
+      const freeSeat = findFirstFreeSeat(seated.map((s) => s.seatIndex as number))
+      if (freeSeat >= 0) {
+        seatIndex = freeSeat
+      }
+    }
     
     // If user wants a seat, validate it's not taken
-    if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < 15) {
+    if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < SEAT_COUNT) {
       const presenceTimeout = new Date(Date.now() - 300000)
       const seatTaken = await prisma.chatPresence.findFirst({
         where: {
