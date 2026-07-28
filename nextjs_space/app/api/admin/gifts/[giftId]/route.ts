@@ -70,13 +70,16 @@ export async function PATCH(
       'newUserOnly', 'timedCampaign', 'isSeasonal', 'isReusable',
       'particleEffect', 'hasVibration', 'hasColorChange',
       'screenPosition', 'animStartPoint', 'animEndPoint',
+      // ── Gift Engine attributes (additive) ──
+      'priority', 'animationType', 'displayArea', 'seatEffect',
+      'seatEffectEnabled', 'soundEffectEnabled',
     ];
     for (const f of directFields) {
       if (body[f] !== undefined) data[f] = body[f];
     }
 
     // Integer fields
-    const intFields = ['price', 'animationDurationMs', 'startDelayMs', 'displayDurationMs', 'repeatCount', 'volume', 'dailySendLimit'];
+    const intFields = ['price', 'animationDurationMs', 'startDelayMs', 'displayDurationMs', 'repeatCount', 'volume', 'dailySendLimit', 'comboWindowMs'];
     for (const f of intFields) {
       if (body[f] !== undefined) data[f] = body[f] === null ? null : parseInt(body[f]);
     }

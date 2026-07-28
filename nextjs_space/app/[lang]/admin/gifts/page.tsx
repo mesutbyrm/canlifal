@@ -30,6 +30,10 @@ interface GiftItem {
   isSpecialEvent: boolean; isHidden: boolean; isPremium: boolean;
   isFeatured: boolean; effectColor?: string; comboEnabled: boolean; isLucky: boolean;
   displayType: string; screenPosition: string;
+  // ── Gift Engine (Hediye Motoru) ──
+  priority?: string; animationType?: string; displayArea?: string;
+  seatEffect?: string; seatEffectEnabled?: boolean; soundEffectEnabled?: boolean;
+  comboWindowMs?: number;
   visibleInVoiceRoom: boolean; visibleInLiveStream: boolean;
   visibleInPK: boolean; visibleInProfile: boolean;
   visibleInMessaging: boolean; visibleInTrend: boolean;
@@ -71,6 +75,45 @@ const TIERS = [
   { value: 'small', label: 'Küçük' },
   { value: 'big', label: 'Büyük' },
   { value: 'huge', label: 'Dev' },
+];
+
+// ── Gift Engine (Hediye Motoru) options ──
+const ENGINE_PRIORITIES = [
+  { value: 'SMALL', label: 'Küçük (SMALL)' },
+  { value: 'MEDIUM', label: 'Orta (MEDIUM)' },
+  { value: 'LARGE', label: 'Büyük (LARGE)' },
+  { value: 'ULTRA', label: 'Ultra (ULTRA)' },
+];
+const ENGINE_ANIMATION_TYPES = [
+  { value: '', label: 'Otomatik (dosyadan)' },
+  { value: 'PNG', label: 'PNG (statik görsel)' },
+  { value: 'SVG', label: 'SVG' },
+  { value: 'LOTTIE', label: 'Lottie' },
+  { value: 'MP4', label: 'MP4 (video)' },
+  { value: 'WEBM', label: 'WEBM (video)' },
+  { value: 'PARTICLE', label: 'Parçacık (Particle)' },
+];
+const ENGINE_DISPLAY_AREAS = [
+  { value: '', label: 'Otomatik' },
+  { value: 'FULL_SCREEN', label: 'Tam Ekran' },
+  { value: 'CENTER', label: 'Orta' },
+  { value: 'SEAT', label: 'Koltuk (Alıcı)' },
+  { value: 'BOTTOM', label: 'Alt' },
+  { value: 'TOP', label: 'Üst' },
+];
+const ENGINE_SEAT_EFFECTS = [
+  { value: '', label: 'Yok' },
+  { value: 'GLOW', label: 'Parlama (Glow)' },
+  { value: 'SHAKE', label: 'Titreme (Shake)' },
+  { value: 'PARTICLE', label: 'Parçacık (Particle)' },
+  { value: 'BORDER', label: 'Çerçeve (Border)' },
+  { value: 'PULSE', label: 'Nabız (Pulse)' },
+];
+const ENGINE_DURATION_PRESETS = [
+  { value: 2000, label: '2 saniye' },
+  { value: 3000, label: '3 saniye' },
+  { value: 5000, label: '5 saniye' },
+  { value: 8000, label: '8 saniye' },
 ];
 
 const SCREEN_POSITIONS = [
@@ -147,6 +190,7 @@ const emptyGift: Partial<GiftItem> = {
   pkOnly: false, liveOnly: false, voiceOnly: false,
   newUserOnly: false, timedCampaign: false, isHidden: false,
   isSeasonal: false, isReusable: true, comboEnabled: false, isLucky: false,
+  priority: 'MEDIUM', seatEffectEnabled: true, soundEffectEnabled: true, comboWindowMs: 4000,
   isPopular: false, isNew: true, isSpecialEvent: false,
   isFeatured: false, isFullscreen: false,
   repeatCount: 1, volume: 100,
@@ -893,6 +937,72 @@ export default function AdminGiftCatalogPage() {
                         className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="örn: top-center" />
                     </div>
                   </div>
+
+                {/* ── Hediye Motoru (Gift Engine) ── */}
+                <Section title="Hediye Motoru (Gift Engine)" icon={<Zap size={16} className="text-fuchsia-400" />}>
+                  <p className="text-xs text-white/40 mb-3">Bu ayarlar tüm platformlarda (Web + mobil) hediyenin nasıl oynatılacağını belirler. Boş bırakılan alanlar mevcut hediye ayarlarından otomatik türetilir; geriye dönük uyumludur.</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-white/60">Öncelik (Priority)</label>
+                      <select value={editing.priority || 'MEDIUM'} onChange={e => setField('priority', e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                        {ENGINE_PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/60">Animasyon Türü</label>
+                      <select value={editing.animationType || ''} onChange={e => setField('animationType', e.target.value || null)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                        {ENGINE_ANIMATION_TYPES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/60">Gösterim Alanı</label>
+                      <select value={editing.displayArea || ''} onChange={e => setField('displayArea', e.target.value || null)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                        {ENGINE_DISPLAY_AREAS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/60">Animasyon Süresi (hazır)</label>
+                      <select value={editing.animationDurationMs ?? ''} onChange={e => setField('animationDurationMs', e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                        <option value="">Özel / Otomatik</option>
+                        {ENGINE_DURATION_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/60">Koltuk Efekti (Alıcı)</label>
+                      <select value={editing.seatEffect || ''} onChange={e => setField('seatEffect', e.target.value || null)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                        {ENGINE_SEAT_EFFECTS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/60">Kombo Süresi (ms)</label>
+                      <input type="number" value={editing.comboWindowMs ?? ''}
+                        onChange={e => setField('comboWindowMs', e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="4000" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                    <label className="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10">
+                      <input type="checkbox" checked={editing.seatEffectEnabled ?? true}
+                        onChange={e => setField('seatEffectEnabled', e.target.checked)} className="rounded" />
+                      <span className="text-sm">Koltuk Efekti Aktif</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10">
+                      <input type="checkbox" checked={editing.soundEffectEnabled ?? true}
+                        onChange={e => setField('soundEffectEnabled', e.target.checked)} className="rounded" />
+                      <span className="text-sm">Ses Efekti Aktif</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10">
+                      <input type="checkbox" checked={editing.comboEnabled ?? false}
+                        onChange={e => setField('comboEnabled', e.target.checked)} className="rounded" />
+                      <span className="text-sm">Kombo Aktif</span>
+                    </label>
+                  </div>
+                </Section>
                 </Section>
 
               </div>

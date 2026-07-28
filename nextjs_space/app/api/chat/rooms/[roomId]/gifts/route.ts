@@ -10,6 +10,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { emitChatEvent } from '@/lib/chat-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
+import { processGiftSend } from '@/lib/gift-engine'
 
 export const dynamic = 'force-dynamic'
 
@@ -288,6 +289,25 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       ...renderMeta,
     })
 
+    // ── Gift Engine (additive) ──────────────────────────────────────────────
+    // Runs the professional engine on top of the existing flow: combo, per-room
+    // FIFO queue, GiftHistory and the unified gift_received / gift_queue_updated
+    // events. Never throws; the money flow above is already committed.
+    let enginePayload: any = null
+    try {
+      enginePayload = await processGiftSend({
+        context: 'voice_room',
+        contextId: roomId,
+        giftType,
+        sender: { id: sender.id, name: sender.name, image: (sender as any).image ?? (sender as any).profileImage ?? null },
+        receiver: { id: recipient.id, name: recipient.name },
+        quantity,
+        coinAmount: price,
+      })
+    } catch (engErr) {
+      console.error('Chat room gift engine error (non-fatal):', engErr)
+    }
+
     return NextResponse.json({
       success: true,
       gift: {
@@ -305,6 +325,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         timestamp: Date.now(),
         ...renderMeta,
       },
+      engine: enginePayload,
       pkUpdate
     })
   } catch (error) {

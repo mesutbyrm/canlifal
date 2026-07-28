@@ -172,6 +172,14 @@ export async function POST(request: NextRequest) {
         // Music
         musicUrl,
         musicCloudPath: body.musicCloudPath,
+        // ── Gift Engine attributes (additive) ──
+        priority: body.priority || 'MEDIUM',
+        animationType: body.animationType || undefined,
+        displayArea: body.displayArea || undefined,
+        seatEffect: body.seatEffect || undefined,
+        seatEffectEnabled: body.seatEffectEnabled ?? true,
+        soundEffectEnabled: body.soundEffectEnabled ?? true,
+        comboWindowMs: body.comboWindowMs ? parseInt(body.comboWindowMs) : undefined,
         // Version
         contentVersion: 1,
       },

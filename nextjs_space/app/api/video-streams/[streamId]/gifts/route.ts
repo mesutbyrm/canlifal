@@ -11,6 +11,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
+import { processGiftSend } from '@/lib/gift-engine'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -286,10 +287,30 @@ export async function POST(
       }
     })
 
+    // ── Gift Engine (additive) ──────────────────────────────────────────────
+    // Layer the professional engine on top: combo, per-stream FIFO queue,
+    // GiftHistory and the unified gift_received / gift_queue_updated events.
+    // Never throws; the money flow above is already committed.
+    let enginePayload: any = null
+    try {
+      enginePayload = await processGiftSend({
+        context: 'live_stream',
+        contextId: params.streamId,
+        giftType,
+        sender: { id: userId as string, name: userName, image: userImage },
+        receiver: { id: stream.userId, name: streamUser?.name ?? streamUser?.username ?? null },
+        quantity,
+        coinAmount: senderExcluded ? 0 : totalPrice,
+      })
+    } catch (engErr) {
+      console.error('Stream gift engine error (non-fatal):', engErr)
+    }
+
     return NextResponse.json({
       success: true,
       gift,
       giftRender: renderMeta,
+      engine: enginePayload,
       newBalance: senderExcluded ? (user?.jetonBalance ?? 0) : (user?.jetonBalance ?? 0) - totalPrice,
       pkUpdate
     })

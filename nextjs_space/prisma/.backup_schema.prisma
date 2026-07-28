@@ -1026,6 +1026,17 @@ model GiftType {
   musicCloudPath      String?        // müzik cloud key
   // ── Şanslı Hediye (Lucky Gift) ──
   isLucky             Boolean        @default(false) // şanslı hediye — gönderiminde jeton ödülü kazandırır
+  // ── Gift Engine (professional queue/animation engine) ──
+  // Explicit, admin-editable engine attributes. These are ADDITIVE; when null
+  // the engine falls back to the legacy fields (tier/screenPosition/assetType/
+  // animationDurationMs) so existing gifts keep working unchanged.
+  priority            String         @default("MEDIUM") // SMALL | MEDIUM | LARGE | ULTRA
+  animationType       String?        // PNG | SVG | LOTTIE | MP4 | WEBM | PARTICLE
+  displayArea         String?        // FULL_SCREEN | CENTER | SEAT | BOTTOM | TOP
+  seatEffect          String?        // GLOW | SHAKE | PARTICLE | BORDER | PULSE | NONE
+  seatEffectEnabled   Boolean        @default(true) // admin can toggle seat effect on/off
+  soundEffectEnabled  Boolean        @default(true) // admin can toggle sound effect on/off
+  comboWindowMs       Int            @default(4000) // window to keep a combo alive (ms)
   // ── Senkronizasyon ──
   contentVersion      Int            @default(1) // her değişiklikte artar
   // ── Relations ──
@@ -1036,7 +1047,88 @@ model GiftType {
   @@index([collectionId])
   @@index([displayType])
   @@index([contentVersion])
+  @@index([priority])
   @@map("gift_types")
+}
+
+// ===========================================================================
+// Gift Engine — professional per-room queue / combo / history engine.
+// All three tables use plain scalar foreign keys (no @relation back-refs) so
+// they are fully additive and do not touch the User / GiftType relation graph.
+// Shared by web, Flutter and any future platform via the same backend.
+// ===========================================================================
+
+// Per-context FIFO gift queue. One independent queue per room/stream so a busy
+// user in one room can never block another room. Clients play entries in
+// queueIndex order; each entry is marked finished when its animation completes.
+model GiftQueue {
+  id          String    @id @default(cuid())
+  context     String    // voice_room | live_stream | pk
+  contextId   String    // roomId | streamId | battleId
+  giftTypeId  String
+  senderId    String
+  receiverId  String
+  quantity    Int       @default(1)
+  combo       Int       @default(1)
+  priority    String    @default("MEDIUM") // SMALL | MEDIUM | LARGE | ULTRA
+  durationMs  Int       @default(3000)
+  displayArea String    @default("CENTER")
+  status      String    @default("pending") // pending | playing | finished
+  queueIndex  Int       @default(0)
+  payload     String    @db.Text // cached gift_received payload JSON (replay/late-join)
+  createdAt   DateTime  @default(now())
+  playedAt    DateTime?
+  finishedAt  DateTime?
+
+  @@index([contextId, status, queueIndex])
+  @@index([contextId, createdAt])
+  @@index([status, createdAt])
+  @@map("gift_queue")
+}
+
+// Combo tracking: consecutive sends of the SAME gift by the SAME sender in the
+// SAME context within comboWindowMs increment comboCount. Backend is the single
+// source of truth for combo; clients only display the result.
+model GiftCombo {
+  id         String   @id @default(cuid())
+  context    String
+  contextId  String
+  senderId   String
+  giftTypeId String
+  receiverId String?
+  comboCount Int      @default(1)
+  lastSentAt DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([contextId, senderId, giftTypeId])
+  @@index([contextId, senderId])
+  @@index([expiresAt])
+  @@map("gift_combos")
+}
+
+// Unified send log for the engine (analytics / replay), independent of the
+// existing ChatRoomGift / StreamGift financial records which are untouched.
+model GiftHistory {
+  id            String   @id @default(cuid())
+  context       String
+  contextId     String
+  senderId      String
+  receiverId    String
+  giftTypeId    String
+  quantity      Int      @default(1)
+  combo         Int      @default(1)
+  priority      String   @default("MEDIUM")
+  coinAmount    Int      @default(0) // total jetons spent
+  animationType String?
+  displayArea   String?
+  createdAt     DateTime @default(now())
+
+  @@index([contextId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([receiverId, createdAt])
+  @@index([giftTypeId, createdAt])
+  @@map("gift_history")
 }
 
 // ── Hediye Koleksiyonları ──
