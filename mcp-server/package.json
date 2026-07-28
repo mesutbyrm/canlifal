@@ -1,0 +1,21 @@
+{
+  "name": "canlifal-backend-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CanliFal backend MCP server - exposes API endpoints, Prisma schema, data models, auth flow and services to MCP clients (Cursor) for 1:1 Flutter development.",
+  "main": "index.mjs",
+  "bin": {
+    "canlifal-backend-mcp": "index.mjs"
+  },
+  "scripts": {
+    "start": "node index.mjs",
+    "selftest": "node index.mjs --selftest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
