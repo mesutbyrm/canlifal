@@ -3,7 +3,9 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
 import { SEAT_COUNT, findFirstFreeSeat, seatStaleThreshold } from '@/lib/voice-room-constants'
-import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
+import { ROLE_HIERARCHY, ROLE_SYMBOLS } from '@/lib/chat-permissions'
+import { getCachedChatRoom } from '@/lib/cache'
+import { withTiming } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +18,7 @@ export const dynamic = 'force-dynamic'
  *
  * Body: { roomId, roomType: 'stream' | 'voice', nickname? }
  */
-export async function POST(request: NextRequest) {
+async function handleJoinRoom(request: NextRequest) {
   try {
     const authUser = await authenticateRequest(request)
     if (!authUser) {
@@ -184,12 +186,9 @@ export async function POST(request: NextRequest) {
 
     } else {
       // ─── Voice Chat Room ───
-      const room = await prisma.chatRoom.findFirst({
-        where: { OR: [{ id: roomId }, { slug: roomId }] },
-        include: {
-          owner: { select: { id: true, name: true, image: true } },
-        }
-      })
+      // Room row is cached (15s) — it's mostly static and re-read on every
+      // join/heartbeat. Password is only compared server-side, never sent out.
+      const room = await getCachedChatRoom(roomId)
 
       if (!room) {
         return NextResponse.json(
@@ -200,10 +199,16 @@ export async function POST(request: NextRequest) {
 
       isHost = room.ownerId === authUser.id
 
-      // Check ban
-      const ban = await prisma.chatBan.findUnique({
-        where: { roomId_userId: { roomId: room.id, userId: authUser.id } }
-      })
+      // Ban check + existing-presence lookup run in parallel — independent reads.
+      const [ban, existingPresence] = await Promise.all([
+        prisma.chatBan.findUnique({
+          where: { roomId_userId: { roomId: room.id, userId: authUser.id } }
+        }),
+        prisma.chatPresence.findUnique({
+          where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
+          select: { seatIndex: true, lastSeen: true }
+        })
+      ])
       if (ban) {
         const isExpired = ban.expiresAt && new Date(ban.expiresAt) < new Date()
         if (!isExpired) {
@@ -215,14 +220,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Determine if this is a fresh join (vs. a reconnect/heartbeat)
+      // Determine if this is a fresh join (vs. a reconnect/heartbeat).
       // Auto-seat free-slot search uses the short stale window so ghost seats
-      // (unclean leavers) don't block the next joiner.
+      // (unclean leavers) don't block the next joiner. existingPresence was
+      // already fetched in parallel above.
       const presenceTimeoutJoin = seatStaleThreshold()
-      const existingPresence = await prisma.chatPresence.findUnique({
-        where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-        select: { seatIndex: true, lastSeen: true }
-      })
       const isFreshJoin = !existingPresence || existingPresence.lastSeen < new Date(Date.now() - 30000)
 
       // ── Password gate for NORMAL / VIP rooms (owner + staff bypass) ──
@@ -287,42 +289,86 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      participants = presences.map((p: any) => ({
-        userId: p.user?.id || p.userId || '',
-        name: p.user?.name || 'Anonim',
-        nickname: p.nickname || p.user?.name || 'Anonim',
-        image: p.user?.image || '',
-        role: p.user?.role || '',
-        membership: p.user?.membership || '',
-        seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : -1,
-        joinedAt: '',
-        lastSeen: p.lastSeen?.toISOString?.() || p.lastSeen || '',
-        isMicOn: false,
-      }))
+      // Fold in mic status (active voice sessions), per-room moderator roles and
+      // the room gift ranking IN PARALLEL so Flutter does NOT need a second
+      // /state call after join. All three reads are independent of each other.
+      const activeUserIds = presences.map((p: any) => p.userId)
+      const [chatRoles, micSessions, topRoomGifts] = await Promise.all([
+        activeUserIds.length > 0
+          ? prisma.chatUserRole.findMany({
+              where: { roomId: room.id, userId: { in: activeUserIds } },
+              select: { userId: true, role: true }
+            })
+          : Promise.resolve([] as { userId: string; role: string }[]),
+        activeUserIds.length > 0
+          ? prisma.voiceSession.findMany({
+              where: { roomId: room.id, userId: { in: activeUserIds }, isActive: true },
+              select: { userId: true }
+            })
+          : Promise.resolve([] as { userId: string }[]),
+        prisma.chatRoomGift.groupBy({
+          by: ['senderId'],
+          where: { roomId: room.id },
+          _sum: { totalPrice: true },
+          orderBy: { _sum: { totalPrice: 'desc' } },
+          take: 10
+        })
+      ])
+
+      const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
+      const micOnSet = new Set(micSessions.map((v: any) => v.userId))
+      const globalAdminRolesJ = ['admin', 'moderator', 'site_manager']
+      const roleInfo = (p: any) => {
+        const isGlobalAdmin = globalAdminRolesJ.includes(p.user?.role || '')
+        const chatRole = (roleMap.get(p.userId) as string | undefined) || (isGlobalAdmin ? 'superadmin' : null)
+        const roleSymbol = chatRole ? (ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '') : ''
+        const roleLevel = chatRole ? (ROLE_HIERARCHY[chatRole as keyof typeof ROLE_HIERARCHY] || 0) : 0
+        return { isGlobalAdmin, chatRole, roleSymbol, roleLevel }
+      }
+
+      participants = presences.map((p: any) => {
+        const ri = roleInfo(p)
+        return {
+          userId: p.user?.id || p.userId || '',
+          name: p.user?.name || 'Anonim',
+          nickname: p.nickname || p.user?.name || 'Anonim',
+          image: p.user?.image || '',
+          role: p.user?.role || '',
+          membership: p.user?.membership || '',
+          seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : -1,
+          joinedAt: '',
+          lastSeen: p.lastSeen?.toISOString?.() || p.lastSeen || '',
+          isMicOn: micOnSet.has(p.userId),
+          micOn: micOnSet.has(p.userId),
+          chatRole: ri.chatRole,
+          roleSymbol: ri.roleSymbol,
+          roleLevel: ri.roleLevel,
+          isAdmin: ri.isGlobalAdmin,
+          isOwner: room.ownerId === p.userId,
+        }
+      })
 
       // Seat map (occupied seats). Only show a seat as taken if the occupant's
       // heartbeat is still fresh (SEAT_STALE_MS) so freed seats appear empty.
       const seatStaleMs = seatStaleThreshold().getTime()
       seats = presences
         .filter((p: any) => (p.seatIndex ?? -1) >= 0 && new Date(p.lastSeen).getTime() >= seatStaleMs)
-        .map((p: any) => ({
-          seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : 0,
-          userId: p.user?.id || p.userId || '',
-          userName: p.nickname || p.user?.name || 'Anonim',
-          name: p.nickname || p.user?.name || 'Anonim',
-          image: p.user?.image || '',
-          userImage: p.user?.image || '',
-          isMicOn: false,
-        }))
-
-      // Top gift senders in this room
-      const topRoomGifts = await prisma.chatRoomGift.groupBy({
-        by: ['senderId'],
-        where: { roomId: room.id },
-        _sum: { totalPrice: true },
-        orderBy: { _sum: { totalPrice: 'desc' } },
-        take: 10
-      })
+        .map((p: any) => {
+          const ri = roleInfo(p)
+          return {
+            seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : 0,
+            userId: p.user?.id || p.userId || '',
+            userName: p.nickname || p.user?.name || 'Anonim',
+            name: p.nickname || p.user?.name || 'Anonim',
+            image: p.user?.image || '',
+            userImage: p.user?.image || '',
+            isMicOn: micOnSet.has(p.userId),
+            micOn: micOnSet.has(p.userId),
+            chatRole: ri.chatRole,
+            roleSymbol: ri.roleSymbol,
+            isOwner: room.ownerId === p.userId,
+          }
+        })
 
       if (topRoomGifts.length > 0) {
         const senderIds = topRoomGifts.map((g: any) => g.senderId)
@@ -420,3 +466,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export const POST = withTiming('/api/live/join-room', handleJoinRoom)

@@ -574,3 +574,23 @@ export async function getCachedAchievements() {
     })
   })
 }
+
+/**
+ * Cached chat-room metadata lookup (by id OR slug). Short 15s TTL so voice-room
+ * joins don't re-read the mostly-static room row (name, background, type,
+ * password, owner) on every join/heartbeat while still reflecting admin edits
+ * quickly. Invalidate with invalidateCache(`chatroom:<idOrSlug>`) after edits.
+ *
+ * NOTE: returns the full room row incl. owner — safe because the room password
+ * is only compared server-side inside join-room, never sent to clients.
+ */
+export async function getCachedChatRoom(idOrSlug: string) {
+  return getCached(`chatroom:${idOrSlug}`, 15, async () => {
+    return prisma.chatRoom.findFirst({
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+      include: {
+        owner: { select: { id: true, name: true, image: true } },
+      },
+    })
+  })
+}

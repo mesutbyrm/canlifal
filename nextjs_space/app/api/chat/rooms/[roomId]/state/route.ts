@@ -7,6 +7,7 @@ import { ROLE_SYMBOLS, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { SEAT_COUNT, seatStaleThreshold } from '@/lib/voice-room-constants'
+import { withTiming } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ export const dynamic = 'force-dynamic'
  * Realtime deltas after this snapshot arrive via the SSE stream endpoint
  * (/api/chat/rooms/[roomId]/stream) as `presence` + `room_event` payloads.
  */
-export async function GET(
+async function handleState(
   request: NextRequest,
   { params }: { params: Promise<{ roomId: string }> }
 ) {
@@ -179,3 +180,5 @@ export async function GET(
     )
   }
 }
+
+export const GET = withTiming('/api/chat/rooms/[roomId]/state', handleState)
