@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { generatePresignedUploadUrl } from '@/lib/s3';
+import { resolveMediaUrl } from '@/lib/media-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,11 @@ export async function POST(request: NextRequest) {
       'gift/gifts'
     );
 
-    return NextResponse.json({ uploadUrl, cloud_storage_path });
+    // Gift assets are always public; return the full CDN URL so the admin UI
+    // can persist a working absolute URL instead of a relative storage key.
+    const publicUrl = resolveMediaUrl(cloud_storage_path);
+
+    return NextResponse.json({ uploadUrl, cloud_storage_path, publicUrl });
   } catch (error) {
     console.error('Gift upload presigned URL error:', error);
     return NextResponse.json({ error: 'Yükleme bağlantısı oluşturulamadı' }, { status: 500 });

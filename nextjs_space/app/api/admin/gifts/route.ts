@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { invalidateCache } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
+import { serializeGiftMedia } from '@/lib/media-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      gifts,
+      gifts: gifts.map(serializeGiftMedia),
       total,
       page,
       totalPages: Math.ceil(total / limit),

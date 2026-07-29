@@ -7,6 +7,8 @@
  * device and is visible to everyone in the room / stream.
  */
 
+import { resolveMediaUrl } from './media-url'
+
 export interface GiftRenderMeta {
   giftIcon: string
   assetUrl: string | null
@@ -64,12 +66,12 @@ function deriveAssetFormat(assetType: string | null | undefined, url: string | n
  * fields) and returns only the fields clients need to render it.
  */
 export function buildGiftRenderMeta(giftType: any): GiftRenderMeta {
-  const assetUrl = giftType?.assetUrl ?? null
+  const assetUrl = resolveMediaUrl(giftType?.assetUrl) ?? null
   const assetType = giftType?.assetType ?? null
   const assetFormat = deriveAssetFormat(assetType, assetUrl)
   const isVideo = assetFormat === 'mp4' || assetFormat === 'webm'
-  const thumbnailUrl = giftType?.thumbnailUrl ?? null
-  const iconImageUrl = giftType?.iconImageUrl ?? null
+  const thumbnailUrl = resolveMediaUrl(giftType?.thumbnailUrl) ?? null
+  const iconImageUrl = resolveMediaUrl(giftType?.iconImageUrl) ?? null
   // Best static image for png/webp/avif renderers.
   const imageUrl = (!isVideo && (assetFormat === 'png' || assetFormat === 'webp' || assetFormat === 'avif' || assetFormat === 'jpeg') ? assetUrl : null)
     ?? thumbnailUrl ?? iconImageUrl ?? null
@@ -95,7 +97,7 @@ export function buildGiftRenderMeta(giftType: any): GiftRenderMeta {
     repeatCount: giftType?.repeatCount ?? null,
     particleEffect: giftType?.particleEffect ?? null,
     effectColor: giftType?.effectColor ?? null,
-    soundUrl: giftType?.soundUrl ?? null,
-    musicUrl: giftType?.musicUrl ?? null,
+    soundUrl: resolveMediaUrl(giftType?.soundUrl) ?? null,
+    musicUrl: resolveMediaUrl(giftType?.musicUrl) ?? null,
   }
 }

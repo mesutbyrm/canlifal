@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generatePresignedUploadUrl } from '@/lib/s3'
+import { resolveMediaUrl } from '@/lib/media-url'
 import { authenticateRequest } from '@/lib/mobile-auth';
 
 export const dynamic = 'force-dynamic'
@@ -54,7 +55,11 @@ export async function POST(request: NextRequest) {
       targetFolder
     )
 
-    return NextResponse.json({ uploadUrl, cloud_storage_path })
+    // Also return the fully-qualified public CDN URL so clients (web + mobile)
+    // can store/render the asset directly without needing to reconstruct it.
+    const publicUrl = isPublic ? resolveMediaUrl(cloud_storage_path) : null
+
+    return NextResponse.json({ uploadUrl, cloud_storage_path, publicUrl })
   } catch (error) {
     console.error('Presigned URL error:', error)
     return NextResponse.json(

@@ -4,6 +4,7 @@ import { authenticateRequest } from '@/lib/mobile-auth';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { getCached, invalidateCache, CACHE_TTL } from '@/lib/cache';
+import { serializeGiftMedia } from '@/lib/media-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
       ]);
 
       return {
-        gifts,
+        gifts: gifts.map(serializeGiftMedia),
         collections,
         currentVersion: maxVersionResult._max.contentVersion || 1,
         totalGifts: gifts.length,

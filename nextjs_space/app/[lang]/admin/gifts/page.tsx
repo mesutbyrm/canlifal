@@ -205,7 +205,7 @@ async function uploadGiftFile(file: File, purpose: string): Promise<{ cloudPath:
     body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream', purpose }),
   });
   if (!res.ok) throw new Error('Yükleme URL\'si alınamadı');
-  const { uploadUrl, cloud_storage_path } = await res.json();
+  const { uploadUrl, cloud_storage_path, publicUrl: serverPublicUrl } = await res.json();
 
   const headers: Record<string, string> = { 'Content-Type': file.type || 'application/octet-stream' };
   if (uploadUrl.includes('content-disposition')) {
@@ -214,12 +214,15 @@ async function uploadGiftFile(file: File, purpose: string): Promise<{ cloudPath:
   const up = await fetch(uploadUrl, { method: 'PUT', body: file, headers });
   if (!up.ok) throw new Error('Dosya yüklenemedi');
 
-  // Build public URL
-  const bucketMatch = uploadUrl.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com/);
-  let publicUrl = '';
-  if (bucketMatch) {
-    const encodedKey = cloud_storage_path.split('/').map(encodeURIComponent).join('/');
-    publicUrl = `https://${bucketMatch[1]}.s3.${bucketMatch[2]}.amazonaws.com/${encodedKey}`;
+  // Prefer the fully-qualified public URL returned by the server (works for
+  // both R2 and legacy S3). Fall back to reconstructing from the storage key.
+  let publicUrl: string = serverPublicUrl || '';
+  if (!publicUrl) {
+    const bucketMatch = uploadUrl.match(/https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com/);
+    if (bucketMatch) {
+      const encodedKey = cloud_storage_path.split('/').map(encodeURIComponent).join('/');
+      publicUrl = `https://${bucketMatch[1]}.s3.${bucketMatch[2]}.amazonaws.com/${encodedKey}`;
+    }
   }
 
   return { cloudPath: cloud_storage_path, publicUrl };

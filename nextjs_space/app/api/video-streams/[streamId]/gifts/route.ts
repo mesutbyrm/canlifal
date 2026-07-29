@@ -11,6 +11,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
+import { serializeGiftMedia } from '@/lib/media-url'
 import { processGiftSend } from '@/lib/gift-engine'
 
 async function createStreamGiftAnnouncement(
@@ -75,7 +76,11 @@ export async function GET(
       }
     })
 
-    return NextResponse.json(gifts)
+    const serialized = gifts.map((gft: any) => ({
+      ...gft,
+      giftType: gft.giftType ? serializeGiftMedia(gft.giftType) : gft.giftType,
+    }))
+    return NextResponse.json(serialized)
   } catch (error) {
     console.error('Error fetching gifts:', error)
     return NextResponse.json([], { status: 500 })

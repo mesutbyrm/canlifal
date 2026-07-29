@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { resolveMediaUrl } from '@/lib/media-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,8 +52,8 @@ export async function GET(request: NextRequest) {
       animation: g.animation || '',
       price: typeof g.price === 'number' ? g.price : 0,
       sortOrder: typeof g.sortOrder === 'number' ? g.sortOrder : 0,
-      thumbnailUrl: g.thumbnailUrl || '',
-      assetUrl: g.assetUrl || '',
+      thumbnailUrl: resolveMediaUrl(g.thumbnailUrl) || '',
+      assetUrl: resolveMediaUrl(g.assetUrl) || '',
       assetType: g.assetType || '',
     }))
 
