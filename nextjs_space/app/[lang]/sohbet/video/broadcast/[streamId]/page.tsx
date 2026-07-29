@@ -186,7 +186,7 @@ export default function BroadcastPage() {
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [connectedViewers, setConnectedViewers] = useState(0)
   const [centerGift, setCenterGift] = useState<CenterGift | null>(null)
-  const giftAnimTriggerRef = useRef<((gift: { id: string; senderName: string; senderImage?: string | null; giftIcon: string; giftName: string; giftPrice: number; animation: string; quantity?: number }) => void) | null>(null)
+  const giftAnimTriggerRef = useRef<((gift: { id: string; senderName: string; senderImage?: string | null; giftIcon: string; giftName: string; giftPrice: number; animation: string; quantity?: number; assetUrl?: string | null; assetType?: string | null }) => void) | null>(null)
   const [viewers, setViewers] = useState<Viewer[]>([])
   const [newComment, setNewComment] = useState('')
   const [showViewers, setShowViewers] = useState(false)
@@ -764,6 +764,8 @@ export default function BroadcastPage() {
               giftPrice: newGift.giftType.price,
               animation: newGift.giftType.animation || 'sparkle_burst',
               quantity: newGift.quantity || 1,
+              assetUrl: newGift.giftType.assetUrl,
+              assetType: newGift.giftType.assetType,
             })
           }
           

@@ -68,6 +68,8 @@ interface GiftType {
   icon: string
   animation?: string
   price: number
+  assetUrl?: string | null
+  assetType?: string | null
 }
 
 interface CenterGift {
@@ -894,7 +896,9 @@ function VideoStreamPageInner() {
             animation: newGift.giftType?.animation || '', 
             icon: newGift.giftType?.icon || '🎁', 
             name: newGift.giftType?.name || 'Hediye',
-            price: newGift.giftType?.price || 0
+            price: newGift.giftType?.price || 0,
+            assetUrl: newGift.giftType?.assetUrl,
+            assetType: newGift.giftType?.assetType
           },
           newGift.sender?.name || 'Kullanıcı',
           newGift.sender?.image
@@ -1115,7 +1119,7 @@ function VideoStreamPageInner() {
   }
 
   // Hediye animasyonu tetikleyici - yeni overlay sistemi
-  const triggerGiftAnimation = (gift: { animation?: string; icon: string; name: string; price?: number }, senderName: string, senderImage?: string | null) => {
+  const triggerGiftAnimation = (gift: { animation?: string; icon: string; name: string; price?: number; assetUrl?: string | null; assetType?: string | null }, senderName: string, senderImage?: string | null) => {
     const anim = gift.animation || 'sparkle_burst'
     
     // Trigger new gift animation overlay
@@ -1129,6 +1133,8 @@ function VideoStreamPageInner() {
         giftPrice: gift.price || 0,
         animation: anim,
         quantity: 1,
+        assetUrl: gift.assetUrl,
+        assetType: gift.assetType,
       })
     }
     

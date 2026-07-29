@@ -14,6 +14,16 @@ interface GiftAnimationData {
   giftPrice: number
   animation: string
   quantity?: number
+  assetUrl?: string | null
+  assetType?: string | null
+}
+
+// Detects whether a gift's animation asset is a video (mp4/webm) so we can play
+// it with a <video> element instead of showing only the static icon/emoji.
+function isVideoGiftAsset(assetType?: string | null, assetUrl?: string | null): boolean {
+  const t = (assetType || '').toLowerCase()
+  const u = (assetUrl || '').toLowerCase().split('?')[0]
+  return t === 'video' || u.endsWith('.mp4') || u.endsWith('.webm')
 }
 
 interface Particle {
@@ -172,6 +182,7 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
 
   const isExpensiveGift = activeGift && activeGift.giftPrice >= 200
   const isLuxuryGift = activeGift && activeGift.giftPrice >= 500
+  const isVideoActive = !!activeGift && isVideoGiftAsset(activeGift.assetType, activeGift.assetUrl)
 
   return (
     <>
@@ -265,7 +276,17 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
                   </motion.div>
                 )}
 
-                {(activeGift.giftIcon || '🎁').startsWith('/') ? (
+                {isVideoActive && activeGift.assetUrl ? (
+                  <video
+                    key={activeGift.id}
+                    src={activeGift.assetUrl}
+                    autoPlay
+                    muted
+                    playsInline
+                    loop
+                    className={`${isLuxuryGift ? 'w-72 sm:w-80' : 'w-60 sm:w-64'} max-w-[85vw] max-h-[70vh] object-contain relative z-10 rounded-2xl drop-shadow-[0_0_30px_rgba(255,200,0,0.6)]`}
+                  />
+                ) : (activeGift.giftIcon || '🎁').startsWith('/') ? (
                   <Image
                     src={activeGift.giftIcon}
                     alt={activeGift.giftName || 'Hediye'}

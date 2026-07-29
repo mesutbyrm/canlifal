@@ -198,7 +198,7 @@ export default function ChatRoomPage() {
   const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
   const giftPaymentType = 'jeton' as const
   const [sendingGift, setSendingGift] = useState(false)
-  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}>>([])
+  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; assetUrl?: string; assetType?: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}>>([])
   const lastGiftPollRef = useRef<string>(new Date().toISOString())
   const seenGiftIdsRef = useRef<Set<string>>(new Set())
   const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
@@ -2036,7 +2036,7 @@ export default function ChatRoomPage() {
         setLeaderboard(data.leaderboard || [])
         // Process recent gifts for animation
         const recent = data.recentGifts || []
-        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}> = []
+        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; assetUrl?: string; assetType?: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}> = []
         // Prevent unbounded memory growth — cap seen gift IDs at 200
         if (seenGiftIdsRef.current.size > 200) {
           const arr = Array.from(seenGiftIdsRef.current)
@@ -2049,6 +2049,8 @@ export default function ChatRoomPage() {
               id: g.id,
               giftImage: g.giftImage || GIFT_IMAGES[g.giftTypeId] || '',
               giftIcon: g.giftIcon || '🎁',
+              assetUrl: g.videoUrl || g.assetUrl || '',
+              assetType: g.assetType || '',
               senderName: g.senderName,
               recipientId: g.recipientId,
               recipientName: g.recipientName,
@@ -4150,6 +4152,7 @@ export default function ChatRoomPage() {
       <AnimatePresence>
         {giftAnimations.map((anim) => {
           const giftSrc = anim.giftImage || (anim.giftIcon?.startsWith('/') ? anim.giftIcon : '')
+          const isVid = (anim.assetType || '').toLowerCase() === 'video' || /\.(mp4|webm)(\?|$)/i.test(anim.assetUrl || '')
           return (
             <motion.div
               key={anim.id}
@@ -4248,7 +4251,9 @@ export default function ChatRoomPage() {
                 >
                   {/* Glow behind gift */}
                   <div className="absolute inset-0 blur-2xl bg-yellow-400/40 rounded-full scale-150" />
-                  {giftSrc ? (
+                  {isVid && anim.assetUrl ? (
+                    <video key={anim.id} src={anim.assetUrl} autoPlay muted playsInline loop className="relative w-40 h-40 sm:w-52 sm:h-52 max-w-[80vw] object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" />
+                  ) : giftSrc ? (
                     <img src={giftSrc} alt="gift" className="relative w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" />
                   ) : (
                     <span className="relative text-7xl sm:text-8xl drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]">{anim.giftIcon || '🎁'}</span>
