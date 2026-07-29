@@ -7,7 +7,7 @@
  * device and is visible to everyone in the room / stream.
  */
 
-import { resolveMediaUrl } from './media-url'
+import { resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from './media-url'
 
 export interface GiftRenderMeta {
   giftIcon: string
@@ -36,29 +36,15 @@ export interface GiftRenderMeta {
   effectColor: string | null
   soundUrl: string | null
   musicUrl: string | null
-}
-
-/**
- * Derives a concrete asset format (png/webp/avif/gif/svga/lottie/mp4/webm)
- * from the stored assetType and the file extension of the url. Lets every
- * client pick the correct player without guessing.
- */
-function deriveAssetFormat(assetType: string | null | undefined, url: string | null | undefined): string | null {
-  const t = (assetType || '').toLowerCase()
-  const u = (url || '').toLowerCase().split('?')[0]
-  const ext = u.includes('.') ? u.substring(u.lastIndexOf('.') + 1) : ''
-  if (ext === 'svga') return 'svga'
-  if (ext === 'json' || ext === 'lottie' || t === 'lottie') return 'lottie'
-  if (ext === 'mp4') return 'mp4'
-  if (ext === 'webm') return 'webm'
-  if (ext === 'gif' || t === 'gif') return 'gif'
-  if (ext === 'webp') return 'webp'
-  if (ext === 'avif') return 'avif'
-  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') return ext === 'jpg' ? 'jpeg' : ext
-  if (t === 'svga') return 'svga'
-  if (t === 'video') return 'mp4'
-  if (t === 'image') return 'png'
-  return t || null
+  // ── Unified client-facing media descriptors (same as the gift catalog JSON) ──
+  type: string                    // alias of mediaType
+  mediaType: string               // video | image | gif | lottie | svga
+  fileUrl: string | null          // primary asset (full public URL)
+  previewUrl: string | null       // best static preview for grids/cells
+  width: number | null
+  height: number | null
+  duration: number | null         // ms
+  mimeType: string | null
 }
 
 /**
@@ -68,13 +54,16 @@ function deriveAssetFormat(assetType: string | null | undefined, url: string | n
 export function buildGiftRenderMeta(giftType: any): GiftRenderMeta {
   const assetUrl = resolveMediaUrl(giftType?.assetUrl) ?? null
   const assetType = giftType?.assetType ?? null
-  const assetFormat = deriveAssetFormat(assetType, assetUrl)
+  const assetFormat = deriveAssetFormat(assetType, assetUrl, giftType?.animationType)
   const isVideo = assetFormat === 'mp4' || assetFormat === 'webm'
+  const mediaType = deriveMediaType(assetFormat)
   const thumbnailUrl = resolveMediaUrl(giftType?.thumbnailUrl) ?? null
   const iconImageUrl = resolveMediaUrl(giftType?.iconImageUrl) ?? null
   // Best static image for png/webp/avif renderers.
   const imageUrl = (!isVideo && (assetFormat === 'png' || assetFormat === 'webp' || assetFormat === 'avif' || assetFormat === 'jpeg') ? assetUrl : null)
     ?? thumbnailUrl ?? iconImageUrl ?? null
+  const isStaticImage = mediaType === 'image' || mediaType === 'gif'
+  const previewUrl = thumbnailUrl ?? iconImageUrl ?? (isStaticImage ? assetUrl : null)
   return {
     giftIcon: giftType?.icon ?? '',
     assetUrl,
@@ -99,5 +88,14 @@ export function buildGiftRenderMeta(giftType: any): GiftRenderMeta {
     effectColor: giftType?.effectColor ?? null,
     soundUrl: resolveMediaUrl(giftType?.soundUrl) ?? null,
     musicUrl: resolveMediaUrl(giftType?.musicUrl) ?? null,
+    // Unified client-facing descriptors (kept in sync with the gift catalog).
+    type: mediaType,
+    mediaType,
+    fileUrl: assetUrl,
+    previewUrl,
+    width: giftType?.assetWidth ?? null,
+    height: giftType?.assetHeight ?? null,
+    duration: giftType?.assetDurationMs ?? null,
+    mimeType: giftType?.assetMimeType ?? deriveMimeType(assetFormat),
   }
 }

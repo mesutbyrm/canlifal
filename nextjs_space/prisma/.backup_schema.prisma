@@ -956,6 +956,11 @@ model GiftType {
   assetType           String?        @default("image") // image | video | lottie | svga | gif
   cloudStoragePath    String? // internal storage key for the asset
   thumbnailCloudPath  String? // internal storage key for the thumbnail
+  // ── Media metadata (added; nullable/backward-compatible) ──
+  assetWidth          Int?           // intrinsic width in px (video/image)
+  assetHeight         Int?           // intrinsic height in px (video/image)
+  assetDurationMs     Int?           // media duration in ms (video/audio)
+  assetMimeType       String?        // e.g. video/mp4, image/png
   category            String? // optional grouping (e.g. "luxury", "romantic")
   description         String?        @db.Text
   updatedAt           DateTime       @default(now()) @updatedAt

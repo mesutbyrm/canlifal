@@ -4,7 +4,8 @@ import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { invalidateCache } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
-import { serializeGiftMedia } from '@/lib/media-url';
+import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
+import { generateVideoThumbnail } from '@/lib/gift-media-probe';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,10 +88,29 @@ export async function POST(request: NextRequest) {
     };
 
     const assetUrl = body.assetUrl || await resolveUrl(body.cloudStoragePath);
-    const thumbnailUrl = body.thumbnailUrl || await resolveUrl(body.thumbnailCloudPath);
+    let thumbnailUrl = body.thumbnailUrl || await resolveUrl(body.thumbnailCloudPath);
     const iconImageUrl = body.iconImageUrl || await resolveUrl(body.iconImageCloudPath);
     const soundUrl = body.soundUrl || await resolveUrl(body.soundCloudPath);
     const musicUrl = body.musicUrl || await resolveUrl(body.musicCloudPath);
+
+    // ── Derive media descriptors + MIME type from the resolved asset ──
+    const resolvedAssetUrl = resolveMediaUrl(assetUrl) ?? assetUrl ?? null;
+    const assetFormat = deriveAssetFormat(body.assetType, resolvedAssetUrl, body.animationType);
+    const mediaType = deriveMediaType(assetFormat);
+    const assetMimeType = body.assetMimeType || deriveMimeType(assetFormat) || undefined;
+    const assetWidth = body.assetWidth != null ? parseInt(body.assetWidth) : undefined;
+    const assetHeight = body.assetHeight != null ? parseInt(body.assetHeight) : undefined;
+    const assetDurationMs = body.assetDurationMs != null ? parseInt(body.assetDurationMs) : undefined;
+
+    // ── Auto-generate a poster thumbnail for videos when none was provided ──
+    if (mediaType === 'video' && !thumbnailUrl && resolvedAssetUrl) {
+      try {
+        const posterUrl = await generateVideoThumbnail(resolvedAssetUrl);
+        if (posterUrl) thumbnailUrl = posterUrl;
+      } catch (e) {
+        console.error('Gift thumbnail auto-generation failed (continuing):', e);
+      }
+    }
 
     const gift = await prisma.giftType.create({
       data: {
@@ -107,6 +127,11 @@ export async function POST(request: NextRequest) {
         assetType: body.assetType || 'image',
         cloudStoragePath: body.cloudStoragePath,
         thumbnailCloudPath: body.thumbnailCloudPath,
+        // Media metadata (nullable / backward-compatible)
+        assetWidth,
+        assetHeight,
+        assetDurationMs,
+        assetMimeType,
         category: body.category,
         description: body.description,
         // Premium
@@ -189,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     await invalidateCache('gifts:active');
 
-    return NextResponse.json(gift, { status: 201 });
+    return NextResponse.json(serializeGiftMedia(gift), { status: 201 });
   } catch (error: any) {
     console.error('Admin gift create error:', error);
     return NextResponse.json({ error: error.message || 'Hediye oluşturulamadı' }, { status: 500 });

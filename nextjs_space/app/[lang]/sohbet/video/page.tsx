@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import type { GridParticipant } from '@/components/stream-video-grid'
 import { useJoinToasts } from '@/components/stream-join-toast'
+import { GiftThumb } from '@/components/gift-thumb'
 
 const GiftNotificationBanner = dynamic(() => import('@/components/gift-notification-banner'), { ssr: false })
 const CfcJetonInfoPopup = dynamic(() => import('@/components/cfc-jeton-info-popup'), { ssr: false })
@@ -70,6 +71,10 @@ interface GiftType {
   price: number
   assetUrl?: string | null
   assetType?: string | null
+  mediaType?: string | null
+  previewUrl?: string | null
+  thumbnailUrl?: string | null
+  fileUrl?: string | null
 }
 
 interface CenterGift {
@@ -898,7 +903,8 @@ function VideoStreamPageInner() {
             name: newGift.giftType?.name || 'Hediye',
             price: newGift.giftType?.price || 0,
             assetUrl: newGift.giftType?.assetUrl,
-            assetType: newGift.giftType?.assetType
+            assetType: newGift.giftType?.assetType,
+            thumbnailUrl: newGift.giftType?.thumbnailUrl || newGift.giftType?.previewUrl
           },
           newGift.sender?.name || 'Kullanıcı',
           newGift.sender?.image
@@ -1119,7 +1125,7 @@ function VideoStreamPageInner() {
   }
 
   // Hediye animasyonu tetikleyici - yeni overlay sistemi
-  const triggerGiftAnimation = (gift: { animation?: string; icon: string; name: string; price?: number; assetUrl?: string | null; assetType?: string | null }, senderName: string, senderImage?: string | null) => {
+  const triggerGiftAnimation = (gift: { animation?: string; icon: string; name: string; price?: number; assetUrl?: string | null; assetType?: string | null; thumbnailUrl?: string | null; previewUrl?: string | null }, senderName: string, senderImage?: string | null) => {
     const anim = gift.animation || 'sparkle_burst'
     
     // Trigger new gift animation overlay
@@ -1135,6 +1141,7 @@ function VideoStreamPageInner() {
         quantity: 1,
         assetUrl: gift.assetUrl,
         assetType: gift.assetType,
+        thumbnailUrl: gift.thumbnailUrl || gift.previewUrl || null,
       })
     }
     
@@ -2033,14 +2040,10 @@ function VideoStreamPageInner() {
                           </div>
                         )}
                         
-                        {/* Gift icon */}
-                        {gift.icon.startsWith('/') ? (
-                          <div className="relative w-12 h-12 mb-1.5">
-                            <Image src={gift.icon} alt={gift.name} width={48} height={48} className="w-12 h-12 object-contain drop-shadow-md" />
-                          </div>
-                        ) : (
-                          <span className="text-3xl mb-1.5">{gift.icon}</span>
-                        )}
+                        {/* Gift icon / preview */}
+                        <div className="relative w-12 h-12 mb-1.5 flex items-center justify-center">
+                          <GiftThumb gift={gift} className="w-12 h-12 object-contain drop-shadow-md" />
+                        </div>
                         
                         {/* Name */}
                         <span className="text-white text-[11px] font-medium leading-tight mb-1">{gift.name}</span>

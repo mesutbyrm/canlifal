@@ -16,6 +16,7 @@ interface GiftAnimationData {
   quantity?: number
   assetUrl?: string | null
   assetType?: string | null
+  thumbnailUrl?: string | null
 }
 
 // Detects whether a gift's animation asset is a video (mp4/webm) so we can play
@@ -280,6 +281,7 @@ export default function GiftAnimationOverlay({ onTrigger }: GiftAnimationOverlay
                   <video
                     key={activeGift.id}
                     src={activeGift.assetUrl}
+                    poster={activeGift.thumbnailUrl || undefined}
                     autoPlay
                     muted
                     playsInline

@@ -38,6 +38,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Video: cross-validate the file extension against the declared MIME ──
+    // Ensures an mp4/webm gift really is an mp4/webm before we ever store it.
+    if (contentType.startsWith('video/')) {
+      const ext = (fileName.includes('.') ? fileName.split('.').pop() : '').toLowerCase();
+      const extToMime: Record<string, string> = { mp4: 'video/mp4', webm: 'video/webm' };
+      if (!ext || !extToMime[ext]) {
+        return NextResponse.json(
+          { error: `Geçersiz video uzantısı: .${ext || '?'} — yalnızca .mp4 ve .webm desteklenir` },
+          { status: 400 }
+        );
+      }
+      if (extToMime[ext] !== contentType) {
+        return NextResponse.json(
+          { error: `Dosya uzantısı (.${ext}) ile içerik türü (${contentType}) uyuşmuyor` },
+          { status: 400 }
+        );
+      }
+    }
+
     const { uploadUrl, cloud_storage_path } = await generatePresignedUploadUrl(
       `gift-${purpose}-${fileName}`,
       contentType,

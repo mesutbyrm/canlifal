@@ -10,6 +10,7 @@ import type { TRTC } from '@/lib/trtc-client'
 import { Send, Users, Sparkles, LogIn, VolumeX, Volume2, UserMinus, Ban, Shield, ShieldAlert, Crown, Star, Mic, MicOff, AtSign, Bell, X, Settings, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, Home, DoorOpen, Phone, PhoneOff, Gift, Coins, Trophy, Edit2, ImageIcon, Save, Loader2, UserPlus, UserCheck, UserX, ArrowRightLeft, Music, RefreshCw, Share2, Eye, Swords } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import ChatRoomMarquee from '@/components/chat-room-marquee'
+import { GiftThumb } from '@/components/gift-thumb'
 import dynamic from 'next/dynamic'
 const YouTubeMusicModal = dynamic(() => import('@/components/youtube-music-modal'), { ssr: false })
 const PKBattleOverlay = dynamic(() => import('@/components/pk-battle-overlay'), { ssr: false })
@@ -194,11 +195,11 @@ export default function ChatRoomPage() {
   // Gift system
   const [showGiftModal, setShowGiftModal] = useState(false)
   const [giftTargetUser, setGiftTargetUser] = useState<ActiveUser | null>(null)
-  const [giftTypes, setGiftTypes] = useState<Array<{id: string; name: string; icon: string; price: number}>>([])
+  const [giftTypes, setGiftTypes] = useState<Array<{id: string; name: string; icon: string; price: number; mediaType?: string | null; previewUrl?: string | null; thumbnailUrl?: string | null; fileUrl?: string | null; assetUrl?: string | null}>>([])
   const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
   const giftPaymentType = 'jeton' as const
   const [sendingGift, setSendingGift] = useState(false)
-  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; assetUrl?: string; assetType?: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}>>([])
+  const [giftAnimations, setGiftAnimations] = useState<Array<{id: string; giftImage: string; giftIcon: string; assetUrl?: string; assetType?: string; thumbnailUrl?: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}>>([])
   const lastGiftPollRef = useRef<string>(new Date().toISOString())
   const seenGiftIdsRef = useRef<Set<string>>(new Set())
   const [leaderboard, setLeaderboard] = useState<Array<{userId: string; name: string; image: string | null; jetonTotal: number; cfcTotal: number}>>([])
@@ -2036,7 +2037,7 @@ export default function ChatRoomPage() {
         setLeaderboard(data.leaderboard || [])
         // Process recent gifts for animation
         const recent = data.recentGifts || []
-        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; assetUrl?: string; assetType?: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}> = []
+        const newAnims: Array<{id: string; giftImage: string; giftIcon: string; assetUrl?: string; assetType?: string; thumbnailUrl?: string; senderName: string; recipientId: string; recipientName: string; amount: number; phase: 'enter' | 'hit' | 'burst' | 'exit'}> = []
         // Prevent unbounded memory growth — cap seen gift IDs at 200
         if (seenGiftIdsRef.current.size > 200) {
           const arr = Array.from(seenGiftIdsRef.current)
@@ -2051,6 +2052,7 @@ export default function ChatRoomPage() {
               giftIcon: g.giftIcon || '🎁',
               assetUrl: g.videoUrl || g.assetUrl || '',
               assetType: g.assetType || '',
+              thumbnailUrl: g.thumbnailUrl || g.previewUrl || '',
               senderName: g.senderName,
               recipientId: g.recipientId,
               recipientName: g.recipientName,
@@ -4252,7 +4254,7 @@ export default function ChatRoomPage() {
                   {/* Glow behind gift */}
                   <div className="absolute inset-0 blur-2xl bg-yellow-400/40 rounded-full scale-150" />
                   {isVid && anim.assetUrl ? (
-                    <video key={anim.id} src={anim.assetUrl} autoPlay muted playsInline loop className="relative w-40 h-40 sm:w-52 sm:h-52 max-w-[80vw] object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" />
+                    <video key={anim.id} src={anim.assetUrl} poster={anim.thumbnailUrl || undefined} autoPlay muted playsInline loop className="relative w-40 h-40 sm:w-52 sm:h-52 max-w-[80vw] object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" />
                   ) : giftSrc ? (
                     <img src={giftSrc} alt="gift" className="relative w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" />
                   ) : (
@@ -4369,11 +4371,7 @@ export default function ChatRoomPage() {
                     onClick={() => setSelectedGiftType(gt.id)}
                     className={`flex flex-col items-center p-2 rounded-lg transition-all ${selectedGiftType === gt.id ? 'bg-gold-500/20 border border-gold-500/50 scale-105' : 'bg-purple-900/30 border border-purple-500/20 hover:border-purple-400/40'}`}
                   >
-                    {(gt.icon && gt.icon.startsWith('/')) || GIFT_IMAGES[gt.id] ? (
-                      <img loading="lazy" src={gt.icon?.startsWith('/') ? gt.icon : GIFT_IMAGES[gt.id]} alt={gt.name} className="w-10 h-10 object-contain" />
-                    ) : (
-                      <span className="text-2xl">{gt.icon}</span>
-                    )}
+                    <GiftThumb gift={{ ...gt, fallbackImg: GIFT_IMAGES[gt.id] }} className="w-10 h-10 object-contain" />
                     <span className="text-[10px] text-purple-300 mt-0.5">{gt.name}</span>
                     <span className="text-[10px] text-yellow-400 font-bold">{gt.price}</span>
                   </button>

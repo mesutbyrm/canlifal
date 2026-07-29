@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { invalidateCache } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
+import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
+import { generateVideoThumbnail } from '@/lib/gift-media-probe';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: 'Hediye bulunamadı' }, { status: 404 });
     }
 
-    return NextResponse.json(gift);
+    return NextResponse.json(serializeGiftMedia(gift));
   } catch (error) {
     console.error('Admin gift GET error:', error);
     return NextResponse.json({ error: 'Hediye yüklenemedi' }, { status: 500 });
@@ -79,10 +81,12 @@ export async function PATCH(
     }
 
     // Integer fields
-    const intFields = ['price', 'animationDurationMs', 'startDelayMs', 'displayDurationMs', 'repeatCount', 'volume', 'dailySendLimit', 'comboWindowMs'];
+    const intFields = ['price', 'animationDurationMs', 'startDelayMs', 'displayDurationMs', 'repeatCount', 'volume', 'dailySendLimit', 'comboWindowMs', 'assetWidth', 'assetHeight', 'assetDurationMs'];
     for (const f of intFields) {
       if (body[f] !== undefined) data[f] = body[f] === null ? null : parseInt(body[f]);
     }
+    // Media MIME type (string, nullable)
+    if (body.assetMimeType !== undefined) data.assetMimeType = body.assetMimeType || null;
 
     // Date fields
     const dateFields = ['seasonStart', 'seasonEnd', 'campaignStart', 'campaignEnd', 'firstReleasedAt'];
@@ -124,6 +128,27 @@ export async function PATCH(
       data.collectionId = body.collectionId || null;
     }
 
+    // ── Derive MIME type + auto-generate poster thumbnail when the asset is a
+    //    video that changed and no explicit thumbnail was provided ──
+    if (data.assetUrl !== undefined) {
+      const resolvedAssetUrl = resolveMediaUrl(data.assetUrl) ?? data.assetUrl ?? null;
+      const fmt = deriveAssetFormat(body.assetType, resolvedAssetUrl, body.animationType);
+      const mt = deriveMediaType(fmt);
+      if (data.assetMimeType === undefined) {
+        const derivedMime = deriveMimeType(fmt);
+        if (derivedMime) data.assetMimeType = derivedMime;
+      }
+      const thumbProvided = data.thumbnailUrl != null && data.thumbnailUrl !== '';
+      if (mt === 'video' && !thumbProvided && resolvedAssetUrl) {
+        try {
+          const posterUrl = await generateVideoThumbnail(resolvedAssetUrl);
+          if (posterUrl) data.thumbnailUrl = posterUrl;
+        } catch (e) {
+          console.error('Gift thumbnail auto-generation failed (continuing):', e);
+        }
+      }
+    }
+
     // Increment content version for sync
     data.contentVersion = { increment: 1 };
 
@@ -135,7 +160,7 @@ export async function PATCH(
 
     await invalidateCache('gifts:active');
 
-    return NextResponse.json(gift);
+    return NextResponse.json(serializeGiftMedia(gift));
   } catch (error: any) {
     console.error('Admin gift PATCH error:', error);
     return NextResponse.json({ error: error.message || 'Hediye güncellenemedi' }, { status: 500 });
