@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
     const { uploadUrl, cloud_storage_path } = await generatePresignedUploadUrl(
       `gift-${purpose}-${fileName}`,
       contentType,
-      true // public
+      true, // public
+      'gift/gifts'
     );
 
     return NextResponse.json({ uploadUrl, cloud_storage_path });

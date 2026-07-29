@@ -13,7 +13,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { fileName, contentType, isPublic = false } = body
+    const { fileName, contentType, isPublic = false, folder } = body
+
+    // Map an optional "folder"/"purpose" hint to an organized subfolder under
+    // the R2 "gift/" root. Unknown/empty values fall back to gift/uploads.
+    const ALLOWED_FOLDERS: Record<string, string> = {
+      profile: 'gift/profiles',
+      profiles: 'gift/profiles',
+      social: 'gift/social',
+      sosyal: 'gift/social',
+      post: 'gift/social',
+      gift: 'gift/gifts',
+      gifts: 'gift/gifts',
+      fortune: 'gift/fortunes',
+      chat: 'gift/chat',
+      uploads: 'gift/uploads',
+    }
+    const targetFolder =
+      (typeof folder === 'string' && ALLOWED_FOLDERS[folder]) || 'gift/uploads'
 
     if (!fileName || !contentType) {
       return NextResponse.json(
@@ -33,7 +50,8 @@ export async function POST(request: NextRequest) {
     const { uploadUrl, cloud_storage_path } = await generatePresignedUploadUrl(
       fileName,
       contentType,
-      isPublic
+      isPublic,
+      targetFolder
     )
 
     return NextResponse.json({ uploadUrl, cloud_storage_path })

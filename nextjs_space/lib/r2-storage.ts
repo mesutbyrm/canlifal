@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -103,6 +103,49 @@ export async function getPresignedUploadUrl(
   })
   const uploadUrl = await getSignedUrl(client, command, { expiresIn })
   return { key, uploadUrl, publicUrl: buildPublicUrl(key), expiresIn }
+}
+
+/**
+ * Create a presigned GET URL for a private R2 object (temporary read access).
+ */
+export async function getPresignedDownloadUrl(
+  key: string,
+  expiresIn = 3600
+): Promise<string> {
+  const client = getClient()
+  const command = new GetObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+  })
+  return getSignedUrl(client, command, { expiresIn })
+}
+
+/**
+ * Create a presigned PUT URL from a fileName (derives extension) for direct
+ * browser/Flutter -> R2 upload. Returns the legacy { uploadUrl, cloud_storage_path }
+ * shape so existing upload clients keep working unchanged.
+ */
+export async function getPresignedUploadUrlForFile(
+  fileName: string,
+  contentType: string,
+  folder = 'gift/uploads'
+): Promise<{ uploadUrl: string; cloud_storage_path: string }> {
+  const dot = fileName.lastIndexOf('.')
+  const ext = dot >= 0 ? fileName.slice(dot) : ''
+  const { key, uploadUrl } = await getPresignedUploadUrl(folder, ext, contentType)
+  return { uploadUrl, cloud_storage_path: key }
+}
+
+/**
+ * Whether a stored cloud_storage_path refers to a Cloudflare R2 object
+ * (new uploads) as opposed to a legacy S3 key.
+ */
+export function isR2Key(cloudStoragePath: string): boolean {
+  if (!cloudStoragePath) return false
+  return (
+    cloudStoragePath.startsWith('gift/') ||
+    cloudStoragePath.startsWith('shorts/')
+  )
 }
 
 /**
