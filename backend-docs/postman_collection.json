@@ -4919,7 +4919,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"animEndPoint\": \"\",\n  \"animStartPoint\": \"\",\n  \"animation\": \"\",\n  \"animationDurationMs\": \"\",\n  \"assetType\": \"\",\n  \"assetUrl\": \"\",\n  \"campaignEnd\": \"\",\n  \"campaignStart\": \"\",\n  \"category\": \"\",\n  \"cloudStoragePath\": \"\",\n  \"collectionId\": \"\",\n  \"comboEnabled\": \"\",\n  \"dailySendLimit\": \"\",\n  \"description\": \"\",\n  \"displayDurationMs\": \"\",\n  \"displayType\": \"\",\n  \"effectColor\": \"\",\n  \"eventOnly\": \"\",\n  \"hasColorChange\": \"\",\n  \"hasVibration\": \"\",\n  \"icon\": \"\",\n  \"iconImageCloudPath\": \"\",\n  \"iconImageUrl\": \"\",\n  \"isActive\": \"\",\n  \"isFeatured\": \"\",\n  \"isFullscreen\": \"\",\n  \"isHidden\": \"\",\n  \"isLucky\": \"\",\n  \"isNew\": \"\",\n  \"isPopular\": \"\",\n  \"isPremium\": \"\",\n  \"isReusable\": \"\",\n  \"isSeasonal\": \"\",\n  \"isSpecialEvent\": \"\",\n  \"liveOnly\": \"\",\n  \"musicCloudPath\": \"\",\n  \"musicUrl\": \"\",\n  \"name\": \"\",\n  \"nameEn\": \"\",\n  \"newUserOnly\": \"\",\n  \"particleEffect\": \"\",\n  \"pkOnly\": \"\",\n  \"price\": \"\",\n  \"repeatCount\": \"\",\n  \"requiresVip\": \"\",\n  \"screenPosition\": \"\",\n  \"seasonEnd\": \"\",\n  \"seasonStart\": \"\",\n  \"sortOrder\": \"\",\n  \"soundCloudPath\": \"\",\n  \"soundUrl\": \"\",\n  \"startDelayMs\": \"\",\n  \"thumbnailCloudPath\": \"\",\n  \"thumbnailUrl\": \"\",\n  \"tier\": \"\",\n  \"timedCampaign\": \"\",\n  \"visibleAsFullscreen\": \"\",\n  \"visibleAsMini\": \"\",\n  \"visibleInFortune\": \"\",\n  \"visibleInLiveStream\": \"\",\n  \"visibleInMessaging\": \"\",\n  \"visibleInNotification\": \"\",\n  \"visibleInPK\": \"\",\n  \"visibleInProfile\": \"\",\n  \"visibleInStories\": \"\",\n  \"visibleInTrend\": \"\",\n  \"visibleInVoiceRoom\": \"\",\n  \"voiceOnly\": \"\",\n  \"volume\": \"\"\n}",
+              "raw": "{\n  \"animEndPoint\": \"\",\n  \"animStartPoint\": \"\",\n  \"animation\": \"\",\n  \"animationDurationMs\": \"\",\n  \"animationType\": \"\",\n  \"assetDurationMs\": \"\",\n  \"assetHeight\": \"\",\n  \"assetMimeType\": \"\",\n  \"assetType\": \"\",\n  \"assetUrl\": \"\",\n  \"assetWidth\": \"\",\n  \"campaignEnd\": \"\",\n  \"campaignStart\": \"\",\n  \"category\": \"\",\n  \"cloudStoragePath\": \"\",\n  \"collectionId\": \"\",\n  \"comboEnabled\": \"\",\n  \"comboWindowMs\": \"\",\n  \"dailySendLimit\": \"\",\n  \"description\": \"\",\n  \"displayArea\": \"\",\n  \"displayDurationMs\": \"\",\n  \"displayType\": \"\",\n  \"effectColor\": \"\",\n  \"eventOnly\": \"\",\n  \"hasColorChange\": \"\",\n  \"hasVibration\": \"\",\n  \"icon\": \"\",\n  \"iconImageCloudPath\": \"\",\n  \"iconImageUrl\": \"\",\n  \"isActive\": \"\",\n  \"isFeatured\": \"\",\n  \"isFullscreen\": \"\",\n  \"isHidden\": \"\",\n  \"isLucky\": \"\",\n  \"isNew\": \"\",\n  \"isPopular\": \"\",\n  \"isPremium\": \"\",\n  \"isReusable\": \"\",\n  \"isSeasonal\": \"\",\n  \"isSpecialEvent\": \"\",\n  \"liveOnly\": \"\",\n  \"musicCloudPath\": \"\",\n  \"musicUrl\": \"\",\n  \"name\": \"\",\n  \"nameEn\": \"\",\n  \"newUserOnly\": \"\",\n  \"particleEffect\": \"\",\n  \"pkOnly\": \"\",\n  \"price\": \"\",\n  \"priority\": \"\",\n  \"repeatCount\": \"\",\n  \"requiresVip\": \"\",\n  \"screenPosition\": \"\",\n  \"seasonEnd\": \"\",\n  \"seasonStart\": \"\",\n  \"seatEffect\": \"\",\n  \"seatEffectEnabled\": \"\",\n  \"sortOrder\": \"\",\n  \"soundCloudPath\": \"\",\n  \"soundEffectEnabled\": \"\",\n  \"soundUrl\": \"\",\n  \"startDelayMs\": \"\",\n  \"thumbnailCloudPath\": \"\",\n  \"thumbnailUrl\": \"\",\n  \"tier\": \"\",\n  \"timedCampaign\": \"\",\n  \"visibleAsFullscreen\": \"\",\n  \"visibleAsMini\": \"\",\n  \"visibleInFortune\": \"\",\n  \"visibleInLiveStream\": \"\",\n  \"visibleInMessaging\": \"\",\n  \"visibleInNotification\": \"\",\n  \"visibleInPK\": \"\",\n  \"visibleInProfile\": \"\",\n  \"visibleInStories\": \"\",\n  \"visibleInTrend\": \"\",\n  \"visibleInVoiceRoom\": \"\",\n  \"voiceOnly\": \"\",\n  \"volume\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5086,7 +5086,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"assetUrl\": \"\",\n  \"cloudStoragePath\": \"\",\n  \"collectionId\": \"\",\n  \"iconImageCloudPath\": \"\",\n  \"iconImageUrl\": \"\",\n  \"musicCloudPath\": \"\",\n  \"musicUrl\": \"\",\n  \"soundCloudPath\": \"\",\n  \"soundUrl\": \"\",\n  \"thumbnailCloudPath\": \"\",\n  \"thumbnailUrl\": \"\"\n}",
+              "raw": "{\n  \"animationType\": \"\",\n  \"assetMimeType\": \"\",\n  \"assetType\": \"\",\n  \"assetUrl\": \"\",\n  \"cloudStoragePath\": \"\",\n  \"collectionId\": \"\",\n  \"iconImageCloudPath\": \"\",\n  \"iconImageUrl\": \"\",\n  \"musicCloudPath\": \"\",\n  \"musicUrl\": \"\",\n  \"soundCloudPath\": \"\",\n  \"soundUrl\": \"\",\n  \"thumbnailCloudPath\": \"\",\n  \"thumbnailUrl\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13436,7 +13436,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nickname\": \"\",\n  \"seatIndex\": \"\"\n}",
+              "raw": "{\n  \"nickname\": \"\",\n  \"password\": \"\",\n  \"seatIndex\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -19180,6 +19180,93 @@
       ]
     },
     {
+      "name": "gift-engine",
+      "item": [
+        {
+          "name": "POST /api/gift-engine/finish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gift-engine/finish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gift-engine",
+                "finish"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/gift-engine/gifts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gift-engine/gifts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gift-engine",
+                "gifts"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gift-engine/queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gift-engine/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gift-engine",
+                "queue"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        }
+      ]
+    },
+    {
       "name": "gifts",
       "item": [
         {
@@ -20050,15 +20137,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nickname\": \"\",\n  \"roomId\": \"\",\n  \"roomType\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           }
         },
@@ -20986,6 +21064,44 @@
               ]
             },
             "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "monitoring",
+      "item": [
+        {
+          "name": "GET /api/monitoring",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/monitoring",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "monitoring"
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -24849,7 +24965,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contentType\": \"\",\n  \"fileName\": \"\",\n  \"isPublic\": \"\"\n}",
+              "raw": "{\n  \"contentType\": \"\",\n  \"fileName\": \"\",\n  \"folder\": \"\",\n  \"isPublic\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -28587,6 +28703,34 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "warmup",
+      "item": [
+        {
+          "name": "GET /api/warmup",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/warmup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "warmup"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]

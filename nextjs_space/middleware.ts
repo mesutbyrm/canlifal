@@ -7,6 +7,19 @@ export default withAuth(
     const isAuth = !!token
     const pathname = req.nextUrl.pathname
 
+    // ── API Versioning: /api/v1/* → /api/* (backward compatible) ──
+    // Both /api/... (legacy, used by existing Flutter builds) and
+    // /api/v1/... (versioned) resolve to the SAME route handlers.
+    // Per-route auth (authenticateRequest in lib/mobile-auth.ts) remains the
+    // single central place that verifies the JWT / web session.
+    if (pathname === '/api/v1' || pathname.startsWith('/api/v1/')) {
+      const rest = pathname.replace(/^\/api\/v1/, '') || '/'
+      const rewriteApi = new URL(`/api${rest}${req.nextUrl.search}`, req.url)
+      const res = NextResponse.rewrite(rewriteApi)
+      res.headers.set('x-api-version', 'v1')
+      return res
+    }
+
     // Serve FLUTTER_CURSOR_PROMPT.md as raw markdown via API route
     if (pathname === '/FLUTTER_CURSOR_PROMPT.md') {
       return NextResponse.rewrite(new URL('/api/flutter-prompt', req.url))
@@ -112,6 +125,8 @@ export default withAuth(
 
 export const config = {
   matcher: [
+    // Versioned API prefix — rewritten to the legacy /api/* handlers.
+    '/api/v1/:path*',
     '/((?!api|_next/static|_next/image|favicon.ico|favicon.png|og-image.png|manifest.json|sw.js|OneSignalSDKWorker\.js|sitemap\.xml|sitemap-blog|sitemap-dreams|sitemap-social|robots\.txt|ads\.txt|.*\.txt|.*\.zip|icons/.*|.*\.jpg|.*\.png|.*\.svg|.*\.mp3|.*\.webp).*)',
   ],
 }

@@ -336,6 +336,9 @@
       "name": "games"
     },
     {
+      "name": "gift-engine"
+    },
+    {
       "name": "gifts"
     },
     {
@@ -382,6 +385,9 @@
     },
     {
       "name": "mobile"
+    },
+    {
+      "name": "monitoring"
     },
     {
       "name": "music"
@@ -502,6 +508,9 @@
     },
     {
       "name": "wallet"
+    },
+    {
+      "name": "warmup"
     },
     {
       "name": "weekly-dream-report"
@@ -7892,10 +7901,25 @@
                   "animationDurationMs": {
                     "type": "string"
                   },
+                  "animationType": {
+                    "type": "string"
+                  },
+                  "assetDurationMs": {
+                    "type": "string"
+                  },
+                  "assetHeight": {
+                    "type": "string"
+                  },
+                  "assetMimeType": {
+                    "type": "string"
+                  },
                   "assetType": {
                     "type": "string"
                   },
                   "assetUrl": {
+                    "type": "string"
+                  },
+                  "assetWidth": {
                     "type": "string"
                   },
                   "campaignEnd": {
@@ -7916,10 +7940,16 @@
                   "comboEnabled": {
                     "type": "string"
                   },
+                  "comboWindowMs": {
+                    "type": "string"
+                  },
                   "dailySendLimit": {
                     "type": "string"
                   },
                   "description": {
+                    "type": "string"
+                  },
+                  "displayArea": {
                     "type": "string"
                   },
                   "displayDurationMs": {
@@ -8009,6 +8039,9 @@
                   "price": {
                     "type": "string"
                   },
+                  "priority": {
+                    "type": "string"
+                  },
                   "repeatCount": {
                     "type": "string"
                   },
@@ -8024,10 +8057,19 @@
                   "seasonStart": {
                     "type": "string"
                   },
+                  "seatEffect": {
+                    "type": "string"
+                  },
+                  "seatEffectEnabled": {
+                    "type": "string"
+                  },
                   "sortOrder": {
                     "type": "string"
                   },
                   "soundCloudPath": {
+                    "type": "string"
+                  },
+                  "soundEffectEnabled": {
                     "type": "string"
                   },
                   "soundUrl": {
@@ -8316,6 +8358,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "animationType": {
+                    "type": "string"
+                  },
+                  "assetMimeType": {
+                    "type": "string"
+                  },
+                  "assetType": {
+                    "type": "string"
+                  },
                   "assetUrl": {
                     "type": "string"
                   },
@@ -20834,6 +20885,9 @@
                   "nickname": {
                     "type": "string"
                   },
+                  "password": {
+                    "type": "string"
+                  },
                   "seatIndex": {
                     "type": "string"
                   }
@@ -29342,6 +29396,134 @@
         ]
       }
     },
+    "/api/gift-engine/finish": {
+      "post": {
+        "tags": [
+          "gift-engine"
+        ],
+        "summary": "POST /api/gift-engine/finish",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/gift-engine/gifts": {
+      "get": {
+        "tags": [
+          "gift-engine"
+        ],
+        "summary": "GET /api/gift-engine/gifts",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
+    "/api/gift-engine/queue": {
+      "get": {
+        "tags": [
+          "gift-engine"
+        ],
+        "summary": "GET /api/gift-engine/queue",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
     "/api/gifts/catalog": {
       "get": {
         "tags": [
@@ -30618,27 +30800,7 @@
           {
             "cookieAuth": []
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "nickname": {
-                    "type": "string"
-                  },
-                  "roomId": {
-                    "type": "string"
-                  },
-                  "roomType": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
+        ]
       }
     },
     "/api/live/leave-room": {
@@ -31964,6 +32126,54 @@
             "description": "Yol parametresi: userId"
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/monitoring": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "GET /api/monitoring",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Başarılı",
@@ -37531,6 +37741,9 @@
                   "fileName": {
                     "type": "string"
                   },
+                  "folder": {
+                    "type": "string"
+                  },
                   "isPublic": {
                     "type": "string"
                   }
@@ -42937,6 +43150,46 @@
             "cookieAuth": []
           }
         ]
+      }
+    },
+    "/api/warmup": {
+      "get": {
+        "tags": [
+          "warmup"
+        ],
+        "summary": "GET /api/warmup",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
       }
     },
     "/api/weekly-dream-report": {

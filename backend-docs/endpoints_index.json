@@ -1728,16 +1728,23 @@
       "animStartPoint",
       "animation",
       "animationDurationMs",
+      "animationType",
+      "assetDurationMs",
+      "assetHeight",
+      "assetMimeType",
       "assetType",
       "assetUrl",
+      "assetWidth",
       "campaignEnd",
       "campaignStart",
       "category",
       "cloudStoragePath",
       "collectionId",
       "comboEnabled",
+      "comboWindowMs",
       "dailySendLimit",
       "description",
+      "displayArea",
       "displayDurationMs",
       "displayType",
       "effectColor",
@@ -1767,13 +1774,17 @@
       "particleEffect",
       "pkOnly",
       "price",
+      "priority",
       "repeatCount",
       "requiresVip",
       "screenPosition",
       "seasonEnd",
       "seasonStart",
+      "seatEffect",
+      "seatEffectEnabled",
       "sortOrder",
       "soundCloudPath",
+      "soundEffectEnabled",
       "soundUrl",
       "startDelayMs",
       "thumbnailCloudPath",
@@ -1844,6 +1855,9 @@
       "giftId"
     ],
     "bodyFields": [
+      "animationType",
+      "assetMimeType",
+      "assetType",
       "assetUrl",
       "cloudStoragePath",
       "collectionId",
@@ -4780,6 +4794,7 @@
     ],
     "bodyFields": [
       "nickname",
+      "password",
       "seatIndex"
     ],
     "tag": "chat",
@@ -6744,6 +6759,39 @@
     "dynamic": true
   },
   {
+    "path": "/api/gift-engine/finish",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gift-engine",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gift-engine/gifts",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gift-engine",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gift-engine/queue",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gift-engine",
+    "dynamic": true
+  },
+  {
     "path": "/api/gifts/catalog",
     "method": "GET",
     "auth": "dual",
@@ -7045,11 +7093,7 @@
     "admin": false,
     "rateLimit": null,
     "pathParams": [],
-    "bodyFields": [
-      "nickname",
-      "roomId",
-      "roomType"
-    ],
+    "bodyFields": [],
     "tag": "live",
     "dynamic": true
   },
@@ -7367,6 +7411,17 @@
     ],
     "bodyFields": [],
     "tag": "mobile",
+    "dynamic": true
+  },
+  {
+    "path": "/api/monitoring",
+    "method": "GET",
+    "auth": "session",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "monitoring",
     "dynamic": true
   },
   {
@@ -8669,6 +8724,7 @@
     "bodyFields": [
       "contentType",
       "fileName",
+      "folder",
       "isPublic"
     ],
     "tag": "upload",
@@ -9898,6 +9954,17 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "wallet",
+    "dynamic": true
+  },
+  {
+    "path": "/api/warmup",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "warmup",
     "dynamic": true
   },
   {
