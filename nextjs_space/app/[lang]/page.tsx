@@ -1130,13 +1130,25 @@ export default function HomePage() {
       {/* Footer - Legal Links */}
       <div className="px-4 pb-24 pt-6">
         <div className="border-t border-purple-800/30 pt-4 text-center space-y-2">
-          <div className="flex items-center justify-center gap-4 text-xs text-purple-400/60">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-purple-400/60">
             <Link href={`/sayfa/gizlilik-politikasi`} className="hover:text-purple-300 transition-colors">
               Gizlilik Politikası
             </Link>
             <span>•</span>
             <Link href={`/sayfa/kullanim-sartlari`} className="hover:text-purple-300 transition-colors">
               Kullanım Şartları
+            </Link>
+            <span>•</span>
+            <Link href={`/sayfa/kvkk`} className="hover:text-purple-300 transition-colors">
+              KVKK
+            </Link>
+            <span>•</span>
+            <Link href={`/sayfa/cocuk-guvenligi-politikasi`} className="hover:text-purple-300 transition-colors">
+              Çocuk Güvenliği
+            </Link>
+            <span>•</span>
+            <Link href={`/sayfa/topluluk-kurallari`} className="hover:text-purple-300 transition-colors">
+              Topluluk Kuralları
             </Link>
             <span>•</span>
             <Link href={`/iletisim`} className="hover:text-purple-300 transition-colors">

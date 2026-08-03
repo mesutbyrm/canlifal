@@ -157,13 +157,25 @@ export default function LoginPage() {
                 {'Kayıt Ol'}
               </Link>
             </p>
-            <div className="mt-4 flex items-center justify-center gap-3 text-xs text-deep-purple-400">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-deep-purple-400">
               <Link href="/sayfa/gizlilik-politikasi" className="hover:text-deep-purple-200 transition-colors">
                 Gizlilik Politikası
               </Link>
               <span>•</span>
               <Link href="/sayfa/kullanim-sartlari" className="hover:text-deep-purple-200 transition-colors">
                 Kullanım Şartları
+              </Link>
+              <span>•</span>
+              <Link href="/sayfa/kvkk" className="hover:text-deep-purple-200 transition-colors">
+                KVKK
+              </Link>
+              <span>•</span>
+              <Link href="/sayfa/cocuk-guvenligi-politikasi" className="hover:text-deep-purple-200 transition-colors">
+                Çocuk Güvenliği
+              </Link>
+              <span>•</span>
+              <Link href="/sayfa/topluluk-kurallari" className="hover:text-deep-purple-200 transition-colors">
+                Topluluk Kuralları
               </Link>
             </div>
           </div>

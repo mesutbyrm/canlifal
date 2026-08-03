@@ -1073,6 +1073,189 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     }
   })
 
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'cocuk-guvenligi-politikasi' },
+    update: {},
+    create: {
+      title: 'Çocuk Güvenliği Politikası',
+      slug: 'cocuk-guvenligi-politikasi',
+      content: `<h2>Çocuk Güvenliği Politikası</h2>
+<p><strong>Son güncelleme:</strong> 3 Ağustos 2026</p>
+<p>CanliFal.com, çocukların çevrimiçi güvenliğini en yüksek öncelik olarak kabul eder. Bu politika, platformumuzun çocukların cinsel istismarı ve sömürüsüne (CSAE) karşı sıfır tolerans yaklaşımını ve alınan önlemleri açıklar.</p>
+
+<h3>1. Yaş Sınırı</h3>
+<ul>
+<li>CanliFal.com yalnızca <strong>18 yaş ve üzeri</strong> kullanıcılara yöneliktir.</li>
+<li>18 yaşından küçüklerin platforma kayıt olması ve hizmetleri kullanması kesinlikle yasaktır.</li>
+<li>Reşit olmayan bir kullanıcı tespit edildiğinde hesap derhal kapatılır.</li>
+</ul>
+
+<h3>2. Sıfır Tolerans İlkesi</h3>
+<p>Çocukların cinsel istismarını veya sömürüsünü içeren (CSAE / CSAM) her türlü içerik, davranış veya iletişime karşı <strong>sıfır tolerans</strong> uygulanır. Bu tür içerikler:</p>
+<ul>
+<li>Anında kaldırılır,</li>
+<li>İlgili hesap kalıcı olarak yasaklanır,</li>
+<li>Yürürlükteki yasalar gereği yetkili makamlara bildirilir.</li>
+</ul>
+
+<h3>3. İçerik Denetimi ve Moderasyon</h3>
+<ul>
+<li>Platform içeriği moderasyon ekibimiz tarafından düzenli olarak denetlenir.</li>
+<li>Şüpheli içerik ve davranışlar için otomatik ve manuel kontrol mekanizmaları kullanılır.</li>
+<li>Canlı yayın, sohbet ve profil içerikleri topluluk kurallarına göre değerlendirilir.</li>
+</ul>
+
+<h3>4. Bildirim ve Şikâyet Mekanizması</h3>
+<p>Çocuk güvenliğini tehdit eden herhangi bir içerik veya davranışla karşılaşırsanız derhal bize bildirin:</p>
+<ul>
+<li>Uygulama içindeki <strong>"Şikâyet Et / Bildir"</strong> butonlarını kullanabilirsiniz.</li>
+<li><strong>İletişim</strong> sayfamız üzerinden bize ulaşabilirsiniz.</li>
+<li>E-posta: <strong>guvenlik@canlifal.com</strong></li>
+</ul>
+<p>Tüm bildirimler gizli tutulur ve ivedilikle incelenir.</p>
+
+<h3>5. Yasal İş Birliği</h3>
+<p>CanliFal.com, çocuk istismarıyla mücadelede kolluk kuvvetleri ve yetkili kurumlarla tam iş birliği yapar. Gerekli durumlarda kullanıcı bilgileri yasal süreçler çerçevesinde ilgili makamlarla paylaşılır.</p>
+
+<h3>6. Sorumlu İletişim Noktası</h3>
+<p>Çocuk güvenliği ile ilgili tüm konularda sorumlu iletişim noktamız: <strong>guvenlik@canlifal.com</strong></p>`,
+      isPublished: true,
+      showInFooter: true,
+      showInHeader: false,
+      sortOrder: 102,
+    }
+  })
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'kvkk' },
+    update: {},
+    create: {
+      title: 'KVKK',
+      slug: 'kvkk',
+      content: `<h2>KVKK Aydınlatma Metni</h2>
+<p><strong>Son güncelleme:</strong> 3 Ağustos 2026</p>
+<p>Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, CanliFal.com tarafından kişisel verilerinizin işlenmesine ilişkin olarak sizleri bilgilendirmek amacıyla hazırlanmıştır.</p>
+
+<h3>1. Veri Sorumlusu</h3>
+<p>KVKK uyarınca kişisel verileriniz, veri sorumlusu sıfatıyla <strong>CanliFal.com</strong> tarafından aşağıda açıklanan kapsamda işlenmektedir.</p>
+
+<h3>2. İşlenen Kişisel Veriler</h3>
+<ul>
+<li><strong>Kimlik Bilgileri:</strong> Ad, soyad, kullanıcı adı, doğum tarihi</li>
+<li><strong>İletişim Bilgileri:</strong> E-posta adresi, telefon numarası</li>
+<li><strong>İşlem Bilgileri:</strong> Jeton satın alma ve kullanım kayıtları</li>
+<li><strong>Kullanım Verileri:</strong> IP adresi, cihaz bilgileri, oturum kayıtları</li>
+<li><strong>Profil Bilgileri:</strong> Profil fotoğrafı, biyografi, burç bilgisi</li>
+</ul>
+
+<h3>3. Kişisel Verilerin İşlenme Amaçları</h3>
+<ul>
+<li>Üyelik hesabının oluşturulması ve yönetimi</li>
+<li>Fal, rüya yorumu, astroloji ve canlı seans hizmetlerinin sunulması</li>
+<li>Ödeme ve jeton işlemlerinin gerçekleştirilmesi</li>
+<li>Yasal yükümlülüklerin yerine getirilmesi</li>
+<li>Güvenlik, dolandırıcılık önleme ve hizmet kalitesinin artırılması</li>
+<li>İletişim ve bildirim faaliyetlerinin yürütülmesi</li>
+</ul>
+
+<h3>4. Kişisel Verilerin İşlenme Hukuki Sebepleri</h3>
+<p>Kişisel verileriniz KVKK'nın 5. ve 6. maddelerinde belirtilen; sözleşmenin kurulması ve ifası, hukuki yükümlülüğün yerine getirilmesi, meşru menfaat ve açık rıza hukuki sebeplerine dayanılarak işlenmektedir.</p>
+
+<h3>5. Kişisel Verilerin Aktarılması</h3>
+<p>Kişisel verileriniz üçüncü taraflara <strong>satılmaz.</strong> Yalnızca; yasal zorunluluklar, hizmet sağlayıcılar (ödeme altyapısı, e-posta servisi) ve açık rızanız çerçevesinde, KVKK'ya uygun olarak aktarılabilir.</p>
+
+<h3>6. Veri Saklama Süresi</h3>
+<p>Kişisel verileriniz, işleme amaçlarının gerektirdiği süre boyunca ve yasal saklama süreleri kapsamında muhafaza edilir. Sürenin sonunda verileriniz silinir, yok edilir veya anonim hale getirilir.</p>
+
+<h3>7. İlgili Kişi (Veri Sahibi) Hakları</h3>
+<p>KVKK'nın 11. maddesi uyarınca sahip olduğunuz haklar:</p>
+<ul>
+<li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
+<li>İşlenmişse buna ilişkin bilgi talep etme</li>
+<li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme</li>
+<li>Yurt içinde/dışında aktarıldığı üçüncü kişileri bilme</li>
+<li>Eksik veya yanlış işlenmişse düzeltilmesini isteme</li>
+<li>Silinmesini veya yok edilmesini talep etme</li>
+<li>İşlemlere itiraz etme ve zararın giderilmesini talep etme</li>
+</ul>
+
+<h3>8. Başvuru Yöntemi</h3>
+<p>KVKK kapsamındaki taleplerinizi <strong>kvkk@canlifal.com</strong> adresine e-posta göndererek veya <strong>İletişim</strong> sayfamız aracılığıyla iletebilirsiniz. Başvurularınız en geç 30 gün içinde sonuçlandırılır.</p>`,
+      isPublished: true,
+      showInFooter: true,
+      showInHeader: false,
+      sortOrder: 103,
+    }
+  })
+
+  await prisma.sitePage.upsert({
+    where: { slug: 'topluluk-kurallari' },
+    update: {},
+    create: {
+      title: 'Topluluk Kuralları',
+      slug: 'topluluk-kurallari',
+      content: `<h2>Topluluk Kuralları</h2>
+<p><strong>Son güncelleme:</strong> 3 Ağustos 2026</p>
+<p>CanliFal.com, herkesin kendini güvende ve saygı görmüş hissettiği bir topluluk olmayı hedefler. Platformu kullanan tüm üyeler aşağıdaki kurallara uymakla yükümlüdür.</p>
+
+<h3>1. Saygı ve Nezaket</h3>
+<ul>
+<li>Diğer kullanıcılara ve falcılara her zaman saygılı davranın.</li>
+<li>Hakaret, küfür, tehdit, aşağılama ve nefret söylemi kesinlikle yasaktır.</li>
+<li>Din, dil, ırk, cinsiyet, milliyet veya cinsel yönelim temelli ayrımcılık yapılamaz.</li>
+</ul>
+
+<h3>2. Taciz ve Zorbalık Yasağı</h3>
+<ul>
+<li>Kullanıcıları rahatsız edici, ısrarlı veya tehditkâr mesajlar göndermek yasaktır.</li>
+<li>Cinsel taciz, ısrarlı istenmeyen iletişim ve zorbalık anında yaptırıma tabidir.</li>
+</ul>
+
+<h3>3. Uygunsuz İçerik Yasağı</h3>
+<ul>
+<li>Müstehcen, pornografik, şiddet içeren veya yasa dışı içerik paylaşılamaz.</li>
+<li>Çocukların istismarına yönelik her türlü içerik <strong>kesinlikle yasaktır</strong> ve derhal yetkililere bildirilir.</li>
+<li>Yanıltıcı, dolandırıcılık amaçlı veya sahte içerik paylaşımı yasaktır.</li>
+</ul>
+
+<h3>4. Gizlilik ve Kişisel Bilgiler</h3>
+<ul>
+<li>Başkalarının kişisel bilgilerini (telefon, adres, fotoğraf vb.) izinsiz paylaşmayın.</li>
+<li>Kendi hassas bilgilerinizi de güvenliğiniz için paylaşmaktan kaçının.</li>
+</ul>
+
+<h3>5. Spam ve Reklam Yasağı</h3>
+<ul>
+<li>İstenmeyen reklam, tanıtım veya spam mesajları göndermek yasaktır.</li>
+<li>Platform dışına yönlendiren ticari bağlantılar paylaşılamaz.</li>
+</ul>
+
+<h3>6. Sahte Hesap ve Kimlik</h3>
+<ul>
+<li>Başkasının kimliğine bürünmek veya sahte profil oluşturmak yasaktır.</li>
+<li>Her kullanıcının yalnızca bir hesabı olabilir.</li>
+</ul>
+
+<h3>7. Kural İhlallerinin Sonuçları</h3>
+<p>Topluluk kurallarını ihlal eden kullanıcılar hakkında ihlalin ağırlığına göre şu yaptırımlar uygulanır:</p>
+<ul>
+<li>Uyarı,</li>
+<li>İçeriğin kaldırılması,</li>
+<li>Geçici hesap askıya alma,</li>
+<li>Kalıcı hesap kapatma,</li>
+<li>Gerekli durumlarda yasal makamlara bildirim.</li>
+</ul>
+
+<h3>8. Bildirim</h3>
+<p>Kurallara aykırı bir davranış veya içerikle karşılaştığınızda uygulama içindeki <strong>"Bildir / Şikâyet Et"</strong> özelliğini kullanabilir veya <strong>İletişim</strong> sayfamızdan bize ulaşabilirsiniz. Tüm bildirimler gizli tutulur.</p>`,
+      isPublished: true,
+      showInFooter: true,
+      showInHeader: false,
+      sortOrder: 104,
+    }
+  })
+
   console.log('Site pages seeded!')
 
   // Seed Profile Frames
