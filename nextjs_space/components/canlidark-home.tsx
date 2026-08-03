@@ -1371,6 +1371,26 @@ export default function CanliDarkHome() {
         )}
       </AnimatePresence>
 
+      {/* ═══ LEGAL FOOTER ═══ */}
+      <div className="px-4 pb-28 pt-6">
+        <div className="border-t border-purple-800/20 pt-4 text-center space-y-2">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-purple-400/50">
+            <Link href="/sayfa/gizlilik-politikasi" className="hover:text-purple-300 transition-colors">Gizlilik Politikası</Link>
+            <span>•</span>
+            <Link href="/sayfa/kullanim-sartlari" className="hover:text-purple-300 transition-colors">Kullanım Şartları</Link>
+            <span>•</span>
+            <Link href="/sayfa/kvkk" className="hover:text-purple-300 transition-colors">KVKK</Link>
+            <span>•</span>
+            <Link href="/sayfa/cocuk-guvenligi-politikasi" className="hover:text-purple-300 transition-colors">Çocuk Güvenliği</Link>
+            <span>•</span>
+            <Link href="/sayfa/topluluk-kurallari" className="hover:text-purple-300 transition-colors">Topluluk Kuralları</Link>
+            <span>•</span>
+            <Link href="/iletisim" className="hover:text-purple-300 transition-colors">İletişim</Link>
+          </div>
+          <p className="text-[9px] text-purple-500/30">© 2025 CanliFal.com - Tüm hakları saklıdır.</p>
+        </div>
+      </div>
+
       {/* ═══ BOTTOM NAV ═══ */}
       <nav className="canlidark-bottom-nav">
         <div className="canlidark-nav-inner">

@@ -1080,46 +1080,65 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     create: {
       title: 'Çocuk Güvenliği Politikası',
       slug: 'cocuk-guvenligi-politikasi',
-      content: `<h2>Çocuk Güvenliği Politikası</h2>
+      content: `<h1>Çocuk Güvenliği Politikası</h1>
 <p><strong>Son güncelleme:</strong> 3 Ağustos 2026</p>
-<p>CanliFal.com, çocukların çevrimiçi güvenliğini en yüksek öncelik olarak kabul eder. Bu politika, platformumuzun çocukların cinsel istismarı ve sömürüsüne (CSAE) karşı sıfır tolerans yaklaşımını ve alınan önlemleri açıklar.</p>
+<p>CanlıFal.com olarak, çocukların çevrimiçi güvenliğini en yüksek öncelik olarak kabul ediyoruz. Bu politika, platformumuzun çocukların cinsel istismarı ve sömürüsüne (CSAE) karşı sıfır tolerans yaklaşımını, uygulanan güvenlik önlemlerini ve yasal yükümlülüklerimizi kapsamlı biçimde açıklar.</p>
+<p>Bu politika Google Play, Apple App Store ve Türkiye Cumhuriyeti mevzuatı gereksinimlerine tam uyumludur.</p>
 
-<h3>1. Yaş Sınırı</h3>
+<h2>1. Platform Kapsamı ve Yaş Sınırı</h2>
 <ul>
-<li>CanliFal.com yalnızca <strong>18 yaş ve üzeri</strong> kullanıcılara yöneliktir.</li>
-<li>18 yaşından küçüklerin platforma kayıt olması ve hizmetleri kullanması kesinlikle yasaktır.</li>
-<li>Reşit olmayan bir kullanıcı tespit edildiğinde hesap derhal kapatılır.</li>
+<li>CanlıFal.com yalnızca <strong>18 yaş ve üzeri</strong> yetişkin kullanıcılara yöneliktir.</li>
+<li>18 yaşından küçüklerin platforma kayıt olması, hesap oluşturması ve platform hizmetlerini kullanması <strong>kesinlikle yasaktır.</strong></li>
+<li>Kayıt sürecinde kullanıcılardan doğum tarihi bilgisi alınarak yaş doğrulaması yapılır.</li>
+<li>Reşit olmayan bir kullanıcı tespit edildiğinde hesap <strong>derhal askıya alınır</strong> ve gerekli yasal bildirimler yapılır.</li>
+<li>Platform, "Çocuklar için Tasarlanmış" (Kids Category) kapsamında değildir.</li>
 </ul>
 
-<h3>2. Sıfır Tolerans İlkesi</h3>
-<p>Çocukların cinsel istismarını veya sömürüsünü içeren (CSAE / CSAM) her türlü içerik, davranış veya iletişime karşı <strong>sıfır tolerans</strong> uygulanır. Bu tür içerikler:</p>
+<h2>2. Çocuk Cinsel İstismarı ve Sömürüsüne (CSAE) Karşı Sıfır Tolerans</h2>
+<p>Çocukların cinsel istismarını, sömürüsünü veya bunlara ilişkin materyalleri (CSAM) içeren, teşvik eden, normalleştiren veya kolaylaştıran <strong>her türlü içerik, davranış ve iletişime karşı sıfır tolerans</strong> uygulanır. Bu kapsamda:</p>
 <ul>
-<li>Anında kaldırılır,</li>
-<li>İlgili hesap kalıcı olarak yasaklanır,</li>
-<li>Yürürlükteki yasalar gereği yetkili makamlara bildirilir.</li>
+<li><strong>Çocuk cinsel istismarı materyali (CSAM):</strong> Gerçek veya yapay zekâ ile oluşturulmuş her türlü görsel, video veya metin içerik yasaktır.</li>
+<li><strong>Grooming (kandırma/hazırlama):</strong> Reşit olmayan bireyleri cinsel amaçlı iletişime çekme girişimleri yasaktır.</li>
+<li><strong>Sextortion (cinsel şantaj):</strong> Reşit olmayan bireylere yönelik her türlü şantaj ve tehdit yasaktır.</li>
+<li><strong>Çocuk kaçakçılığı:</strong> Reşit olmayan bireylerin ticaretine ilişkin her türlü içerik yasaktır.</li>
+<li><strong>Çocuk istismarını normalleştirme:</strong> Çocuklara yönelik cinsel davranışları makul gösteren içerikler yasaktır.</li>
+</ul>
+<p>Bu tür içerikler tespit edildiğinde: (1) İçerik anında kaldırılır ve delil olarak saklanır, (2) İlgili hesap kalıcı olarak yasaklanır, (3) Yetkili makamlara derhal bildirilir, (4) Gerektiğinde NCMEC ve/veya ilgili bölgesel kuruluşlara rapor edilir.</p>
+
+<h2>3. İçerik Denetimi ve Moderasyon</h2>
+<ul>
+<li><strong>Otomatik içerik tarama:</strong> Yüklenen görseller, videolar ve metin içerikler otomatik filtrelerle taranır.</li>
+<li><strong>Manuel moderasyon:</strong> Eğitimli moderasyon ekibimiz tarafından canlı yayınlar, sohbet odaları ve kullanıcı etkileşimleri düzenli olarak denetlenir.</li>
+<li><strong>Yapay zekâ destekli analiz:</strong> Şüpheli desen ve davranışların erken tespiti için makine öğrenimi tabanlı araçlar kullanılır.</li>
+<li><strong>Proaktif tarama:</strong> Bilinen CSAM veritabanlarına (hash matching) karşı proaktif kontroller yapılır.</li>
 </ul>
 
-<h3>3. İçerik Denetimi ve Moderasyon</h3>
+<h2>4. Uygulama İçi Bildirim ve Şikâyet Mekanizması</h2>
 <ul>
-<li>Platform içeriği moderasyon ekibimiz tarafından düzenli olarak denetlenir.</li>
-<li>Şüpheli içerik ve davranışlar için otomatik ve manuel kontrol mekanizmaları kullanılır.</li>
-<li>Canlı yayın, sohbet ve profil içerikleri topluluk kurallarına göre değerlendirilir.</li>
+<li><strong>"Şikâyet Et / Bildir" butonları:</strong> Her profil, canlı yayın, sohbet odası ve içerikte doğrudan raporlama seçeneği mevcuttur.</li>
+<li><strong>Doğrudan e-posta:</strong> guvenlik@canlifal.com adresine her zaman ulaşabilirsiniz.</li>
+<li><strong>Anonim bildirim:</strong> Anonim raporlar da kabul edilir.</li>
 </ul>
+<p>Tüm bildirimler gizli tutulur, 24 saat içinde değerlendirilir ve çocuk güvenliğine ilişkin bildirimlere en yüksek öncelik verilir.</p>
 
-<h3>4. Bildirim ve Şikâyet Mekanizması</h3>
-<p>Çocuk güvenliğini tehdit eden herhangi bir içerik veya davranışla karşılaşırsanız derhal bize bildirin:</p>
+<h2>5. Yasal Uyum ve Kuruluş İş Birliği</h2>
 <ul>
-<li>Uygulama içindeki <strong>"Şikâyet Et / Bildir"</strong> butonlarını kullanabilirsiniz.</li>
-<li><strong>İletişim</strong> sayfamız üzerinden bize ulaşabilirsiniz.</li>
-<li>E-posta: <strong>guvenlik@canlifal.com</strong></li>
+<li><strong>Türkiye:</strong> 5237 sayılı TCK, 5651 sayılı İnternet Kanunu, 6698 sayılı KVKK.</li>
+<li><strong>Avrupa Birliği:</strong> GDPR çocuklara özel koruma hükümleri.</li>
+<li><strong>ABD:</strong> COPPA ilkeleri.</li>
+<li><strong>Google Play:</strong> Child Safety Standards politikası ve CSAE gereksinimleri.</li>
+<li><strong>Apple App Store:</strong> App Review Guidelines çocuk güvenliği maddeleri.</li>
 </ul>
-<p>Tüm bildirimler gizli tutulur ve ivedilikle incelenir.</p>
+<p>Onaylandığı CSAM vakaları ilgili makamlara derhal raporlanır.</p>
 
-<h3>5. Yasal İş Birliği</h3>
-<p>CanliFal.com, çocuk istismarıyla mücadelede kolluk kuvvetleri ve yetkili kurumlarla tam iş birliği yapar. Gerekli durumlarda kullanıcı bilgileri yasal süreçler çerçevesinde ilgili makamlarla paylaşılır.</p>
-
-<h3>6. Sorumlu İletişim Noktası</h3>
-<p>Çocuk güvenliği ile ilgili tüm konularda sorumlu iletişim noktamız: <strong>guvenlik@canlifal.com</strong></p>`,
+<h2>6. Sorumlu İletişim Noktası (Designated Point of Contact)</h2>
+<ul>
+<li><strong>E-posta:</strong> guvenlik@canlifal.com</li>
+<li><strong>Yanıt süresi:</strong> Çocuk güvenliği bildirimleri en geç 24 saat içinde değerlendirilir.</li>
+</ul>
+<p>Bu kişi, Google Play'den gelen CSAE ile ilgili bildirimleri almaya ve gerekli aksiyonları almaya yetkilidir.</p>
+<hr>
+<p style="font-size:12px;color:#888;">Çocuk güvenliği hepimizin sorumluluğudur. Şüpheli bir durumla karşılaşırsanız lütfen derhal bildirin.</p>`,
       isPublished: true,
       showInFooter: true,
       showInHeader: false,
