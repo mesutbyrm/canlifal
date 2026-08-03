@@ -52,27 +52,31 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Get unread counts for each conversation
-    const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conv: { id: string; user1Id: string; user2Id: string; user1: { id: string; name: string | null; username: string | null; image: string | null }; user2: { id: string; name: string | null; username: string | null; image: string | null }; lastMessageText: string | null; lastMessageAt: Date | null }) => {
-        const otherUser = conv.user1Id === userId ? conv.user2 : conv.user1
-        const unreadCount = await prisma.directMessage.count({
-          where: {
-            senderId: otherUser.id,
-            receiverId: userId,
-            isRead: false
-          }
-        })
-
-        return {
-          id: conv.id,
-          user: otherUser,
-          lastMessage: conv.lastMessageText,
-          lastMessageAt: conv.lastMessageAt,
-          unreadCount
-        }
-      })
+    // Get unread counts for ALL conversations in a single grouped query instead
+    // of one COUNT per conversation (removes the N+1). Groups this user's unread
+    // incoming messages by sender, then maps each conversation to its counterpart.
+    const unreadGroups = await prisma.directMessage.groupBy({
+      by: ['senderId'],
+      where: {
+        receiverId: userId,
+        isRead: false,
+      },
+      _count: { _all: true },
+    })
+    const unreadBySender = new Map<string, number>(
+      unreadGroups.map((g: { senderId: string; _count: { _all: number } }) => [g.senderId, g._count._all])
     )
+
+    const conversationsWithUnread = conversations.map((conv: { id: string; user1Id: string; user2Id: string; user1: { id: string; name: string | null; username: string | null; image: string | null }; user2: { id: string; name: string | null; username: string | null; image: string | null }; lastMessageText: string | null; lastMessageAt: Date | null }) => {
+      const otherUser = conv.user1Id === userId ? conv.user2 : conv.user1
+      return {
+        id: conv.id,
+        user: otherUser,
+        lastMessage: conv.lastMessageText,
+        lastMessageAt: conv.lastMessageAt,
+        unreadCount: unreadBySender.get(otherUser.id) ?? 0,
+      }
+    })
 
     // Get pending message requests
     const messageRequests = await prisma.messageRequest.findMany({

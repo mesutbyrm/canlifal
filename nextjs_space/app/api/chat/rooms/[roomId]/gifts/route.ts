@@ -99,69 +99,77 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
     const senderExcluded = await isExcludedFromFinance(sender.id)
 
-    // Deduct jetons from sender (staff skip - unlimited balance)
-    if (!isStaff) {
-      await prisma.user.update({
-        where: { id: sender.id },
-        data: { jetonBalance: { decrement: price } }
-      })
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: sender.id,
-          amount: -price,
-          type: 'gift_sent',
-          description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
-          balanceBefore: sender.jetonBalance ?? 0,
-          balanceAfter: (sender.jetonBalance ?? 0) - price
-        }
-      })
-    }
+    // ── Atomic money movement ──────────────────────────────────────────────
+    // Sender deduction, recipient credit and room-owner commission are wrapped
+    // in a single interactive transaction so balances can never end up partially
+    // updated on a mid-flight failure. Business logic and amounts are unchanged.
+    await prisma.$transaction(async (tx: any) => {
+      // Deduct jetons from sender (staff skip - unlimited balance)
+      if (!isStaff) {
+        await tx.user.update({
+          where: { id: sender.id },
+          data: { jetonBalance: { decrement: price } }
+        })
+        await tx.jetonTransaction.create({
+          data: {
+            userId: sender.id,
+            amount: -price,
+            type: 'gift_sent',
+            description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
+            balanceBefore: sender.jetonBalance ?? 0,
+            balanceAfter: (sender.jetonBalance ?? 0) - price
+          }
+        })
+      }
 
-    // Add net amount to recipient - sadece normal kullanıcılardan
-    if (dist.receiverNet > 0 && !senderExcluded) {
-      const recipientBefore = recipient.jetonBalance ?? 0
-      await prisma.user.update({
-        where: { id: recipient.id },
-        data: { jetonBalance: { increment: dist.receiverNet } }
-      })
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: recipient.id,
-          amount: dist.receiverNet,
-          type: 'gift_received',
-          description: `${sender.name} tarafından ${giftType.name} hediyesi alındı (${room.nameTr})`,
-          balanceBefore: recipientBefore,
-          balanceAfter: recipientBefore + dist.receiverNet
-        }
-      })
-    }
-    // Process agency commission if recipient is in an agency
+      // Add net amount to recipient - sadece normal kullanıcılardan
+      if (dist.receiverNet > 0 && !senderExcluded) {
+        const recipientBefore = recipient.jetonBalance ?? 0
+        await tx.user.update({
+          where: { id: recipient.id },
+          data: { jetonBalance: { increment: dist.receiverNet } }
+        })
+        await tx.jetonTransaction.create({
+          data: {
+            userId: recipient.id,
+            amount: dist.receiverNet,
+            type: 'gift_received',
+            description: `${sender.name} tarafından ${giftType.name} hediyesi alındı (${room.nameTr})`,
+            balanceBefore: recipientBefore,
+            balanceAfter: recipientBefore + dist.receiverNet
+          }
+        })
+      }
+
+      // Give net amount to room owner (NORMAL/VIP rooms only)
+      if (dist.ownerNet > 0 && roomOwnerId && !senderExcluded) {
+        const ownerUser = await tx.user.findUnique({ where: { id: roomOwnerId }, select: { jetonBalance: true } })
+        const ownerBefore = ownerUser?.jetonBalance ?? 0
+        await tx.user.update({
+          where: { id: roomOwnerId },
+          data: { jetonBalance: { increment: dist.ownerNet } }
+        })
+        await tx.jetonTransaction.create({
+          data: {
+            userId: roomOwnerId,
+            amount: dist.ownerNet,
+            type: 'gift_commission',
+            description: `Oda sahibi payı: ${giftType.name} hediyesinden (${room.nameTr})`,
+            balanceBefore: ownerBefore,
+            balanceAfter: ownerBefore + dist.ownerNet
+          }
+        })
+      }
+    })
+
+    // Process agency commission if recipient is in an agency (outside the money
+    // transaction — fire-and-forget, must not block or roll back balances)
     if (dist.receiverNet > 0 && !senderExcluded) {
       processAgencyCommission({
         userId: recipient.id,
         earnedAmount: dist.receiverNet,
         sourceType: 'chat_gift',
       }).catch(err => console.error('[Chat Gift] Agency commission error:', err))
-    }
-
-    // Give net amount to room owner (NORMAL/VIP rooms only)
-    if (dist.ownerNet > 0 && roomOwnerId && !senderExcluded) {
-      const ownerUser = await prisma.user.findUnique({ where: { id: roomOwnerId }, select: { jetonBalance: true } })
-      const ownerBefore = ownerUser?.jetonBalance ?? 0
-      await prisma.user.update({
-        where: { id: roomOwnerId },
-        data: { jetonBalance: { increment: dist.ownerNet } }
-      })
-      await prisma.jetonTransaction.create({
-        data: {
-          userId: roomOwnerId,
-          amount: dist.ownerNet,
-          type: 'gift_commission',
-          description: `Oda sahibi payı: ${giftType.name} hediyesinden (${room.nameTr})`,
-          balanceBefore: ownerBefore,
-          balanceAfter: ownerBefore + dist.ownerNet
-        }
-      })
     }
 
     // Log revenue to audit table

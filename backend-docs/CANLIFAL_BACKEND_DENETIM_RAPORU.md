@@ -90,7 +90,7 @@ Tüm gerçek zamanlı akış, **process-içi (in-memory) olay veri yolları** il
 - **Cache katmanı** (`lib/cache.ts`): TTL'li, Redis-uyumlu API, thundering-herd koruması, otomatik eviction. ✔
 
 ### 4.2 Tespit edilen N+1 / iyileştirme adayları — **öneri**
-- `app/api/messages/route.ts`: her konuşma için ayrı `directMessage.count()` (okunmamış sayısı). `Promise.all` ile paralel çalışır (gecikme sınırlı), ancak tek bir `groupBy` ile N sorgu 1 sorguya indirilebilir. **Risk düşük ama yanıt şekli testi gerektirir → öneri olarak bırakıldı.**
+- `app/api/messages/route.ts`: her konuşma için ayrı `directMessage.count()` (okunmamış sayısı) yapılıyordu (N+1). **✔ UYGULANDI:** Tek bir `groupBy` (gönderene göre gruplandırma) ile N sorgu **1 sorguya** indirildi; yanıt şekli (`unreadCount`) aynen korundu.
 - `.map(async ...)` kalıbı 11 dosyada mevcut; çoğu `Promise.all` ile sarılıdır (kabul edilebilir). Kritik gerçek zamanlı yollarda değildir.
 
 ### 4.3 Gereksiz log
@@ -123,11 +123,11 @@ Her **tek** hediye gönderimi, **aynı `gift` SSE kanalı** üzerinden **2–3 m
   - Motor olaylarını `event` alanına göre yönet: `gift_received` → hediyeyi göster/animasyon; `gift_queue_updated` → sırayı güncelle; `gift_finished` → sıradan çıkar.
   - Sıra korunması: aynı tip içinde SSE sırası korunur; kombo/sıra durumu için motorun `queueIndex`/`queue` alanlarına güvenilmelidir.
 
-### 5.4 Para yolu atomikliği — **BULGU (onay gerektirir)**
+### 5.4 Para yolu atomikliği — **✔ UYGULANDI**
 - `video-streams/[streamId]/gifts` ve `live/gift/send` para akışları `$transaction` kullanır (atomik). ✔
-- **Ancak `chat/rooms/[roomId]/gifts`** jeton düşme/ekleme işlemlerini `$transaction` **olmadan**, ardışık `user.update` + `jetonTransaction.create` çağrılarıyla yapar. Nadir bir hata anında (gönderenden düşülüp alıcıya eklenmeden önce) bakiye tutarsızlığı teorik olarak mümkündür.
-- **Neden kendiliğinden düzeltilmedi:** Bu bir **para yoludur**; `$transaction` eklemek atomikliği artırır ancak bağlantı havuzu (`connection_limit=5`) ve `statement_timeout=5000` ile etkileşimi canlı ortamda test gerektirir. Para yolunu izinsiz değiştirmek Kural #8 ve sorumlu davranış gereği yapılmadı.
-- **Öneri:** Onayınızla `chat/rooms/[roomId]/gifts` jeton hareketlerini tek bir `prisma.$transaction([...])` içine almak (diğer iki hediye yoluyla tutarlı hale getirmek). Küçük, hedefli, güvenli bir değişiklik olur.
+- **`chat/rooms/[roomId]/gifts`** jeton düşme/ekleme işlemleri de artık atomiktir: gönderen jeton düşümü, alıcı jeton alacağı, oda sahibi komisyonu ve ilgili tüm `jetonTransaction.create` çağrıları tek bir `prisma.$transaction` içine alındı. Kısmi bakiye güncellemesi riski ortadan kalktı.
+- **Davranış korundu:** Tutarlar, komisyon oranı ve yanıt şekli aynen bırakıldı; yalnızca işlemler atomik hale getirildi. `processAgencyCommission` (ateşle-ve-unut) ve gelir loglama bilinçli olarak transaction dışında tutuldu.
+- **Doğrulama:** Değişiklik build/tip kontrolünden geçti (canlı ortamda ayrıca test edilmesi önerilir).
 
 ---
 
@@ -159,11 +159,12 @@ Sıcak gerçek zamanlı modellerin tümü iyi indekslenmiştir:
 
 ## 7. YAPILAN DEĞİŞİKLİKLER
 
-**Bu denetimde backend kodunda hiçbir değişiklik yapılmamıştır.** Bunun nedeni bir eksiklik değil, bilinçli bir sorumluluk kararıdır:
-- Backend zaten profesyonelce optimize edilmiş durumdadır; güvenli ve net fayda sağlayan, aynı zamanda mevcut Flutter sözleşmelerini veya paylaşımlı veritabanını **riske atmayan** bir değişiklik bulunamamıştır.
-- Tespit edilen tüm iyileştirmeler ya (a) mevcut Flutter istemcisini kıracak nitelikte (zarf standardizasyonu), ya (b) mimari büyük değişiklik (Redis pub/sub), ya da (c) para yolu gibi onay ve canlı test gerektiren hassas alanlardadır.
+Kullanıcı onayıyla **iki güvenli, davranış-koruyan (behavior-preserving) değişiklik** uygulandı. Her ikisi de yanıt şekillerini ve iş mantığını aynen korur; build/tip kontrolünden geçmiştir:
 
-Bu yüzden değişiklikler **onaya sunulan öneriler** olarak §9'da listelenmiştir.
+1. **Chat-room hediye para yolu atomikleştirildi** (`app/api/chat/rooms/[roomId]/gifts/route.ts`): jeton düşümü/alacak/komisyon hareketleri tek bir `prisma.$transaction` içine alındı. Kısmi bakiye güncellemesi riski ortadan kalktı. (Ayrıntı: §5.4)
+2. **Messages N+1 sorgusu giderildi** (`app/api/messages/route.ts`): konuşma başına ayrı `count()` yerine tek `groupBy`. Konuşma sayısı kadar sorgu → 1 sorgu. (Ayrıntı: §4.2)
+
+**Uygulanmayan** iyileştirmeler (ya mevcut Flutter istemcisini kırar, ya mimari büyük değişikliktir) **onaya sunulan öneriler** olarak §8'de kalıcı risk olarak listelenmiştir (zarf standardizasyonu, Redis pub/sub).
 
 ---
 
@@ -172,8 +173,7 @@ Bu yüzden değişiklikler **onaya sunulan öneriler** olarak §9'da listelenmi�
 1. **In-memory olay yolu örnek-başınadır** — yatay ölçeklemede SSE olay kaybı riski. Çözüm: Redis pub/sub (büyük değişiklik, onay gerekir).
 2. **API yanıt zarfı tutarsızlığı** — ~287 endpoint standart zarf kullanmaz. Mevcut Flutter buna göre yazıldığı için düzeltilmedi; yeni uçlarda `lib/api-response.ts` kullanılmalı.
 3. **Poll penceresi içi tipler-arası sıralama garantisi yok** — Flutter kronolojik sırayı payload `timestamp` alanından türetmeli.
-4. **Chat-room hediye para yolu atomik değil** (§5.4) — onayla düzeltilebilir.
-5. **Denetim kapsamı:** 487 endpoint'in tamamı canlı ortamda çalıştırılarak test edilmemiştir; kritik gerçek zamanlı/hediye/TRTC/DB yolları kod düzeyinde doğrulanmıştır.
+4. **Denetim kapsamı:** 487 endpoint'in tamamı canlı ortamda çalıştırılarak test edilmemiştir; kritik gerçek zamanlı/hediye/TRTC/DB yolları kod düzeyinde doğrulanmıştır.
 
 ---
 
@@ -191,6 +191,6 @@ Bu yüzden değişiklikler **onaya sunulan öneriler** olarak §9'da listelenmi�
 
 ## 10. Sonuç
 
-canlifal.com backend'i, Flutter mobil uygulamasıyla çalışmaya **büyük ölçüde hazırdır.** Kritik yollar (gerçek zamanlı akış, TRTC yaşam döngüsü, hediye motoru, veritabanı) sağlam ve optimize durumdadır. Tam "%100 sertifikasyon" için önerilen adımlar: (1) Flutter tarafının §9'daki kuralları uygulaması, (2) onayınızla chat-room hediye para yolunun atomik hale getirilmesi (§5.4), (3) ölçekleme planlanıyorsa in-memory olay yolunun Redis pub/sub'a taşınması (§8.1).
+canlifal.com backend'i, Flutter mobil uygulamasıyla çalışmaya **büyük ölçüde hazırdır.** Kritik yollar (gerçek zamanlı akış, TRTC yaşam döngüsü, hediye motoru, veritabanı) sağlam ve optimize durumdadır. chat-room hediye para yolu atomik hale getirildi (§5.4) ve mesaj kutusu N+1 sorgusu giderildi (§4.2). Tam "%100 sertifikasyon" için kalan adımlar: (1) Flutter tarafının §9'daki kuralları uygulaması, (2) ölçekleme planlanıyorsa in-memory olay yolunun Redis pub/sub'a taşınması (§8.1).
 
-Yukarıdaki §9 (Flutter) ve §5.4 (para yolu) maddeleri tamamlandığında backend, tek örnekli dağıtımda Flutter ile tam uyumlu kabul edilebilir.
+§5.4 (para yolu atomikliği) ve §4.2 (N+1) artık **tamamlandı.** Geriye kalan tek koşul §9'daki Flutter tarafı uyarlamalarıdır; bunlar tamamlandığında backend, tek örnekli dağıtımda Flutter ile tam uyumlu kabul edilebilir.
