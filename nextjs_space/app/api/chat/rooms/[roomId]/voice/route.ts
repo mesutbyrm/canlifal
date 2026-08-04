@@ -105,7 +105,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           roomId,
           userId: voiceUserId,
           userName,
-          agoraUid: numericUid,
+          trtcUid: numericUid,
           isActive: true
         },
         update: {

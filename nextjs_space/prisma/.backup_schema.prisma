@@ -1812,7 +1812,7 @@ model VoiceSession {
   roomId   String
   userId   String
   userName String
-  agoraUid Int      @default(0)
+  trtcUid  Int      @default(0)
   joinedAt DateTime @default(now())
   lastPing DateTime @default(now())
   isActive Boolean  @default(true)
