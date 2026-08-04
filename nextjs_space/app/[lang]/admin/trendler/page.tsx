@@ -228,7 +228,7 @@ export default function AdminTrendlerPage() {
                   value={editing.relatedUrl || ''}
                   onChange={e => setEditing({ ...editing, relatedUrl: e.target.value })}
                   className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm ${inputCls} focus:outline-none focus:ring-2`}
-                  placeholder="/unluler/tarkan"
+                  placeholder="/trendler/ornek"
                 />
               </div>
               <div>

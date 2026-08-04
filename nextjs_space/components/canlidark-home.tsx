@@ -59,35 +59,6 @@ interface MembershipPlan {
   color?: string
 }
 
-interface CelebrityStory {
-  id: string
-  name: string
-  slug: string
-  profileImage: string | null
-  category: string
-  hasNewPost: boolean
-}
-
-interface PopularFanClub {
-  id: string
-  memberCount: number
-  postCount: number
-  coverImage: string | null
-  celebrity: { name: string; slug: string; profileImage: string | null; category: string }
-}
-
-interface CelebrityPost {
-  id: string
-  platform: string
-  postType: string
-  content: string | null
-  mediaUrl: string | null
-  likeCount: number
-  commentCount: number
-  createdAt: string
-  celebrity: { name: string; slug: string; profileImage: string | null; category?: string }
-}
-
 interface TrendVideoItem {
   id: string
   title: string
@@ -141,8 +112,6 @@ const FEATURE_CARDS = [
   { id: 'dizi-film', name: 'Dizi & Film', icon: '🎬', href: '/dizi-film', gradient: 'from-red-500 to-rose-700', glow: 'rgba(239,68,68,0.4)', borderColor: 'border-red-500/30' },
   { id: 'oyunlar', name: 'Oyunlar', icon: '🎮', href: '/oyunlar', gradient: 'from-emerald-500 to-teal-700', glow: 'rgba(20,184,166,0.35)', borderColor: 'border-teal-500/30' },
   { id: 'trendler', name: 'Trendler', icon: '🔥', href: '/trendler', gradient: 'from-orange-500 to-red-600', glow: 'rgba(249,115,22,0.35)', borderColor: 'border-orange-500/30' },
-  { id: 'unluler', name: 'Ünlüler', icon: '⭐', href: '/unluler', gradient: 'from-violet-500 to-purple-700', glow: 'rgba(139,92,246,0.35)', borderColor: 'border-violet-500/30' },
-  { id: 'fanclub', name: 'Fan Club', icon: '💜', href: '/unluler', gradient: 'from-rose-500 to-pink-700', glow: 'rgba(244,63,94,0.35)', borderColor: 'border-rose-500/30' },
   { id: 'davet', name: 'Davet Et', icon: '👥', href: '/davet', gradient: 'from-blue-500 to-indigo-700', glow: 'rgba(59,130,246,0.35)', borderColor: 'border-blue-500/30' },
   { id: 'hediye', name: 'Hediyeler', icon: '🎁', href: '/hediyeler', gradient: 'from-pink-500 to-fuchsia-700', glow: 'rgba(236,72,153,0.35)', borderColor: 'border-pink-500/30' },
 ]
@@ -157,13 +126,11 @@ export default function CanliDarkHome() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [heroText, setHeroText] = useState<string>('Canlı yayınlara\nkatıl, eğlenceye ortak ol!')
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
-  const [celebrities, setCelebrities] = useState<CelebrityStory[]>([])
   const [trendVideos, setTrendVideos] = useState<TrendVideoItem[]>([])
   const [tiktokVideos, setTiktokVideos] = useState<any[]>([])
   const [tiktokCategories, setTiktokCategories] = useState<any[]>([])
   const [activeTiktokCat, setActiveTiktokCat] = useState<string>('')
   const [tiktokSectionEnabled, setTiktokSectionEnabled] = useState(true)
-  const [popularFanClubs, setPopularFanClubs] = useState<PopularFanClub[]>([])
   const [shortVideos, setShortVideos] = useState<any[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [fabMenuOpen, setFabMenuOpen] = useState(false)
@@ -196,15 +163,13 @@ export default function CanliDarkHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, r, t, m, celeb, posts, storiesData, fanClubsData, matchSetting, tiktokData, tiktokSetting] = await Promise.all([
+        const [s, r, t, m, posts, storiesData, matchSetting, tiktokData, tiktokSetting] = await Promise.all([
           fetch('/api/video-streams').then(x => x.ok ? x.json() : []),
           fetch('/api/chat/rooms?withCounts=true').then(x => x.ok ? x.json() : []),
           fetch('/api/fortune-tellers?sort=top_rated').then(x => x.ok ? x.json() : null),
           fetch('/api/memberships').then(x => x.ok ? x.json() : []),
-          fetch('/api/celebrities?limit=15').then(x => x.ok ? x.json() : { celebrities: [] }),
           fetch('/api/trend-videos?limit=12').then(x => x.ok ? x.json() : { videos: [] }),
           fetch('/api/stories').then(x => x.ok ? x.json() : { storyGroups: [] }),
-          fetch('/api/fan-clubs/popular').then(x => x.ok ? x.json() : { fanClubs: [] }),
           fetch('/api/settings/public?key=live_matches_enabled').then(x => x.ok ? x.json() : null),
           fetch('/api/tiktok-videos?limit=10').then(x => x.ok ? x.json() : { videos: [] }),
           fetch('/api/settings/public?key=tiktok_section_enabled').then(x => x.ok ? x.json() : null),
@@ -217,16 +182,8 @@ export default function CanliDarkHome() {
         setRooms((r || []).sort((a: any, b: any) => (b.onlineCount || 0) - (a.onlineCount || 0)))
         setTellers((t?.tellers || []).slice(0, 12))
         if (Array.isArray(m)) setMembershipPlans(m.slice(0, 4))
-        if (celeb?.celebrities) {
-          setCelebrities(celeb.celebrities.map((c: any) => ({
-            id: c.id, name: c.name, slug: c.slug,
-            profileImage: c.profileImage, category: c.category,
-            hasNewPost: false,
-          })))
-        }
         if (posts?.videos) setTrendVideos(posts.videos)
         if (storiesData?.storyGroups) setStoryGroups(storiesData.storyGroups)
-        if (fanClubsData?.fanClubs) setPopularFanClubs(fanClubsData.fanClubs)
         if (matchSetting) setLiveMatchesEnabled(matchSetting.value !== 'false')
         if (tiktokSetting) setTiktokSectionEnabled(tiktokSetting.value !== 'false')
         if (tiktokData?.videos) setTiktokVideos(tiktokData.videos)
@@ -420,7 +377,7 @@ export default function CanliDarkHome() {
       <div className="mb-1">
         <div className="flex items-center justify-between mb-2">
           <h2 className="canlidark-section-title">Hikâyeler</h2>
-          <Link href="/unluler" className="canlidark-section-link">Tümü</Link>
+
         </div>
         <input ref={storyFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleStoryFileSelect} />
         <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-1">
@@ -478,30 +435,7 @@ export default function CanliDarkHome() {
             </div>
           ))}
 
-          {/* Celebrity stories */}
-          {celebrities.map((celeb) => (
-            <Link key={celeb.id} href={`/unluler/${celeb.slug}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px]">
-              <div className="relative">
-                <div className={`w-16 h-16 rounded-full p-[2.5px] ${celeb.hasNewPost ? 'bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600' : 'bg-gray-600/50'}`}
-                  style={celeb.hasNewPost ? { boxShadow: '0 0 12px rgba(236,72,153,0.5)' } : {}}
-                >
-                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-[#0a0118] relative">
-                    {celeb.profileImage ? (
-                      <Image src={celeb.profileImage} alt={celeb.name} fill className="object-cover" sizes="60px" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-800 to-fuchsia-900 flex items-center justify-center text-lg font-bold text-white">
-                        {celeb.name[0]}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {celeb.hasNewPost && (
-                  <div className="absolute -bottom-0.5 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-[#0a0118]" />
-                )}
-              </div>
-              <p className="text-[10px] font-medium text-white text-center leading-tight truncate w-full">{celeb.name.split(' ')[0]}</p>
-            </Link>
-          ))}
+
         </div>
       </div>
 
@@ -886,41 +820,7 @@ export default function CanliDarkHome() {
         </div>
       )}
 
-      {/* ═══ 5.5 FAN CLUB — en aktif kulüpler ═══ */}
-      {popularFanClubs.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="canlidark-section-title flex items-center gap-1.5">💜 Fan Club</h2>
-            <Link href="/unluler" className="canlidark-section-link">Tüm Kulüpler</Link>
-          </div>
-          <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-2">
-            {popularFanClubs.map((fc, idx) => {
-              const gradients = ['from-rose-500 to-pink-600', 'from-purple-500 to-fuchsia-600', 'from-blue-500 to-indigo-600', 'from-amber-500 to-orange-600', 'from-emerald-500 to-teal-600'] as const
-              return (
-                <Link key={fc.id} href={`/unluler/${fc.celebrity.slug}/fan-kulubu`} className="flex-shrink-0 w-[120px]">
-                  <div className={`relative rounded-2xl overflow-hidden canlidark-glass border border-purple-500/20 aspect-[3/4]`} style={{ boxShadow: '0 4px 16px rgba(192,38,211,0.25)' }}>
-                    {fc.celebrity.profileImage ? (
-                      <Image src={fc.celebrity.profileImage} alt={fc.celebrity.name} fill className="object-cover" sizes="120px" />
-                    ) : (
-                      <div className={`w-full h-full bg-gradient-to-br ${gradients[idx % gradients.length]} flex items-center justify-center text-3xl`}>
-                        {fc.celebrity.name[0]}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-2">
-                      <p className="text-[11px] font-bold text-white leading-tight truncate">{fc.celebrity.name}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[9px] text-fuchsia-200/80 flex items-center gap-0.5"><Users className="w-2.5 h-2.5" />{fc.memberCount}</span>
-                        <span className="text-[9px] text-fuchsia-200/80 flex items-center gap-0.5"><MessageCircle className="w-2.5 h-2.5" />{fc.postCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
+
 
       {/* ═══ 6. FAL & TAROT — 4 sütun ═══ */}
       <div className="mb-6">
@@ -1116,7 +1016,6 @@ export default function CanliDarkHome() {
                     { href: '/hediyeler', icon: Gift, label: 'Hediye', gradient: 'from-pink-500 to-rose-600', glow: 'shadow-pink-500/20' },
                     { href: '/bana-ozel', icon: Zap, label: 'Bana Özel', gradient: 'from-amber-500 to-orange-600', glow: 'shadow-amber-500/20' },
                     { href: '/uyelik', icon: Crown, label: 'Premium', gradient: 'from-yellow-400 to-amber-500', glow: 'shadow-amber-500/20' },
-                    { href: '/unluler', icon: Star, label: 'Ünlüler', gradient: 'from-violet-500 to-purple-600', glow: 'shadow-violet-500/20' },
                     { href: '/trendler', icon: TrendingUp, label: 'Trendler', gradient: 'from-orange-500 to-red-600', glow: 'shadow-orange-500/20' },
                   ].map((item) => (
                     <Link
@@ -1451,9 +1350,9 @@ export default function CanliDarkHome() {
             <Coins className="w-5 h-5" />
             <span>Jeton Al</span>
           </Link>
-          <Link href="/unluler" className="canlidark-nav-item">
-            <Heart className="w-5 h-5" />
-            <span>Fan Club</span>
+          <Link href="/trendler" className="canlidark-nav-item">
+            <TrendingUp className="w-5 h-5" />
+            <span>Trendler</span>
           </Link>
         </div>
       </nav>

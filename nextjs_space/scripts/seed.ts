@@ -1508,20 +1508,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Celebrities seeded!')
 
-  // Add Ünlüler homepage button
-  await prisma.homepageButton.upsert({
-    where: { key: 'unluler' },
-    update: {},
-    create: {
-      key: 'unluler',
-      label: 'Ünlüler',
-      icon: '⭐',
-      href: '/unluler',
-      isVisible: true,
-      sortOrder: 12,
-    },
-  })
-  console.log('Ünlüler homepage button seeded!')
+  // Ünlüler homepage button removed
 
   // Add Trendler homepage button
   await prisma.homepageButton.upsert({
@@ -1619,16 +1606,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
       relatedUrl: '/fallar/tarot-fali',
       tags: JSON.stringify(['tarot', 'fal', 'gelecek']),
     },
-    {
-      title: 'En Çok Takip Edilen Ünlüler',
-      slug: 'en-cok-takip-edilen-unluler',
-      category: 'unlu',
-      icon: '🌟',
-      description: 'CanlıFal platformunda en çok takip edilen ünlü profilleri.',
-      trendScore: 820,
-      relatedUrl: '/unluler',
-      tags: JSON.stringify(['ünlüler', 'takip', 'fan']),
-    },
+
     {
       title: 'Kahve Falı Haftanın Trendi',
       slug: 'kahve-fali-haftanin-trendi',
