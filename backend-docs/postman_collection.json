@@ -2364,368 +2364,6 @@
       ]
     },
     {
-      "name": "admin/celebrities",
-      "item": [
-        {
-          "name": "DELETE /api/admin/celebrities",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrities",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrities"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/admin/celebrities",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrities",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrities"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/admin/celebrities",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrities",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrities"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"achievements\": \"\",\n  \"bio\": \"\",\n  \"birthDate\": \"\",\n  \"birthPlace\": \"\",\n  \"category\": \"\",\n  \"coverImage\": \"\",\n  \"name\": \"\",\n  \"profileImage\": \"\",\n  \"socialLinks\": \"\",\n  \"zodiacSign\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "PUT /api/admin/celebrities",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrities",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrities"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"achievements\": \"\",\n  \"bio\": \"\",\n  \"birthDate\": \"\",\n  \"birthPlace\": \"\",\n  \"category\": \"\",\n  \"coverImage\": \"\",\n  \"id\": \"\",\n  \"isActive\": \"\",\n  \"isVerified\": \"\",\n  \"name\": \"\",\n  \"profileImage\": \"\",\n  \"socialLinks\": \"\",\n  \"zodiacSign\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "admin/celebrity-posts",
-      "item": [
-        {
-          "name": "DELETE /api/admin/celebrity-posts",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrity-posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrity-posts"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/admin/celebrity-posts",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrity-posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrity-posts"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/admin/celebrity-posts",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrity-posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrity-posts"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"celebrityId\": \"\",\n  \"celebrityIds\": \"\",\n  \"content\": \"\",\n  \"externalUrl\": \"\",\n  \"isPinned\": \"\",\n  \"mediaUrl\": \"\",\n  \"platform\": \"\",\n  \"platforms\": \"\",\n  \"postType\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "PUT /api/admin/celebrity-posts",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrity-posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrity-posts"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"id\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/admin/celebrity-posts/generate",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/celebrity-posts/generate",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "celebrity-posts",
-                "generate"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"celebrityId\": \"\",\n  \"topic\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
       "name": "admin/cfc-payment-requests",
       "item": [
         {
@@ -3913,170 +3551,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "admin/fan-club-manager",
-      "item": [
-        {
-          "name": "GET /api/admin/fan-club-manager",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/fan-club-manager",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "fan-club-manager"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/admin/fan-club-manager",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/fan-club-manager",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "fan-club-manager"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"\",\n  \"fanClubId\": \"\",\n  \"userId\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "admin/fan-clubs",
-      "item": [
-        {
-          "name": "GET /api/admin/fan-clubs",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/fan-clubs",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "fan-clubs"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "PUT /api/admin/fan-clubs",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/fan-clubs",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "fan-clubs"
-              ]
-            },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"coverImage\": \"\",\n  \"description\": \"\",\n  \"id\": \"\",\n  \"isActive\": \"\",\n  \"rules\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10986,7 +10460,7 @@
                 "verify-device"
               ]
             },
-            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa.",
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -11581,772 +11055,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"channel\": \"\",\n  \"data\": \"\",\n  \"field\": \"\",\n  \"key\": \"\",\n  \"member\": \"\",\n  \"members\": \"\",\n  \"message\": \"\",\n  \"op\": \"\",\n  \"prefix\": \"\",\n  \"score\": \"\",\n  \"ttl\": \"\",\n  \"value\": \"\",\n  \"values\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "celebrities",
-      "item": [
-        {
-          "name": "GET /api/celebrities",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/posts/latest",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/posts/latest",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                "posts",
-                "latest"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/fan-club",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/fan-club/join",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/join",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "join"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/fan-club/level",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/level",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "level"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/fan-club/members",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/members",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "members"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/fan-club/polls",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/polls",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "polls"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/fan-club/polls",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/polls",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "polls"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"endsAt\": \"\",\n  \"optionIndex\": \"\",\n  \"options\": \"\",\n  \"pollId\": \"\",\n  \"question\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "DELETE /api/celebrities/{slug}/fan-club/posts",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "posts"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/fan-club/posts",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "posts"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/fan-club/posts",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "posts"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"content\": \"\",\n  \"image\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/fan-club/posts/like",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/fan-club/posts/like",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "fan-club",
-                "posts",
-                "like"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"postId\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/follow",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/follow",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "follow"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/posts",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "posts"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET /api/celebrities/{slug}/posts/comments",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/posts/comments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "posts",
-                "comments"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/posts/comments",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/posts/comments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "posts",
-                "comments"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"content\": \"\",\n  \"postId\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/celebrities/{slug}/posts/like",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/celebrities/:slug/posts/like",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "celebrities",
-                ":slug",
-                "posts",
-                "like"
-              ],
-              "variable": [
-                {
-                  "key": "slug",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"postId\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -14467,119 +13175,6 @@
       ]
     },
     {
-      "name": "docs",
-      "item": [
-        {
-          "name": "GET /api/docs/download",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/docs/download",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "docs",
-                "download"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "download-docs",
-      "item": [
-        {
-          "name": "GET /api/download-docs",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/download-docs",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "download-docs"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "download-export",
-      "item": [
-        {
-          "name": "GET /api/download-export",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/download-export",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "download-export"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "download-prompt",
-      "item": [
-        {
-          "name": "GET /api/download-prompt",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/download-prompt",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "download-prompt"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        }
-      ]
-    },
-    {
       "name": "dream-contest",
       "item": [
         {
@@ -15491,35 +14086,6 @@
       ]
     },
     {
-      "name": "fan-clubs",
-      "item": [
-        {
-          "name": "GET /api/fan-clubs/popular",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fan-clubs/popular",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fan-clubs",
-                "popular"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        }
-      ]
-    },
-    {
       "name": "favorite-tellers",
       "item": [
         {
@@ -15595,34 +14161,6 @@
                 }
               }
             }
-          }
-        }
-      ]
-    },
-    {
-      "name": "flutter-prompt",
-      "item": [
-        {
-          "name": "GET /api/flutter-prompt",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/flutter-prompt",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "flutter-prompt"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]
@@ -16448,49 +14986,6 @@
       "name": "fortunes",
       "item": [
         {
-          "name": "POST /api/fortunes/angel",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/angel",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "angel"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"cardCount\": \"\",\n  \"language\": \"\",\n  \"question\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/ask-uyumu",
           "request": {
             "method": "POST",
@@ -16525,49 +15020,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"language\": \"\",\n  \"partnerName\": \"\",\n  \"partnerSign\": \"\",\n  \"yourName\": \"\",\n  \"yourSign\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/fortunes/aura",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/aura",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "aura"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"birthDate\": \"\",\n  \"currentMood\": \"\",\n  \"language\": \"\",\n  \"name\": \"\",\n  \"recentExperiences\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -16620,49 +15072,6 @@
           }
         },
         {
-          "name": "POST /api/fortunes/birthchart",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/birthchart",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "birthchart"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"birthDate\": \"\",\n  \"birthPlace\": \"\",\n  \"birthTime\": \"\",\n  \"language\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/burc-yorumu",
           "request": {
             "method": "POST",
@@ -16706,92 +15115,6 @@
           }
         },
         {
-          "name": "POST /api/fortunes/coffee",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/coffee",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "coffee"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"description\": \"\",\n  \"language\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/fortunes/coffee-image",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/coffee-image",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "coffee-image"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"cupImagePath\": \"\",\n  \"language\": \"\",\n  \"saucerImagePath\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/dogum-haritasi",
           "request": {
             "method": "POST",
@@ -16826,49 +15149,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"birthDate\": \"\",\n  \"birthPlace\": \"\",\n  \"birthTime\": \"\",\n  \"language\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/fortunes/dream",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/dream",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "dream"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"dreamDescription\": \"\",\n  \"language\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -16964,49 +15244,6 @@
           }
         },
         {
-          "name": "POST /api/fortunes/horoscope",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/horoscope",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "horoscope"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"language\": \"\",\n  \"zodiacSign\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/istihare",
           "request": {
             "method": "POST",
@@ -17025,49 +15262,6 @@
                 "api",
                 "fortunes",
                 "istihare"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"language\": \"\",\n  \"question\": \"\",\n  \"situation\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/fortunes/istikhara",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/istikhara",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "istikhara"
               ]
             },
             "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
@@ -17256,49 +15450,6 @@
           }
         },
         {
-          "name": "POST /api/fortunes/love",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/love",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "love"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"language\": \"\",\n  \"partnerName\": \"\",\n  \"partnerSign\": \"\",\n  \"yourName\": \"\",\n  \"yourSign\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/melek-kartlari",
           "request": {
             "method": "POST",
@@ -17333,49 +15484,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"cardCount\": \"\",\n  \"language\": \"\",\n  \"question\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/fortunes/numerology",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/numerology",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "numerology"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"birthDate\": \"\",\n  \"language\": \"\",\n  \"name\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -17428,49 +15536,6 @@
           }
         },
         {
-          "name": "POST /api/fortunes/palm",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/palm",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "palm"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"hand\": \"\",\n  \"language\": \"\",\n  \"palmImagePath\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/ruya-yorumu",
           "request": {
             "method": "POST",
@@ -17514,49 +15579,6 @@
           }
         },
         {
-          "name": "POST /api/fortunes/tarot",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/tarot",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "tarot"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"cardCount\": \"\",\n  \"language\": \"\",\n  \"question\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
           "name": "POST /api/fortunes/tarot-fali",
           "request": {
             "method": "POST",
@@ -17591,49 +15613,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"cardCount\": \"\",\n  \"language\": \"\",\n  \"question\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
-        },
-        {
-          "name": "POST /api/fortunes/yesno",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/fortunes/yesno",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "fortunes",
-                "yesno"
-              ]
-            },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"language\": \"\",\n  \"question\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -19940,6 +17919,35 @@
       ]
     },
     {
+      "name": "legal",
+      "item": [
+        {
+          "name": "GET /api/legal/child-safety",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/child-safety",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "child-safety"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        }
+      ]
+    },
+    {
       "name": "live",
       "item": [
         {
@@ -21119,6 +19127,30 @@
     {
       "name": "music",
       "item": [
+        {
+          "name": "GET /api/music/history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/music/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "music",
+                "history"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
         {
           "name": "GET /api/music/search",
           "request": {
@@ -22519,6 +20551,117 @@
                 "api",
                 "room-themes",
                 "catalog"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "rooms",
+      "item": [
+        {
+          "name": "GET /api/rooms/{roomId}/music/current",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/:roomId/music/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                ":roomId",
+                "music",
+                "current"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/rooms/{roomId}/music/skip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/:roomId/music/skip",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                ":roomId",
+                "music",
+                "skip"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/rooms/{roomId}/music/stop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/:roomId/music/stop",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                ":roomId",
+                "music",
+                "stop"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
               ]
             },
             "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
@@ -24888,6 +23031,40 @@
     {
       "name": "upload",
       "item": [
+        {
+          "name": "GET /api/upload/get-url",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/get-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "upload",
+                "get-url"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
         {
           "name": "POST /api/upload/get-url",
           "request": {

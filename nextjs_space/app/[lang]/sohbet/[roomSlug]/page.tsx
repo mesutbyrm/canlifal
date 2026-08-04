@@ -232,6 +232,7 @@ export default function ChatRoomPage() {
   
   // YouTube Music
   const [showMusicModal, setShowMusicModal] = useState(false)
+  const [musicModalInitialQuery, setMusicModalInitialQuery] = useState<string>('')
   const [currentMusicVideoId, setCurrentMusicVideoId] = useState<string | null>(null)
   const [currentMusicTitle, setCurrentMusicTitle] = useState<string | null>(null)
   const [currentMusicDuration, setCurrentMusicDuration] = useState<string | null>(null)
@@ -1472,34 +1473,11 @@ export default function ChatRoomPage() {
     const canMod = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
       (myPermissions?.role && ['superadmin', 'founder', 'sop', 'admin', 'op'].includes(myPermissions.role))
 
-    if (cmd === '!istek' && arg) {
-      // Search YouTube for the song, then submit as free song request
-      try {
-        const searchRes = await fetch(`/api/youtube/search?q=${encodeURIComponent(arg)}`)
-        const searchData = await searchRes.json()
-        const firstVideo = searchData.videos?.[0]
-        if (firstVideo) {
-          // Submit as free song request (skipPayment = true for !istek command)
-          await fetch(`/api/chat/rooms/${room.id}/song-request`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              videoId: firstVideo.id,
-              title: firstVideo.title,
-              duration: firstVideo.duration || '',
-              skipPayment: true,
-            })
-          })
-        } else {
-          // No results found, just send text message
-          await fetch(`/api/chat/rooms/${room.id}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `🎵 [İSTEK] ${arg} (bulunamadı)` })
-          })
-        }
-        fetchMessages()
-      } catch {}
+    if (cmd === '!istek') {
+      // !istek komutu müzik penceresini açar; varsa arg aramaya ön-doldurulur.
+      // Kullanıcı pencerede Ses (10 jeton) / Videolu (20 jeton) seçimini yapar.
+      setMusicModalInitialQuery(arg || '')
+      setShowMusicModal(true)
       return true
     }
 
@@ -3690,8 +3668,23 @@ export default function ChatRoomPage() {
           </div>
         )}
 
-        {/* ── Chat Messages — floating over wallpaper ── */}
-        <div ref={messagesContainerRef} className="relative z-10 flex-1 min-h-0 overflow-y-auto px-3 pb-1" style={{ overscrollBehavior: 'contain' }}>
+        {/* ── Chat + Background Video region (video sits behind messages: under seats, above message box) ── */}
+        <div className="relative z-10 flex-1 min-h-0 flex flex-col">
+          {/* Background video layer — full width, no border, YouTube control bar hidden, stays behind chat */}
+          {currentMusicVideoId && currentMusicRequestType === 'video' && !musicMuted && !musicPaused && (
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-black">
+              <iframe
+                key={currentMusicVideoId + '-bgvideo'}
+                src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&playsinline=1&fs=0&disablekb=1&loop=0`}
+                allow="autoplay; encrypted-media"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] h-[160%]"
+                style={{ border: 'none' }}
+                title="Oda müziği"
+              />
+            </div>
+          )}
+          {/* ── Chat Messages — floating over wallpaper/video ── */}
+          <div ref={messagesContainerRef} className="relative z-10 flex-1 min-h-0 overflow-y-auto px-3 pb-1" style={{ overscrollBehavior: 'contain' }}>
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-white/30">
               <Sparkles className="w-8 h-8 mb-2" />
@@ -3840,6 +3833,7 @@ export default function ChatRoomPage() {
               <div ref={messagesEndRef} />
             </div>
           )}
+          </div>
         </div>
 
         {/* Typing Indicator */}
@@ -5243,7 +5237,7 @@ export default function ChatRoomPage() {
       {/* ── YouTube Music Modal ── */}
       <YouTubeMusicModal
         isOpen={showMusicModal}
-        onClose={() => setShowMusicModal(false)}
+        onClose={() => { setShowMusicModal(false); setMusicModalInitialQuery('') }}
         roomId={room?.id || ''}
         currentVideoId={currentMusicVideoId}
         currentTitle={currentMusicTitle}
@@ -5251,6 +5245,7 @@ export default function ChatRoomPage() {
         musicQueue={musicQueue}
         onSkipToNext={handleSkipToNext}
         currentRequestType={currentMusicRequestType}
+        initialQuery={musicModalInitialQuery}
       />
 
       {/* ── DJ Management Panel ── */}
@@ -5438,31 +5433,17 @@ export default function ChatRoomPage() {
         )}
       </AnimatePresence>
 
-      {/* ── YouTube Player (video mode = visible center, audio mode = hidden) ── */}
-      {currentMusicVideoId && !musicMuted && !musicPaused && (
-        currentMusicRequestType === 'video' ? (
-          <div className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none" style={{ top: '30%', bottom: '30%' }}>
-            <div className="relative w-[90%] max-w-md aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-purple-900/80 border border-purple-500/40 pointer-events-auto">
-              <iframe
-                key={currentMusicVideoId + '-video'}
-                src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=0&controls=1&modestbranding=1`}
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-                className="w-full h-full"
-                style={{ border: 'none' }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
-            <iframe
-              key={currentMusicVideoId + '-audio'}
-              src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
-              allow="autoplay; encrypted-media"
-              style={{ width: 1, height: 1, border: 'none' }}
-            />
-          </div>
-        )
+      {/* ── YouTube Audio Player (audio-only mode = hidden iframe; video mode plays in the room background above) ── */}
+      {currentMusicVideoId && currentMusicRequestType !== 'video' && !musicMuted && !musicPaused && (
+        <div style={{ position: 'fixed', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}>
+          <iframe
+            key={currentMusicVideoId + '-audio'}
+            src={`https://www.youtube.com/embed/${currentMusicVideoId}?autoplay=1&loop=1&playlist=${currentMusicVideoId}`}
+            allow="autoplay; encrypted-media"
+            style={{ width: 1, height: 1, border: 'none' }}
+            title="Oda müziği (ses)"
+          />
+        </div>
       )}
 
     </div>

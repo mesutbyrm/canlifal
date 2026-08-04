@@ -811,145 +811,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/admin/celebrities",
-    "method": "DELETE",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "admin/celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrities",
-    "method": "GET",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "admin/celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrities",
-    "method": "POST",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "achievements",
-      "bio",
-      "birthDate",
-      "birthPlace",
-      "category",
-      "coverImage",
-      "name",
-      "profileImage",
-      "socialLinks",
-      "zodiacSign"
-    ],
-    "tag": "admin/celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrities",
-    "method": "PUT",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "achievements",
-      "bio",
-      "birthDate",
-      "birthPlace",
-      "category",
-      "coverImage",
-      "id",
-      "isActive",
-      "isVerified",
-      "name",
-      "profileImage",
-      "socialLinks",
-      "zodiacSign"
-    ],
-    "tag": "admin/celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrity-posts",
-    "method": "DELETE",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "admin/celebrity-posts",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrity-posts",
-    "method": "GET",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "admin/celebrity-posts",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrity-posts",
-    "method": "POST",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "celebrityId",
-      "celebrityIds",
-      "content",
-      "externalUrl",
-      "isPinned",
-      "mediaUrl",
-      "platform",
-      "platforms",
-      "postType"
-    ],
-    "tag": "admin/celebrity-posts",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrity-posts",
-    "method": "PUT",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "id"
-    ],
-    "tag": "admin/celebrity-posts",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/celebrity-posts/generate",
-    "method": "POST",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "celebrityId",
-      "topic"
-    ],
-    "tag": "admin/celebrity-posts",
-    "dynamic": true
-  },
-  {
     "path": "/api/admin/cfc-payment-requests",
     "method": "GET",
     "auth": "session",
@@ -1367,60 +1228,6 @@
       "title"
     ],
     "tag": "admin/dreams",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/fan-club-manager",
-    "method": "GET",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "admin/fan-club-manager",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/fan-club-manager",
-    "method": "POST",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "action",
-      "fanClubId",
-      "userId"
-    ],
-    "tag": "admin/fan-club-manager",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/fan-clubs",
-    "method": "GET",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "admin/fan-clubs",
-    "dynamic": true
-  },
-  {
-    "path": "/api/admin/fan-clubs",
-    "method": "PUT",
-    "auth": "session",
-    "admin": true,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "coverImage",
-      "description",
-      "id",
-      "isActive",
-      "rules"
-    ],
-    "tag": "admin/fan-clubs",
     "dynamic": true
   },
   {
@@ -3956,7 +3763,7 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "auth",
-    "dynamic": false
+    "dynamic": true
   },
   {
     "path": "/api/auth/{nextauth}",
@@ -4171,252 +3978,6 @@
       "values"
     ],
     "tag": "cache",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/posts/latest",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/join",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/level",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": false
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/members",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/polls",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": false
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/polls",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [
-      "endsAt",
-      "optionIndex",
-      "options",
-      "pollId",
-      "question"
-    ],
-    "tag": "celebrities",
-    "dynamic": false
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/posts",
-    "method": "DELETE",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/posts",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/posts",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [
-      "content",
-      "image"
-    ],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/fan-club/posts/like",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [
-      "postId"
-    ],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/follow",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/posts",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/posts/comments",
-    "method": "GET",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/posts/comments",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [
-      "content",
-      "postId"
-    ],
-    "tag": "celebrities",
-    "dynamic": true
-  },
-  {
-    "path": "/api/celebrities/{slug}/posts/like",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "slug"
-    ],
-    "bodyFields": [
-      "postId"
-    ],
-    "tag": "celebrities",
     "dynamic": true
   },
   {
@@ -5151,50 +4712,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/docs/download",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "docs",
-    "dynamic": true
-  },
-  {
-    "path": "/api/download-docs",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "download-docs",
-    "dynamic": true
-  },
-  {
-    "path": "/api/download-export",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "download-export",
-    "dynamic": true
-  },
-  {
-    "path": "/api/download-prompt",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "download-prompt",
-    "dynamic": true
-  },
-  {
     "path": "/api/dream-contest",
     "method": "GET",
     "auth": "dual",
@@ -5505,17 +5022,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/fan-clubs/popular",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "fan-clubs",
-    "dynamic": true
-  },
-  {
     "path": "/api/favorite-tellers",
     "method": "GET",
     "auth": "dual",
@@ -5537,17 +5043,6 @@
       "tellerId"
     ],
     "tag": "favorite-tellers",
-    "dynamic": true
-  },
-  {
-    "path": "/api/flutter-prompt",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "flutter-prompt",
     "dynamic": true
   },
   {
@@ -5838,21 +5333,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/fortunes/angel",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "cardCount",
-      "language",
-      "question"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
     "path": "/api/fortunes/ask-uyumu",
     "method": "POST",
     "auth": "dual",
@@ -5865,23 +5345,6 @@
       "partnerSign",
       "yourName",
       "yourSign"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/aura",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "birthDate",
-      "currentMood",
-      "language",
-      "name",
-      "recentExperiences"
     ],
     "tag": "fortunes",
     "dynamic": true
@@ -5904,22 +5367,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/fortunes/birthchart",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "birthDate",
-      "birthPlace",
-      "birthTime",
-      "language"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
     "path": "/api/fortunes/burc-yorumu",
     "method": "POST",
     "auth": "dual",
@@ -5929,35 +5376,6 @@
     "bodyFields": [
       "language",
       "zodiacSign"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/coffee",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "description",
-      "language"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/coffee-image",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "cupImagePath",
-      "language",
-      "saucerImagePath"
     ],
     "tag": "fortunes",
     "dynamic": true
@@ -5973,20 +5391,6 @@
       "birthDate",
       "birthPlace",
       "birthTime",
-      "language"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/dream",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "dreamDescription",
       "language"
     ],
     "tag": "fortunes",
@@ -6022,36 +5426,7 @@
     "dynamic": true
   },
   {
-    "path": "/api/fortunes/horoscope",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "language",
-      "zodiacSign"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
     "path": "/api/fortunes/istihare",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "language",
-      "question",
-      "situation"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/istikhara",
     "method": "POST",
     "auth": "dual",
     "admin": false,
@@ -6120,23 +5495,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/fortunes/love",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "language",
-      "partnerName",
-      "partnerSign",
-      "yourName",
-      "yourSign"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
     "path": "/api/fortunes/melek-kartlari",
     "method": "POST",
     "auth": "dual",
@@ -6147,21 +5505,6 @@
       "cardCount",
       "language",
       "question"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/numerology",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "birthDate",
-      "language",
-      "name"
     ],
     "tag": "fortunes",
     "dynamic": true
@@ -6182,21 +5525,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/fortunes/palm",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "hand",
-      "language",
-      "palmImagePath"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
     "path": "/api/fortunes/ruya-yorumu",
     "method": "POST",
     "auth": "dual",
@@ -6211,21 +5539,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/fortunes/tarot",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
-      "cardCount",
-      "language",
-      "question"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
     "path": "/api/fortunes/tarot-fali",
     "method": "POST",
     "auth": "dual",
@@ -6234,20 +5547,6 @@
     "pathParams": [],
     "bodyFields": [
       "cardCount",
-      "language",
-      "question"
-    ],
-    "tag": "fortunes",
-    "dynamic": true
-  },
-  {
-    "path": "/api/fortunes/yesno",
-    "method": "POST",
-    "auth": "dual",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [
       "language",
       "question"
     ],
@@ -7028,6 +6327,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/legal/child-safety",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "legal",
+    "dynamic": true
+  },
+  {
     "path": "/api/live/create-room",
     "method": "POST",
     "auth": "dual",
@@ -7422,6 +6732,17 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "monitoring",
+    "dynamic": true
+  },
+  {
+    "path": "/api/music/history",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "music",
     "dynamic": true
   },
   {
@@ -7893,6 +7214,45 @@
       "amount"
     ],
     "tag": "room",
+    "dynamic": true
+  },
+  {
+    "path": "/api/rooms/{roomId}/music/current",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "rooms",
+    "dynamic": true
+  },
+  {
+    "path": "/api/rooms/{roomId}/music/skip",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "rooms",
+    "dynamic": true
+  },
+  {
+    "path": "/api/rooms/{roomId}/music/stop",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "rooms",
     "dynamic": true
   },
   {
@@ -8698,6 +8058,17 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "trtc",
+    "dynamic": true
+  },
+  {
+    "path": "/api/upload/get-url",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "upload",
     "dynamic": true
   },
   {

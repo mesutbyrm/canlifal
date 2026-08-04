@@ -62,7 +62,7 @@ async function playNextFromQueue(roomId: string): Promise<boolean> {
 }
 
 // Helper to check if user can control music (DJ system)
-async function canControlMusic(roomId: string, userId: string) {
+export async function canControlMusic(roomId: string, userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
   const isGlobalAdmin = user?.role === 'admin' || user?.role === 'yonetici'
   

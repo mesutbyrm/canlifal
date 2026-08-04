@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **736 endpoint handler** (473 benzersiz yol), **163 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **692 endpoint handler** (440 benzersiz yol), **154 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -25,8 +25,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/broadcast-images](#cat-admin-broadcast-images) (4)
 - [admin/button-order](#cat-admin-button-order) (2)
 - [admin/cache](#cat-admin-cache) (2)
-- [admin/celebrities](#cat-admin-celebrities) (4)
-- [admin/celebrity-posts](#cat-admin-celebrity-posts) (5)
 - [admin/cfc-payment-requests](#cat-admin-cfc-payment-requests) (2)
 - [admin/cfc-settings](#cat-admin-cfc-settings) (2)
 - [admin/chat-rooms](#cat-admin-chat-rooms) (4)
@@ -35,8 +33,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/credits](#cat-admin-credits) (1)
 - [admin/currency-config](#cat-admin-currency-config) (3)
 - [admin/dreams](#cat-admin-dreams) (9)
-- [admin/fan-club-manager](#cat-admin-fan-club-manager) (2)
-- [admin/fan-clubs](#cat-admin-fan-clubs) (2)
 - [admin/finance](#cat-admin-finance) (2)
 - [admin/fortune-request-types](#cat-admin-fortune-request-types) (4)
 - [admin/fortunes](#cat-admin-fortunes) (1)
@@ -86,7 +82,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [blog](#cat-blog) (10)
 - [broadcast-images](#cat-broadcast-images) (1)
 - [cache](#cat-cache) (2)
-- [celebrities](#cat-celebrities) (18)
 - [chat](#cat-chat) (42)
 - [compatibility](#cat-compatibility) (1)
 - [contact](#cat-contact) (1)
@@ -94,23 +89,17 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [daily-login](#cat-daily-login) (2)
 - [daily-missions](#cat-daily-missions) (2)
 - [devices](#cat-devices) (2)
-- [docs](#cat-docs) (1)
-- [download-docs](#cat-download-docs) (1)
-- [download-export](#cat-download-export) (1)
-- [download-prompt](#cat-download-prompt) (1)
 - [dream-contest](#cat-dream-contest) (4)
 - [dream-diary](#cat-dream-diary) (3)
 - [dream-stats](#cat-dream-stats) (1)
 - [dream-symbols](#cat-dream-symbols) (2)
 - [dreams](#cat-dreams) (14)
-- [fan-clubs](#cat-fan-clubs) (1)
 - [favorite-tellers](#cat-favorite-tellers) (2)
-- [flutter-prompt](#cat-flutter-prompt) (1)
 - [football](#cat-football) (1)
 - [fortune-access](#cat-fortune-access) (2)
 - [fortune-request-types](#cat-fortune-request-types) (1)
 - [fortune-tellers](#cat-fortune-tellers) (18)
-- [fortunes](#cat-fortunes) (28)
+- [fortunes](#cat-fortunes) (15)
 - [games](#cat-games) (38)
 - [gift-engine](#cat-gift-engine) (3)
 - [gifts](#cat-gifts) (9)
@@ -122,6 +111,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [jeton](#cat-jeton) (2)
 - [leaderboard](#cat-leaderboard) (1)
 - [leaderboards](#cat-leaderboards) (1)
+- [legal](#cat-legal) (1)
 - [live](#cat-live) (15)
 - [me](#cat-me) (2)
 - [membership](#cat-membership) (1)
@@ -130,7 +120,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [messages](#cat-messages) (5)
 - [mobile](#cat-mobile) (4)
 - [monitoring](#cat-monitoring) (1)
-- [music](#cat-music) (1)
+- [music](#cat-music) (2)
 - [notifications](#cat-notifications) (4)
 - [online-fal](#cat-online-fal) (1)
 - [payment](#cat-payment) (3)
@@ -146,6 +136,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [referral](#cat-referral) (2)
 - [room](#cat-room) (12)
 - [room-themes](#cat-room-themes) (1)
+- [rooms](#cat-rooms) (3)
 - [search](#cat-search) (2)
 - [seo-settings](#cat-seo-settings) (1)
 - [settings](#cat-settings) (4)
@@ -165,7 +156,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [trend-videos](#cat-trend-videos) (2)
 - [trends](#cat-trends) (3)
 - [trtc](#cat-trtc) (2)
-- [upload](#cat-upload) (2)
+- [upload](#cat-upload) (3)
 - [user](#cat-user) (32)
 - [users](#cat-users) (7)
 - [video-streams](#cat-video-streams) (52)
@@ -321,27 +312,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/admin/cache` | 🌐 Oturum 🔒 | — | — |
 
 
-## <a name="cat-admin-celebrities"></a>`admin/celebrities`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **DELETE** | `/api/admin/celebrities` | 🌐 Oturum 🔒 | — | — |
-| **GET** | `/api/admin/celebrities` | 🌐 Oturum 🔒 | — | — |
-| **POST** | `/api/admin/celebrities` | 🌐 Oturum 🔒 | — | `achievements`, `bio`, `birthDate`, `birthPlace`, `category`, `coverImage`, `name`, `profileImage`, `socialLinks`, `zodiacSign` |
-| **PUT** | `/api/admin/celebrities` | 🌐 Oturum 🔒 | — | `achievements`, `bio`, `birthDate`, `birthPlace`, `category`, `coverImage`, `id`, `isActive`, `isVerified`, `name`, `profileImage`, `socialLinks` … |
-
-
-## <a name="cat-admin-celebrity-posts"></a>`admin/celebrity-posts`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **DELETE** | `/api/admin/celebrity-posts` | 🌐 Oturum 🔒 | — | — |
-| **GET** | `/api/admin/celebrity-posts` | 🌐 Oturum 🔒 | — | — |
-| **POST** | `/api/admin/celebrity-posts` | 🌐 Oturum 🔒 | — | `celebrityId`, `celebrityIds`, `content`, `externalUrl`, `isPinned`, `mediaUrl`, `platform`, `platforms`, `postType` |
-| **PUT** | `/api/admin/celebrity-posts` | 🌐 Oturum 🔒 | — | `id` |
-| **POST** | `/api/admin/celebrity-posts/generate` | 🌐 Oturum 🔒 | — | `celebrityId`, `topic` |
-
-
 ## <a name="cat-admin-cfc-payment-requests"></a>`admin/cfc-payment-requests`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -417,22 +387,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/admin/dreams/bulk-import` | 🌐 Oturum 🔒 | — | — |
 | **PATCH** | `/api/admin/dreams/bulk-publish` | 🌐 Oturum 🔒 | — | `dreamIds`, `isPublished` |
 | **POST** | `/api/admin/dreams/generate` | 🌐 Oturum 🔒 | — | `title` |
-
-
-## <a name="cat-admin-fan-club-manager"></a>`admin/fan-club-manager`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/admin/fan-club-manager` | 🌐 Oturum 🔒 | — | — |
-| **POST** | `/api/admin/fan-club-manager` | 🌐 Oturum 🔒 | — | `action`, `fanClubId`, `userId` |
-
-
-## <a name="cat-admin-fan-clubs"></a>`admin/fan-clubs`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/admin/fan-clubs` | 🌐 Oturum 🔒 | — | — |
-| **PUT** | `/api/admin/fan-clubs` | 🌐 Oturum 🔒 | — | `coverImage`, `description`, `id`, `isActive`, `rules` |
 
 
 ## <a name="cat-admin-finance"></a>`admin/finance`
@@ -919,30 +873,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/cache` | 🔄 Dual 🔒 | — | `channel`, `data`, `field`, `key`, `member`, `members`, `message`, `op`, `prefix`, `score`, `ttl`, `value` … |
 
 
-## <a name="cat-celebrities"></a>`celebrities`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/celebrities` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/posts/latest` | 🌍 Public | — | — |
-| **GET** | `/api/celebrities/{slug}` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/{slug}/fan-club` | 🔄 Dual | — | — |
-| **POST** | `/api/celebrities/{slug}/fan-club/join` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/{slug}/fan-club/level` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/{slug}/fan-club/members` | 🌍 Public | — | — |
-| **GET** | `/api/celebrities/{slug}/fan-club/polls` | 🔄 Dual | — | — |
-| **POST** | `/api/celebrities/{slug}/fan-club/polls` | 🔄 Dual | — | `endsAt`, `optionIndex`, `options`, `pollId`, `question` |
-| **DELETE** | `/api/celebrities/{slug}/fan-club/posts` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/{slug}/fan-club/posts` | 🔄 Dual | — | — |
-| **POST** | `/api/celebrities/{slug}/fan-club/posts` | 🔄 Dual | — | `content`, `image` |
-| **POST** | `/api/celebrities/{slug}/fan-club/posts/like` | 🔄 Dual | — | `postId` |
-| **POST** | `/api/celebrities/{slug}/follow` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/{slug}/posts` | 🔄 Dual | — | — |
-| **GET** | `/api/celebrities/{slug}/posts/comments` | 🔄 Dual | — | — |
-| **POST** | `/api/celebrities/{slug}/posts/comments` | 🔄 Dual | — | `content`, `postId` |
-| **POST** | `/api/celebrities/{slug}/posts/like` | 🔄 Dual | — | `postId` |
-
-
 ## <a name="cat-chat"></a>`chat`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1036,34 +966,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/devices/fcm` | 🔄 Dual | — | `appVersion`, `platform`, `token` |
 
 
-## <a name="cat-docs"></a>`docs`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/docs/download` | 🌍 Public | — | — |
-
-
-## <a name="cat-download-docs"></a>`download-docs`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/download-docs` | 🌍 Public | — | — |
-
-
-## <a name="cat-download-export"></a>`download-export`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/download-export` | 🌍 Public | — | — |
-
-
-## <a name="cat-download-prompt"></a>`download-prompt`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/download-prompt` | 🌍 Public | — | — |
-
-
 ## <a name="cat-dream-contest"></a>`dream-contest`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1118,26 +1020,12 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/dreams/{slug}/view` | 🔄 Dual | — | — |
 
 
-## <a name="cat-fan-clubs"></a>`fan-clubs`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/fan-clubs/popular` | 🌍 Public | — | — |
-
-
 ## <a name="cat-favorite-tellers"></a>`favorite-tellers`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/favorite-tellers` | 🔄 Dual | — | — |
 | **POST** | `/api/favorite-tellers` | 🔄 Dual | — | `tellerId` |
-
-
-## <a name="cat-flutter-prompt"></a>`flutter-prompt`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/flutter-prompt` | 🌍 Public | — | — |
 
 
 ## <a name="cat-football"></a>`football`
@@ -1190,34 +1078,21 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **POST** | `/api/fortunes/angel` | 🔄 Dual | — | `cardCount`, `language`, `question` |
 | **POST** | `/api/fortunes/ask-uyumu` | 🔄 Dual | — | `language`, `partnerName`, `partnerSign`, `yourName`, `yourSign` |
-| **POST** | `/api/fortunes/aura` | 🔄 Dual | — | `birthDate`, `currentMood`, `language`, `name`, `recentExperiences` |
 | **POST** | `/api/fortunes/aura-analizi` | 🔄 Dual | — | `birthDate`, `currentMood`, `language`, `name`, `recentExperiences` |
-| **POST** | `/api/fortunes/birthchart` | 🔄 Dual | — | `birthDate`, `birthPlace`, `birthTime`, `language` |
 | **POST** | `/api/fortunes/burc-yorumu` | 🔄 Dual | — | `language`, `zodiacSign` |
-| **POST** | `/api/fortunes/coffee` | 🔄 Dual | — | `description`, `language` |
-| **POST** | `/api/fortunes/coffee-image` | 🔄 Dual | — | `cupImagePath`, `language`, `saucerImagePath` |
 | **POST** | `/api/fortunes/dogum-haritasi` | 🔄 Dual | — | `birthDate`, `birthPlace`, `birthTime`, `language` |
-| **POST** | `/api/fortunes/dream` | 🔄 Dual | — | `dreamDescription`, `language` |
 | **POST** | `/api/fortunes/el-fali` | 🔄 Dual | — | `hand`, `language`, `palmImagePath` |
 | **POST** | `/api/fortunes/evet-hayir` | 🔄 Dual | — | `language`, `question` |
-| **POST** | `/api/fortunes/horoscope` | 🔄 Dual | — | `language`, `zodiacSign` |
 | **POST** | `/api/fortunes/istihare` | 🔄 Dual | — | `language`, `question`, `situation` |
-| **POST** | `/api/fortunes/istikhara` | 🔄 Dual | — | `language`, `question`, `situation` |
 | **POST** | `/api/fortunes/kahve-fali` | 🔄 Dual | — | `description`, `language` |
 | **POST** | `/api/fortunes/kahve-fali-image` | 🔄 Dual | — | `cupImagePath`, `language`, `saucerImagePath` |
 | **POST** | `/api/fortunes/katina` | 🔄 Dual | — | `language`, `question` |
 | **POST** | `/api/fortunes/kursundokme` | 🔄 Dual | — | — |
-| **POST** | `/api/fortunes/love` | 🔄 Dual | — | `language`, `partnerName`, `partnerSign`, `yourName`, `yourSign` |
 | **POST** | `/api/fortunes/melek-kartlari` | 🔄 Dual | — | `cardCount`, `language`, `question` |
-| **POST** | `/api/fortunes/numerology` | 🔄 Dual | — | `birthDate`, `language`, `name` |
 | **POST** | `/api/fortunes/numeroloji` | 🔄 Dual | — | `birthDate`, `language`, `name` |
-| **POST** | `/api/fortunes/palm` | 🔄 Dual | — | `hand`, `language`, `palmImagePath` |
 | **POST** | `/api/fortunes/ruya-yorumu` | 🔄 Dual | — | `dreamDescription`, `language` |
-| **POST** | `/api/fortunes/tarot` | 🔄 Dual | — | `cardCount`, `language`, `question` |
 | **POST** | `/api/fortunes/tarot-fali` | 🔄 Dual | — | `cardCount`, `language`, `question` |
-| **POST** | `/api/fortunes/yesno` | 🔄 Dual | — | `language`, `question` |
 
 
 ## <a name="cat-games"></a>`games`
@@ -1347,6 +1222,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/leaderboards` | 🔄 Dual | — | — |
 
 
+## <a name="cat-legal"></a>`legal`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/legal/child-safety` | 🌍 Public | — | — |
+
+
 ## <a name="cat-live"></a>`live`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1430,6 +1312,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
+| **GET** | `/api/music/history` | 🌍 Public | — | — |
 | **GET** | `/api/music/search` | 🔄 Dual | — | — |
 
 
@@ -1558,6 +1441,15 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/room-themes/catalog` | 🔄 Dual | — | — |
+
+
+## <a name="cat-rooms"></a>`rooms`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/rooms/{roomId}/music/current` | 🌍 Public | — | — |
+| **POST** | `/api/rooms/{roomId}/music/skip` | 🌍 Public | — | — |
+| **POST** | `/api/rooms/{roomId}/music/stop` | 🔄 Dual | — | — |
 
 
 ## <a name="cat-search"></a>`search`
@@ -1742,6 +1634,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
+| **GET** | `/api/upload/get-url` | 🔄 Dual | — | — |
 | **POST** | `/api/upload/get-url` | 🔄 Dual | — | `cloud_storage_path`, `isPublic` |
 | **POST** | `/api/upload/presigned` | 🔄 Dual | — | `contentType`, `fileName`, `folder`, `isPublic` |
 

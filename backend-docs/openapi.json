@@ -75,12 +75,6 @@
       "name": "admin/cache"
     },
     {
-      "name": "admin/celebrities"
-    },
-    {
-      "name": "admin/celebrity-posts"
-    },
-    {
       "name": "admin/cfc-payment-requests"
     },
     {
@@ -103,12 +97,6 @@
     },
     {
       "name": "admin/dreams"
-    },
-    {
-      "name": "admin/fan-club-manager"
-    },
-    {
-      "name": "admin/fan-clubs"
     },
     {
       "name": "admin/finance"
@@ -258,9 +246,6 @@
       "name": "cache"
     },
     {
-      "name": "celebrities"
-    },
-    {
       "name": "chat"
     },
     {
@@ -282,18 +267,6 @@
       "name": "devices"
     },
     {
-      "name": "docs"
-    },
-    {
-      "name": "download-docs"
-    },
-    {
-      "name": "download-export"
-    },
-    {
-      "name": "download-prompt"
-    },
-    {
       "name": "dream-contest"
     },
     {
@@ -309,13 +282,7 @@
       "name": "dreams"
     },
     {
-      "name": "fan-clubs"
-    },
-    {
       "name": "favorite-tellers"
-    },
-    {
-      "name": "flutter-prompt"
     },
     {
       "name": "football"
@@ -364,6 +331,9 @@
     },
     {
       "name": "leaderboards"
+    },
+    {
+      "name": "legal"
     },
     {
       "name": "live"
@@ -436,6 +406,9 @@
     },
     {
       "name": "room-themes"
+    },
+    {
+      "name": "rooms"
     },
     {
       "name": "search"
@@ -3987,586 +3960,6 @@
         ]
       }
     },
-    "/api/admin/celebrities": {
-      "delete": {
-        "tags": [
-          "admin/celebrities"
-        ],
-        "summary": "DELETE /api/admin/celebrities",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "get": {
-        "tags": [
-          "admin/celebrities"
-        ],
-        "summary": "GET /api/admin/celebrities",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "admin/celebrities"
-        ],
-        "summary": "POST /api/admin/celebrities",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "achievements": {
-                    "type": "string"
-                  },
-                  "bio": {
-                    "type": "string"
-                  },
-                  "birthDate": {
-                    "type": "string"
-                  },
-                  "birthPlace": {
-                    "type": "string"
-                  },
-                  "category": {
-                    "type": "string"
-                  },
-                  "coverImage": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "profileImage": {
-                    "type": "string"
-                  },
-                  "socialLinks": {
-                    "type": "string"
-                  },
-                  "zodiacSign": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "admin/celebrities"
-        ],
-        "summary": "PUT /api/admin/celebrities",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "achievements": {
-                    "type": "string"
-                  },
-                  "bio": {
-                    "type": "string"
-                  },
-                  "birthDate": {
-                    "type": "string"
-                  },
-                  "birthPlace": {
-                    "type": "string"
-                  },
-                  "category": {
-                    "type": "string"
-                  },
-                  "coverImage": {
-                    "type": "string"
-                  },
-                  "id": {
-                    "type": "string"
-                  },
-                  "isActive": {
-                    "type": "string"
-                  },
-                  "isVerified": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "profileImage": {
-                    "type": "string"
-                  },
-                  "socialLinks": {
-                    "type": "string"
-                  },
-                  "zodiacSign": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/celebrity-posts": {
-      "delete": {
-        "tags": [
-          "admin/celebrity-posts"
-        ],
-        "summary": "DELETE /api/admin/celebrity-posts",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "get": {
-        "tags": [
-          "admin/celebrity-posts"
-        ],
-        "summary": "GET /api/admin/celebrity-posts",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "admin/celebrity-posts"
-        ],
-        "summary": "POST /api/admin/celebrity-posts",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "celebrityId": {
-                    "type": "string"
-                  },
-                  "celebrityIds": {
-                    "type": "string"
-                  },
-                  "content": {
-                    "type": "string"
-                  },
-                  "externalUrl": {
-                    "type": "string"
-                  },
-                  "isPinned": {
-                    "type": "string"
-                  },
-                  "mediaUrl": {
-                    "type": "string"
-                  },
-                  "platform": {
-                    "type": "string"
-                  },
-                  "platforms": {
-                    "type": "string"
-                  },
-                  "postType": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "admin/celebrity-posts"
-        ],
-        "summary": "PUT /api/admin/celebrity-posts",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/celebrity-posts/generate": {
-      "post": {
-        "tags": [
-          "admin/celebrity-posts"
-        ],
-        "summary": "POST /api/admin/celebrity-posts/generate",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "celebrityId": {
-                    "type": "string"
-                  },
-                  "topic": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/admin/cfc-payment-requests": {
       "get": {
         "tags": [
@@ -6367,240 +5760,6 @@
                 "type": "object",
                 "properties": {
                   "title": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/fan-club-manager": {
-      "get": {
-        "tags": [
-          "admin/fan-club-manager"
-        ],
-        "summary": "GET /api/admin/fan-club-manager",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "admin/fan-club-manager"
-        ],
-        "summary": "POST /api/admin/fan-club-manager",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string"
-                  },
-                  "fanClubId": {
-                    "type": "string"
-                  },
-                  "userId": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/fan-clubs": {
-      "get": {
-        "tags": [
-          "admin/fan-clubs"
-        ],
-        "summary": "GET /api/admin/fan-clubs",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "admin/fan-clubs"
-        ],
-        "summary": "PUT /api/admin/fan-clubs",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "coverImage": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "id": {
-                    "type": "string"
-                  },
-                  "isActive": {
-                    "type": "string"
-                  },
-                  "rules": {
                     "type": "string"
                   }
                 }
@@ -17260,7 +16419,7 @@
           "auth"
         ],
         "summary": "GET /api/auth/verify-device",
-        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa.",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -18185,1094 +17344,6 @@
                     "type": "string"
                   },
                   "values": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/celebrities": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/posts/latest": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/posts/latest",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/celebrities/{slug}": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/{slug}/fan-club": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/fan-club",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/{slug}/fan-club/join": {
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/fan-club/join",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/{slug}/fan-club/level": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/fan-club/level",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/{slug}/fan-club/members": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/fan-club/members",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/celebrities/{slug}/fan-club/polls": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/fan-club/polls",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/fan-club/polls",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "endsAt": {
-                    "type": "string"
-                  },
-                  "optionIndex": {
-                    "type": "string"
-                  },
-                  "options": {
-                    "type": "string"
-                  },
-                  "pollId": {
-                    "type": "string"
-                  },
-                  "question": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/celebrities/{slug}/fan-club/posts": {
-      "delete": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "DELETE /api/celebrities/{slug}/fan-club/posts",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/fan-club/posts",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/fan-club/posts",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "image": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/celebrities/{slug}/fan-club/posts/like": {
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/fan-club/posts/like",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "postId": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/celebrities/{slug}/follow": {
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/follow",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/{slug}/posts": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/posts",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/celebrities/{slug}/posts/comments": {
-      "get": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "GET /api/celebrities/{slug}/posts/comments",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/posts/comments",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "postId": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/celebrities/{slug}/posts/like": {
-      "post": {
-        "tags": [
-          "celebrities"
-        ],
-        "summary": "POST /api/celebrities/{slug}/posts/like",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: slug"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "postId": {
                     "type": "string"
                   }
                 }
@@ -22410,166 +20481,6 @@
         }
       }
     },
-    "/api/docs/download": {
-      "get": {
-        "tags": [
-          "docs"
-        ],
-        "summary": "GET /api/docs/download",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/download-docs": {
-      "get": {
-        "tags": [
-          "download-docs"
-        ],
-        "summary": "GET /api/download-docs",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/download-export": {
-      "get": {
-        "tags": [
-          "download-export"
-        ],
-        "summary": "GET /api/download-export",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/download-prompt": {
-      "get": {
-        "tags": [
-          "download-prompt"
-        ],
-        "summary": "GET /api/download-prompt",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
     "/api/dream-contest": {
       "get": {
         "tags": [
@@ -23900,46 +21811,6 @@
         ]
       }
     },
-    "/api/fan-clubs/popular": {
-      "get": {
-        "tags": [
-          "fan-clubs"
-        ],
-        "summary": "GET /api/fan-clubs/popular",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
     "/api/favorite-tellers": {
       "get": {
         "tags": [
@@ -24044,46 +21915,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/flutter-prompt": {
-      "get": {
-        "tags": [
-          "flutter-prompt"
-        ],
-        "summary": "GET /api/flutter-prompt",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
           }
         }
       }
@@ -25309,74 +23140,6 @@
         }
       }
     },
-    "/api/fortunes/angel": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/angel",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "cardCount": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  },
-                  "question": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/fortunes/ask-uyumu": {
       "post": {
         "tags": [
@@ -25442,80 +23205,6 @@
                     "type": "string"
                   },
                   "yourSign": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/aura": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/aura",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "birthDate": {
-                    "type": "string"
-                  },
-                  "currentMood": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "recentExperiences": {
                     "type": "string"
                   }
                 }
@@ -25599,77 +23288,6 @@
         }
       }
     },
-    "/api/fortunes/birthchart": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/birthchart",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "birthDate": {
-                    "type": "string"
-                  },
-                  "birthPlace": {
-                    "type": "string"
-                  },
-                  "birthTime": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/fortunes/burc-yorumu": {
       "post": {
         "tags": [
@@ -25726,139 +23344,6 @@
                     "type": "string"
                   },
                   "zodiacSign": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/coffee": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/coffee",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "description": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/coffee-image": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/coffee-image",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "cupImagePath": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  },
-                  "saucerImagePath": {
                     "type": "string"
                   }
                 }
@@ -25927,71 +23412,6 @@
                     "type": "string"
                   },
                   "birthTime": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/dream": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/dream",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "dreamDescription": {
                     "type": "string"
                   },
                   "language": {
@@ -26137,145 +23557,12 @@
         }
       }
     },
-    "/api/fortunes/horoscope": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/horoscope",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "language": {
-                    "type": "string"
-                  },
-                  "zodiacSign": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/fortunes/istihare": {
       "post": {
         "tags": [
           "fortunes"
         ],
         "summary": "POST /api/fortunes/istihare",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "language": {
-                    "type": "string"
-                  },
-                  "question": {
-                    "type": "string"
-                  },
-                  "situation": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/istikhara": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/istikhara",
         "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
@@ -26584,80 +23871,6 @@
         ]
       }
     },
-    "/api/fortunes/love": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/love",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "language": {
-                    "type": "string"
-                  },
-                  "partnerName": {
-                    "type": "string"
-                  },
-                  "partnerSign": {
-                    "type": "string"
-                  },
-                  "yourName": {
-                    "type": "string"
-                  },
-                  "yourSign": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/fortunes/melek-kartlari": {
       "post": {
         "tags": [
@@ -26717,74 +23930,6 @@
                     "type": "string"
                   },
                   "question": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/numerology": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/numerology",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "birthDate": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  },
-                  "name": {
                     "type": "string"
                   }
                 }
@@ -26862,74 +24007,6 @@
         }
       }
     },
-    "/api/fortunes/palm": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/palm",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "hand": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  },
-                  "palmImagePath": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/fortunes/ruya-yorumu": {
       "post": {
         "tags": [
@@ -26995,74 +24072,6 @@
         }
       }
     },
-    "/api/fortunes/tarot": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/tarot",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "cardCount": {
-                    "type": "string"
-                  },
-                  "language": {
-                    "type": "string"
-                  },
-                  "question": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/fortunes/tarot-fali": {
       "post": {
         "tags": [
@@ -27118,71 +24127,6 @@
                   "cardCount": {
                     "type": "string"
                   },
-                  "language": {
-                    "type": "string"
-                  },
-                  "question": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/fortunes/yesno": {
-      "post": {
-        "tags": [
-          "fortunes"
-        ],
-        "summary": "POST /api/fortunes/yesno",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
                   "language": {
                     "type": "string"
                   },
@@ -30494,6 +27438,46 @@
         ]
       }
     },
+    "/api/legal/child-safety": {
+      "get": {
+        "tags": [
+          "legal"
+        ],
+        "summary": "GET /api/legal/child-safety",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
     "/api/live/create-room": {
       "post": {
         "tags": [
@@ -32212,6 +29196,46 @@
             "cookieAuth": []
           }
         ]
+      }
+    },
+    "/api/music/history": {
+      "get": {
+        "tags": [
+          "music"
+        ],
+        "summary": "GET /api/music/history",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
       }
     },
     "/api/music/search": {
@@ -34217,6 +31241,164 @@
             }
           }
         }
+      }
+    },
+    "/api/rooms/{roomId}/music/current": {
+      "get": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "GET /api/rooms/{roomId}/music/current",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Yol parametresi: roomId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
+    "/api/rooms/{roomId}/music/skip": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "POST /api/rooms/{roomId}/music/skip",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Yol parametresi: roomId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
+    "/api/rooms/{roomId}/music/stop": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "POST /api/rooms/{roomId}/music/stop",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Yol parametresi: roomId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
       }
     },
     "/api/search": {
@@ -37619,6 +34801,52 @@
       }
     },
     "/api/upload/get-url": {
+      "get": {
+        "tags": [
+          "upload"
+        ],
+        "summary": "GET /api/upload/get-url",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "upload"

@@ -36,9 +36,44 @@ interface YouTubeMusicModalProps {
   musicQueue?: QueueItem[]
   onSkipToNext?: () => void
   currentRequestType?: string
+  initialQuery?: string
 }
 
 const MAX_DURATION_SECONDS = 360 // 6 dakika
+
+// Türkçe alfabe (A-Z harf indeksi için)
+const TR_ALPHABET = ['A','B','C','Ç','D','E','F','G','Ğ','H','I','İ','J','K','L','M','N','O','Ö','P','R','S','Ş','T','U','Ü','V','Y','Z']
+
+// Harf indeksi için popüler sanatçı önerileri. Bir harfe basılınca o harfle başlayanlar listelenir.
+const POPULAR_ARTISTS: string[] = [
+  'Ajda Pekkan','Athena','Alişan','Aleyna Tilki','Aynur Aydın','Athena','Ayaş',
+  'Barış Manço','Barış Akın','Burçin','Buray','Bengü','Bora Duran',
+  'Cem Karaca','Ceza','Candan Erçetin','Cenk Eren',
+  'Çelik','Çollak',
+  'Demet Akalın','Duman','Dolu Kadın','Deniz Seki',
+  'Edis','Ebru Gündeş','Emre Aydın','Ece Seçkin','Emircan İğrek','Eypio',
+  'Feride Hilal Akın','Ferhat Göçer','Funda Ar','Fettah Can',
+  'Gripin','Gökhan Türkmen','Güliz Ayla','Gülşen',
+  'Hadise','Hande Yener','Haluk Levent','Hakan Altun',
+  'Işın Karaca',
+  'İbrahim Tatlıses','İlayda','İrem Derici',
+  'Kenan Doğulu','Kolpa','Kubat','Koray Avcı',
+  'Levent Yüksel','Lvbel C5',
+  'Mabel Matiz','Manga','Murat Boz','Mustafa Sandal','Mustafa Ceceli','Melike Şahin','Motive',
+  'Nilüfer','Nil Karaibrahimgil','Norm Ender','Nazan Öncel',
+  'Orhan Gencebay','Okı',
+  'Özcan Deniz','Özgü Kaya',
+  'Pinhani','Pamela',
+  'Reynmen','Rafet El Roman','Ruhi Su',
+  'Sagopa Kajmer','Sertab Erener','Serdar Ortaç','Sezen Aksu','Silâ Gençoğlu','Simge','Sagopa',
+  'Şebö','Şevval Sam','Şenay',
+  'Tarkan','Teoman','Toygar Işıklı','Tuna Kiremitçi','Tan Taşçı',
+  'Uğur Işılak',
+  'Ünlü',
+  'Volkan Konak','Vega',
+  'Yalın','Yaşar','Yıldız Tilbe','Yusuf Güney','Yüksek Sadakat','Yener Çevik',
+  'Zeynep Bastık','Ziynet Sali','Zuhal Olcay',
+]
 
 function parseDurationToSeconds(dur: string): number {
   if (!dur) return 0
@@ -59,6 +94,7 @@ export default function YouTubeMusicModal({
   musicQueue = [],
   onSkipToNext,
   currentRequestType,
+  initialQuery,
 }: YouTubeMusicModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [results, setResults] = useState<YouTubeVideo[]>([])
@@ -66,6 +102,7 @@ export default function YouTubeMusicModal({
   const [setting, setSetting] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<YouTubeVideo | null>(null)
   const [showTypeSelect, setShowTypeSelect] = useState(false)
+  const [activeLetter, setActiveLetter] = useState<string | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleSearch = useCallback(async (query: string) => {
@@ -93,6 +130,21 @@ export default function YouTubeMusicModal({
     searchTimeoutRef.current = setTimeout(() => handleSearch(value), 600)
   }
 
+  // Seçili harfle başlayan sanatçı önerileri (Türkçe upper-case ile)
+  const letterArtists = activeLetter
+    ? POPULAR_ARTISTS.filter(a => a.toLocaleUpperCase('tr-TR').startsWith(activeLetter)).sort((a, b) => a.localeCompare(b, 'tr-TR'))
+    : []
+
+  const handleLetterPress = (letter: string) => {
+    setActiveLetter(prev => (prev === letter ? null : letter))
+  }
+
+  const handleArtistPick = (artist: string) => {
+    setActiveLetter(null)
+    setSearchQuery(artist)
+    handleSearch(artist)
+  }
+
   const [queuedMsg, setQueuedMsg] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
@@ -109,7 +161,8 @@ export default function YouTubeMusicModal({
   }
 
   const submitSongRequest = async (video: YouTubeVideo, requestType: 'audio' | 'video') => {
-    if (!canControl) return
+    // Not: Şarkı isteğini herhangi bir giriş yapmış kullanıcı gönderebilir (jeton öder).
+    // canControl yalnızca DJ kontrollerini (durdur/atla) yönetir.
     setSetting(true)
     setQueuedMsg(null)
     setErrorMsg(null)
@@ -169,6 +222,16 @@ export default function YouTubeMusicModal({
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
     }
   }, [])
+
+  // !istek komutu ile açıldığında gelen sorguyu otomatik olarak arama kutusuna doldur ve arat
+  useEffect(() => {
+    if (isOpen && initialQuery && initialQuery.trim().length >= 2) {
+      setActiveLetter(null)
+      setSearchQuery(initialQuery)
+      handleSearch(initialQuery)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialQuery])
 
   if (!isOpen) return null
 
@@ -343,6 +406,44 @@ export default function YouTubeMusicModal({
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400 animate-spin" />
                 )}
               </div>
+
+              {/* A-Z Harf İndeksi */}
+              <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                {TR_ALPHABET.map((letter) => (
+                  <button
+                    key={letter}
+                    onClick={() => handleLetterPress(letter)}
+                    className={`w-6 h-6 rounded-md text-[11px] font-bold transition-all ${
+                      activeLetter === letter
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-white/5 text-purple-300/70 hover:bg-purple-500/30 hover:text-white'
+                    }`}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+
+              {/* Seçili harfin sanatçı önerileri */}
+              {activeLetter && (
+                <div className="mt-2">
+                  {letterArtists.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {letterArtists.map((artist) => (
+                        <button
+                          key={artist}
+                          onClick={() => handleArtistPick(artist)}
+                          className="px-2.5 py-1 rounded-full bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-100 text-xs transition-all"
+                        >
+                          {artist}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-[11px] text-center py-1">“{activeLetter}” harfi için öneri yok — arama kutusunu kullanın</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Results List */}
