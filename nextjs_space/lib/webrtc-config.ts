@@ -8,11 +8,10 @@
  * - Codec tercihleri
  * - Simulcast yapılandırması
  * 
- * SFU Mimarisi Notu:
+ * Mimari Notu:
  * Mevcut uygulama P2P (peer-to-peer) mimarisindedir.
  * 1:1 falcı görüşmeleri için P2P idealdir.
- * 5+ izleyicili canlı yayınlar için SFU (LiveKit, mediasoup) önerilir.
- * Next.js ortamında mediasoup çalıştırılamaz - harici SFU servisi gerekir.
+ * Çok izleyicili yayınlar için Tencent TRTC kullanılmaktadır.
  */
 
 // ============================================================
