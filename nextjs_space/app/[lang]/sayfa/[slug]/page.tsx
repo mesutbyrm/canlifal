@@ -1,89 +1,49 @@
-'use client'
+import { prisma } from '@/lib/db'
+import type { Metadata } from 'next'
+import SitePageClient from './SitePageClient'
 
-import { useState, useEffect } from 'react'
-import { useLanguage } from '@/lib/language-context'
-import { useSiteTheme } from '@/lib/theme-context'
-import { ArrowLeft, Loader2 } from 'lucide-react'
-import Link from 'next/link'
+export const dynamic = 'force-dynamic'
 
-interface PageData {
-  id: string
-  title: string
-  titleEn: string | null
-  slug: string
-  content: string
-  contentEn: string | null
+async function getPage(slug: string) {
+  try {
+    const page = await prisma.sitePage.findFirst({
+      where: { slug, isPublished: true },
+      select: {
+        id: true,
+        title: true,
+        titleEn: true,
+        slug: true,
+        content: true,
+        contentEn: true,
+      },
+    })
+    return page
+  } catch (e) {
+    console.error('getPage error', e)
+    return null
+  }
 }
 
-export default function SitePageView({ params }: { params: { slug: string; lang: string } }) {
-  const { language } = useLanguage()
-  const { theme } = useSiteTheme()
-  const [page, setPage] = useState<PageData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
-
-  const isDark = theme === 'mystical' || theme === 'canlidark' || theme === 'falclub' || theme === 'cosmic'
-  const textColor = isDark ? 'text-white' : 'text-gray-900'
-  const subText = isDark ? 'text-fuchsia-200' : 'text-gray-500'
-  const cardBg = isDark ? 'bg-[#1a0a2e]/80 border-fuchsia-900/30' : 'bg-white border-gray-200'
-
-  useEffect(() => {
-    const fetchPage = async () => {
-      try {
-        const res = await fetch(`/api/site-pages/${params.slug}`)
-        if (res.ok) {
-          const data = await res.json()
-          setPage(data.page)
-        } else {
-          setNotFound(true)
-        }
-      } catch (e) {
-        console.error(e)
-        setNotFound(true)
-      }
-      setIsLoading(false)
-    }
-    fetchPage()
-  }, [params.slug])
-
-  if (isLoading) {
-    return (
-      <div className={`min-h-screen ${isDark ? 'bg-transparent' : 'bg-gray-50'} flex items-center justify-center`}>
-        <Loader2 className="w-8 h-8 animate-spin text-fuchsia-400" />
-      </div>
-    )
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string; lang: string }
+}): Promise<Metadata> {
+  const page = await getPage(params.slug)
+  if (!page) {
+    return { title: 'Sayfa bulunamadı' }
   }
-
-  if (notFound || !page) {
-    return (
-      <div className={`min-h-screen ${isDark ? 'bg-transparent' : 'bg-gray-50'} flex flex-col items-center justify-center gap-4`}>
-        <p className={`text-xl ${textColor}`}>{'Sayfa bulunamadı'}</p>
-        <Link href={`/`} className={`text-sm ${subText} underline`}>
-          {'Ana Sayfaya Dön'}
-        </Link>
-      </div>
-    )
+  return {
+    title: page.title,
+    description: page.title,
   }
+}
 
-  const title = page.title
-  const content = page.content
-
-  return (
-    <div className={`min-h-screen ${isDark ? 'bg-transparent' : 'bg-gray-50'} p-4 sm:p-6`}>
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Link href={`/`} className={`p-2 rounded-lg ${cardBg} border`}>
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className={`text-2xl sm:text-3xl font-bold ${textColor}`}>{title}</h1>
-        </div>
-        <div className={`${cardBg} border rounded-xl p-6 sm:p-8`}>
-          <div
-            className={`prose max-w-none ${isDark ? 'prose-invert prose-fuchsia' : 'prose-gray'}`}
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
-        </div>
-      </div>
-    </div>
-  )
+export default async function SitePageView({
+  params,
+}: {
+  params: { slug: string; lang: string }
+}) {
+  const page = await getPage(params.slug)
+  return <SitePageClient page={page} />
 }

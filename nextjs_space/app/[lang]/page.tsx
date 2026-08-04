@@ -141,14 +141,14 @@ const FORTUNE_CARDS = [
     id: 'kursundokme',
     nameTr: 'Kurşun Dökme',
     nameEn: 'Lead Pouring',
-    image: '/fortunes/dream.jpg',
+    image: '/fortunes/kursundokme.jpg',
     href: '/fallar/kursundokme'
   },
   {
     id: 'istikhara',
     nameTr: 'İstihare',
     nameEn: 'Istikhara',
-    image: '/fortunes/angel.jpg',
+    image: '/fortunes/istihare.jpg',
     href: '/fallar/istihare'
   },
 ]
