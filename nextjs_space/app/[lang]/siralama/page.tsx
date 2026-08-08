@@ -36,7 +36,7 @@ export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<'referrers' | 'fortunes' | 'sharers'>('referrers')
 
   useEffect(() => {
-    fetch('/api/leaderboard')
+    fetch('/api/leaderboards')
       .then(res => res.json())
       .then(setData)
       .catch(console.error)

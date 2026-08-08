@@ -3,12 +3,17 @@ import { DELETE as musicDELETE } from '@/app/api/chat/rooms/[roomId]/music/route
 
 export const dynamic = 'force-dynamic'
 
-// Alias: POST /api/rooms/{roomId}/music/skip
-// Sıradaki şarkıya geçer (mevcut şarkıyı bitirip kuyruktan bir sonrakini otomatik çalar).
-// Mevcut /api/chat/rooms/{roomId}/music DELETE davranışına eşdeğerdir.
+/**
+ * @deprecated POST /api/rooms/{roomId}/music/skip
+ * Kanonik uç: DELETE /api/chat/rooms/{roomId}/music
+ * Sıradaki şarkıya geçer. Eski istemciler için tutuluyor.
+ */
 export async function POST(
   req: NextRequest,
   ctx: { params: { roomId: string } }
 ) {
-  return musicDELETE(req, ctx)
+  const res = await musicDELETE(req, ctx)
+  res.headers.set('Deprecation', 'true')
+  res.headers.set('Link', '</api/chat/rooms/{roomId}/music>; rel="successor-version"')
+  return res
 }

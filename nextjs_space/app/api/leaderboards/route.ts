@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCached } from '@/lib/cache'
+import { getCommunityLeaderboards } from '@/lib/services/leaderboard-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -141,7 +142,12 @@ export async function GET(request: NextRequest) {
     const currentUserId = authUser?.id
 
     // Cache leaderboard data for 30 seconds - 12 DB queries saved per cache hit
-    const data = await getCached('leaderboards:all', 30, fetchLeaderboardData)
+    // Kanonik uç: eski /api/leaderboard ucunun alanlarını da (topReferrers,
+    // topFortuneUsers, topSharers) içerecek şekilde birleştirilmiş üst küme döner.
+    const [data, community] = await Promise.all([
+      getCached('leaderboards:all', 30, fetchLeaderboardData),
+      getCommunityLeaderboards(),
+    ])
 
     // Compute current user ranks (lightweight, not cached)
     let currentUserRanks = null
@@ -155,7 +161,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ...data, currentUserRanks })
+    return NextResponse.json({ ...data, ...community, currentUserRanks })
   } catch (error) {
     console.error('Leaderboards error:', error)
     return NextResponse.json({ error: 'Sıralama verileri alınamadı' }, { status: 500 })

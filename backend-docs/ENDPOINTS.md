@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **692 endpoint handler** (440 benzersiz yol), **154 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **700 endpoint handler** (447 benzersiz yol), **154 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -82,7 +82,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [blog](#cat-blog) (10)
 - [broadcast-images](#cat-broadcast-images) (1)
 - [cache](#cat-cache) (2)
-- [chat](#cat-chat) (42)
+- [chat](#cat-chat) (43)
 - [compatibility](#cat-compatibility) (1)
 - [contact](#cat-contact) (1)
 - [credit-packages](#cat-credit-packages) (1)
@@ -116,7 +116,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [me](#cat-me) (2)
 - [membership](#cat-membership) (1)
 - [membership-badges](#cat-membership-badges) (1)
-- [memberships](#cat-memberships) (2)
+- [memberships](#cat-memberships) (3)
 - [messages](#cat-messages) (5)
 - [mobile](#cat-mobile) (4)
 - [monitoring](#cat-monitoring) (1)
@@ -126,7 +126,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [payment](#cat-payment) (3)
 - [payment-methods](#cat-payment-methods) (1)
 - [payment-settings](#cat-payment-settings) (1)
-- [payments](#cat-payments) (2)
+- [payments](#cat-payments) (7)
 - [platform](#cat-platform) (1)
 - [popups](#cat-popups) (1)
 - [presence](#cat-presence) (3)
@@ -155,7 +155,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [translations](#cat-translations) (1)
 - [trend-videos](#cat-trend-videos) (2)
 - [trends](#cat-trends) (3)
-- [trtc](#cat-trtc) (2)
+- [trtc](#cat-trtc) (3)
 - [upload](#cat-upload) (3)
 - [user](#cat-user) (32)
 - [users](#cat-users) (7)
@@ -898,6 +898,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/chat/rooms/{roomId}/music` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/chat/rooms/{roomId}/music` | 🔄 Dual 🔒 | — | `duration`, `title`, `videoId` |
 | **GET** | `/api/chat/rooms/{roomId}/music-queue` | 🔄 Dual | — | — |
+| **POST** | `/api/chat/rooms/{roomId}/music/stop` | 🔄 Dual | — | — |
 | **GET** | `/api/chat/rooms/{roomId}/pk` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/chat/rooms/{roomId}/pk` | 🔄 Dual 🔒 | — | `action`, `battleId`, `duration`, `targetRoomId` |
 | **POST** | `/api/chat/rooms/{roomId}/pk/score` | 🔄 Dual | — | `amount`, `battleId`, `side` |
@@ -1277,6 +1278,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/memberships` | 🌍 Public | — | — |
+| **GET** | `/api/memberships/packages` | 🌍 Public | — | — |
 | **POST** | `/api/memberships/purchase` | 🔄 Dual | — | `paymentMethod`, `planId` |
 
 
@@ -1337,9 +1339,9 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **GET** | `/api/payment/config` | 🔄 Dual | — | — |
-| **GET** | `/api/payment/requests` | 🔄 Dual | — | — |
-| **POST** | `/api/payment/requests` | 🔄 Dual | — | `amount`, `method`, `notes`, `senderInfo` |
+| **GET** | `/api/payment/config` | 🌍 Public | — | — |
+| **GET** | `/api/payment/requests` | 🌍 Public | — | — |
+| **POST** | `/api/payment/requests` | 🌍 Public | — | — |
 
 
 ## <a name="cat-payment-methods"></a>`payment-methods`
@@ -1360,8 +1362,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
+| **GET** | `/api/payments/config` | 🔄 Dual | — | — |
+| **GET** | `/api/payments/methods` | 🌍 Public | — | — |
 | **GET** | `/api/payments/notify` | 🔄 Dual | — | — |
 | **POST** | `/api/payments/notify` | 🔄 Dual | — | `amount`, `notes`, `paymentMethod`, `senderName`, `transactionId` |
+| **GET** | `/api/payments/requests` | 🔄 Dual | — | — |
+| **POST** | `/api/payments/requests` | 🔄 Dual | — | `amount`, `method`, `notes`, `senderInfo` |
+| **GET** | `/api/payments/settings` | 🌍 Public | — | — |
 
 
 ## <a name="cat-platform"></a>`platform`
@@ -1449,7 +1456,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/rooms/{roomId}/music/current` | 🌍 Public | — | — |
 | **POST** | `/api/rooms/{roomId}/music/skip` | 🌍 Public | — | — |
-| **POST** | `/api/rooms/{roomId}/music/stop` | 🔄 Dual | — | — |
+| **POST** | `/api/rooms/{roomId}/music/stop` | 🌍 Public | — | — |
 
 
 ## <a name="cat-search"></a>`search`
@@ -1628,6 +1635,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **POST** | `/api/trtc/token` | 🔄 Dual | — | `role`, `roomId` |
 | **POST** | `/api/trtc/usersig` | 🔄 Dual | — | — |
+| **POST** | `/api/trtc/webhook` | 🌍 Public | — | — |
 
 
 ## <a name="cat-upload"></a>`upload`

@@ -1,36 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getCachedPlatformSetting } from '@/lib/cache'
-import { authenticateRequest } from '@/lib/mobile-auth'
+import { NextRequest } from 'next/server'
+import { GET as canonicalGET } from '@/app/api/payments/config/route'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * @deprecated GET /api/payment/config
+ * Kanonik uç: GET /api/payments/config
+ */
 export async function GET(request: NextRequest) {
-  try {
-    const authUser = await authenticateRequest(request)
-    if (!authUser) {
-      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
-    }
-
-    // Get CFC payment config from platform settings
-    const whatsappNumber = await getCachedPlatformSetting('cfc_whatsapp_number', '')
-    const paparaAddress = await getCachedPlatformSetting('cfc_papara_address', '')
-    const bankName = await getCachedPlatformSetting('cfc_bank_name', '')
-    const bankIban = await getCachedPlatformSetting('cfc_bank_iban', '')
-    const bankAccountHolder = await getCachedPlatformSetting('cfc_bank_account_holder', '')
-    const cfcRate = await getCachedPlatformSetting('cfc_tl_rate', '1') // 1 CFC = X TL
-    const minCfcAmount = await getCachedPlatformSetting('cfc_min_amount', '10')
-
-    return NextResponse.json({
-      whatsappNumber,
-      paparaAddress,
-      bankName,
-      bankIban,
-      bankAccountHolder,
-      cfcRate: parseFloat(cfcRate),
-      minCfcAmount: parseInt(minCfcAmount),
-    })
-  } catch (error) {
-    console.error('Error fetching payment config:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
-  }
+  const res = await canonicalGET(request)
+  res.headers.set('Deprecation', 'true')
+  res.headers.set('Link', '</api/payments/config>; rel="successor-version"')
+  return res
 }

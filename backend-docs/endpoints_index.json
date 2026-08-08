@@ -4271,6 +4271,19 @@
     "dynamic": true
   },
   {
+    "path": "/api/chat/rooms/{roomId}/music/stop",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
     "path": "/api/chat/rooms/{roomId}/pk",
     "method": "GET",
     "auth": "dual",
@@ -6596,6 +6609,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/memberships/packages",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "memberships",
+    "dynamic": true
+  },
+  {
     "path": "/api/memberships/purchase",
     "method": "POST",
     "auth": "dual",
@@ -6823,7 +6847,7 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "payment-methods",
-    "dynamic": false
+    "dynamic": true
   },
   {
     "path": "/api/payment-settings",
@@ -6839,7 +6863,7 @@
   {
     "path": "/api/payment/config",
     "method": "GET",
-    "auth": "dual",
+    "auth": "public",
     "admin": false,
     "rateLimit": null,
     "pathParams": [],
@@ -6850,7 +6874,7 @@
   {
     "path": "/api/payment/requests",
     "method": "GET",
-    "auth": "dual",
+    "auth": "public",
     "admin": false,
     "rateLimit": null,
     "pathParams": [],
@@ -6861,18 +6885,35 @@
   {
     "path": "/api/payment/requests",
     "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "payment",
+    "dynamic": true
+  },
+  {
+    "path": "/api/payments/config",
+    "method": "GET",
     "auth": "dual",
     "admin": false,
     "rateLimit": null,
     "pathParams": [],
-    "bodyFields": [
-      "amount",
-      "method",
-      "notes",
-      "senderInfo"
-    ],
-    "tag": "payment",
+    "bodyFields": [],
+    "tag": "payments",
     "dynamic": true
+  },
+  {
+    "path": "/api/payments/methods",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "payments",
+    "dynamic": false
   },
   {
     "path": "/api/payments/notify",
@@ -6899,6 +6940,44 @@
       "senderName",
       "transactionId"
     ],
+    "tag": "payments",
+    "dynamic": true
+  },
+  {
+    "path": "/api/payments/requests",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "payments",
+    "dynamic": true
+  },
+  {
+    "path": "/api/payments/requests",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "amount",
+      "method",
+      "notes",
+      "senderInfo"
+    ],
+    "tag": "payments",
+    "dynamic": true
+  },
+  {
+    "path": "/api/payments/settings",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
     "tag": "payments",
     "dynamic": true
   },
@@ -7245,7 +7324,7 @@
   {
     "path": "/api/rooms/{roomId}/music/stop",
     "method": "POST",
-    "auth": "dual",
+    "auth": "public",
     "admin": false,
     "rateLimit": null,
     "pathParams": [
@@ -8053,6 +8132,17 @@
     "path": "/api/trtc/usersig",
     "method": "POST",
     "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "trtc",
+    "dynamic": true
+  },
+  {
+    "path": "/api/trtc/webhook",
+    "method": "POST",
+    "auth": "public",
     "admin": false,
     "rateLimit": null,
     "pathParams": [],

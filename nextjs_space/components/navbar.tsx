@@ -145,7 +145,7 @@ export default function Navbar() {
   // Fetch payment methods when modal opens
   useEffect(() => {
     if (showPaymentModal) {
-      fetch('/api/payment-methods')
+      fetch('/api/payments/methods')
         .then(res => res.json())
         .then(data => setPaymentMethods(data || []))
         .catch(() => {})

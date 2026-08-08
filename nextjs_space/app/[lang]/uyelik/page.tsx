@@ -306,7 +306,7 @@ export default function MembershipsPage() {
               className={`relative rounded-2xl p-5 border-2 transition-all ${plan.isFeatured ? cardBgFeatured : cardBg}`}
             >
               {plan.isFeatured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
                   <Star className="w-3 h-3" /> {'Popüler'}
                 </div>
               )}
@@ -374,7 +374,7 @@ export default function MembershipsPage() {
                         setShowConfirm(true)
                         setErrorMsg('')
                       }}
-                      className={`px-5 py-2 bg-gradient-to-r ${getTierGradient(plan.tier)} text-black font-semibold rounded-xl hover:opacity-90 transition-all active:scale-95`}
+                      className={`px-5 py-2 bg-amber-400 bg-gradient-to-r ${getTierGradient(plan.tier)} text-black font-semibold rounded-xl hover:opacity-90 transition-all active:scale-95`}
                     >
                       {userMembership && userMembership.membership === plan.tier ? 'Uzat' : 'Satın Al'}
                     </button>

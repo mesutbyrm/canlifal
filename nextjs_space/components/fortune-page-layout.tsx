@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import PageMetaTags from '@/components/page-meta-tags'
 import { useLanguage } from '@/lib/language-context'
 import { ArrowLeft, Sparkles, LucideIcon, Coins } from 'lucide-react'
 
@@ -106,16 +107,7 @@ export default function FortunePageLayout({
 
   return (
     <div className="min-h-screen bg-[#0a0118]">
-      <head>
-        <meta property="og:title" content={`${title} | Canlifal`} />
-        <meta property="og:description" content={desc} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta name="twitter:title" content={`${title} | Canlifal`} />
-        <meta name="twitter:description" content={desc} />
-        <meta name="description" content={desc} />
-        <link rel="canonical" href={canonicalUrl} />
-      </head>
+      <PageMetaTags title={title} description={desc} canonicalUrl={canonicalUrl} />
 
       {/* ═══ HERO SECTION with background image ═══ */}
       <div className="relative overflow-hidden">

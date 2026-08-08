@@ -111,8 +111,8 @@ export default function CreditsPage() {
     try {
       const [packagesRes, methodsRes, settingsRes, priceRes] = await Promise.all([
         fetch('/api/credit-packages'),
-        fetch('/api/payment-methods'),
-        fetch('/api/payment-settings'),
+        fetch('/api/payments/methods'),
+        fetch('/api/payments/settings'),
         fetch('/api/public/jeton-price')
       ])
       if (packagesRes.ok) {
