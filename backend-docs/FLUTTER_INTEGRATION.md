@@ -62,8 +62,9 @@ Jeton yetersizliği kontrolünü **backend yapar** (`400` + `error`). Flutter is
 - İlk yükte / yeniden bağlantıda: `GET /api/chat/rooms/{roomId}/music` ile mevcut durumu alın.
 
 ### 3.4 DJ Kontrolleri (yalnızca yetkili)
-- Atla: `POST /api/rooms/{roomId}/music/skip`
-- Durdur: `POST /api/rooms/{roomId}/music/stop`
+- Atla: `DELETE /api/chat/rooms/{roomId}/music`
+- Durdur: `POST /api/chat/rooms/{roomId}/music/stop`
+- (Eski `POST /api/rooms/{roomId}/music/skip` ve `POST /api/rooms/{roomId}/music/stop` uçları hâlâ çalışır ama kullanımdan kaldırıldı.)
 - Yetki yoksa backend `403` döner → bu butonları yalnızca yetkili kullanıcıya göster.
 
 ---
@@ -150,9 +151,29 @@ Backend hataları her zaman `{ "error": "..." }` biçiminde döner; bu metni do�
 | Şarkı ara | `GET /api/youtube/search?q=` |
 | Şarkı iste (jeton öde) | `POST /api/chat/rooms/{roomId}/song-request` |
 | Çalan + sıra + ücretler | `GET /api/chat/rooms/{roomId}/song-request` |
-| Çalan müzik (senkron) | `GET /api/chat/rooms/{roomId}/music` veya alias `GET /api/rooms/{roomId}/music/current` |
+| Çalan müzik (senkron) | `GET /api/chat/rooms/{roomId}/music` |
 | Sıra listesi | `GET /api/chat/rooms/{roomId}/music-queue` |
-| Atla (DJ) | `POST /api/rooms/{roomId}/music/skip` |
-| Durdur (DJ) | `POST /api/rooms/{roomId}/music/stop` |
+| Atla (DJ) | `DELETE /api/chat/rooms/{roomId}/music` |
+| Durdur (DJ) | `POST /api/chat/rooms/{roomId}/music/stop` |
 | Çalma geçmişi | `GET /api/music/history?roomId=&limit=` |
 | Gerçek zamanlı olaylar | `GET /api/chat/rooms/{roomId}/stream` (SSE) |
+---
+
+## 7. Kullanımdan Kaldırılan Uçlar → Kanonik Karşılıkları
+
+Aşağıdaki eski uçlar **silinmedi**, çalışmaya devam ediyor; ancak yanıtta `Deprecation: true` ve halefini gösteren `Link` başlığı dönüyor. Yeni geliştirmelerde kanonik uçları kullanın.
+
+| Eski uç (deprecated) | Kanonik uç |
+|---|---|
+| `GET /api/leaderboard` | `GET /api/leaderboards` |
+| `GET /api/membership/packages` | `GET /api/memberships/packages` |
+| `GET /api/payment/config` | `GET /api/payments/config` |
+| `GET|POST /api/payment/requests` | `GET|POST /api/payments/requests` |
+| `GET /api/payment-methods` | `GET /api/payments/methods` |
+| `GET /api/payment-settings` | `GET /api/payments/settings` |
+| `GET /api/rooms/{roomId}/music/current` | `GET /api/chat/rooms/{roomId}/music` |
+| `POST /api/rooms/{roomId}/music/skip` | `DELETE /api/chat/rooms/{roomId}/music` |
+| `POST /api/rooms/{roomId}/music/stop` | `POST /api/chat/rooms/{roomId}/music/stop` |
+| `POST /api/tencent/webhook` (sağlayıcı tarafında kayıtlı, korunur) | `POST /api/trtc/webhook` |
+
+**Not:** `/api/room/{sessionId}/...` (canlı fal seansı) ile `/api/rooms/{roomId}/...` (sohbet odası) farklı kimlik uzaylarıdır ve **birleştirilmemiştir**. Sohbet odası için kanonik ad alanı `/api/chat/rooms/{roomId}/...`'dir.

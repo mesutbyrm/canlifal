@@ -119,7 +119,7 @@ Ayrı bir tablo **yoktur**. Sıradaki istekler `ChatMessage` satırları olarak,
 }
 ```
 
-**Alias:** `GET /api/rooms/{roomId}/music/current` → bu uca yönlendirir (Flutter kolaylığı için).
+**Eski alias (kullanımdan kaldırıldı):** `GET /api/rooms/{roomId}/music/current` → hâlâ çalışır, `Deprecation: true` başlığı döner. Yeni geliştirmelerde yukarıdaki kanonik ucu kullanın.
 
 ---
 
@@ -133,14 +133,16 @@ DJ yetkisi olanların (oda sahibi, global admin, aktif DJ) ücretsiz olarak şar
 ### 3.5 Sıradakine Geç (skip)
 `DELETE /api/chat/rooms/{roomId}/music` — çalan şarkıyı bitirir, sıradaki ilk şarkıyı otomatik çalar.
 
-**Alias:** `POST /api/rooms/{roomId}/music/skip` → yukarıdaki DELETE davranışına eşdeğerdir.
+**Eski alias (kullanımdan kaldırıldı):** `POST /api/rooms/{roomId}/music/skip` → hâlâ çalışır, `Deprecation: true` başlığı döner. Yeni geliştirmelerde yukarıdaki DELETE ucunu kullanın.
 
 Yalnızca DJ/sahip; yetki yoksa `403`.
 
 ---
 
 ### 3.6 Müziği Tamamen Durdur (stop)
-`POST /api/rooms/{roomId}/music/stop`
+`POST /api/chat/rooms/{roomId}/music/stop`
+
+**Eski alias (kullanımdan kaldırıldı):** `POST /api/rooms/{roomId}/music/stop` → hâlâ çalışır, `Deprecation: true` başlığı döner.
 
 Çalan şarkıyı temizler **ve** sıradaki tüm bekleyen istekleri `[PLAYED]` işaretler → otomatik olarak yeni şarkı başlamaz. (skip'ten farkı: skip bir sonrakine geçer, stop her şeyi durdurur.)
 
