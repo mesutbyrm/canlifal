@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **700 endpoint handler** (447 benzersiz yol), **154 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **690 endpoint handler** (438 benzersiz yol), **148 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -109,12 +109,10 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [homepage-ticker](#cat-homepage-ticker) (1)
 - [horoscope](#cat-horoscope) (1)
 - [jeton](#cat-jeton) (2)
-- [leaderboard](#cat-leaderboard) (1)
 - [leaderboards](#cat-leaderboards) (1)
 - [legal](#cat-legal) (1)
 - [live](#cat-live) (15)
 - [me](#cat-me) (2)
-- [membership](#cat-membership) (1)
 - [membership-badges](#cat-membership-badges) (1)
 - [memberships](#cat-memberships) (3)
 - [messages](#cat-messages) (5)
@@ -123,9 +121,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [music](#cat-music) (2)
 - [notifications](#cat-notifications) (4)
 - [online-fal](#cat-online-fal) (1)
-- [payment](#cat-payment) (3)
-- [payment-methods](#cat-payment-methods) (1)
-- [payment-settings](#cat-payment-settings) (1)
 - [payments](#cat-payments) (7)
 - [platform](#cat-platform) (1)
 - [popups](#cat-popups) (1)
@@ -136,7 +131,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [referral](#cat-referral) (2)
 - [room](#cat-room) (12)
 - [room-themes](#cat-room-themes) (1)
-- [rooms](#cat-rooms) (3)
 - [search](#cat-search) (2)
 - [seo-settings](#cat-seo-settings) (1)
 - [settings](#cat-settings) (4)
@@ -1209,13 +1203,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/jeton` | 🔄 Dual | — | `action` |
 
 
-## <a name="cat-leaderboard"></a>`leaderboard`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/leaderboard` | 🌍 Public | — | — |
-
-
 ## <a name="cat-leaderboards"></a>`leaderboards`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1257,13 +1244,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/me` | 🔄 Dual | — | — |
 | **PATCH** | `/api/me` | 🔄 Dual | — | — |
-
-
-## <a name="cat-membership"></a>`membership`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/membership/packages` | 🌍 Public | — | — |
 
 
 ## <a name="cat-membership-badges"></a>`membership-badges`
@@ -1333,29 +1313,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/online-fal` | 🌍 Public | — | — |
-
-
-## <a name="cat-payment"></a>`payment`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/payment/config` | 🌍 Public | — | — |
-| **GET** | `/api/payment/requests` | 🌍 Public | — | — |
-| **POST** | `/api/payment/requests` | 🌍 Public | — | — |
-
-
-## <a name="cat-payment-methods"></a>`payment-methods`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/payment-methods` | 🌍 Public | — | — |
-
-
-## <a name="cat-payment-settings"></a>`payment-settings`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/payment-settings` | 🌍 Public | — | — |
 
 
 ## <a name="cat-payments"></a>`payments`
@@ -1448,15 +1405,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/room-themes/catalog` | 🔄 Dual | — | — |
-
-
-## <a name="cat-rooms"></a>`rooms`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/rooms/{roomId}/music/current` | 🌍 Public | — | — |
-| **POST** | `/api/rooms/{roomId}/music/skip` | 🌍 Public | — | — |
-| **POST** | `/api/rooms/{roomId}/music/stop` | 🌍 Public | — | — |
 
 
 ## <a name="cat-search"></a>`search`

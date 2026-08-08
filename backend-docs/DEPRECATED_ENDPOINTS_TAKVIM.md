@@ -1,6 +1,6 @@
 # Kullanımdan Kaldırılan Uçlar — Geçiş Takvimi
 
-> Son güncelleme: 8 Ağustos 2026
+> Son güncelleme: 8 Ağustos 2026 — **Aşama C tamamlandı**
 
 ## 1. Genel Bakış
 
@@ -46,20 +46,21 @@ Mobil (Flutter) ve dış istemciler bu başlıkları okuyarak kendi taraflarınd
 - Eski uçlara gelen istek sayısını sunucu loglarından izleyin.
 - Sıfıra düştüğünde Aşama C'ye geçin.
 
-### Aşama C — Kaldırma
+### Aşama C — Kaldırma ✅ TAMAMLANDI
 
-- Eski alias route dosyalarını silin:
-  - `app/api/leaderboard/route.ts`
-  - `app/api/membership/packages/route.ts`
-  - `app/api/payment/config/route.ts`
-  - `app/api/payment/requests/route.ts`
-  - `app/api/payment-methods/route.ts`
-  - `app/api/payment-settings/route.ts`
-  - `app/api/rooms/[roomId]/music/current/route.ts`
-  - `app/api/rooms/[roomId]/music/skip/route.ts`
-  - `app/api/rooms/[roomId]/music/stop/route.ts`
-- **`/api/tencent/webhook` SİLİNMEZ** — sağlayıcı tarafında kayıtlıdır, korunmalıdır.
-- Belgeleri güncelleyin (API_REGISTRY, ENDPOINTS, OpenAPI).
+Aşağıdaki alias route dosyaları **silindi** (8 Ağustos 2026):
+  - ~~`app/api/leaderboard/route.ts`~~
+  - ~~`app/api/membership/packages/route.ts`~~
+  - ~~`app/api/payment/config/route.ts`~~
+  - ~~`app/api/payment/requests/route.ts`~~
+  - ~~`app/api/payment-methods/route.ts`~~
+  - ~~`app/api/payment-settings/route.ts`~~
+  - ~~`app/api/rooms/[roomId]/music/current/route.ts`~~
+  - ~~`app/api/rooms/[roomId]/music/skip/route.ts`~~
+  - ~~`app/api/rooms/[roomId]/music/stop/route.ts`~~
+- Boş kalan dizinler de kaldırıldı.
+- **`/api/tencent/webhook` korundu** — sağlayıcıda kayıtlı.
+- Belgeler güncellendi: 690 uç, 148 alan, 438 yol (API_REGISTRY, ENDPOINTS, OpenAPI, Postman).
 
 ---
 

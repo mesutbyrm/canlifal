@@ -327,9 +327,6 @@
       "name": "jeton"
     },
     {
-      "name": "leaderboard"
-    },
-    {
       "name": "leaderboards"
     },
     {
@@ -340,9 +337,6 @@
     },
     {
       "name": "me"
-    },
-    {
-      "name": "membership"
     },
     {
       "name": "membership-badges"
@@ -367,15 +361,6 @@
     },
     {
       "name": "online-fal"
-    },
-    {
-      "name": "payment"
-    },
-    {
-      "name": "payment-methods"
-    },
-    {
-      "name": "payment-settings"
     },
     {
       "name": "payments"
@@ -406,9 +391,6 @@
     },
     {
       "name": "room-themes"
-    },
-    {
-      "name": "rooms"
     },
     {
       "name": "search"
@@ -27408,46 +27390,6 @@
         }
       }
     },
-    "/api/leaderboard": {
-      "get": {
-        "tags": [
-          "leaderboard"
-        ],
-        "summary": "GET /api/leaderboard",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
     "/api/leaderboards": {
       "get": {
         "tags": [
@@ -28562,46 +28504,6 @@
         }
       }
     },
-    "/api/membership/packages": {
-      "get": {
-        "tags": [
-          "membership"
-        ],
-        "summary": "GET /api/membership/packages",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
     "/api/memberships": {
       "get": {
         "tags": [
@@ -29595,204 +29497,6 @@
           "online-fal"
         ],
         "summary": "GET /api/online-fal",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/payment-methods": {
-      "get": {
-        "tags": [
-          "payment-methods"
-        ],
-        "summary": "GET /api/payment-methods",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/payment-settings": {
-      "get": {
-        "tags": [
-          "payment-settings"
-        ],
-        "summary": "GET /api/payment-settings",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/payment/config": {
-      "get": {
-        "tags": [
-          "payment"
-        ],
-        "summary": "GET /api/payment/config",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/payment/requests": {
-      "get": {
-        "tags": [
-          "payment"
-        ],
-        "summary": "GET /api/payment/requests",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "payment"
-        ],
-        "summary": "POST /api/payment/requests",
         "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
@@ -31535,156 +31239,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/rooms/{roomId}/music/current": {
-      "get": {
-        "tags": [
-          "rooms"
-        ],
-        "summary": "GET /api/rooms/{roomId}/music/current",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "roomId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: roomId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/rooms/{roomId}/music/skip": {
-      "post": {
-        "tags": [
-          "rooms"
-        ],
-        "summary": "POST /api/rooms/{roomId}/music/skip",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "roomId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: roomId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/rooms/{roomId}/music/stop": {
-      "post": {
-        "tags": [
-          "rooms"
-        ],
-        "summary": "POST /api/rooms/{roomId}/music/stop",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [
-          {
-            "name": "roomId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Yol parametresi: roomId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
           }
         }
       }

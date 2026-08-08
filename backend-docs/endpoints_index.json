@@ -6318,17 +6318,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/leaderboard",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "leaderboard",
-    "dynamic": true
-  },
-  {
     "path": "/api/leaderboards",
     "method": "GET",
     "auth": "dual",
@@ -6587,17 +6576,6 @@
     "dynamic": true
   },
   {
-    "path": "/api/membership/packages",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "membership",
-    "dynamic": true
-  },
-  {
     "path": "/api/memberships",
     "method": "GET",
     "auth": "public",
@@ -6836,61 +6814,6 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "online-fal",
-    "dynamic": true
-  },
-  {
-    "path": "/api/payment-methods",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "payment-methods",
-    "dynamic": true
-  },
-  {
-    "path": "/api/payment-settings",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "payment-settings",
-    "dynamic": true
-  },
-  {
-    "path": "/api/payment/config",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "payment",
-    "dynamic": true
-  },
-  {
-    "path": "/api/payment/requests",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "payment",
-    "dynamic": true
-  },
-  {
-    "path": "/api/payment/requests",
-    "method": "POST",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "payment",
     "dynamic": true
   },
   {
@@ -7293,45 +7216,6 @@
       "amount"
     ],
     "tag": "room",
-    "dynamic": true
-  },
-  {
-    "path": "/api/rooms/{roomId}/music/current",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "roomId"
-    ],
-    "bodyFields": [],
-    "tag": "rooms",
-    "dynamic": true
-  },
-  {
-    "path": "/api/rooms/{roomId}/music/skip",
-    "method": "POST",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "roomId"
-    ],
-    "bodyFields": [],
-    "tag": "rooms",
-    "dynamic": true
-  },
-  {
-    "path": "/api/rooms/{roomId}/music/stop",
-    "method": "POST",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [
-      "roomId"
-    ],
-    "bodyFields": [],
-    "tag": "rooms",
     "dynamic": true
   },
   {
