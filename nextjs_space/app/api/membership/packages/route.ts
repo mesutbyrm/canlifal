@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
  * Eski istemciler bozulmasın diye tutuluyor; aynı uygulamayı çağırır.
  */
 export async function GET() {
+  console.warn('[DEPRECATED] GET /api/membership/packages → kanonik: /api/memberships/packages')
   const res = await canonicalGET()
   const out = NextResponse.json(await res.json(), { status: res.status })
   out.headers.set('Deprecation', 'true')

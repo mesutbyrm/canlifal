@@ -11,5 +11,6 @@ export const dynamic = 'force-dynamic'
  * olmaması için iki yol da açık tutulur.
  */
 export async function POST(request: NextRequest) {
+  console.warn('[DEPRECATED-INFO] POST /api/trtc/webhook → kanonik (sağlayıcıda eski /api/tencent/webhook kayıtlı, ikisi de açık)')
   return tencentWebhookPOST(request)
 }

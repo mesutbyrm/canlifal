@@ -12,6 +12,7 @@ export async function GET(
   req: NextRequest,
   ctx: { params: { roomId: string } }
 ) {
+  console.warn(`[DEPRECATED] GET /api/rooms/${ctx.params.roomId}/music/current → kanonik: /api/chat/rooms/.../music`)
   const res = await musicGET(req, ctx)
   res.headers.set('Deprecation', 'true')
   res.headers.set('Link', '</api/chat/rooms/{roomId}/music>; rel="successor-version"')

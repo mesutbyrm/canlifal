@@ -11,6 +11,7 @@ export async function POST(
   req: NextRequest,
   ctx: { params: { roomId: string } }
 ) {
+  console.warn(`[DEPRECATED] POST /api/rooms/${ctx.params.roomId}/music/stop → kanonik: /api/chat/rooms/.../music/stop`)
   const res = await canonicalPOST(req, ctx)
   res.headers.set('Deprecation', 'true')
   res.headers.set('Link', '</api/chat/rooms/{roomId}/music/stop>; rel="successor-version"')

@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
  * Kanonik uç: GET /api/payments/config
  */
 export async function GET(request: NextRequest) {
+  console.warn('[DEPRECATED] GET /api/payment/config → kanonik: /api/payments/config')
   const res = await canonicalGET(request)
   res.headers.set('Deprecation', 'true')
   res.headers.set('Link', '</api/payments/config>; rel="successor-version"')

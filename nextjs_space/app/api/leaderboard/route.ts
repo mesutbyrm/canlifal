@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
  * servis katmanını kullanır. Yeni geliştirmelerde /api/leaderboards kullanın.
  */
 export async function GET() {
+  console.warn('[DEPRECATED] GET /api/leaderboard → kanonik: /api/leaderboards')
   try {
     const data = await getCommunityLeaderboards()
     return NextResponse.json(data, {
