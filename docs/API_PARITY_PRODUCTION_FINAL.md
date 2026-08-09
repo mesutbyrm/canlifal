@@ -174,3 +174,28 @@ FINAL API PARITY:                 NOT COMPLETE
 **Gerçek cihaz gate'i:** Yukarıdaki dört script çalıştırılıp 0 FAIL doğrulanmadan TRTC / CANLI YAYIN / CANLI FALCI / SESLİ ODA / PK / MÜZİK testlerine geçilmedi.
 
 **Sonraki adım:** Eksik dört acceptance script'ini depoya (`nextjs_space/scripts/acceptance-tests/`) ekleyin; aynı production hedefiyle çalıştırılıp bu rapor tamamlanır.
+
+---
+
+# GÜNCELLEME — STAGE 12 (2026-08-09 13:30 UTC)
+
+Yukarıda "ÇALIŞTIRILAMADI — script depoda yok" olarak işaretlenen üç bileşen artık **üretildi ve gerçek production üzerinde çalıştırıldı**. Ayrıntılı test tablosu: `docs/API_PARITY_STAGE12.md`.
+
+**Sürüm:** commit `39b6170b2738dffef2f0dd4f129421f48844dcb6` — `https://canlifal.com` üzerinde canlı, davranışsal olarak doğrulandı.
+
+```
+FORTUNE REQUEST   8/8
+API ACCEPTANCE    17/17
+P0                25/25
+SSE               19/20
+STAGE8            9 PASS / 0 FAIL
+API RELEASE GATE  11/11
+
+FINAL API PARITY: NOT COMPLETE
+```
+
+**Tek eksik:** SSE testi 6 — uygulama `X-Accel-Buffering: no` başlığını gönderiyor, ancak CDN katmanı bu başlığı yanıttan çıkarıyor (doğrudan `curl -D` ile teyit edildi). Uygulama kusuru değildir, fakat gerçek production yanıtında başlık bulunmadığı için FAIL olarak bırakıldı. Sayı hedefe yapay olarak tamamlanmadı.
+
+**Yapılan tek kod değişikliği:** Bilinmeyen tek segmentli `/api/*` yolları için 404 JSON dönen genel yakalayıcı eklendi (önceden 200 + HTML dönüyordu). Mevcut hiçbir uç nokta etkilenmedi; deploy sonrası 17 + 25 + 9 + 11 test yeniden koşularak doğrulandı.
+
+**TRTC / CANLI YAYIN / CANLI FALCI / SESLİ ODA / PK / MÜZİK** testlerine geçilmedi.
