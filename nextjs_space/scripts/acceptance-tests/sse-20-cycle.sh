@@ -87,10 +87,38 @@ c5_cache_control() {
   head_has 'cache-control: *no-cache'
 }
 
+# Proxy buffering must be OFF on the live domain.
+#
+# The origin sends `X-Accel-Buffering: no`, but that name is a directive for
+# buffering reverse proxies: the proxy in front of production honours it and
+# strips it from the client-facing response (verified against a probe endpoint
+# where a plain custom header on the SAME response did survive). So its literal
+# presence cannot be asserted from outside.
+#
+# This gate therefore asserts the two things that are actually observable and
+# that the directive exists to guarantee:
+#   a) the mirrored `X-Sse-Buffering: no` marker reaches the client, proving the
+#      origin asked for unbuffered delivery and the edge passes headers through;
+#   b) the first SSE frame really arrives immediately (no buffering in between).
 c6_no_buffering() {
+  local accel mirror ttfb out ok=0
   sse_open "$NOTIF_SSE" 6 "$USER_TOKEN" >/dev/null
-  echo "  x-accel-buffering: $(grep -i '^x-accel-buffering' "$TMPDIR_SSE/head" | tr -d '\r')"
-  head_has 'x-accel-buffering: *no'
+  accel=$(grep -i '^x-accel-buffering' "$TMPDIR_SSE/head" | tr -d '\r')
+  mirror=$(grep -i '^x-sse-buffering' "$TMPDIR_SSE/head" | tr -d '\r')
+  echo "  x-accel-buffering (consumed by proxy): ${accel:-<absent>}"
+  echo "  x-sse-buffering   (client visible):    ${mirror:-<absent>}"
+
+  out=$(curl -s -N -m 8 -o "$TMPDIR_SSE/ttfb_body" -w '%{time_starttransfer}' \
+        -H "Authorization: Bearer ${USER_TOKEN}" "${API_BASE_URL}${NOTIF_SSE}" || true)
+  ttfb=$out
+  echo "  time to first byte: ${ttfb}s"
+  echo "  first frame: $(head -1 "$TMPDIR_SSE/ttfb_body" 2>/dev/null)"
+
+  head_has 'x-sse-buffering: *no' || return 1
+  grep -q '"type":"connected"' "$TMPDIR_SSE/ttfb_body" 2>/dev/null || return 1
+  # A buffering proxy would withhold the first frame; unbuffered delivery is sub-second.
+  ok=$(awk -v t="$ttfb" 'BEGIN{print (t+0>0 && t+0<3.0)?1:0}')
+  [[ "$ok" == "1" ]]
 }
 
 c7_connected_event() {
