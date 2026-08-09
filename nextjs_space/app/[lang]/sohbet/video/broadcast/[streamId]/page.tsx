@@ -252,6 +252,9 @@ export default function BroadcastPage() {
   // Auto-close state
   const [autoCloseWarning, setAutoCloseWarning] = useState<string | null>(null)
   const autoCloseCheckRef = useRef<NodeJS.Timeout | null>(null)
+  // Media heartbeat state (proves audio/video is actually being published)
+  const mediaActiveRef = useRef(false)
+  const mediaHeartbeatRef = useRef<NodeJS.Timeout | null>(null)
   // Beauty effects state
   const [beautySettings, setBeautySettings] = useState<BeautySettings>(() => {
     if (typeof window !== 'undefined') {
@@ -479,6 +482,9 @@ export default function BroadcastPage() {
       } catch (audioErr: any) {
         console.error('🔴 TRTC: startLocalAudio failed:', audioErr?.code, audioErr?.message || String(audioErr))
       }
+
+      // Media is now being published — enable heartbeats
+      mediaActiveRef.current = true
 
       console.log('🎬 TRTC: Broadcast started — video:', videoStarted, ', userId:', userId, ', roomId:', roomId)
       
@@ -1206,6 +1212,11 @@ export default function BroadcastPage() {
   }
 
   const cleanup = async () => {
+    mediaActiveRef.current = false
+    if (mediaHeartbeatRef.current) {
+      clearInterval(mediaHeartbeatRef.current)
+      mediaHeartbeatRef.current = null
+    }
     // Leave TRTC room and cleanup
     if (trtcRef.current) {
       try {
@@ -1246,7 +1257,11 @@ export default function BroadcastPage() {
           // Wait 5 seconds then actually close
           setTimeout(async () => {
             try {
-              await fetch(`/api/video-streams/${streamId}/auto-close`, { method: 'POST' })
+              await fetch(`/api/video-streams/${streamId}/auto-close`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: data.reason })
+              })
             } catch {}
             cleanup()
             router.push('/')
@@ -1268,6 +1283,23 @@ export default function BroadcastPage() {
     autoCloseCheckRef.current = setInterval(checkAutoClose, 30000)
     return () => {
       if (autoCloseCheckRef.current) clearInterval(autoCloseCheckRef.current)
+    }
+  }, [session, streamId])
+
+  // Media heartbeat: tell the server that audio/video is still being published.
+  // Only sent while the broadcast is actually running.
+  useEffect(() => {
+    if (!session?.user) return
+    const sendHeartbeat = () => {
+      if (!mediaActiveRef.current) return
+      fetch(`/api/video-streams/${streamId}/media-heartbeat`, { method: 'POST' }).catch(() => {})
+    }
+    mediaHeartbeatRef.current = setInterval(sendHeartbeat, 30000)
+    return () => {
+      if (mediaHeartbeatRef.current) {
+        clearInterval(mediaHeartbeatRef.current)
+        mediaHeartbeatRef.current = null
+      }
     }
   }, [session, streamId])
 

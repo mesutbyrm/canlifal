@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 import { getPlatformSetting } from '@/lib/agency-commission'
+import { getMediaInactivityTimeoutMs } from '@/lib/stream-auto-close'
 
 // GET - Check if stream should be auto-closed (called by broadcaster polling)
 export async function GET(
@@ -14,14 +15,30 @@ export async function GET(
   try {
     const stream = await prisma.videoStream.findUnique({
       where: { id: params.streamId },
-      select: { id: true, status: true, lastGiftAt: true, startedAt: true, userId: true }
+      select: { id: true, status: true, lastGiftAt: true, startedAt: true, userId: true, lastMediaAt: true }
     })
 
     if (!stream || stream.status !== 'live') {
       return NextResponse.json({ shouldClose: false })
     }
 
-    // Get timeout from platform settings (default 15 minutes)
+    // Rule 1: media inactivity (no audio/video heartbeat). Streams that never
+    // sent a heartbeat (lastMediaAt = null) are never closed by this rule.
+    const mediaTimeoutMs = await getMediaInactivityTimeoutMs()
+    if (mediaTimeoutMs > 0 && stream.lastMediaAt) {
+      const mediaElapsed = Date.now() - new Date(stream.lastMediaAt).getTime()
+      if (mediaElapsed >= mediaTimeoutMs) {
+        const mediaTimeoutMinutes = Math.round(mediaTimeoutMs / 60000)
+        return NextResponse.json({
+          shouldClose: true,
+          reason: 'media_inactivity',
+          timeoutMinutes: mediaTimeoutMinutes,
+          message: `${mediaTimeoutMinutes} dakikadır görüntü/ses alınamadığı için yayın otomatik kapatılacak.`
+        })
+      }
+    }
+
+    // Rule 2: no gift received. Get timeout from platform settings (default 15 minutes)
     const timeoutStr = await getPlatformSetting('stream_no_gift_timeout', '15')
     const timeoutMinutes = parseInt(timeoutStr) || 15
 
@@ -73,6 +90,12 @@ export async function POST(
     if (stream.status !== 'live') return NextResponse.json({ error: 'Yayın zaten bitti' }, { status: 400 })
     if (stream.userId !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
 
+    let reason = 'no_gift_timeout'
+    try {
+      const body = await request.json()
+      if (body?.reason === 'media_inactivity') reason = 'media_inactivity'
+    } catch {}
+
     // Auto-close the stream
     await prisma.videoStream.update({
       where: { id: params.streamId },
@@ -95,8 +118,10 @@ export async function POST(
         userId: stream.userId,
         type: 'stream_auto_closed',
         title: 'Yayın Otomatik Kapatıldı',
-        message: 'Uzun süredir hediye gelmediği için yayınınız otomatik olarak kapatıldı.',
-        data: JSON.stringify({ streamId: params.streamId })
+        message: reason === 'media_inactivity'
+          ? 'Uzun süredir görüntü/ses alınamadığı için yayınınız otomatik olarak kapatıldı.'
+          : 'Uzun süredir hediye gelmediği için yayınınız otomatik olarak kapatıldı.',
+        data: JSON.stringify({ streamId: params.streamId, reason })
       })
     } catch {}
 

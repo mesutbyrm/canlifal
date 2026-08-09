@@ -54,6 +54,12 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '30') || 30, 100)
     const skip = (page - 1) * limit
 
+    // Fire-and-forget: close streams whose broadcaster media went silent.
+    // Runs outside the cache wrapper so it also fires on cache hits (internally throttled).
+    import('@/lib/stream-auto-close')
+      .then(m => m.sweepMediaInactiveStreams())
+      .catch(() => {})
+
     // Cache live stream list for 10 seconds - prevents DB storm from concurrent homepage polls
     const { getCached } = await import('@/lib/cache')
     const cacheKey = `streams:live_list:${page}:${limit}`

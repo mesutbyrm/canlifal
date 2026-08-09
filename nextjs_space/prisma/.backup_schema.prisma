@@ -872,6 +872,7 @@ model VideoStream {
   isImageMode    Boolean              @default(false) // Whether broadcasting with image instead of video
   backgroundUrl  String? // Background image URL for the broadcast
   lastGiftAt     DateTime? // Last gift received timestamp (for auto-close)
+  lastMediaAt    DateTime? // Last broadcaster media heartbeat (for media-inactivity auto-close)
   autoClosedAt   DateTime? // When stream was auto-closed due to no gifts
   startedAt      DateTime             @default(now())
   endedAt        DateTime?
