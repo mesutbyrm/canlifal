@@ -13,11 +13,13 @@ USER_TOKEN=""
 
 # public_ok <path>
 public_ok() {
-  local path="$1" r s b
+  local path="$1" r s b ct
   r=$(http_get "$path")
   s=$(status_of "$r"); b=$(body_of "$r")
-  echo "  GET ${path} → ${s} (${#b} bytes)"
-  [[ "$s" == "200" ]]
+  ct=$(curl -s -o /dev/null --max-time 40 -w '%{content_type}' "${API_BASE_URL}${path}")
+  echo "  GET ${path} → ${s} ${ct} (${#b} bytes)"
+  # A 200 that renders HTML is NOT a working API endpoint — reject it.
+  [[ "$s" == "200" && "$ct" == *json* ]]
 }
 
 auth_ok() {
@@ -29,7 +31,7 @@ auth_ok() {
   [[ "$s" == "200" ]]
 }
 
-p1()  { public_ok /api/health; }
+p1()  { public_ok /api/announcements; }
 p2()  { public_ok /api/warmup; }
 p3()  { public_ok /api/mobile/config; }
 p4()  { public_ok /api/credit-packages; }
@@ -82,7 +84,7 @@ echo "Target: ${API_BASE_URL}"
 echo "Time:   $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
 echo "============================================================"
 
-run_gate 1  "/api/health"                    p1
+run_gate 1  "/api/announcements"             p1
 run_gate 2  "/api/warmup"                    p2
 run_gate 3  "/api/mobile/config"             p3
 run_gate 4  "/api/credit-packages"           p4

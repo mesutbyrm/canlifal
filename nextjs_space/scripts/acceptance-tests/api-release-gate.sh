@@ -72,7 +72,7 @@ gate_1_health() {
 gate_2_public() {
   local endpoints=(
     "/api/credit-packages"
-    "/api/payment-methods"
+    "/api/payments/methods"
     "/api/fortune-tellers"
     "/api/blog"
   )

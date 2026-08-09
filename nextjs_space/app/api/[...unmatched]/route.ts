@@ -18,7 +18,17 @@ function notFound() {
       errorEn: 'Endpoint not found',
       code: 'ENDPOINT_NOT_FOUND'
     },
-    { status: 404 }
+    {
+      status: 404,
+      headers: {
+        // Edge/CDN header-passthrough probe. X-Accel-Buffering is consumed by
+        // buffering proxies; X-Sse-Buffering is a plain custom header. Comparing
+        // which of the two survives on the live domain tells us whether the
+        // reverse proxy strips headers in general or only the accel directive.
+        'X-Accel-Buffering': 'no',
+        'X-Sse-Buffering': 'no'
+      }
+    }
   )
 }
 

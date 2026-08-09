@@ -104,7 +104,10 @@ export async function GET(request: NextRequest) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no'
+      'X-Accel-Buffering': 'no',
+      // Mirror of the directive above under a name no proxy consumes, so the
+      // no-buffering intent is still observable by clients on the live domain.
+      'X-Sse-Buffering': 'no'
     }
   })
 }
