@@ -79,7 +79,77 @@ export async function POST(
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     
-    const { typeId, nickname, isHidden, question } = await request.json()
+    // --- Gövde ayrıştırma (bozuk JSON -> 400, asla 500) ---
+    let body: any
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Geçersiz istek gövdesi', errorEn: 'Invalid request body', code: 'INVALID_BODY' },
+        { status: 400 }
+      )
+    }
+
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: 'Geçersiz istek gövdesi', errorEn: 'Invalid request body', code: 'INVALID_BODY' },
+        { status: 400 }
+      )
+    }
+
+    // --- Eski (legacy) alan adları da kabul edilir, kanonik alanlara eşlenir ---
+    const typeIdRaw = body.typeId ?? body.fortuneTypeId ?? body.requestTypeId ?? body.type_id
+    const nicknameRaw = body.nickname ?? body.nickName ?? body.displayName
+    const isHiddenRaw = body.isHidden ?? body.hidden ?? body.anonymous
+    const questionRaw = body.question ?? body.message ?? body.text
+
+    if (typeof typeIdRaw !== 'string' || typeIdRaw.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Fal türü (typeId) gereklidir', errorEn: 'typeId is required', code: 'INVALID_BODY' },
+        { status: 400 }
+      )
+    }
+    if (nicknameRaw != null && typeof nicknameRaw !== 'string') {
+      return NextResponse.json(
+        { error: 'Geçersiz takma ad', errorEn: 'Invalid nickname', code: 'INVALID_BODY' },
+        { status: 400 }
+      )
+    }
+    if (questionRaw != null && typeof questionRaw !== 'string') {
+      return NextResponse.json(
+        { error: 'Geçersiz soru metni', errorEn: 'Invalid question', code: 'INVALID_BODY' },
+        { status: 400 }
+      )
+    }
+    if (isHiddenRaw != null && typeof isHiddenRaw !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Geçersiz gizlilik değeri', errorEn: 'Invalid isHidden', code: 'INVALID_BODY' },
+        { status: 400 }
+      )
+    }
+
+    const typeId = typeIdRaw.trim()
+    const nickname = typeof nicknameRaw === 'string' ? nicknameRaw.trim().slice(0, 60) || null : null
+    const isHidden = isHiddenRaw === true
+    const question = typeof questionRaw === 'string' ? questionRaw.trim().slice(0, 500) || null : null
+
+    // --- Yayın var mı? (geçersiz streamId -> 404) ---
+    if (!params.streamId || params.streamId.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Yayın bulunamadı', errorEn: 'Stream not found', code: 'STREAM_NOT_FOUND' },
+        { status: 404 }
+      )
+    }
+    const targetStream = await prisma.videoStream.findUnique({
+      where: { id: params.streamId },
+      select: { id: true }
+    })
+    if (!targetStream) {
+      return NextResponse.json(
+        { error: 'Yayın bulunamadı', errorEn: 'Stream not found', code: 'STREAM_NOT_FOUND' },
+        { status: 404 }
+      )
+    }
     
     // Check if user already has a pending request for this stream
     const existingRequest = await prisma.streamFortuneRequest.findUnique({
@@ -94,8 +164,9 @@ export async function POST(
     if (existingRequest && existingRequest.status === 'pending') {
       return NextResponse.json({ 
         error: 'Zaten bekleyen bir fal isteğiniz var', 
-        errorEn: 'You already have a pending fortune request' 
-      }, { status: 400 })
+        errorEn: 'You already have a pending fortune request',
+        code: 'DUPLICATE_REQUEST'
+      }, { status: 409 })
     }
     
     // Get fortune request type and cost
@@ -106,7 +177,8 @@ export async function POST(
     if (!fortuneType || !fortuneType.isActive) {
       return NextResponse.json({ 
         error: 'Geçersiz fal türü', 
-        errorEn: 'Invalid fortune type' 
+        errorEn: 'Invalid fortune type',
+        code: 'INVALID_FORTUNE_TYPE'
       }, { status: 400 })
     }
     
@@ -168,12 +240,16 @@ export async function POST(
     const fortuneRequest = txResult[txResult.length - 1]
     
     return NextResponse.json({
-      ...fortuneRequest,
+      ...(fortuneRequest as any),
+      success: true,
       newBalance: isStaff ? (user.jetonBalance ?? 0) : (user.jetonBalance ?? 0) - fortuneType.jetonCost
-    })
+    }, { status: 200 })
   } catch (error) {
     console.error('Error creating fortune request:', error)
-    return NextResponse.json({ error: 'Failed to create fortune request' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Fal isteği oluşturulamadı', errorEn: 'Failed to create fortune request', code: 'INTERNAL_ERROR' },
+      { status: 500 }
+    )
   }
 }
 
