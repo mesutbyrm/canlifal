@@ -106,6 +106,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Revenue split (recorded on the gift row even when the sender is
+      // excluded from finance, so reporting always reflects the real value)
+      const commissionStr = await getPlatformSetting('stream_gift_commission', '30')
+      const commissionPercent = Math.min(100, Math.max(0, parseInt(commissionStr) || 30))
+      const recipientAmount = Math.floor(totalPrice * (100 - commissionPercent) / 100)
+      const siteAmount = totalPrice - recipientAmount
+
       const txOps: any[] = [
         prisma.streamGift.create({
           data: {
@@ -113,7 +120,9 @@ export async function POST(request: NextRequest) {
             senderId: sender.id,
             giftTypeId,
             quantity,
-            totalPrice
+            totalPrice,
+            receiverAmount: senderExcluded ? 0 : recipientAmount,
+            siteAmount: senderExcluded ? 0 : siteAmount
           },
           include: {
             sender: { select: { name: true, image: true } },
@@ -132,9 +141,6 @@ export async function POST(request: NextRequest) {
         )
 
         // Credit broadcaster
-        const commissionStr = await getPlatformSetting('stream_gift_commission', '30')
-        const commissionPercent = Math.min(100, Math.max(0, parseInt(commissionStr) || 30))
-        const recipientAmount = Math.floor(totalPrice * (100 - commissionPercent) / 100)
         if (recipientAmount > 0) {
           txOps.push(
             prisma.user.update({
@@ -201,10 +207,15 @@ export async function POST(request: NextRequest) {
       emitStreamEvent(stream.id, 'gift', {
         type: 'gift',
         streamId: stream.id,
+        roomId: stream.roomId || stream.id,
+        receiverId: stream.userId,
         gift: {
           id: gift.id,
           giftId: gift.id,
           senderId: sender.id,
+          receiverId: stream.userId,
+          streamId: stream.id,
+          roomId: stream.roomId || stream.id,
           senderName: sender.name,
           senderImage: sender.image,
           giftName: giftType.name,
