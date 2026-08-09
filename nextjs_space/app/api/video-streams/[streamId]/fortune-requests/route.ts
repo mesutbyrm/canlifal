@@ -2,6 +2,110 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 
+// ── Fal isteği oluşturma: gövde ayrıştırma ve hata eşleme yardımcıları ──
+type FortuneCreateBodyOk = {
+  ok: true
+  typeId: string
+  nickname: string | null
+  isHidden: boolean
+  question: string | null
+}
+type FortuneCreateBodyError = { ok: false; status: number; body: Record<string, unknown> }
+type ParsedFortuneCreateBody = FortuneCreateBodyOk | FortuneCreateBodyError
+
+const invalidBody = (error: string, errorEn: string): FortuneCreateBodyError => ({
+  ok: false,
+  status: 400,
+  body: { error, errorEn, code: 'INVALID_BODY' }
+})
+
+/**
+ * İstek gövdesini güvenli biçimde ayrıştırır. Bozuk JSON, dizi veya yanlış tipler
+ * her zaman 400 döner; hiçbir koşulda istisna fırlatmaz (500 üretmez).
+ * Eski (legacy) alan adları kanonik alanlara eşlenir.
+ */
+async function parseFortuneCreateBody(request: NextRequest): Promise<ParsedFortuneCreateBody> {
+  let body: any
+  try {
+    body = await request.json()
+  } catch {
+    return invalidBody('Geçersiz istek gövdesi', 'Invalid request body')
+  }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return invalidBody('Geçersiz istek gövdesi', 'Invalid request body')
+  }
+
+  const typeIdRaw = body.typeId ?? body.fortuneTypeId ?? body.requestTypeId ?? body.type_id
+  const nicknameRaw = body.nickname ?? body.nickName ?? body.displayName
+  const isHiddenRaw = body.isHidden ?? body.hidden ?? body.anonymous
+  const questionRaw = body.question ?? body.message ?? body.text
+
+  if (typeof typeIdRaw !== 'string' || typeIdRaw.trim().length === 0) {
+    return invalidBody('Fal türü (typeId) gereklidir', 'typeId is required')
+  }
+  if (nicknameRaw != null && typeof nicknameRaw !== 'string') {
+    return invalidBody('Geçersiz takma ad', 'Invalid nickname')
+  }
+  if (questionRaw != null && typeof questionRaw !== 'string') {
+    return invalidBody('Geçersiz soru metni', 'Invalid question')
+  }
+  if (isHiddenRaw != null && typeof isHiddenRaw !== 'boolean') {
+    return invalidBody('Geçersiz gizlilik değeri', 'Invalid isHidden')
+  }
+
+  return {
+    ok: true,
+    typeId: typeIdRaw.trim(),
+    nickname: typeof nicknameRaw === 'string' ? (nicknameRaw.trim().slice(0, 60) || null) : null,
+    isHidden: isHiddenRaw === true,
+    question: typeof questionRaw === 'string' ? (questionRaw.trim().slice(0, 500) || null) : null
+  }
+}
+
+/**
+ * Veritabanı istisnalarını sözleşmeye uygun HTTP durum kodlarına eşler.
+ * P2002 (benzersizlik ihlali) -> 409, P2003 (yabancı anahtar ihlali) -> 400,
+ * P2025 (kayıt yok) -> 404, diğerleri -> 500.
+ */
+function mapFortuneCreateException(error: any): { status: number; body: Record<string, unknown> } {
+  const code = error?.code
+  if (code === 'P2002') {
+    return {
+      status: 409,
+      body: {
+        error: 'Zaten bekleyen bir fal isteğiniz var',
+        errorEn: 'You already have a pending fortune request',
+        code: 'DUPLICATE_REQUEST'
+      }
+    }
+  }
+  if (code === 'P2003') {
+    return {
+      status: 400,
+      body: {
+        error: 'Geçersiz istek gövdesi',
+        errorEn: 'Invalid reference in request body',
+        code: 'INVALID_BODY'
+      }
+    }
+  }
+  if (code === 'P2025') {
+    return {
+      status: 404,
+      body: { error: 'Yayın bulunamadı', errorEn: 'Stream not found', code: 'STREAM_NOT_FOUND' }
+    }
+  }
+  return {
+    status: 500,
+    body: {
+      error: 'Fal isteği oluşturulamadı',
+      errorEn: 'Failed to create fortune request',
+      code: 'INTERNAL_ERROR'
+    }
+  }
+}
+
 interface FortuneRequestRecord {
   id: string
   userId: string
@@ -80,58 +184,12 @@ export async function POST(
     }
     
     // --- Gövde ayrıştırma (bozuk JSON -> 400, asla 500) ---
-    let body: any
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Geçersiz istek gövdesi', errorEn: 'Invalid request body', code: 'INVALID_BODY' },
-        { status: 400 }
-      )
+    const parsed = await parseFortuneCreateBody(request)
+    if (parsed.ok !== true) {
+      const err = parsed as FortuneCreateBodyError
+      return NextResponse.json(err.body, { status: err.status })
     }
-
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return NextResponse.json(
-        { error: 'Geçersiz istek gövdesi', errorEn: 'Invalid request body', code: 'INVALID_BODY' },
-        { status: 400 }
-      )
-    }
-
-    // --- Eski (legacy) alan adları da kabul edilir, kanonik alanlara eşlenir ---
-    const typeIdRaw = body.typeId ?? body.fortuneTypeId ?? body.requestTypeId ?? body.type_id
-    const nicknameRaw = body.nickname ?? body.nickName ?? body.displayName
-    const isHiddenRaw = body.isHidden ?? body.hidden ?? body.anonymous
-    const questionRaw = body.question ?? body.message ?? body.text
-
-    if (typeof typeIdRaw !== 'string' || typeIdRaw.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Fal türü (typeId) gereklidir', errorEn: 'typeId is required', code: 'INVALID_BODY' },
-        { status: 400 }
-      )
-    }
-    if (nicknameRaw != null && typeof nicknameRaw !== 'string') {
-      return NextResponse.json(
-        { error: 'Geçersiz takma ad', errorEn: 'Invalid nickname', code: 'INVALID_BODY' },
-        { status: 400 }
-      )
-    }
-    if (questionRaw != null && typeof questionRaw !== 'string') {
-      return NextResponse.json(
-        { error: 'Geçersiz soru metni', errorEn: 'Invalid question', code: 'INVALID_BODY' },
-        { status: 400 }
-      )
-    }
-    if (isHiddenRaw != null && typeof isHiddenRaw !== 'boolean') {
-      return NextResponse.json(
-        { error: 'Geçersiz gizlilik değeri', errorEn: 'Invalid isHidden', code: 'INVALID_BODY' },
-        { status: 400 }
-      )
-    }
-
-    const typeId = typeIdRaw.trim()
-    const nickname = typeof nicknameRaw === 'string' ? nicknameRaw.trim().slice(0, 60) || null : null
-    const isHidden = isHiddenRaw === true
-    const question = typeof questionRaw === 'string' ? questionRaw.trim().slice(0, 500) || null : null
+    const { typeId, nickname, isHidden, question } = parsed as FortuneCreateBodyOk
 
     // --- Yayın var mı? (geçersiz streamId -> 404) ---
     if (!params.streamId || params.streamId.trim().length === 0) {
@@ -193,6 +251,7 @@ export async function POST(
       return NextResponse.json({ 
         error: 'Yetersiz jeton bakiyesi', 
         errorEn: 'Insufficient jeton balance',
+        code: 'INSUFFICIENT_BALANCE',
         required: fortuneType.jetonCost,
         current: user?.jetonBalance || 0
       }, { status: 400 })
@@ -246,10 +305,8 @@ export async function POST(
     }, { status: 200 })
   } catch (error) {
     console.error('Error creating fortune request:', error)
-    return NextResponse.json(
-      { error: 'Fal isteği oluşturulamadı', errorEn: 'Failed to create fortune request', code: 'INTERNAL_ERROR' },
-      { status: 500 }
-    )
+    const mapped = mapFortuneCreateException(error)
+    return NextResponse.json(mapped.body, { status: mapped.status })
   }
 }
 
