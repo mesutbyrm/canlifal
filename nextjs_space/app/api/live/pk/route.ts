@@ -197,6 +197,8 @@ export async function POST(request: NextRequest) {
       const pkData = { battleId: battle.id, action: 'created', room1Id: roomId, room2Id: targetRoomId, user1Id: authUser.id, user2Id: targetOwnerId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
       emitChatEvent(roomId, 'pk', pkData)
       emitChatEvent(targetRoomId, 'pk', pkData)
+      emitStreamEvent(roomId, 'pk', { type: 'pk', ...pkData })
+      emitStreamEvent(targetRoomId, 'pk', { type: 'pk', ...pkData })
 
       return NextResponse.json({ success: true, data: { id: battle.id, status: 'pending', room1Id: roomId, room2Id: targetRoomId, duration: battle.duration } })
     }
@@ -229,6 +231,8 @@ export async function POST(request: NextRequest) {
       const pkStartData = { battleId: battle.id, action: 'started', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: 0, score2: 0, duration: battle.duration, status: 'active', startedAt: updated.startedAt?.toISOString(), endTime: endTime.toISOString() }
       emitChatEvent(battle.stream1Id, 'pk', pkStartData)
       emitChatEvent(battle.stream2Id, 'pk', pkStartData)
+      emitStreamEvent(battle.stream1Id, 'pk', { type: 'pk', ...pkStartData })
+      emitStreamEvent(battle.stream2Id, 'pk', { type: 'pk', ...pkStartData })
 
       createNotificationWithPush({ userId: battle.user1Id, type: 'pk_invite', title: 'PK Kabul Edildi! ⚔️', message: 'PK davetiniz kabul edildi!', fromUserId: authUser.id }).catch(() => {})
 
@@ -251,6 +255,8 @@ export async function POST(request: NextRequest) {
       const cancelData = { battleId: battle.id, action: newStatus, room1Id: battle.stream1Id, room2Id: battle.stream2Id, status: newStatus }
       emitChatEvent(battle.stream1Id, 'pk', cancelData)
       emitChatEvent(battle.stream2Id, 'pk', cancelData)
+      emitStreamEvent(battle.stream1Id, 'pk', { type: 'pk', ...cancelData })
+      emitStreamEvent(battle.stream2Id, 'pk', { type: 'pk', ...cancelData })
 
       return NextResponse.json({ success: true, data: { id: updated.id, status: newStatus } })
     }
@@ -269,6 +275,8 @@ export async function POST(request: NextRequest) {
       const endData = { battleId: battle.id, action: 'completed', room1Id: battle.stream1Id, room2Id: battle.stream2Id, score1: battle.score1, score2: battle.score2, winnerId, status: 'completed' }
       emitChatEvent(battle.stream1Id, 'pk', endData)
       emitChatEvent(battle.stream2Id, 'pk', endData)
+      emitStreamEvent(battle.stream1Id, 'pk', { type: 'pk', ...endData })
+      emitStreamEvent(battle.stream2Id, 'pk', { type: 'pk', ...endData })
 
       return NextResponse.json({ success: true, data: { id: updated.id, status: 'completed', score1: battle.score1, score2: battle.score2, winnerId } })
     }

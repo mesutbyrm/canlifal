@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
             senderId: sender.id,
             giftTypeId,
             quantity,
-            totalPrice: senderExcluded ? 0 : totalPrice
+            totalPrice
           },
           include: {
             sender: { select: { name: true, image: true } },
@@ -179,6 +179,21 @@ export async function POST(request: NextRequest) {
             data: isStream1 ? { score1: { increment: totalPrice } } : { score2: { increment: totalPrice } }
           })
           pkUpdate = { battleId: activePK.id, score1: updated.score1, score2: updated.score2 }
+
+          // Emit PK score update to both stream SSE buses
+          const pkScoreData = {
+            type: 'pk',
+            battleId: activePK.id,
+            action: 'score_update',
+            room1Id: activePK.stream1Id,
+            room2Id: activePK.stream2Id,
+            score1: updated.score1,
+            score2: updated.score2,
+            addedAmount: totalPrice,
+            addedSide: isStream1 ? 'room1' : 'room2',
+          }
+          emitStreamEvent(activePK.stream1Id, 'pk', pkScoreData)
+          emitStreamEvent(activePK.stream2Id, 'pk', pkScoreData)
         }
       } catch { /* PK score not critical */ }
 
@@ -195,7 +210,7 @@ export async function POST(request: NextRequest) {
           giftName: giftType.name,
           giftIcon: giftType.icon,
           quantity,
-          totalPrice: senderExcluded ? 0 : totalPrice,
+          totalPrice,
           timestamp: Date.now(),
           ...(giftRenderMeta || {}),
         }

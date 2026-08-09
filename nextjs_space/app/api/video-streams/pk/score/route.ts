@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { emitStreamEvent } from '@/lib/stream-events'
 
 // POST - Add gift points to a PK battle side
 // Called from the gift sending endpoint
@@ -30,6 +31,20 @@ export async function POST(req: NextRequest) {
       where: { id: battleId },
       data: isStream1 ? { score1: { increment: points } } : { score2: { increment: points } }
     })
+
+    const scoreData = {
+      type: 'pk',
+      battleId: battle.id,
+      action: 'score_update',
+      room1Id: battle.stream1Id,
+      room2Id: battle.stream2Id,
+      score1: updated.score1,
+      score2: updated.score2,
+      addedAmount: points,
+      addedSide: isStream1 ? 'room1' : 'room2',
+    }
+    emitStreamEvent(battle.stream1Id, 'pk', scoreData)
+    emitStreamEvent(battle.stream2Id, 'pk', scoreData)
 
     return NextResponse.json({
       score1: updated.score1,

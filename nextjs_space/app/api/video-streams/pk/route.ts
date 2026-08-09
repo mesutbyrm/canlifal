@@ -7,6 +7,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
+import { emitStreamEvent } from '@/lib/stream-events'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -151,6 +152,10 @@ export async function POST(req: NextRequest) {
         })
       }).catch(err => console.error('PK invite push error:', err))
 
+      const pkData = { type: 'pk', battleId: battle.id, action: 'created', room1Id: streamId, room2Id: targetStreamId, user1Id: currentUserId, user2Id: targetStream.userId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
+      emitStreamEvent(streamId, 'pk', pkData)
+      emitStreamEvent(targetStreamId, 'pk', pkData)
+
       return NextResponse.json(battle)
     }
 
@@ -194,6 +199,10 @@ export async function POST(req: NextRequest) {
         data: { status: 'active', startedAt: new Date() }
       })
 
+      const pkStartData = { type: 'pk', battleId: battle.id, action: 'started', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: 0, score2: 0, duration: battle.duration, status: 'active', startedAt: updated.startedAt?.toISOString(), endTime: endTime.toISOString() }
+      emitStreamEvent(battle.stream1Id, 'pk', pkStartData)
+      emitStreamEvent(battle.stream2Id, 'pk', pkStartData)
+
       return NextResponse.json({ ...updated, endTime })
     }
 
@@ -208,10 +217,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       }
 
+      const newStatus = action === 'reject' ? 'rejected' : 'cancelled'
       const updated = await prisma.pKBattle.update({
         where: { id: battleId },
-        data: { status: action === 'reject' ? 'rejected' : 'cancelled', endedAt: new Date() }
+        data: { status: newStatus, endedAt: new Date() }
       })
+
+      const cancelData = { type: 'pk', battleId: battle.id, action: newStatus, room1Id: battle.stream1Id, room2Id: battle.stream2Id, status: newStatus }
+      emitStreamEvent(battle.stream1Id, 'pk', cancelData)
+      emitStreamEvent(battle.stream2Id, 'pk', cancelData)
 
       return NextResponse.json(updated)
     }
@@ -230,6 +244,10 @@ export async function POST(req: NextRequest) {
         where: { id: battleId },
         data: { status: 'completed', endedAt: new Date(), winnerId }
       })
+
+      const endData = { type: 'pk', battleId: battle.id, action: 'completed', room1Id: battle.stream1Id, room2Id: battle.stream2Id, score1: battle.score1, score2: battle.score2, winnerId, status: 'completed' }
+      emitStreamEvent(battle.stream1Id, 'pk', endData)
+      emitStreamEvent(battle.stream2Id, 'pk', endData)
 
       return NextResponse.json(updated)
     }
