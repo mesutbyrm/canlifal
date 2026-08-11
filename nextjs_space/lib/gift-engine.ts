@@ -454,8 +454,9 @@ export async function processGiftSend(params: {
     }
 
     // Analytics / replay log (independent of the financial records).
+    let giftHistoryId: string | null = null
     try {
-      await prisma.giftHistory.create({
+      const hist = await prisma.giftHistory.create({
         data: {
           context: params.context,
           contextId: params.contextId,
@@ -470,19 +471,22 @@ export async function processGiftSend(params: {
           displayArea,
         },
       })
+      giftHistoryId = hist.id
     } catch (e) {
       console.error('[gift-engine] giftHistory.create failed:', e)
     }
 
+    const finalPayload = { ...payload, giftHistoryId }
+
     // Emit the unified events.
-    await emitGiftEngineEvent(params.context, params.contextId, 'gift_received', payload)
+    await emitGiftEngineEvent(params.context, params.contextId, 'gift_received', finalPayload)
     const queue = await getQueueSnapshot(params.contextId)
     await emitGiftEngineEvent(params.context, params.contextId, 'gift_queue_updated', {
       queueLength: queue.length,
       queue,
     })
 
-    return payload
+    return finalPayload
   } catch (e) {
     console.error('[gift-engine] processGiftSend failed (money flow unaffected):', e)
     return null

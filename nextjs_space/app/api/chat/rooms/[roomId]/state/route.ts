@@ -8,6 +8,8 @@ import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { SEAT_COUNT, seatStaleThreshold } from '@/lib/voice-room-constants'
 import { withTiming } from '@/lib/perf'
+import { buildDjPayload } from '@/lib/chat-dj-events'
+import { expireAllStalePKs } from '@/lib/pk-expiry'
 
 export const dynamic = 'force-dynamic'
 
@@ -141,9 +143,40 @@ async function handleState(
       '0'
     )
 
+    // ── Zengin payload: müzik kuyruğu + aktif PK (poll'u azaltmak için) ──
+    let dj: any = null
+    let pk: any = null
+    try {
+      dj = await buildDjPayload(roomId)
+    } catch (e) {
+      console.error('[chat/rooms/state] dj payload error:', e)
+    }
+    try {
+      await expireAllStalePKs()
+      const battle = await prisma.pKBattle.findFirst({
+        where: {
+          OR: [{ stream1Id: roomId }, { stream2Id: roomId }],
+          status: { in: ['pending', 'active'] }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      if (battle) {
+        const [u1, u2] = await Promise.all([
+          prisma.user.findUnique({ where: { id: battle.user1Id }, select: { id: true, name: true, image: true } }),
+          prisma.user.findUnique({ where: { id: battle.user2Id }, select: { id: true, name: true, image: true } })
+        ])
+        pk = { ...battle, user1: u1, user2: u2 }
+      }
+    } catch (e) {
+      console.error('[chat/rooms/state] pk payload error:', e)
+    }
+
     return NextResponse.json({
       success: true,
       data: {
+        dj,
+        music: dj,
+        pk,
         room: {
           id: room.id,
           slug: room.slug,

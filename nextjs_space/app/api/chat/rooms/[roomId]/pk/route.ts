@@ -84,12 +84,32 @@ export async function POST(
 
     const { roomId } = params
     const body = await req.json()
-    const { action, targetRoomId, battleId, duration } = body
+    const battleId = body?.battleId ?? body?.matchId ?? null
+    const duration = body?.duration ?? body?.durationSec ?? null
+    const guestUserId = body?.guestUserId ?? body?.targetUserId ?? null
+    // Flutter sends { guestUserId, durationSec } with no explicit action → treat as create
+    const action: string = body?.action
+      ?? ((body?.targetRoomId || guestUserId) ? 'create' : '')
 
     // ──────────── CREATE ────────────
     if (action === 'create') {
+      let targetRoomId: string | null = body?.targetRoomId ?? null
+
+      // Resolve guestUserId → their active room
+      if (!targetRoomId && guestUserId) {
+        const guestRoom = await prisma.chatRoom.findFirst({
+          where: { ownerId: guestUserId, isActive: true },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true }
+        })
+        if (!guestRoom) {
+          return NextResponse.json({ error: 'Davet edilen kullanıcının aktif odası yok' }, { status: 400 })
+        }
+        targetRoomId = guestRoom.id
+      }
+
       if (!targetRoomId) {
-        return NextResponse.json({ error: 'targetRoomId gerekli' }, { status: 400 })
+        return NextResponse.json({ error: 'targetRoomId veya guestUserId gerekli' }, { status: 400 })
       }
 
       // Verify both rooms exist and are active

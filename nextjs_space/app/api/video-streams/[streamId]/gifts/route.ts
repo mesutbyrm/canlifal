@@ -275,22 +275,8 @@ export async function POST(
     // way (fullscreen edge-fill for big gifts) and it is visible to everyone.
     const renderMeta = buildGiftRenderMeta(giftType)
 
-    // Emit gift event to SSE listeners
-    emitStreamEvent(params.streamId, 'gift', {
-      type: 'gift',
-      streamId: params.streamId,
-      gift: {
-        id: gift.id,
-        giftId: gift.id,
-        senderName: userName,
-        giftName: giftType.name,
-        giftIcon: giftType.icon,
-        quantity,
-        totalPrice: senderExcluded ? 0 : totalPrice,
-        timestamp: Date.now(),
-        ...renderMeta,
-      }
-    })
+    // NOT: Legacy `gift` SSE olayı motorun ALTINDA, yalnızca motor başarısız
+    // olursa yedek olarak yayınlanır (çift animasyonu önlemek için).
 
     // ── Gift Engine (additive) ──────────────────────────────────────────────
     // Layer the professional engine on top: combo, per-stream FIFO queue,
@@ -309,6 +295,25 @@ export async function POST(
       })
     } catch (engErr) {
       console.error('Stream gift engine error (non-fatal):', engErr)
+    }
+
+    // Fallback: motor çalışmadıysa legacy `gift` SSE olayını yayınla
+    if (!enginePayload) {
+      emitStreamEvent(params.streamId, 'gift', {
+        type: 'gift',
+        streamId: params.streamId,
+        gift: {
+          id: gift.id,
+          giftId: gift.id,
+          senderName: userName,
+          giftName: giftType.name,
+          giftIcon: giftType.icon,
+          quantity,
+          totalPrice: senderExcluded ? 0 : totalPrice,
+          timestamp: Date.now(),
+          ...renderMeta,
+        }
+      })
     }
 
     return NextResponse.json({

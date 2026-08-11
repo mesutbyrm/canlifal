@@ -7,6 +7,7 @@
 > **İkinci backend (audit):** `https://canlifalapi.abacusai.app` — yeni Flutter trafiği için KULLANILMAZ (yalnızca PK / bazı oyun uçları geçici olarak burada, bkz. §3).
 >
 > **Son doğrulama:** 2026-08-11 — canlifal.com üzerinde READ-ONLY smoke test + kod incelemesi.
+> **Son güncelleme:** 2026-08-11 — *Faz 2 göç*: `/api/pk/*` (active, leaderboard, {matchId}, {matchId}/stream), `/api/live/pk/active`, `/api/live/guest/*`, `/api/games/rooms`, `/api/games/auto-match`, `/api/membership/plans`, `/api/membership/purchase`, `/api/chat/youtube-audio` **ANA backend'e taşındı**.
 > **Kaynak doğruluğu:** Endpoint yolları Flutter `lib/core/network/api_endpoints.dart` ve backend `app/api/**/route.ts` ile birebir eşleştirilmiştir.
 
 ---
@@ -308,7 +309,67 @@ Başlıca oda uçları:
 | GET (SSE) | `/api/chat/rooms/{id}/stream` | anlık mesaj/presence |
 | GET | `/api/chat/rooms/backgrounds` | arka planlar |
 
-> **NOT:** Sesli oda PK'sı (`/api/chat/rooms/{id}/pk*`) ANA backend'dedir. Birleşik PK sistemi (`/api/pk/*`) ise ikinci backend'dedir (bkz. §3).
+> **NOT:** Sesli oda PK'sı (`/api/chat/rooms/{id}/pk*`) ANA backend'dedir. Birleşik PK'nın okuma uçları da artık ANA backend'dedir (bkz. §3).
+
+#### Sesli oda PK — POST body (Flutter uyumu)
+
+`POST /api/chat/rooms/{roomId}/pk` aşağıdaki gövdeleri kabul eder:
+
+| Alan | Alias | Açıklama |
+|------|-------|----------|
+| `action` | — | `create` \| `accept` \| `reject` \| `cancel` \| `end`. **Verilmezse** ve `guestUserId`/`targetRoomId` varsa `create` varsayılır. |
+| `targetRoomId` | `guestUserId` | Hedef oda. `guestUserId` verilirse kullanıcının aktif odası otomatik çözümlür. |
+| `duration` | `durationSec` | Saniye cinsinden süre (varsayılan 180). |
+| `battleId` | `matchId` | accept/reject/cancel/end için maç kimliği. |
+
+Örnek (Flutter'ın gönderdiği gövde): `{ "guestUserId": "...", "durationSec": 180 }`
+
+`POST /api/chat/rooms/{roomId}/pk/score` — skor güncelleme (POST; GET 405 döner, bu beklenen davranıştır). Skor değişimi **her iki odaya** `pk` SSE olayı olarak yayınlanır; `battleId` iki tarafta aynıdır.
+
+#### Müzik SSE — tam kuyruk payload'u
+
+`GET (SSE) /api/chat/rooms/{roomId}/stream` → `dj` olayı:
+```json
+{ "type": "dj", "event": "QUEUE_UPDATED",
+  "playing": true,
+  "nowPlaying": { "videoId": "...", "title": "...", "thumbnail": "...",
+                  "requestedBy": "...", "startedAt": "...", "startedAtMs": 0,
+                  "elapsedSeconds": 0, "duration": "", "embedUrl": "..." },
+  "musicUrl": "<embedUrl>", "embedUrl": "<embedUrl>",
+  "musicQueue": [ ...tam dizi... ],
+  "queue": [ ...aynı tam dizi (Flutter alias)... ],
+  "queueLength": 0 }
+```
+Kuyruk **her zaman tam dizi** olarak gönderilir — istemcinin REST poll'a düşmesine gerek yoktur.
+
+#### Hediye SSE — tek olay, tek animasyon
+
+Hediye motoru üç ayrı olay yayınlar; hepsi üst seviyede `engine: true` taşır:
+
+| `event` | İçerik |
+|---------|--------|
+| `gift_received` | tam hediye payload'u + `combo`, `priority`, `displayArea`, `durationMs`, `queueId`, `queueIndex`, `giftHistoryId` |
+| `gift_queue_updated` | `queueLength` + `queue` (tam dizi) |
+| `gift_finished` | `queueId`, `giftTypeId`, `queueIndex` |
+
+```json
+{ "engine": true, "event": "gift_received", "context": "voice_room",
+  "contextId": "<roomId>", "giftHistoryId": "...", "queueId": "...", "queueIndex": 0, ... }
+```
+
+**Çift animasyon düzeltmesi (2026-08-11):** Eski (legacy) `gift` SSE olayı artık motorla birlikte yayınlanmaz. Motor çalıştığında yalnızca `gift_received` gider; legacy `gift` olayı **sadece motor başarısız olursa** yedek olarak yayınlanır. Aynı kural video yayını hediyeleri (`/api/video-streams/{id}/gifts`) için de geçerlidir.
+
+#### Oda state — tek kaynak (poll azaltma)
+
+`GET /api/chat/rooms/{roomId}/state` → `data` içinde artık ek olarak:
+- `dj` / `music` — yukarıdaki tam müzik payload'u
+- `pk` — aktif/bekleyen PK maçı (`user1`, `user2` dahil) veya `null`
+
+Böylece oda açılışında müzik ve PK için ayrı istek gerekmez.
+
+#### SSE heartbeat
+
+Tüm SSE uçları (`/api/chat/rooms/{id}/stream`, `/api/video-streams/{id}/stream`, `/api/room/{id}/stream`, `/api/fortune-tellers/sessions/stream`, `/api/notifications/stream`, `/api/pk/{id}/stream`) **15 saniyede bir** `: heartbeat` yorum satırı gönderir — Flutter'ın 45 sn timeout'u ile uyumludur.
 
 ---
 
@@ -408,7 +469,10 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 | GET/POST | `/api/withdrawals` | Bearer | para çekme |
 | GET | `/api/payments/methods` `/config` | dual | ödeme yöntemleri |
 
-> **DİKKAT:** Çoğul `/api/memberships*` ANA backend'dedir. Yalnızca tekil `/api/membership/plans` + `/api/membership/purchase` ikinci backend'dedir (bkz. §3).
+| GET | `/api/membership/plans` | Yok | tekil plan listesi (`{plans:[...]}`) — **ANA (Faz 2)** |
+| POST | `/api/membership/purchase` | Bearer | tekil satın alma alias'ı — **ANA (Faz 2)** |
+
+> **GÜNCEL:** Hem çoğul `/api/memberships*` hem tekil `/api/membership/*` artık ANA backend'dedir; ikisi de aynı `MembershipPlan` tablosunu ve aynı satın alma mantığını kullanır.
 
 ---
 
@@ -421,7 +485,8 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 | POST | `/api/games/play` | ANA | hamle |
 | GET | `/api/games/leaderboard` | ANA | liderlik |
 | GET | `/api/games/profile` | ANA | oyun profili |
-| GET | `/api/games/rooms` (çoğul liste) | **İKİNCİ** | oda listesi |
+| GET | `/api/games/rooms` (çoğul liste) | **ANA (Faz 2)** | oda listesi — `?gameType=&status=waiting|playing|all&limit=` → `{rooms:[...]}` |
+| POST | `/api/games/auto-match` | **ANA (yeni)** | otomatik rakip bulma — body `{gameType, betAmount?, betCurrency?}` → `{matched, room, roomId}` |
 | GET | `/api/games/lobby` | ANA (200) | lobi |
 | GET | `/api/tournaments` | ANA | turnuvalar |
 
@@ -429,14 +494,52 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 
 ### PK (Birleşik PK sistemi)
 
-> **Birleşik PK (`/api/pk/*`) hâlâ İKİNCİ backend'dedir** (canlifal.com'da 404). Sesli oda PK'sı (`/api/chat/rooms/{id}/pk`) ve video-stream PK'sı (`/api/video-streams/pk`) ise ANA backend'dedir. **DOKUNULMADI (§8).**
+> **GÜNCEL (2026-08-11):** Birleşik PK'nın okuma uçları (`/api/pk/active`, `/api/pk/leaderboard`, `/api/pk/{matchId}`, SSE `/api/pk/{matchId}/stream`) artık **ANA backend'dedir**. Tüm PK trafiği tek origin (`canlifal.com`) üzerinden akıyor. `/api/pk/battles`, `/api/pk/me/*`, `/api/pk/request`, `/api/pk/room`, `/api/pk/admin/*` henüz ikinci backend'dedir. Sesli oda PK'sı (`/api/chat/rooms/{id}/pk`) ve video-stream PK'sı (`/api/video-streams/pk`) zaten ANA backend'deydi. Üretim mantığına **DOKUNULMADI (§8)** — yalnızca okuma/serileştirme katmanı eklendi.
 
 | Method | Endpoint | Backend |
 |--------|----------|---------|
-| GET | `/api/pk/active`, `/api/pk/leaderboard`, `/api/pk/battles`, `/api/pk/{matchId}` ... | İKİNCİ |
-| GET (SSE) | `/api/pk/{matchId}/stream` | İKİNCİ |
+| GET | `/api/pk/active` | **ANA** |
+| GET | `/api/pk/leaderboard` | **ANA** |
+| GET | `/api/pk/{matchId}` | **ANA** |
+| GET (SSE) | `/api/pk/{matchId}/stream` | **ANA** |
+| GET | `/api/pk/battles`, `/api/pk/me/*`, `/api/pk/admin/*` | İKİNCİ (henüz taşınmadı) |
 | GET/POST | `/api/chat/rooms/{id}/pk`, `/api/chat/rooms/{id}/pk/score` | ANA |
 | GET/POST | `/api/video-streams/pk`, `/api/video-streams/pk/score` | ANA |
+| GET | `/api/live/pk/active` | **ANA** |
+| GET/POST | `/api/live/pk`, `/api/live/pk/score` | ANA |
+
+#### Birleşik PK payload sözleşmesi (ANA backend, ikinci backend ile birebir)
+
+**GET `/api/pk/active`** (opsiyonel `?includePending=1`)
+```json
+{ "matches": [ {
+  "id": "...", "status": "live",
+  "hostUserId": "...", "hostStreamId": "...", "hostName": "...", "hostImage": null,
+  "guestUserId": "...", "guestStreamId": "...", "guestName": "...", "guestImage": null,
+  "durationSec": 180, "hostScore": 0, "guestScore": 0,
+  "result": null, "winnerUserId": null, "finalSprint": false,
+  "mode": "1v1", "seatCount": 2,
+  "leftScore": 0, "rightScore": 0, "leftName": "...", "rightName": "...",
+  "requestedAt": "...", "respondedAt": null, "startedAt": null,
+  "endsAt": null, "endedAt": null
+} ] }
+```
+`status` eşlemesi: `pending` → `pending`, `active` → `live`, `completed` → `ended`.
+
+**GET `/api/pk/leaderboard?period=daily|weekly|monthly|all&metric=score|wins&limit=N`**
+```json
+{ "period": "weekly", "metric": "score",
+  "entries": [ { "rank": 1, "userId": "...", "name": "...", "image": null,
+                 "score": 0, "wins": 0, "matches": 0 } ] }
+```
+
+**GET `/api/pk/{matchId}`** → tek maç nesnesi (yukarıdaki şemayla aynı), bulunamazsa `404 {"error":"..."}`.
+
+**GET (SSE) `/api/pk/{matchId}/stream`** — 2 sn'de bir değişim kontrolü, 15 sn heartbeat.
+Olay: `{ "type": "pk", "event": "match_update", "match": { ...yukarıdaki şema... } }`
+Maç biterse son olaydan 3 sn sonra bağlantı kapanır.
+
+**GET `/api/live/pk/active`** (opsiyonel `?roomId=` / `?streamId=`) → `{ "matches": [...] }`; filtre verildiğinde ek olarak `match` alanı döner.
 
 ---
 
@@ -449,26 +552,28 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 |----------|---------------------|----------------|-------|
 | `/api/gifts/battles` | **200** | 200 | **MIGRATED** (artık main kullanılıyor) |
 | `/api/gifts/goals` | **200** | 200 | **MIGRATED** |
-| `/api/pk/active` | 404 | 200 | **NOT MIGRATED** (yalnızca ikinci) |
-| `/api/pk/leaderboard` | 404 | 200 | **NOT MIGRATED** |
-| `/api/live/pk/active` | 404 | 200 | **NOT MIGRATED** |
-| `/api/live/guest/list` | 404 | 200 | **NOT MIGRATED** |
-| `/api/games/rooms` (liste) | 404 | 200 | **NOT MIGRATED** |
-| `/api/membership/plans` (tekil) | 404 | 200 | **NOT MIGRATED** |
-| `/api/games/auto-match` | 404 | 404 | **DEPRECATED/UNKNOWN** (iki tarafta da yok) |
+| `/api/pk/active` | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/pk/leaderboard` | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/pk/{matchId}` + `/stream` | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/live/pk/active` | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/live/guest/list` + `/api/live/guest` | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/games/rooms` (liste) | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/membership/plans` (tekil) | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/membership/purchase` (tekil) | **ANA'da eklendi** | 200 | **MIGRATED** (Faz 2) |
+| `/api/games/auto-match` | **ANA'da eklendi (POST)** | 404 | **IMPLEMENTED** (artık yalnızca ANA) |
+| `/api/chat/youtube-audio` | **ANA'da eklendi (GET+POST)** | 404 | **IMPLEMENTED** (artık yalnızca ANA) |
 | `/api/games/lobby` | 400 (auth/param) | 200 | main'de var (MIGRATED) |
 
 ### Özet
 - **MIGRATED (ana backend'e taşındı, ikinci artık gereksiz):** `/api/gifts/battles`, `/api/gifts/battles/{id}`, `/api/gifts/goals` + zaten ana backend'de olan tüm diğer uçlar (auth, profil, fal, sosyal, chat, video-streams, jeton/üyelik çoğul, sesli oda, sesli oda PK, video PK).
-- **NOT MIGRATED (yalnızca ikinci backend):**
-  - `/api/pk/*` — Birleşik PK sistemi (match, leaderboard, battles, seats, stream SSE, admin)
-  - `/api/live/pk/active`, `/api/live/guest/*` — canlı PK/misafir listesi
-  - `/api/games/rooms` (çoğul liste), `/api/games/auto-match` (yalnızca kod referansı; iki tarafta da 404)
-  - `/api/membership/plans`, `/api/membership/purchase` (tekil) — aynı DB, aynı plan kimlikleri
-- **DEPRECATED / UNKNOWN:** `/api/games/auto-match` (iki backend'de de 404 — Flutter kodunda tanımlı ama sunucuda yok). `/api/warmup` ikinci backend'de bağlantı vermedi (route yok).
+- **MIGRATED (Faz 2 — 2026-08-11):** `/api/pk/active`, `/api/pk/leaderboard`, `/api/pk/{matchId}`, SSE `/api/pk/{matchId}/stream`, `/api/live/pk/active`, `/api/live/guest` + `/api/live/guest/list`, `/api/games/rooms`, `/api/membership/plans`, `/api/membership/purchase`.
+- **YENİ (yalnızca ANA backend'de var):** `POST /api/games/auto-match`, `GET|POST /api/chat/youtube-audio`.
+- **NOT MIGRATED (hâlâ yalnızca ikinci backend):**
+  - `/api/pk/battles`, `/api/pk/me/{history,invites,matches,stats}`, `/api/pk/request`, `/api/pk/room`, `/api/pk/admin/*` — birleşik PK'nın yazma/yönetim uçları (Faz 3)
+- **NOT:** `/api/warmup` ikinci backend'de bağlantı vermedi (route yok).
 
 ### Sonuç: İkinci backend hâlâ gerekli mi?
-**EVET** — yalnızca `/api/pk/*`, `/api/live/pk/active`, `/api/live/guest/*`, `/api/games/rooms`, `/api/membership/*` (tekil) için. Battles/goals için **HAYIR** (tamamen ana backend'e taşındı). Bu grupların da göçü ayrı bir faz olarak planlanmalıdır.
+**KISMEN** — artık yalnızca birleşik PK'nın yazma/yönetim uçları (`/api/pk/battles`, `/api/pk/me/*`, `/api/pk/request`, `/api/pk/room`, `/api/pk/admin/*`) için. PK okuma, canlı PK, misafir listesi, oyun odası listesi, tekil üyelik uçları ve gift battles/goals için **HAYIR** — hepsi ana backend'e taşındı. Kalan grupların göçü Faz 3 olarak planlanmıştır.
 
 ---
 
@@ -487,7 +592,10 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 | Voice Rooms | oda listesi/durum | GET | `/api/chat/rooms`, `/{id}/state` | ANA | public/Bearer |
 | Voice Rooms | koltuk/ses/müzik | GET/POST | `/api/chat/rooms/{id}/seats|voice|music` | ANA | Bearer |
 | PK (oda) | sesli oda PK | GET/POST | `/api/chat/rooms/{id}/pk` | ANA | dual |
-| PK (birleşik) | PK ekranı | GET | `/api/pk/active`, `/api/pk/{id}` | İKİNCİ | dual |
+| PK (birleşik) | PK ekranı | GET | `/api/pk/active`, `/api/pk/leaderboard`, `/api/pk/{id}`, SSE `/api/pk/{id}/stream` | **ANA** | dual |
+| PK (canlı) | aktif maç listesi | GET | `/api/live/pk/active` | **ANA** | public |
+| Live Guest | misafir listesi/yönetimi | GET/POST | `/api/live/guest/list`, `/api/live/guest` | **ANA** | public/Bearer |
+| Müzik | YouTube oynatma bilgisi | GET/POST | `/api/chat/youtube-audio`, `/api/chat/youtube-stream` | **ANA** | public |
 | TRTC | RTC bağlantı | POST | `/api/trtc/token` | ANA | Bearer |
 | SSE | bildirim/oda/yayın/seans | GET | `.../stream` | ANA | Bearer |
 | Chat (DM) | mesajlar | GET/POST | `/api/messages`, `/{userId}` | ANA | Bearer |
@@ -498,7 +606,9 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 | Jeton | bakiye/paket | GET | `/api/user/credits`, `/api/jeton`, `/api/credit-packages` | ANA | Bearer/public |
 | Gold/Üyelik | üyelik | GET/POST | `/api/memberships/packages`, `/purchase` | ANA | public/Bearer |
 | Games | oyun/oda | GET/POST | `/api/games`, `/api/games/room` | ANA | dual |
-| Games (liste) | oda listesi | GET | `/api/games/rooms` | İKİNCİ | dual |
+| Games (liste) | oda listesi | GET | `/api/games/rooms` | **ANA** | public |
+| Games (eşleştirme) | otomatik rakip bulma | POST | `/api/games/auto-match` | **ANA** | Bearer |
+| Üyelik (tekil) | plan listesi / satın alma | GET/POST | `/api/membership/plans`, `/api/membership/purchase` | **ANA** | public/Bearer |
 
 ---
 
@@ -507,9 +617,9 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 ### Base URL
 ```dart
 Env.apiBaseUrl = 'https://canlifal.com';   // TÜM battle/goal/gift/live/fal/auth trafiği
-Env.gamesApiBaseUrl = 'https://canlifalapi.abacusai.app'; // yalnızca /api/pk/*, /api/live/pk/active, /api/live/guest/*, /api/games/rooms, /api/membership/* (tekil)
+Env.gamesApiBaseUrl = 'https://canlifalapi.abacusai.app'; // yalnızca /api/pk/battles, /api/pk/me/*, /api/pk/request, /api/pk/room, /api/pk/admin/*
 ```
-`ApiBackendRouter.resolve(path)` yalnızca yukarıdaki ikinci-backend yollarını `game`'e yönlendirir; **battles/goals dahil geri kalan her şey `main`'e gider.**
+**Faz 2 sonrası (2026-08-11):** `ApiBackendRouter.resolve(path)` artık yalnızca birleşik PK'nın yazma/yönetim yollarını (`/api/pk/battles`, `/api/pk/me/`, `/api/pk/request`, `/api/pk/room`, `/api/pk/admin/`) `game`'e yönlendirmelidir. `/api/pk/active`, `/api/pk/leaderboard`, `/api/pk/{id}`, `/api/pk/{id}/stream`, `/api/live/pk/active`, `/api/live/guest/*`, `/api/games/rooms`, `/api/games/auto-match`, `/api/membership/*` **artık `main`'e gitmelidir** — hepsi ana backend'de mevcuttur. Battles/goals dahil geri kalan her şey zaten `main`'e gider.
 
 ### JWT gönderimi
 ```dart

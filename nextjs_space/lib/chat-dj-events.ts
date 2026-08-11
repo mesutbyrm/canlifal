@@ -108,6 +108,8 @@ export async function buildDjPayload(roomId: string) {
     musicUrl: embedUrl,
     embedUrl,
     musicQueue: queue,
+    // Flutter alias — aynı tam dizi
+    queue,
     queueLength: queue.length,
   }
 }

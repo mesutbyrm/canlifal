@@ -279,27 +279,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // way and it is visible to everyone in the room.
     const renderMeta = buildGiftRenderMeta(giftType)
 
-    // Emit gift event to SSE via in-memory chat event bus
-    emitChatEvent(roomId, 'gift', {
-      giftId: gift.id,
-      roomId,
-      senderId: sender.id,
-      senderName: sender.name,
-      recipientId: recipient.id,
-      recipientName: recipient.name,
-      giftTypeId: giftType.id,
-      giftName: giftType.name,
-      giftIcon: giftType.icon,
-      quantity,
-      amount: price,
-      currencyType: paymentType,
-      timestamp: Date.now(),
-      ...renderMeta,
-    })
-
-    // ── Gift Engine (additive) ──────────────────────────────────────────────
-    // Runs the professional engine on top of the existing flow: combo, per-room
-    // FIFO queue, GiftHistory and the unified gift_received / gift_queue_updated
+    // NOT: Legacy `gift` SSE olayı motorun ALTINDA, yalnızca motor başarısız
+    // olursa yedek olarak yayınlanır (çift animasyonu önlemek için).
     // events. Never throws; the money flow above is already committed.
     let enginePayload: any = null
     try {
@@ -314,6 +295,26 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       })
     } catch (engErr) {
       console.error('Chat room gift engine error (non-fatal):', engErr)
+    }
+
+    // Fallback: motor çalışmadıysa legacy `gift` SSE olayını yayınla
+    if (!enginePayload) {
+      emitChatEvent(roomId, 'gift', {
+        giftId: gift.id,
+        roomId,
+        senderId: sender.id,
+        senderName: sender.name,
+        recipientId: recipient.id,
+        recipientName: recipient.name,
+        giftTypeId: giftType.id,
+        giftName: giftType.name,
+        giftIcon: giftType.icon,
+        quantity,
+        amount: price,
+        currencyType: paymentType,
+        timestamp: Date.now(),
+        ...renderMeta,
+      })
     }
 
     return NextResponse.json({
