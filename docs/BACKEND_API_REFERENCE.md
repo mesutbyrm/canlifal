@@ -372,6 +372,102 @@ Böylece oda açılışında müzik ve PK için ayrı istek gerekmez.
 Tüm SSE uçları (`/api/chat/rooms/{id}/stream`, `/api/video-streams/{id}/stream`, `/api/room/{id}/stream`, `/api/fortune-tellers/sessions/stream`, `/api/notifications/stream`, `/api/pk/{id}/stream`) **15 saniyede bir** `: heartbeat` yorum satırı gönderir — Flutter'ın 45 sn timeout'u ile uyumludur.
 
 ---
+#### Sesli oda — KONUŞMA İSTEĞİ (el kaldırma) — YENİ (2026-08-20)
+
+Sesli odada mikrofon isteyen kullanıcı için tam akış: **istek → onay / red / engel**. Mevcut çalışan uçlara dokunulmadı; bu uçlar tamamen yeni eklendi (ana backend).
+
+| Method | Endpoint | Auth | Amaç |
+|--------|----------|------|------|
+| GET | `/api/chat/rooms/{roomId}/speak-request` | Bearer/session | Kendi isteğimin durumu + engel bilgisi |
+| POST | `/api/chat/rooms/{roomId}/speak-request` | Bearer/session | Konuşma isteği gönder (body: `{ message? }`) |
+| DELETE | `/api/chat/rooms/{roomId}/speak-request` | Bearer/session | Kendi isteğini iptal et |
+| GET | `/api/chat/rooms/{roomId}/speak-requests?status=pending\|all` | Yetkili | Bekleyen istek listesi |
+| POST | `/api/chat/rooms/{roomId}/speak-requests/{targetUserId}/approve` | Yetkili | İsteği onayla (kullanıcıya `voice` rolü verilir) |
+| POST \| DELETE | `/api/chat/rooms/{roomId}/speak-request/{userId}/reject` | Yetkili | İsteği reddet |
+| POST | `/api/chat/rooms/{roomId}/speak-request/{userId}/block` | Yetkili | Kullanıcıyı oda bazlı engelle (body: `{ reason?, durationMinutes? }`) |
+| DELETE | `/api/chat/rooms/{roomId}/speak-request/{userId}/block` | Yetkili | Engeli kaldır |
+
+**Alias yollar (aynı handler):** `/api/chat/rooms/{roomId}/speak-requests/{targetUserId}/reject` ve `.../{targetUserId}/block` — Flutter hangi yolu kullanırsa aynı davranış.
+
+**Yetki:** oda sahibi + oda op/admin rolleri + global staff (admin / moderator / site_manager). Yetkisiz → `403 {"error":"Bu işlem için yetkiniz yok"}`.
+
+**POST /speak-request 200:**
+```json
+{ "success": true, "request": { "id":"...", "roomId":"...", "userId":"...",
+  "status":"pending", "message":null, "userName":"...", "avatar":null,
+  "createdAt":"...", "updatedAt":"..." } }
+```
+
+**Engellenmiş kullanıcı tekrar istek atarsa → `403`:**
+```json
+{ "error": "Bu odada konuşma isteği göndermeniz engellendi.",
+  "blocked": true, "reason": "...", "expiresAt": null }
+```
+`expiresAt: null` → kalıcı engel. `durationMinutes` verilirse süreli engel olur ve süresi geçince otomatik silinir.
+
+**GET /speak-request 200:** `{ "request": {...}|null, "blocked": false, "blockReason": null, "blockExpiresAt": null }`
+
+#### Konuşma isteği SSE olayları (`room_event`)
+
+Hepsi mevcut `GET /api/chat/rooms/{roomId}/stream` akışından, `{"type":"room_event", "event": ...}` biçiminde gelir. Oda sahibi/admin popup'ı için `voice_request` (ve eş anlamlısı `hand_raised`) dinlenir.
+
+| `event` | Alıcı | Payload |
+|---------|-------|---------|
+| `voice_request` | oda sahibi + yetkili roller | `{ userId, userName, avatar, requestId, message }` |
+| `hand_raised` | aynı (alias — aynı payload) | `{ userId, userName, avatar, requestId, message }` |
+| `voice_request_cancelled` | oda | `{ userId, requestId }` |
+| `voice_request_accepted` | oda + istek sahibi | `{ userId, userName, avatar, requestId, handledBy, handledByName }` |
+| `voice_request_rejected` | oda + istek sahibi | `{ userId, userName, requestId, handledBy, handledByName, message, reason }` |
+| `voice_request_blocked` | oda + engellenen kullanıcı | `{ userId, userName, handledBy, handledByName, reason, expiresAt }` |
+| `voice_request_unblocked` | oda | `{ userId, handledBy }` |
+
+```json
+{ "type": "room_event", "event": "voice_request",
+  "userId": "...", "userName": "Ayşe", "avatar": null,
+  "requestId": "...", "message": null }
+```
+
+#### ONLINE COUNT — tek değer, tüm uçlarda tutarlı
+
+Aktiflik penceresi her yerde **son 5 dakika** (`lastSeen >= now - 300000ms`). Aynı sayı şu alanlarda döner:
+
+| Uç | Alan |
+|----|------|
+| `GET /api/chat/rooms/{id}/state` | `onlineCount` |
+| `GET /api/live/online-users?roomId=&roomType=voice` | `totalCount` |
+| `GET/POST/DELETE /api/chat/rooms/{id}/presence` | `onlineCount` (+ `totalCount` alias) |
+| SSE `room stream` → `{"type":"presence"}` | `onlineCount` (+ `totalCount` alias) |
+
+Presence join (POST) ve leave (DELETE) cevapları da güncel sayıyı döner; SSE presence snapshot'ı 10 saniyede bir yayınlanır. Bu alanlar **ek** olarak eklendi, eski alanlar (`users`, `roomMuted`, `success`) korundu.
+
+#### PK DAVET SSE (`pk_invite` / `pk_requested`)
+
+`POST /api/chat/rooms/{roomId}/pk` (`action: "create"`) çağrıldığında, mevcut `{"type":"pk", "action":"created"}` olayına **ek olarak** karşı oda kanalına dedicated davet olayı yayınlanır:
+
+```json
+{ "type": "room_event", "event": "pk_invite",
+  "battleId": "...", "userId": "<davet eden>", "userName": "...",
+  "battle": { "id":"...", "battleId":"...", "status":"pending",
+    "room1Id":"...", "room2Id":"...", "user1Id":"...", "user2Id":"...",
+    "challengerName":"...", "duration":180,
+    "expiresAt":"...", "timeoutSeconds":60 } }
+```
+`pk_requested` aynı payload ile eş anlamlı olarak da yayınlanır (Flutter hangi adı dinlerse çalışır).
+
+**GET `/api/pk/me/invites`** — **ANA backend'de** (yeni). SSE ile birebir tutarlı bekleyen davet listesi.
+Query: `?direction=incoming` (varsayılan) `| outgoing | all`
+```json
+{ "invites": [ { "id":"...", "battleId":"...", "status":"pending",
+    "hostUserId":"...", "guestUserId":"...", "hostName":"...", "guestName":"...",
+    "challengerId":"...", "opponentId":"...",
+    "challengerRoomId":"...", "opponentRoomId":"...",
+    "incoming": true, "durationSec":180, "expiresAt":"..." } ],
+  "incoming": [...], "outgoing": [...], "count": 1 }
+```
+Davet kabul/red için mevcut `POST /api/chat/rooms/{roomId}/pk` (`action: "accept"|"reject"`) kullanılmaya devam eder.
+
+---
+
 
 ### LIVE / VIDEO STREAMS
 
@@ -502,7 +598,8 @@ AI fal slug'ları: `kahve-fali, tarot-fali, ruya-yorumu, el-fali, burc-yorumu, d
 | GET | `/api/pk/leaderboard` | **ANA** |
 | GET | `/api/pk/{matchId}` | **ANA** |
 | GET (SSE) | `/api/pk/{matchId}/stream` | **ANA** |
-| GET | `/api/pk/battles`, `/api/pk/me/*`, `/api/pk/admin/*` | İKİNCİ (henüz taşınmadı) |
+| GET | `/api/pk/me/invites` | **ANA** (yeni — 2026-08-20) |
+| GET | `/api/pk/battles`, `/api/pk/me/*` (invites hariç), `/api/pk/admin/*` | İKİNCİ (henüz taşınmadı) |
 | GET/POST | `/api/chat/rooms/{id}/pk`, `/api/chat/rooms/{id}/pk/score` | ANA |
 | GET/POST | `/api/video-streams/pk`, `/api/video-streams/pk/score` | ANA |
 | GET | `/api/live/pk/active` | **ANA** |

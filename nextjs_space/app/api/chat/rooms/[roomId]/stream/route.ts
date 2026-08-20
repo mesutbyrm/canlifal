@@ -180,7 +180,9 @@ export async function GET(
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
               type: 'presence',
-              users: activeUsers
+              users: activeUsers,
+              onlineCount: activeUsers.length,
+              totalCount: activeUsers.length
             })}\n\n`))
           }
 

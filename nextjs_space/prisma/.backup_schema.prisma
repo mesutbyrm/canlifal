@@ -4055,3 +4055,38 @@ model RoomTheme {
   @@index([contentVersion])
   @@map("room_themes")
 }
+
+// ── Sesli oda "konuşma isteği" (el kaldırma) akışı ──
+// Plain scalar FKs (no back-relations) to keep the shared schema additive.
+model ChatSpeakRequest {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  status    String    @default("pending") // pending | approved | rejected | cancelled
+  message   String?
+  reason    String? // reddetme/iptal gerekçesi
+  handledBy String? // isteği onaylayan/reddeden kullanıcı
+  handledAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([roomId, userId])
+  @@index([roomId, status])
+  @@index([userId])
+  @@map("chat_speak_requests")
+}
+
+// Oda bazlı konuşma isteği engeli
+model ChatSpeakBlock {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  blockedBy String
+  reason    String?
+  expiresAt DateTime? // null = kalıcı
+  createdAt DateTime  @default(now())
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("chat_speak_blocks")
+}

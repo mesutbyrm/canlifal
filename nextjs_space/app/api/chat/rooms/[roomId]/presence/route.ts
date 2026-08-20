@@ -97,7 +97,9 @@ export async function GET(
     console.log(`[PRESENCE] GET roomId=${roomId} activeUsers=${activeUsers.length} users=[${activeUsers.map((u: any) => u.nickname || u.name).join(', ')}]`)
     return NextResponse.json({
       users: activeUsers,
-      roomMuted: room?.isMuted || false
+      roomMuted: room?.isMuted || false,
+      onlineCount: activeUsers.length,
+      totalCount: activeUsers.length
     })
   } catch (error) {
     console.error('Error fetching presence:', error)
@@ -552,7 +554,9 @@ export async function POST(
 
     return NextResponse.json({
       users: activeUsers,
-      roomMuted: room?.isMuted || false
+      roomMuted: room?.isMuted || false,
+      onlineCount: activeUsers.length,
+      totalCount: activeUsers.length
     })
   } catch (error) {
     console.error('Error updating presence:', error)
@@ -634,7 +638,14 @@ export async function DELETE(
       emitUserLeft(roomId, delUserId, displayName)
     }
     
-    return NextResponse.json({ success: true })
+    let onlineCount = 0
+    try {
+      onlineCount = await prisma.chatPresence.count({
+        where: { roomId, lastSeen: { gte: new Date(Date.now() - 300000) } }
+      })
+    } catch {}
+
+    return NextResponse.json({ success: true, onlineCount, totalCount: onlineCount })
   } catch (error) {
     console.error('Error removing presence:', error)
     return NextResponse.json({ error: 'Failed to remove presence' }, { status: 500 })

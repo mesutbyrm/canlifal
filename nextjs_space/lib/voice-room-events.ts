@@ -19,6 +19,17 @@ export type RoomEventKind =
   | 'seat_changed'
   | 'room_closed'
   | 'owner_changed'
+  // Konuşma isteği (el kaldırma) akışı
+  | 'voice_request'
+  | 'hand_raised'
+  | 'voice_request_cancelled'
+  | 'voice_request_accepted'
+  | 'voice_request_rejected'
+  | 'voice_request_blocked'
+  | 'voice_request_unblocked'
+  // PK daveti
+  | 'pk_invite'
+  | 'pk_requested'
 
 export interface RoomEventPayload {
   event: RoomEventKind
@@ -35,6 +46,18 @@ export interface RoomEventPayload {
   // owner_changed
   newOwnerId?: string
   newOwnerName?: string
+  // voice_request*
+  userName?: string
+  avatar?: string | null
+  requestId?: string
+  message?: string
+  reason?: string
+  handledBy?: string
+  handledByName?: string
+  expiresAt?: string | null
+  // pk_invite
+  battleId?: string
+  battle?: any
   ts: number
 }
 
@@ -65,6 +88,106 @@ export function emitSeatChanged(roomId: string, userId: string, seatIndex: numbe
 
 export function emitRoomClosed(roomId: string) {
   emit(roomId, { event: 'room_closed' })
+}
+
+// ──────────── Konuşma isteği (el kaldırma) olayları ────────────
+
+export interface SpeakRequestUser {
+  userId: string
+  userName?: string
+  avatar?: string | null
+}
+
+/**
+ * Kullanıcı konuşma isteği (el kaldırma) gönderdi.
+ * Oda sahibi / admin / yetkili roller anlık popup için bunu dinler.
+ * Geriye dönük uyumluluk için hem `voice_request` hem `hand_raised` yayınlanır
+ * (Flutter tarafında iki isimden biri dinleniyor olabilir).
+ */
+export function emitVoiceRequest(
+  roomId: string,
+  user: SpeakRequestUser,
+  extra?: { requestId?: string; message?: string }
+) {
+  const base = { userId: user.userId, userName: user.userName, avatar: user.avatar ?? null, ...extra }
+  emit(roomId, { event: 'voice_request', name: user.userName, image: user.avatar ?? null, ...base })
+  emit(roomId, { event: 'hand_raised', name: user.userName, image: user.avatar ?? null, ...base })
+}
+
+export function emitVoiceRequestCancelled(roomId: string, user: SpeakRequestUser, requestId?: string) {
+  emit(roomId, {
+    event: 'voice_request_cancelled',
+    userId: user.userId,
+    userName: user.userName,
+    avatar: user.avatar ?? null,
+    requestId
+  })
+}
+
+export function emitVoiceRequestAccepted(
+  roomId: string,
+  user: SpeakRequestUser,
+  opts?: { requestId?: string; handledBy?: string; handledByName?: string; seatIndex?: number; message?: string }
+) {
+  emit(roomId, {
+    event: 'voice_request_accepted',
+    userId: user.userId,
+    userName: user.userName,
+    avatar: user.avatar ?? null,
+    message: opts?.message ?? 'Konuşma isteğiniz onaylandı.',
+    ...opts
+  })
+}
+
+export function emitVoiceRequestRejected(
+  roomId: string,
+  user: SpeakRequestUser,
+  opts?: { requestId?: string; handledBy?: string; handledByName?: string; reason?: string; message?: string }
+) {
+  emit(roomId, {
+    event: 'voice_request_rejected',
+    userId: user.userId,
+    userName: user.userName,
+    avatar: user.avatar ?? null,
+    message: opts?.message ?? 'Konuşma isteğiniz reddedildi.',
+    ...opts
+  })
+}
+
+export function emitVoiceRequestBlocked(
+  roomId: string,
+  user: SpeakRequestUser,
+  opts?: { handledBy?: string; handledByName?: string; reason?: string; expiresAt?: string | null; message?: string }
+) {
+  emit(roomId, {
+    event: 'voice_request_blocked',
+    userId: user.userId,
+    userName: user.userName,
+    avatar: user.avatar ?? null,
+    message: opts?.message ?? 'Bu odada konuşma isteği gönderme izniniz kaldırıldı.',
+    ...opts
+  })
+}
+
+export function emitVoiceRequestUnblocked(roomId: string, user: SpeakRequestUser, handledBy?: string) {
+  emit(roomId, {
+    event: 'voice_request_unblocked',
+    userId: user.userId,
+    userName: user.userName,
+    avatar: user.avatar ?? null,
+    handledBy,
+    message: 'Konuşma isteği engeliniz kaldırıldı.'
+  })
+}
+
+/**
+ * PK daveti oluşturuldu — karşı oda sahibine anlık popup.
+ * `pk_invite` ve `pk_requested` iki isimle de yayınlanır.
+ */
+export function emitPkInvite(roomId: string, battle: any, opts?: { userId?: string; userName?: string }) {
+  const payload = { battleId: battle?.id, battle, userId: opts?.userId, userName: opts?.userName }
+  emit(roomId, { event: 'pk_invite', ...payload })
+  emit(roomId, { event: 'pk_requested', ...payload })
 }
 
 export function emitOwnerChanged(roomId: string, newOwnerId: string, newOwnerName?: string) {

@@ -8,6 +8,7 @@ import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { emitChatEvent } from '@/lib/chat-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
+import { emitPkInvite } from '@/lib/voice-room-events'
 
 /**
  * PK Battle endpoints for Chat Rooms.
@@ -222,6 +223,14 @@ export async function POST(
       }
       emitChatEvent(roomId, 'pk', pkEventData)
       emitChatEvent(targetRoomId, 'pk', pkEventData)
+
+      // Additive: dedicated pk_invite / pk_requested room_event for the opponent room owner popup
+      try {
+        emitPkInvite(targetRoomId, { ...battle, ...pkEventData }, {
+          userId: currentUserId,
+          userName: challenger?.name || undefined
+        })
+      } catch (e) { console.error('PK invite room_event emit error:', e) }
 
       return NextResponse.json(battle)
     }
