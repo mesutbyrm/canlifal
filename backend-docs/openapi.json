@@ -174,6 +174,9 @@
       "name": "admin/remote-config"
     },
     {
+      "name": "admin/roles"
+    },
+    {
       "name": "admin/room-themes"
     },
     {
@@ -12101,6 +12104,260 @@
                     "type": "string"
                   },
                   "valueType": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/roles": {
+      "get": {
+        "tags": [
+          "admin/roles"
+        ],
+        "summary": "GET /api/admin/roles",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "admin/roles"
+        ],
+        "summary": "POST /api/admin/roles",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
+                  },
+                  "level": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/roles/{roleId}": {
+      "delete": {
+        "tags": [
+          "admin/roles"
+        ],
+        "summary": "DELETE /api/admin/roles/{roleId}",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Yol parametresi: roleId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "admin/roles"
+        ],
+        "summary": "PATCH /api/admin/roles/{roleId}",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Yol parametresi: roleId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "level": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "permissions": {
                     "type": "string"
                   }
                 }

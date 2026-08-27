@@ -2739,6 +2739,64 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/roles",
+    "method": "GET",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/roles",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/roles",
+    "method": "POST",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "description",
+      "key",
+      "level",
+      "name"
+    ],
+    "tag": "admin/roles",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/roles/{roleId}",
+    "method": "DELETE",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "roleId"
+    ],
+    "bodyFields": [],
+    "tag": "admin/roles",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/roles/{roleId}",
+    "method": "PATCH",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "roleId"
+    ],
+    "bodyFields": [
+      "description",
+      "level",
+      "name",
+      "permissions"
+    ],
+    "tag": "admin/roles",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/room-themes/backgrounds",
     "method": "GET",
     "auth": "session",

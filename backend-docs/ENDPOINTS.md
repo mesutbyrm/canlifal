@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **748 endpoint handler** (480 benzersiz yol), **156 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **752 endpoint handler** (482 benzersiz yol), **157 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -58,6 +58,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/popups](#cat-admin-popups) (4)
 - [admin/profile-frames](#cat-admin-profile-frames) (4)
 - [admin/remote-config](#cat-admin-remote-config) (4)
+- [admin/roles](#cat-admin-roles) (4)
 - [admin/room-themes](#cat-admin-room-themes) (3)
 - [admin/rooms](#cat-admin-rooms) (2)
 - [admin/seo-settings](#cat-admin-seo-settings) (2)
@@ -636,6 +637,16 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/admin/remote-config` | 🌐 Oturum 🔒 | — | `description`, `group`, `key`, `platform`, `value`, `valueType` |
 | **DELETE** | `/api/admin/remote-config/{configId}` | 🌐 Oturum 🔒 | — | — |
 | **PATCH** | `/api/admin/remote-config/{configId}` | 🌐 Oturum 🔒 | — | `description`, `group`, `platform`, `value`, `valueType` |
+
+
+## <a name="cat-admin-roles"></a>`admin/roles`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/roles` | 🌐 Oturum 🔒 | — | — |
+| **POST** | `/api/admin/roles` | 🌐 Oturum 🔒 | — | `description`, `key`, `level`, `name` |
+| **DELETE** | `/api/admin/roles/{roleId}` | 🌐 Oturum 🔒 | — | — |
+| **PATCH** | `/api/admin/roles/{roleId}` | 🌐 Oturum 🔒 | — | `description`, `level`, `name`, `permissions` |
 
 
 ## <a name="cat-admin-room-themes"></a>`admin/room-themes`

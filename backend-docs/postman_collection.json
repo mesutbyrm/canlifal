@@ -7581,6 +7581,179 @@
       ]
     },
     {
+      "name": "admin/roles",
+      "item": [
+        {
+          "name": "GET /api/admin/roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "roles"
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/admin/roles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "roles"
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"\",\n  \"key\": \"\",\n  \"level\": \"\",\n  \"name\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/admin/roles/{roleId}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/roles/:roleId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "roles",
+                ":roleId"
+              ],
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/admin/roles/{roleId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/roles/:roleId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "roles",
+                ":roleId"
+              ],
+              "variable": [
+                {
+                  "key": "roleId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"\",\n  \"level\": \"\",\n  \"name\": \"\",\n  \"permissions\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/room-themes",
       "item": [
         {
