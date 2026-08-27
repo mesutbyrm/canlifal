@@ -14,6 +14,7 @@ import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { serializeGiftMedia } from '@/lib/media-url'
 import { processGiftSend } from '@/lib/gift-engine'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
+import { recordContribution } from '@/lib/supporter-level'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -241,6 +242,7 @@ export async function POST(
         actorId: userId,
         metadata: { streamId: params.streamId, giftTypeId, quantity },
       }).catch((e) => console.error('[Ledger][video-stream-gift]', e))
+      recordContribution(userId, stream.userId, totalPrice).catch(() => {})
     }
 
     // Log gift activity

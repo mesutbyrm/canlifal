@@ -1242,6 +1242,75 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/effect-rules",
+    "method": "GET",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/effect-rules",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/effect-rules",
+    "method": "POST",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "conditionType",
+      "conditionValue",
+      "description",
+      "effectRefId",
+      "effectType",
+      "isActive",
+      "key",
+      "name",
+      "priority",
+      "threshold"
+    ],
+    "tag": "admin/effect-rules",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/effect-rules/{ruleId}",
+    "method": "DELETE",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "ruleId"
+    ],
+    "bodyFields": [],
+    "tag": "admin/effect-rules",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/effect-rules/{ruleId}",
+    "method": "PATCH",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "ruleId"
+    ],
+    "bodyFields": [
+      "conditionType",
+      "conditionValue",
+      "description",
+      "effectRefId",
+      "effectType",
+      "isActive",
+      "name",
+      "priority",
+      "threshold"
+    ],
+    "tag": "admin/effect-rules",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/feature-flags",
     "method": "GET",
     "auth": "session",
@@ -3017,6 +3086,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/support",
+    "method": "GET",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/support",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/teller-levels",
     "method": "POST",
     "auth": "session",
@@ -3415,6 +3495,32 @@
     ],
     "tag": "admin/users",
     "dynamic": false
+  },
+  {
+    "path": "/api/admin/verification",
+    "method": "GET",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/verification",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/verification",
+    "method": "PATCH",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "action",
+      "id",
+      "reviewNote"
+    ],
+    "tag": "admin/verification",
+    "dynamic": true
   },
   {
     "path": "/api/admin/video-streams",
@@ -8475,6 +8581,144 @@
     "dynamic": true
   },
   {
+    "path": "/api/support/tickets",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "support",
+    "dynamic": true
+  },
+  {
+    "path": "/api/support/tickets",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "category",
+      "message",
+      "subject"
+    ],
+    "tag": "support",
+    "dynamic": true
+  },
+  {
+    "path": "/api/support/tickets/{ticketId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "ticketId"
+    ],
+    "bodyFields": [],
+    "tag": "support",
+    "dynamic": true
+  },
+  {
+    "path": "/api/support/tickets/{ticketId}",
+    "method": "PATCH",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "ticketId"
+    ],
+    "bodyFields": [
+      "assignedTo",
+      "priority",
+      "status"
+    ],
+    "tag": "support",
+    "dynamic": true
+  },
+  {
+    "path": "/api/support/tickets/{ticketId}/messages",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "ticketId"
+    ],
+    "bodyFields": [
+      "body",
+      "isInternal",
+      "message"
+    ],
+    "tag": "support",
+    "dynamic": true
+  },
+  {
+    "path": "/api/supporter-levels",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "supporter-levels",
+    "dynamic": true
+  },
+  {
+    "path": "/api/teams",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "teams",
+    "dynamic": true
+  },
+  {
+    "path": "/api/teams",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "description",
+      "logoUrl",
+      "name"
+    ],
+    "tag": "teams",
+    "dynamic": true
+  },
+  {
+    "path": "/api/teams/{teamId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "teamId"
+    ],
+    "bodyFields": [],
+    "tag": "teams",
+    "dynamic": true
+  },
+  {
+    "path": "/api/teams/{teamId}",
+    "method": "PATCH",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "teamId"
+    ],
+    "bodyFields": [
+      "action"
+    ],
+    "tag": "teams",
+    "dynamic": true
+  },
+  {
     "path": "/api/teller-chat",
     "method": "GET",
     "auth": "dual",
@@ -9262,6 +9506,34 @@
     ],
     "bodyFields": [],
     "tag": "users",
+    "dynamic": true
+  },
+  {
+    "path": "/api/verification",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "verification",
+    "dynamic": true
+  },
+  {
+    "path": "/api/verification",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "documentType",
+      "documentUrls",
+      "fullName",
+      "note",
+      "type"
+    ],
+    "tag": "verification",
     "dynamic": true
   },
   {

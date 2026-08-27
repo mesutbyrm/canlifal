@@ -165,6 +165,8 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/avatar-accessories`, icon: Frame, trLabel: 'Avatar Aksesuarları', enLabel: 'Avatar Accessories', emoji: '🎩', desc: 'Şapka, gözlük, taç vb.' },
       { href: `/admin/room-themes`, icon: ImageIcon, trLabel: 'Oda Temaları', enLabel: 'Room Themes', emoji: '🏞️', desc: 'Oda arka plan temaları' },
       { href: `/admin/moderation`, icon: ShieldAlert, trLabel: 'İçerik Moderasyonu', enLabel: 'Content Moderation', emoji: '🛡️', desc: 'Raporlanan içerikler' },
+      { href: `/admin/support`, icon: ShieldAlert, trLabel: 'Destek Talepleri', enLabel: 'Support Tickets', emoji: '🎫', desc: 'Kullanıcı destek talepleri' },
+      { href: `/admin/verification`, icon: Shield, trLabel: 'Doğrulama Talepleri', enLabel: 'Verification Requests', emoji: '✅', desc: 'Kimlik & yayıncı doğrulama' },
     ],
   },
   {
@@ -199,6 +201,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/feature-config`, icon: Settings, trLabel: 'Feature Flags & Config', enLabel: 'Feature Flags & Config', emoji: '🚩', desc: 'Özellik bayrakları & uzak yapılandırma' },
       { href: `/admin/audit`, icon: Settings, trLabel: 'Denetim & Defter', enLabel: 'Audit & Ledger', emoji: '🛡️', desc: 'Denetim kaydı & finansal defter görüntüleme' },
       { href: `/admin/roles`, icon: Settings, trLabel: 'Rol & Yetki', enLabel: 'Roles & Permissions', emoji: '🔐', desc: 'Rollerin izinlerini yönetin' },
+      { href: `/admin/effect-rules`, icon: Sparkles, trLabel: 'Efekt Kuralları', enLabel: 'Effect Rules', emoji: '✨', desc: 'Seviye/harcamaya göre efekt atama' },
       { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management', emoji: '🎨', desc: 'Site renk & tema değiştir' },
       { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons', emoji: '🔘', desc: 'Anasayfa buton düzeni' },
       { href: `/admin/homepage-cards`, icon: LayoutDashboard, trLabel: 'Anasayfa Kartları & Hero', enLabel: 'Homepage Cards & Hero', emoji: '🃏', desc: 'Hero & kart görselleri' },

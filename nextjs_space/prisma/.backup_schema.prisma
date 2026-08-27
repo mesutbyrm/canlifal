@@ -4249,3 +4249,151 @@ model RolePermission {
   @@index([permissionId])
   @@map("role_permissions")
 }
+
+// ===== PHASE 7: Support, Verification, Team, Supporter, Effect Rules =====
+// All additive. Following project convention: user links are plain String ids
+// (no Prisma relation to the large User model) to keep changes isolated.
+
+model SupportTicket {
+  id            String   @id @default(cuid())
+  userId        String   // opener
+  subject       String
+  category      String   @default("general") // general | payment | account | technical | abuse
+  status        String   @default("open")    // open | pending | resolved | closed
+  priority      String   @default("normal")  // low | normal | high | urgent
+  assignedTo    String?  // admin userId handling the ticket
+  lastMessageAt DateTime @default(now())
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  messages SupportMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([category])
+  @@index([lastMessageAt])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id         String   @id @default(cuid())
+  ticketId   String
+  senderId   String   // userId (customer or admin)
+  senderRole String   @default("user") // user | admin | system
+  body       String   @db.Text
+  isInternal Boolean  @default(false)  // internal admin note, hidden from user
+  attachments Json?   // array of cloud_storage_path
+  createdAt  DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("support_messages")
+}
+
+model Verification {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   @default("identity") // identity | broadcaster | agency
+  status       String   @default("pending")  // pending | approved | rejected
+  fullName     String?
+  documentType String?  // id_card | passport | driver_license
+  documentUrls Json?    // array of cloud_storage_path
+  note         String?  @db.Text // applicant note
+  reviewNote   String?  @db.Text // reviewer note
+  reviewedBy   String?  // admin userId
+  reviewedAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([reviewedBy])
+  @@index([createdAt])
+  @@map("verifications")
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  ownerId     String   // userId of team owner
+  description String?  @db.Text
+  logoUrl     String?
+  memberCount Int      @default(1)
+  totalPoints Int      @default(0)
+  isActive    Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members TeamMember[]
+
+  @@index([ownerId])
+  @@index([isActive])
+  @@index([totalPoints])
+  @@map("teams")
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  role     String   @default("member") // owner | admin | member
+  points   Int      @default(0)
+  joinedAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model SupporterLevel {
+  id              String   @id @default(cuid())
+  userId          String   // the supporter (fan)
+  broadcasterId   String   // the supported broadcaster/teller
+  totalContributed Int     @default(0) // cumulative jeton value contributed
+  level           Int      @default(0)
+  levelName       String?  // "Bronze", "Silver", "Gold", ...
+  lastContributedAt DateTime?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, broadcasterId])
+  @@index([broadcasterId, totalContributed])
+  @@index([userId])
+  @@index([level])
+  @@map("supporter_levels")
+}
+
+model EffectRule {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  name          String
+  description   String?
+  effectType    String   // entrance | name_effect | chat_bubble | mic_frame | badge | avatar_accessory
+  effectRefId   String?  // id of the cosmetic item granted
+  conditionType String   // level | supporter_level | membership | spend_threshold | manual
+  threshold     Int      @default(0) // numeric threshold for the condition
+  conditionValue String? // string condition (e.g. membership tier key)
+  isActive      Boolean  @default(true)
+  priority      Int      @default(0) // higher wins when multiple rules match
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([effectType])
+  @@index([conditionType])
+  @@index([isActive])
+  @@map("effect_rules")
+}

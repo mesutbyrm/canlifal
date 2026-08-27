@@ -13,6 +13,7 @@ import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 import { processGiftSend } from '@/lib/gift-engine'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
+import { recordContribution } from '@/lib/supporter-level'
 
 export const dynamic = 'force-dynamic'
 
@@ -262,6 +263,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         actorId: sender.id,
         metadata: { roomId, roomType, giftTypeId: giftType.id, quantity },
       }).catch((e) => console.error('[Ledger][chat-gift]', e))
+      recordContribution(sender.id, recipient.id, price).catch(() => {})
     }
 
     // Create system chat message for the gift

@@ -6,6 +6,7 @@ import { authenticateRequest } from '@/lib/mobile-auth';
 import { processAgencyCommission } from '@/lib/agency-commission';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger';
+import { recordContribution } from '@/lib/supporter-level';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +145,7 @@ export async function POST(
         actorId: authUser.id,
         metadata: { tellerId: liveSession.tellerId, commissionRate },
       }).catch((e) => console.error('[Ledger][tip]', e));
+      recordContribution(authUser.id, liveSession.tellerId, amount).catch(() => {});
     }
 
     // Get updated balance

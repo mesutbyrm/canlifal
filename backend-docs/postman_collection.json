@@ -3601,6 +3601,139 @@
       ]
     },
     {
+      "name": "admin/effect-rules",
+      "item": [
+        {
+          "name": "GET /api/admin/effect-rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/effect-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "effect-rules"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        },
+        {
+          "name": "POST /api/admin/effect-rules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/effect-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "effect-rules"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditionType\": \"\",\n  \"conditionValue\": \"\",\n  \"description\": \"\",\n  \"effectRefId\": \"\",\n  \"effectType\": \"\",\n  \"isActive\": \"\",\n  \"key\": \"\",\n  \"name\": \"\",\n  \"priority\": \"\",\n  \"threshold\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/admin/effect-rules/{ruleId}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/effect-rules/:ruleId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "effect-rules",
+                ":ruleId"
+              ],
+              "variable": [
+                {
+                  "key": "ruleId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        },
+        {
+          "name": "PATCH /api/admin/effect-rules/{ruleId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/effect-rules/:ruleId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "effect-rules",
+                ":ruleId"
+              ],
+              "variable": [
+                {
+                  "key": "ruleId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditionType\": \"\",\n  \"conditionValue\": \"\",\n  \"description\": \"\",\n  \"effectRefId\": \"\",\n  \"effectType\": \"\",\n  \"isActive\": \"\",\n  \"name\": \"\",\n  \"priority\": \"\",\n  \"threshold\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/feature-flags",
       "item": [
         {
@@ -8317,6 +8450,35 @@
       ]
     },
     {
+      "name": "admin/support",
+      "item": [
+        {
+          "name": "GET /api/admin/support",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/support",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "support"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/teller-levels",
       "item": [
         {
@@ -9483,6 +9645,68 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"action\": \"\",\n  \"amount\": \"\",\n  \"banReason\": \"\",\n  \"credits\": \"\",\n  \"email\": \"\",\n  \"image\": \"\",\n  \"membership\": \"\",\n  \"membershipExpiresAt\": \"\",\n  \"name\": \"\",\n  \"newPassword\": \"\",\n  \"phone\": \"\",\n  \"profileEffect\": \"\",\n  \"role\": \"\",\n  \"specialBadges\": \"\",\n  \"streamBanReason\": \"\",\n  \"username\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "admin/verification",
+      "item": [
+        {
+          "name": "GET /api/admin/verification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "verification"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        },
+        {
+          "name": "PATCH /api/admin/verification",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "verification"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"\",\n  \"id\": \"\",\n  \"reviewNote\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24229,6 +24453,337 @@
       ]
     },
     {
+      "name": "support",
+      "item": [
+        {
+          "name": "GET /api/support/tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "tickets"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/support/tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "tickets"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"\",\n  \"message\": \"\",\n  \"subject\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/support/tickets/{ticketId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/tickets/:ticketId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "tickets",
+                ":ticketId"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "PATCH /api/support/tickets/{ticketId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/tickets/:ticketId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "tickets",
+                ":ticketId"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignedTo\": \"\",\n  \"priority\": \"\",\n  \"status\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/support/tickets/{ticketId}/messages",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/tickets/:ticketId/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "tickets",
+                ":ticketId",
+                "messages"
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"\",\n  \"isInternal\": \"\",\n  \"message\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "supporter-levels",
+      "item": [
+        {
+          "name": "GET /api/supporter-levels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/supporter-levels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "supporter-levels"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "teams",
+      "item": [
+        {
+          "name": "GET /api/teams",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/teams",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"\",\n  \"logoUrl\": \"\",\n  \"name\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/teams/{teamId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/:teamId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                ":teamId"
+              ],
+              "variable": [
+                {
+                  "key": "teamId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "PATCH /api/teams/{teamId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/:teamId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teams",
+                ":teamId"
+              ],
+              "variable": [
+                {
+                  "key": "teamId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "teller",
       "item": [
         {
@@ -26571,6 +27126,66 @@
                   "type": "string"
                 }
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "verification",
+      "item": [
+        {
+          "name": "GET /api/verification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "verification"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "verification"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentType\": \"\",\n  \"documentUrls\": \"\",\n  \"fullName\": \"\",\n  \"note\": \"\",\n  \"type\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }

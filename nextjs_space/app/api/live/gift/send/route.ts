@@ -10,6 +10,7 @@ import { emitStreamEvent } from '@/lib/stream-events'
 import { emitChatEvent } from '@/lib/chat-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
+import { recordContribution } from '@/lib/supporter-level'
 
 export const dynamic = 'force-dynamic'
 
@@ -204,6 +205,7 @@ export async function POST(request: NextRequest) {
           actorId: sender.id,
           metadata: { streamId: stream.id, giftTypeId, quantity, commissionPercent },
         }).catch((e) => console.error('[Ledger][stream-gift]', e))
+        recordContribution(sender.id, stream.userId, totalPrice).catch(() => {})
       }
 
       // PK score update
@@ -400,6 +402,7 @@ export async function POST(request: NextRequest) {
           actorId: sender.id,
           metadata: { roomId: room.id, roomType: roomType2, giftTypeId, quantity },
         }).catch((e) => console.error('[Ledger][live-room-gift]', e))
+        recordContribution(sender.id, recipient.id, totalPrice).catch(() => {})
       }
 
       // PK score update for voice room PK

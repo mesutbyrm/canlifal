@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **752 endpoint handler** (482 benzersiz yol), **157 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **771 endpoint handler** (493 benzersiz yol), **164 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -34,6 +34,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/credits](#cat-admin-credits) (1)
 - [admin/currency-config](#cat-admin-currency-config) (3)
 - [admin/dreams](#cat-admin-dreams) (9)
+- [admin/effect-rules](#cat-admin-effect-rules) (4)
 - [admin/feature-flags](#cat-admin-feature-flags) (4)
 - [admin/finance](#cat-admin-finance) (2)
 - [admin/fortune-request-types](#cat-admin-fortune-request-types) (4)
@@ -65,6 +66,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/settings](#cat-admin-settings) (2)
 - [admin/site-pages](#cat-admin-site-pages) (4)
 - [admin/statistics](#cat-admin-statistics) (1)
+- [admin/support](#cat-admin-support) (1)
 - [admin/teller-levels](#cat-admin-teller-levels) (1)
 - [admin/teller-performance](#cat-admin-teller-performance) (1)
 - [admin/teller-verification](#cat-admin-teller-verification) (2)
@@ -74,6 +76,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/trend-videos](#cat-admin-trend-videos) (3)
 - [admin/trends](#cat-admin-trends) (3)
 - [admin/users](#cat-admin-users) (6)
+- [admin/verification](#cat-admin-verification) (2)
 - [admin/video-streams](#cat-admin-video-streams) (3)
 - [admin/visitor-stats](#cat-admin-visitor-stats) (1)
 - [admin/withdrawals](#cat-admin-withdrawals) (2)
@@ -148,6 +151,9 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [site-pages](#cat-site-pages) (1)
 - [social](#cat-social) (9)
 - [stories](#cat-stories) (3)
+- [support](#cat-support) (5)
+- [supporter-levels](#cat-supporter-levels) (1)
+- [teams](#cat-teams) (4)
 - [teller](#cat-teller) (4)
 - [teller-chat](#cat-teller-chat) (3)
 - [tencent](#cat-tencent) (1)
@@ -161,6 +167,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [upload](#cat-upload) (3)
 - [user](#cat-user) (32)
 - [users](#cat-users) (7)
+- [verification](#cat-verification) (2)
 - [video-streams](#cat-video-streams) (53)
 - [wallet](#cat-wallet) (1)
 - [warmup](#cat-warmup) (1)
@@ -397,6 +404,16 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/admin/dreams/bulk-import` | 🌐 Oturum 🔒 | — | — |
 | **PATCH** | `/api/admin/dreams/bulk-publish` | 🌐 Oturum 🔒 | — | `dreamIds`, `isPublished` |
 | **POST** | `/api/admin/dreams/generate` | 🌐 Oturum 🔒 | — | `title` |
+
+
+## <a name="cat-admin-effect-rules"></a>`admin/effect-rules`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/effect-rules` | 🌍 Public 🔒 | — | — |
+| **POST** | `/api/admin/effect-rules` | 🌍 Public 🔒 | — | `conditionType`, `conditionValue`, `description`, `effectRefId`, `effectType`, `isActive`, `key`, `name`, `priority`, `threshold` |
+| **DELETE** | `/api/admin/effect-rules/{ruleId}` | 🌍 Public 🔒 | — | — |
+| **PATCH** | `/api/admin/effect-rules/{ruleId}` | 🌍 Public 🔒 | — | `conditionType`, `conditionValue`, `description`, `effectRefId`, `effectType`, `isActive`, `name`, `priority`, `threshold` |
 
 
 ## <a name="cat-admin-feature-flags"></a>`admin/feature-flags`
@@ -699,6 +716,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/admin/statistics` | 🌐 Oturum 🔒 | — | — |
 
 
+## <a name="cat-admin-support"></a>`admin/support`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/support` | 🌍 Public 🔒 | — | — |
+
+
 ## <a name="cat-admin-teller-levels"></a>`admin/teller-levels`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -780,6 +804,14 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **DELETE** | `/api/admin/users/{userId}` | 🌐 Oturum 🔒 | — | — |
 | **GET** | `/api/admin/users/{userId}` | 🌐 Oturum 🔒 | — | — |
 | **PATCH** | `/api/admin/users/{userId}` | 🌐 Oturum 🔒 | — | `action`, `amount`, `banReason`, `credits`, `email`, `image`, `membership`, `membershipExpiresAt`, `name`, `newPassword`, `phone`, `profileEffect` … |
+
+
+## <a name="cat-admin-verification"></a>`admin/verification`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/verification` | 🌍 Public 🔒 | — | — |
+| **PATCH** | `/api/admin/verification` | 🌍 Public 🔒 | — | `action`, `id`, `reviewNote` |
 
 
 ## <a name="cat-admin-video-streams"></a>`admin/video-streams`
@@ -1617,6 +1649,34 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/stories` | 🔄 Dual | — | `caption`, `mediaType`, `mediaUrl` |
 
 
+## <a name="cat-support"></a>`support`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/support/tickets` | 🌍 Public | — | — |
+| **POST** | `/api/support/tickets` | 🌍 Public | — | `category`, `message`, `subject` |
+| **GET** | `/api/support/tickets/{ticketId}` | 🌍 Public | — | — |
+| **PATCH** | `/api/support/tickets/{ticketId}` | 🌍 Public | — | `assignedTo`, `priority`, `status` |
+| **POST** | `/api/support/tickets/{ticketId}/messages` | 🌍 Public | — | `body`, `isInternal`, `message` |
+
+
+## <a name="cat-supporter-levels"></a>`supporter-levels`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/supporter-levels` | 🌍 Public | — | — |
+
+
+## <a name="cat-teams"></a>`teams`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/teams` | 🌍 Public | — | — |
+| **POST** | `/api/teams` | 🌍 Public | — | `description`, `logoUrl`, `name` |
+| **GET** | `/api/teams/{teamId}` | 🌍 Public | — | — |
+| **PATCH** | `/api/teams/{teamId}` | 🌍 Public | — | `action` |
+
+
 ## <a name="cat-teller"></a>`teller`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1757,6 +1817,14 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/users/{userId}/follow` | 🔄 Dual | — | — |
 | **POST** | `/api/users/{userId}/follow` | 🔄 Dual | — | — |
 | **GET** | `/api/users/{userId}/posts` | 🔄 Dual | — | — |
+
+
+## <a name="cat-verification"></a>`verification`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/verification` | 🌍 Public | — | — |
+| **POST** | `/api/verification` | 🌍 Public | — | `documentType`, `documentUrls`, `fullName`, `note`, `type` |
 
 
 ## <a name="cat-video-streams"></a>`video-streams`
