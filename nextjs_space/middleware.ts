@@ -7,6 +7,10 @@ export default withAuth(
     const isAuth = !!token
     const pathname = req.nextUrl.pathname
 
+    // Client tarafından gönderilen x-request-id varsa koru, yoksa üret
+    const clientReqId = req.headers.get('x-request-id')
+    const requestId = clientReqId || `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+
     // ── API Versioning: /api/v1/* → /api/* (backward compatible) ──
     // Both /api/... (legacy, used by existing Flutter builds) and
     // /api/v1/... (versioned) resolve to the SAME route handlers.
@@ -17,6 +21,7 @@ export default withAuth(
       const rewriteApi = new URL(`/api${rest}${req.nextUrl.search}`, req.url)
       const res = NextResponse.rewrite(rewriteApi)
       res.headers.set('x-api-version', 'v1')
+      res.headers.set('x-request-id', requestId)
       return res
     }
 
@@ -114,7 +119,9 @@ export default withAuth(
     }
 
     // Rewrite to /tr/ prefix internally
-    return NextResponse.rewrite(rewriteUrl)
+    const res = NextResponse.rewrite(rewriteUrl)
+    res.headers.set('x-request-id', requestId)
+    return res
   },
   {
     callbacks: {

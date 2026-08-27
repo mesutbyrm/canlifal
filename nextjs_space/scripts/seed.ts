@@ -1704,6 +1704,49 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Celebrity posts seeded!')
 
+  // ── Feature Flags (§7) ──
+  const defaultFlags = [
+    { key: 'PHONE_LOGIN_ENABLED', enabled: false, description: 'Telefon + OTP ile giriş' },
+    { key: 'LIVE_ENABLED', enabled: true, description: 'Canlı yayın özelliği' },
+    { key: 'VOICE_ROOM_ENABLED', enabled: true, description: 'Sesli sohbet odaları' },
+    { key: 'PK_ENABLED', enabled: true, description: 'PK / battle sistemi' },
+    { key: 'GIFTS_ENABLED', enabled: true, description: 'Hediye gönderme' },
+    { key: 'WITHDRAWAL_ENABLED', enabled: true, description: 'Para çekme' },
+    { key: 'AGENCY_ENABLED', enabled: true, description: 'Ajans sistemi' },
+    { key: 'TOURNAMENT_ENABLED', enabled: true, description: 'Turnuva sistemi' },
+    { key: 'LOCATION_ENABLED', enabled: false, description: 'Yakın mesafe / konum özelliği' },
+    { key: 'VERIFICATION_ENABLED', enabled: false, description: 'Profil doğrulama (mavi tik) iş akışı' },
+    { key: 'MULTI_ACCOUNT_ENABLED', enabled: false, description: 'Çoklu hesap (max 5)' },
+    { key: 'DISCOVER_ENABLED', enabled: true, description: 'Keşfet / explore sayfası' },
+  ]
+  for (const f of defaultFlags) {
+    await prisma.featureFlag.upsert({
+      where: { key: f.key },
+      update: {},
+      create: { key: f.key, enabled: f.enabled, description: f.description },
+    })
+  }
+  console.log('Feature flags seeded!')
+
+  // ── Remote Config (§8 başlangıç değerleri) ──
+  const defaultConfigs = [
+    { key: 'level_thresholds', value: { maxLevel: 100, xpPerLevel: 1000 }, group: 'levels', description: 'Seviye eşikleri (XP)' },
+    { key: 'pk_durations', value: { options: [60, 120, 180, 300], default: 120 }, group: 'pk', description: 'PK süresi seçenekleri (sn)' },
+    { key: 'gift_combo_windows', value: { '1x': 0, '10x': 5000, '50x': 3000, '100x': 2000 }, group: 'gifts', description: 'Combo pencere süreleri (ms)' },
+    { key: 'leaderboard_periods', value: ['hourly', 'daily', 'weekly', 'monthly', 'seasonal'], group: 'leaderboard', description: 'Liderlik tablosu dönemleri' },
+    { key: 'withdrawal_limits', value: { minAmount: 100, maxDaily: 10000, cooldownHours: 24 }, group: 'wallet', description: 'Para çekme limitleri (TL)' },
+    { key: 'room_capacity', value: { free: 15, normal: 100, vip: 500 }, group: 'rooms', description: 'Oda kapasite limitleri' },
+    { key: 'rate_limits', value: { chat_message: 5, gift_send: 10, api_default: 60 }, group: 'general', description: 'Varsayılan rate limitler (/dk)' },
+  ]
+  for (const c of defaultConfigs) {
+    await prisma.remoteConfig.upsert({
+      where: { key: c.key },
+      update: {},
+      create: { key: c.key, value: c.value, group: c.group, description: c.description },
+    })
+  }
+  console.log('Remote config seeded!')
+
   console.log('Seed completed successfully!')
 }
 

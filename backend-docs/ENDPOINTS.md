@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **737 endpoint handler** (473 benzersiz yol), **151 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **746 endpoint handler** (478 benzersiz yol), **154 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -33,6 +33,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/credits](#cat-admin-credits) (1)
 - [admin/currency-config](#cat-admin-currency-config) (3)
 - [admin/dreams](#cat-admin-dreams) (9)
+- [admin/feature-flags](#cat-admin-feature-flags) (4)
 - [admin/finance](#cat-admin-finance) (2)
 - [admin/fortune-request-types](#cat-admin-fortune-request-types) (4)
 - [admin/fortunes](#cat-admin-fortunes) (1)
@@ -54,6 +55,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/pending-counts](#cat-admin-pending-counts) (1)
 - [admin/popups](#cat-admin-popups) (4)
 - [admin/profile-frames](#cat-admin-profile-frames) (4)
+- [admin/remote-config](#cat-admin-remote-config) (4)
 - [admin/room-themes](#cat-admin-room-themes) (3)
 - [admin/rooms](#cat-admin-rooms) (2)
 - [admin/seo-settings](#cat-admin-seo-settings) (2)
@@ -84,6 +86,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [cache](#cat-cache) (2)
 - [chat](#cat-chat) (54)
 - [compatibility](#cat-compatibility) (1)
+- [config](#cat-config) (1)
 - [contact](#cat-contact) (1)
 - [credit-packages](#cat-credit-packages) (1)
 - [daily-login](#cat-daily-login) (2)
@@ -386,6 +389,16 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/admin/dreams/generate` | 🌐 Oturum 🔒 | — | `title` |
 
 
+## <a name="cat-admin-feature-flags"></a>`admin/feature-flags`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/feature-flags` | 🌐 Oturum 🔒 | — | — |
+| **POST** | `/api/admin/feature-flags` | 🌐 Oturum 🔒 | — | `description`, `enabled`, `key`, `metadata`, `percentage`, `platform` |
+| **DELETE** | `/api/admin/feature-flags/{flagId}` | 🌐 Oturum 🔒 | — | — |
+| **PATCH** | `/api/admin/feature-flags/{flagId}` | 🌐 Oturum 🔒 | — | `description`, `enabled`, `metadata`, `percentage`, `platform` |
+
+
 ## <a name="cat-admin-finance"></a>`admin/finance`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -597,6 +610,16 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/admin/profile-frames` | 🌐 Oturum 🔒 | — | — |
 | **POST** | `/api/admin/profile-frames` | 🌐 Oturum 🔒 | — | `id`, `imageUrl`, `isActive`, `name`, `sortOrder`, `tier` |
 | **POST** | `/api/admin/profile-frames/assign` | 🌐 Oturum 🔒 | — | `frameId`, `userId` |
+
+
+## <a name="cat-admin-remote-config"></a>`admin/remote-config`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/remote-config` | 🌐 Oturum 🔒 | — | — |
+| **POST** | `/api/admin/remote-config` | 🌐 Oturum 🔒 | — | `description`, `group`, `key`, `platform`, `value`, `valueType` |
+| **DELETE** | `/api/admin/remote-config/{configId}` | 🌐 Oturum 🔒 | — | — |
+| **PATCH** | `/api/admin/remote-config/{configId}` | 🌐 Oturum 🔒 | — | `description`, `group`, `platform`, `value`, `valueType` |
 
 
 ## <a name="cat-admin-room-themes"></a>`admin/room-themes`
@@ -935,6 +958,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **POST** | `/api/compatibility` | 🌍 Public | — | `moonSign1`, `moonSign2`, `risingSign1`, `risingSign2`, `sign1`, `sign2` |
+
+
+## <a name="cat-config"></a>`config`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/config` | 🌍 Public | — | — |
 
 
 ## <a name="cat-contact"></a>`contact`

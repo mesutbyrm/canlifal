@@ -1231,6 +1231,67 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/feature-flags",
+    "method": "GET",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/feature-flags",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/feature-flags",
+    "method": "POST",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "description",
+      "enabled",
+      "key",
+      "metadata",
+      "percentage",
+      "platform"
+    ],
+    "tag": "admin/feature-flags",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/feature-flags/{flagId}",
+    "method": "DELETE",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "flagId"
+    ],
+    "bodyFields": [],
+    "tag": "admin/feature-flags",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/feature-flags/{flagId}",
+    "method": "PATCH",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "flagId"
+    ],
+    "bodyFields": [
+      "description",
+      "enabled",
+      "metadata",
+      "percentage",
+      "platform"
+    ],
+    "tag": "admin/feature-flags",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/finance",
     "method": "GET",
     "auth": "session",
@@ -2592,6 +2653,67 @@
       "userId"
     ],
     "tag": "admin/profile-frames",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/remote-config",
+    "method": "GET",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/remote-config",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/remote-config",
+    "method": "POST",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "description",
+      "group",
+      "key",
+      "platform",
+      "value",
+      "valueType"
+    ],
+    "tag": "admin/remote-config",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/remote-config/{configId}",
+    "method": "DELETE",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "configId"
+    ],
+    "bodyFields": [],
+    "tag": "admin/remote-config",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/remote-config/{configId}",
+    "method": "PATCH",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "configId"
+    ],
+    "bodyFields": [
+      "description",
+      "group",
+      "platform",
+      "value",
+      "valueType"
+    ],
+    "tag": "admin/remote-config",
     "dynamic": true
   },
   {
@@ -4765,6 +4887,17 @@
       "sign2"
     ],
     "tag": "compatibility",
+    "dynamic": true
+  },
+  {
+    "path": "/api/config",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "config",
     "dynamic": true
   },
   {

@@ -4090,3 +4090,38 @@ model ChatSpeakBlock {
   @@index([roomId])
   @@map("chat_speak_blocks")
 }
+
+// ─── Feature Flags ───
+// Backend tarafından sunulan özellik bayrakları. Client'lar GET /api/v1/config ile çeker.
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique           // örn: PHONE_LOGIN_ENABLED, LIVE_ENABLED
+  enabled     Boolean  @default(false)
+  description String?                     // admin panelinde açıklama
+  platform    String   @default("all")   // all | web | mobile | ios | android
+  percentage  Int      @default(100)     // kademeli açma: 0-100
+  metadata    Json?                       // ek JSON veri
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@map("feature_flags")
+}
+
+// ─── Remote Config ───
+// Seviye eşikleri, PK süreleri, ödüller, UI ayarları vb. backend tarafından sunulur.
+model RemoteConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique           // örn: level_thresholds, pk_durations, gift_values
+  value       Json                        // JSON değer (dizi, nesne, sayı...)
+  valueType   String   @default("json")  // json | string | number | boolean
+  group       String   @default("general") // gruplama: general, gifts, pk, levels, rooms, live
+  description String?
+  platform    String   @default("all")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([group])
+  @@map("remote_configs")
+}
