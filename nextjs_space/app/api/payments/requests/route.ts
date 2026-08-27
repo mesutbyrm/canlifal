@@ -2,17 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createBulkNotificationsWithPush } from '@/lib/notify'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 export const dynamic = 'force-dynamic'
 
 // POST - Create a new CFC payment request
 export async function POST(request: NextRequest) {
+  let idemRecord: string | null = null
   try {
     const authUser = await authenticateRequest(request)
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const userId = authUser.id
+
+    // Rate limit: ödeme talebi (varsayılan 10/dk)
+    const limited = await guardRateLimit(request, 'payment', { userId })
+    if (limited) return limited
 
     const body = await request.json()
     const { amount, method, senderInfo, notes } = body
@@ -36,6 +43,12 @@ export async function POST(request: NextRequest) {
     if (pendingRequest) {
       return NextResponse.json({ error: 'Zaten bekleyen bir ödeme talebiniz var' }, { status: 400 })
     }
+
+    // Idempotency: reserved only once every validation has passed, so a
+    // rejected request never blocks a corrected retry with the same key.
+    const idem = await beginIdempotent(request, 'payment_request', userId)
+    if (idem.response) return idem.response
+    idemRecord = idem.record
 
     // Create the payment request
     const paymentRequest = await prisma.cfcPaymentRequest.create({
@@ -75,9 +88,12 @@ export async function POST(request: NextRequest) {
       }).catch(err => console.error('CFC payment admin push error:', err))
     }
 
+    await completeIdempotent(idemRecord, 201, paymentRequest)
     return NextResponse.json(paymentRequest, { status: 201 })
   } catch (error) {
     console.error('Error creating payment request:', error)
+    // Free the key so the client can safely retry after a failure.
+    await releaseIdempotent(idemRecord)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

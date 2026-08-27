@@ -10,6 +10,7 @@ import { emitChatEvent } from '@/lib/chat-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { emitPkInvite } from '@/lib/voice-room-events'
 import { requireFeature } from '@/lib/check-feature'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 /**
  * PK Battle endpoints for Chat Rooms.
@@ -86,6 +87,9 @@ export async function POST(
     const session = !mobileUser ? await getServerSession(authOptions) : null
     const currentUserId = mobileUser?.id || session?.user?.id
     if (!currentUserId) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+
+    const rateLimited = await guardRateLimit(req, 'pk_create', { userId: currentUserId })
+    if (rateLimited) return rateLimited
 
     const { roomId } = params
     const body = await req.json()

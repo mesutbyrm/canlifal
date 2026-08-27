@@ -4125,3 +4125,22 @@ model RemoteConfig {
   @@index([group])
   @@map("remote_configs")
 }
+
+// Generic Idempotency-Key store for mutating endpoints (payments, withdrawals).
+// A completed record replays its stored response for 24h; see lib/idempotency.ts
+model IdempotencyRecord {
+  id             String   @id @default(cuid())
+  key            String   @unique // "<scope>:<userId>:<client key>"
+  scope          String // withdrawal | payment_request | ...
+  userId         String?
+  status         String   @default("in_flight") // in_flight | completed
+  responseStatus Int?
+  responseBody   Json?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+
+  @@index([scope])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}

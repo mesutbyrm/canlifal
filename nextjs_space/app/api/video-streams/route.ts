@@ -7,6 +7,7 @@ import { sendPushToMultipleUsers } from '@/lib/onesignal'
 import { logActivity } from '@/lib/activity-logger'
 import { getPlatformSetting } from '@/lib/agency-commission'
 import { requireFeature } from '@/lib/check-feature'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 /**
  * Notify all followers of a user that they went live.
@@ -145,6 +146,9 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+
+    const rateLimited = await guardRateLimit(request, 'stream_create', { userId })
+    if (rateLimited) return rateLimited
 
     // Check if user is an approved live fortune teller
     const teller = await prisma.liveFortuneTeller.findUnique({

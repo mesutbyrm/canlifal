@@ -9,6 +9,7 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { requireFeature } from '@/lib/check-feature'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -73,6 +74,9 @@ export async function POST(req: NextRequest) {
     const session = !mobileUser ? await getServerSession(authOptions) : null
     const currentUserId = mobileUser?.id || session?.user?.id
     if (!currentUserId) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+
+    const rateLimited = await guardRateLimit(req, 'pk_create', { userId: currentUserId })
+    if (rateLimited) return rateLimited
 
     const body = await req.json()
     const { action, streamId, targetStreamId, battleId, duration } = body

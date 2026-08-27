@@ -5,6 +5,8 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { requireFeature } from '@/lib/check-feature';
+import { guardRateLimit } from '@/lib/rate-limit-guard';
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +33,7 @@ export async function GET(request: NextRequest) {
 
 // POST: Create a new withdrawal request
 export async function POST(request: NextRequest) {
+  let idemRecord: string | null = null;
   try {
     // Feature flag kontrolü
     const featureBlocked = await requireFeature('WITHDRAWAL_ENABLED')
@@ -40,6 +43,10 @@ export async function POST(request: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
+
+    // Rate limit: para çekme talebi (varsayılan 5/dk)
+    const limited = await guardRateLimit(request, 'withdrawal', { userId: authUser.id });
+    if (limited) return limited;
 
     const { amount, method, accountDetails } = await request.json();
 
@@ -99,6 +106,12 @@ export async function POST(request: NextRequest) {
       select: { agencyId: true },
     });
 
+    // Idempotency: reserved only once every validation has passed, so a
+    // rejected request never blocks a corrected retry with the same key.
+    const idem = await beginIdempotent(request, 'withdrawal', authUser.id);
+    if (idem.response) return idem.response;
+    idemRecord = idem.record;
+
     // Create withdrawal request
     const withdrawal = await prisma.withdrawalRequest.create({
       data: {
@@ -114,9 +127,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, withdrawal });
+    const responseBody = { success: true, withdrawal };
+    await completeIdempotent(idemRecord, 200, responseBody);
+    return NextResponse.json(responseBody);
   } catch (error) {
     console.error('Create withdrawal error:', error);
+    // Free the key so the client can safely retry after a failure.
+    await releaseIdempotent(idemRecord);
     return NextResponse.json({ error: 'İşlem başarısız' }, { status: 500 });
   }
 }

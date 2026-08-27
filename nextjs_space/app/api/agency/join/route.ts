@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { requireFeature } from '@/lib/check-feature'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+
+    const rateLimited = await guardRateLimit(req, 'agency_action', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     const { inviteCode } = await req.json()
     if (!inviteCode) {

@@ -6,6 +6,7 @@ import { emitChatEvent } from '@/lib/chat-events'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { requireFeature } from '@/lib/check-feature'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,6 +109,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
+
+    const rateLimited = await guardRateLimit(request, 'pk_create', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     const body = await request.json()
     const { action, roomId, targetRoomId, battleId, duration } = body
