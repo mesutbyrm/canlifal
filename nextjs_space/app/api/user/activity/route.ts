@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +23,34 @@ export async function GET(request: NextRequest) {
     const where: any = { userId: auth.id }
     if (type) where.type = type
     if (unreadOnly) where.isRead = false
+
+    const activitySelect = {
+      id: true,
+      type: true,
+      title: true,
+      message: true,
+      data: true,
+      postId: true,
+      fromUserId: true,
+      fromUserName: true,
+      isRead: true,
+      createdAt: true,
+    }
+
+    // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile)
+    if (isCursorMode(request)) {
+      const { cursor, limit: cLimit } = parseCursorParams(request, 30, 50)
+      const [{ items, meta }, unread] = await Promise.all([
+        fetchCursorPage(
+          (args) => prisma.notification.findMany(args),
+          cursor,
+          cLimit,
+          { where, orderBy: { createdAt: 'desc' }, select: activitySelect }
+        ),
+        prisma.notification.count({ where: { userId: auth.id, isRead: false } }),
+      ])
+      return apiPaginated(items, { ...meta, total: unread })
+    }
 
     const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({

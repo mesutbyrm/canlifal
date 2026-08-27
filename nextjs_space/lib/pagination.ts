@@ -92,3 +92,32 @@ export function parseOffsetParams(
   if (limit > maxLimit) limit = maxLimit
   return { page, limit, skip: (page - 1) * limit }
 }
+
+/**
+ * İstek cursor (imleç) modunda mı?
+ *
+ * Geriye dönük uyumluluk: mevcut istemciler `cursor` / `paginate` göndermediği
+ * için varsayılan davranış (offset/limitsiz) hiç değişmez. Yalnızca istemci
+ * açıkça `?cursor=...` veya `?paginate=cursor` gönderdiğinde imleç modu açılır.
+ */
+export function isCursorMode(req: NextRequest): boolean {
+  const sp = req.nextUrl ? req.nextUrl.searchParams : new URL(req.url).searchParams
+  return sp.has('cursor') || sp.get('paginate') === 'cursor'
+}
+
+/**
+ * Tek adımda imleçli sayfa çeker.
+ * findMany fonksiyonuna hazır Prisma argümanları verilir; +1 kayıt alınıp
+ * kırpılır ve { items, meta } döner.
+ */
+export async function fetchCursorPage<T extends Record<string, any>>(
+  findMany: (args: any) => Promise<T[]>,
+  cursor: string | null,
+  limit: number,
+  args: Record<string, any>,
+  idField: keyof T = 'id' as keyof T
+): Promise<{ items: T[]; meta: { cursor: string | null; hasMore: boolean; limit: number } }> {
+  const rows = await findMany(cursorQuery(cursor, limit, args))
+  const { trimmedItems, ...meta } = buildCursorMeta(rows, limit, idField)
+  return { items: trimmedItems, meta }
+}

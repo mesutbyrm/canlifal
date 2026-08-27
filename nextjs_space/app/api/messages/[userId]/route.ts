@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 
 // GET messages with a specific user
 export async function GET(
@@ -17,6 +19,27 @@ export async function GET(
   try {
     const currentUserId = auth.id
     const otherUserId = params.userId
+
+    // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile).
+    // Yalnızca mesaj sayfası döner; en yeniden eskiye sıralıdır.
+    if (isCursorMode(request)) {
+      const { cursor, limit } = parseCursorParams(request, 30, 100)
+      const { items, meta } = await fetchCursorPage(
+        (args) => prisma.directMessage.findMany(args),
+        cursor,
+        limit,
+        {
+          where: {
+            OR: [
+              { senderId: currentUserId, receiverId: otherUserId },
+              { senderId: otherUserId, receiverId: currentUserId },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        }
+      )
+      return apiPaginated(items, meta)
+    }
 
     // Get other user info
     const otherUser = await prisma.user.findUnique({

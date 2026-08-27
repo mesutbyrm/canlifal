@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
@@ -12,6 +14,24 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get('userId') || auth.id
+
+    const followerInclude = {
+      follower: {
+        select: { id: true, name: true, username: true, image: true },
+      },
+    }
+
+    // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile)
+    if (isCursorMode(req)) {
+      const { cursor, limit } = parseCursorParams(req, 30, 100)
+      const { items, meta } = await fetchCursorPage(
+        (args) => prisma.follow.findMany(args),
+        cursor,
+        limit,
+        { where: { followingId: userId }, include: followerInclude, orderBy: { createdAt: 'desc' } }
+      )
+      return apiPaginated(items.map((f: any) => f.follower), meta)
+    }
 
     const followers = await prisma.follow.findMany({
       where: { followingId: userId },

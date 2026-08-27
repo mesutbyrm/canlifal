@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +22,34 @@ export async function GET(request: NextRequest) {
     const where: any = { userId }
     if (unreadOnly) {
       where.isRead = false
+    }
+
+    const notificationSelect = {
+      id: true,
+      type: true,
+      title: true,
+      message: true,
+      data: true,
+      postId: true,
+      fromUserId: true,
+      fromUserName: true,
+      isRead: true,
+      createdAt: true,
+    }
+
+    // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile)
+    if (isCursorMode(request)) {
+      const { cursor, limit } = parseCursorParams(request, 50, 100)
+      const [{ items, meta }, unreadCount] = await Promise.all([
+        fetchCursorPage(
+          (args) => prisma.notification.findMany(args),
+          cursor,
+          limit,
+          { where, orderBy: { createdAt: 'desc' }, select: notificationSelect }
+        ),
+        prisma.notification.count({ where: { userId, isRead: false } }),
+      ])
+      return apiPaginated(items, { ...meta, total: unreadCount })
     }
 
     // Run both queries in parallel instead of sequentially

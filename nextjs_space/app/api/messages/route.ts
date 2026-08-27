@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 
 // GET conversations list or unread count
 export async function GET(request: NextRequest) {
@@ -31,6 +33,45 @@ export async function GET(request: NextRequest) {
       })
       
       return NextResponse.json({ unreadCount: unreadCount + requestCount })
+    }
+
+    // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile)
+    if (isCursorMode(request)) {
+      const { cursor, limit } = parseCursorParams(request, 30, 100)
+      const { items, meta } = await fetchCursorPage(
+        (args) => prisma.conversation.findMany(args),
+        cursor,
+        limit,
+        {
+          where: { OR: [{ user1Id: userId }, { user2Id: userId }] },
+          orderBy: { lastMessageAt: 'desc' },
+          include: {
+            user1: { select: { id: true, name: true, username: true, image: true } },
+            user2: { select: { id: true, name: true, username: true, image: true } },
+          },
+        }
+      )
+      const unreadGroupsC = await prisma.directMessage.groupBy({
+        by: ['senderId'],
+        where: { receiverId: userId, isRead: false },
+        _count: { _all: true },
+      })
+      const unreadMapC = new Map<string, number>(
+        unreadGroupsC.map((g: { senderId: string; _count: { _all: number } }) => [g.senderId, g._count._all])
+      )
+      return apiPaginated(
+        items.map((conv: any) => {
+          const other = conv.user1Id === userId ? conv.user2 : conv.user1
+          return {
+            id: conv.id,
+            user: other,
+            lastMessage: conv.lastMessageText,
+            lastMessageAt: conv.lastMessageAt,
+            unreadCount: unreadMapC.get(other.id) ?? 0,
+          }
+        }),
+        meta
+      )
     }
 
     // Get all conversations where user is participant
