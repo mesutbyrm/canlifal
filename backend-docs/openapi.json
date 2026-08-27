@@ -41119,6 +41119,46 @@
         }
       }
     },
+    "/api/v1/deeplink/resolve": {
+      "get": {
+        "tags": [
+          "v1"
+        ],
+        "summary": "GET /api/v1/deeplink/resolve",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
     "/api/verification": {
       "get": {
         "tags": [

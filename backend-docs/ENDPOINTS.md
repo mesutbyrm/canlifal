@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **775 endpoint handler** (497 benzersiz yol), **167 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **776 endpoint handler** (498 benzersiz yol), **167 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -169,7 +169,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [upload](#cat-upload) (3)
 - [user](#cat-user) (32)
 - [users](#cat-users) (7)
-- [v1](#cat-v1) (1)
+- [v1](#cat-v1) (2)
 - [verification](#cat-verification) (2)
 - [video-streams](#cat-video-streams) (53)
 - [wallet](#cat-wallet) (1)
@@ -1842,6 +1842,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/v1/bootstrap` | 🌍 Public | — | — |
+| **GET** | `/api/v1/deeplink/resolve` | 🌍 Public | — | — |
 
 
 ## <a name="cat-verification"></a>`verification`

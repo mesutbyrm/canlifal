@@ -9558,6 +9558,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/v1/deeplink/resolve",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "v1",
+    "dynamic": true
+  },
+  {
     "path": "/api/verification",
     "method": "GET",
     "auth": "public",

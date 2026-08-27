@@ -27255,6 +27255,31 @@
             },
             "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
+        },
+        {
+          "name": "GET /api/v1/deeplink/resolve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/deeplink/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "deeplink",
+                "resolve"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
         }
       ]
     },
