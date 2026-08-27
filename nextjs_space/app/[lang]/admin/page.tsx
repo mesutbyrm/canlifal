@@ -201,6 +201,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/feature-config`, icon: Settings, trLabel: 'Feature Flags & Config', enLabel: 'Feature Flags & Config', emoji: '🚩', desc: 'Özellik bayrakları & uzak yapılandırma' },
       { href: `/admin/audit`, icon: Settings, trLabel: 'Denetim & Defter', enLabel: 'Audit & Ledger', emoji: '🛡️', desc: 'Denetim kaydı & finansal defter görüntüleme' },
       { href: `/admin/roles`, icon: Settings, trLabel: 'Rol & Yetki', enLabel: 'Roles & Permissions', emoji: '🔐', desc: 'Rollerin izinlerini yönetin' },
+      { href: `/admin/risk`, icon: ShieldAlert, trLabel: 'Risk & Dolandırıcılık', enLabel: 'Risk & Fraud', emoji: '⚠️', desc: 'Finansal işlemlerde risk sinyalleri' },
       { href: `/admin/effect-rules`, icon: Sparkles, trLabel: 'Efekt Kuralları', enLabel: 'Effect Rules', emoji: '✨', desc: 'Seviye/harcamaya göre efekt atama' },
       { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management', emoji: '🎨', desc: 'Site renk & tema değiştir' },
       { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons', emoji: '🔘', desc: 'Anasayfa buton düzeni' },

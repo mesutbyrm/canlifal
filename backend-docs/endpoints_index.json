@@ -2808,6 +2808,33 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/risk-events",
+    "method": "GET",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/risk-events",
+    "dynamic": true
+  },
+  {
+    "path": "/api/admin/risk-events/{eventId}",
+    "method": "PATCH",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [
+      "eventId"
+    ],
+    "bodyFields": [
+      "reviewNote",
+      "reviewed"
+    ],
+    "tag": "admin/risk-events",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/roles",
     "method": "GET",
     "auth": "session",

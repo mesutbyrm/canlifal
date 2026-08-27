@@ -177,6 +177,9 @@
       "name": "admin/remote-config"
     },
     {
+      "name": "admin/risk-events"
+    },
+    {
       "name": "admin/roles"
     },
     {
@@ -12386,6 +12389,113 @@
                     "type": "string"
                   },
                   "valueType": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/risk-events": {
+      "get": {
+        "tags": [
+          "admin/risk-events"
+        ],
+        "summary": "GET /api/admin/risk-events",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
+    "/api/admin/risk-events/{eventId}": {
+      "patch": {
+        "tags": [
+          "admin/risk-events"
+        ],
+        "summary": "PATCH /api/admin/risk-events/{eventId}",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Yol parametresi: eventId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reviewNote": {
+                    "type": "string"
+                  },
+                  "reviewed": {
                     "type": "string"
                   }
                 }

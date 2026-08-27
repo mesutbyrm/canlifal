@@ -7714,6 +7714,75 @@
       ]
     },
     {
+      "name": "admin/risk-events",
+      "item": [
+        {
+          "name": "GET /api/admin/risk-events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/risk-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "risk-events"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        },
+        {
+          "name": "PATCH /api/admin/risk-events/{eventId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/risk-events/:eventId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "risk-events",
+                ":eventId"
+              ],
+              "variable": [
+                {
+                  "key": "eventId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewNote\": \"\",\n  \"reviewed\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/roles",
       "item": [
         {

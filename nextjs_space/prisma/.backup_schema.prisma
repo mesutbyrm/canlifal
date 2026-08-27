@@ -4397,3 +4397,33 @@ model EffectRule {
   @@index([isActive])
   @@map("effect_rules")
 }
+
+// ─── Faz 9: Anti-Fraud / Risk Skorlama ───
+// Salt-ekleme (append-only) risk olay kaydı. Mevcut para akışlarını DEĞİŞTİRMEZ;
+// yalnızca gözlem amaçlı skor üretir ve admin denetimine sunar.
+model RiskEvent {
+  id            String   @id @default(cuid())
+  userId        String
+  category      String   // withdrawal | payment_request | gift_send | membership | login
+  score         Int      @default(0) // 0-100
+  level         String   // low | medium | high | critical
+  signals       Json?    // [{ key, weight, detail }]
+  amount        Float?
+  currency      String?  // jeton | cfc | tl
+  referenceType String?
+  referenceId   String?
+  ip            String?
+  reviewed      Boolean  @default(false)
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewNote    String?  @db.Text
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([category])
+  @@index([level])
+  @@index([reviewed])
+  @@index([createdAt])
+  @@map("risk_events")
+}

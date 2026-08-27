@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **773 endpoint handler** (495 benzersiz yol), **166 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **775 endpoint handler** (497 benzersiz yol), **167 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -59,6 +59,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/popups](#cat-admin-popups) (4)
 - [admin/profile-frames](#cat-admin-profile-frames) (4)
 - [admin/remote-config](#cat-admin-remote-config) (4)
+- [admin/risk-events](#cat-admin-risk-events) (2)
 - [admin/roles](#cat-admin-roles) (4)
 - [admin/room-themes](#cat-admin-room-themes) (3)
 - [admin/rooms](#cat-admin-rooms) (2)
@@ -656,6 +657,14 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/admin/remote-config` | 🌐 Oturum 🔒 | — | `description`, `group`, `key`, `platform`, `value`, `valueType` |
 | **DELETE** | `/api/admin/remote-config/{configId}` | 🌐 Oturum 🔒 | — | — |
 | **PATCH** | `/api/admin/remote-config/{configId}` | 🌐 Oturum 🔒 | — | `description`, `group`, `platform`, `value`, `valueType` |
+
+
+## <a name="cat-admin-risk-events"></a>`admin/risk-events`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/risk-events` | 🌍 Public 🔒 | — | — |
+| **PATCH** | `/api/admin/risk-events/{eventId}` | 🌍 Public 🔒 | — | `reviewNote`, `reviewed` |
 
 
 ## <a name="cat-admin-roles"></a>`admin/roles`

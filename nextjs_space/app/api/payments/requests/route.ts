@@ -4,6 +4,8 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { createBulkNotificationsWithPush } from '@/lib/notify'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import { recordRiskEvent } from '@/lib/risk-score'
+import { getAuditIp } from '@/lib/audit-log'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +62,18 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
       },
     })
+
+    // Risk skoru (Faz 9): yalnızca gözlem amaçlı, akışı engellemez
+    recordRiskEvent({
+      userId,
+      category: 'payment_request',
+      amount: parseInt(String(amount)),
+      currency: 'tl',
+      referenceType: 'CfcPaymentRequest',
+      referenceId: paymentRequest.id,
+      ip: getAuditIp(request as any),
+      metadata: { method },
+    }).catch((e) => console.error('[Risk] payment_request error:', e))
 
     // Notify admin/yonetici/moderator/destek/yardim users
     const NOTIFY_ROLES = ['admin', 'yonetici', 'moderator', 'destek', 'yardim']

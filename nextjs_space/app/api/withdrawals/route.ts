@@ -7,6 +7,8 @@ import { getCachedPlatformSetting } from '@/lib/cache';
 import { requireFeature } from '@/lib/check-feature';
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { recordLedger } from '@/lib/ledger';
+import { recordRiskEvent } from '@/lib/risk-score';
+import { getAuditIp } from '@/lib/audit-log';
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
@@ -139,6 +141,18 @@ export async function POST(request: NextRequest) {
       actorId: authUser.id,
       metadata: { amountTL, method },
     }).catch(e => console.error('[Ledger] withdrawal error:', e))
+
+    // Risk skoru (Faz 9): yalnızca gözlem amaçlı, akışı engellemez
+    recordRiskEvent({
+      userId: authUser.id,
+      category: 'withdrawal',
+      amount,
+      currency: 'jeton',
+      referenceType: 'WithdrawalRequest',
+      referenceId: withdrawal.id,
+      ip: getAuditIp(request as any),
+      metadata: { amountTL, method },
+    }).catch(e => console.error('[Risk] withdrawal error:', e))
 
     const responseBody = { success: true, withdrawal };
     await completeIdempotent(idemRecord, 200, responseBody);
