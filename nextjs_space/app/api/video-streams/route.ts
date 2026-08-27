@@ -6,6 +6,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { sendPushToMultipleUsers } from '@/lib/onesignal'
 import { logActivity } from '@/lib/activity-logger'
 import { getPlatformSetting } from '@/lib/agency-commission'
+import { requireFeature } from '@/lib/check-feature'
 
 /**
  * Notify all followers of a user that they went live.
@@ -130,6 +131,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Feature flag kontrolü
+    const liveBlocked = await requireFeature('LIVE_ENABLED')
+    if (liveBlocked) return liveBlocked
+
     // Dual auth: mobile JWT or web session
     const mobileUser = await authenticateRequest(request)
     const session = !mobileUser ? await getServerSession(authOptions) : null

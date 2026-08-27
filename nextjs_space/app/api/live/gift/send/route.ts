@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { requireFeature } from '@/lib/check-feature'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
@@ -27,6 +28,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   try {
+    // Feature flag kontrolü
+    const featureBlocked = await requireFeature('GIFTS_ENABLED')
+    if (featureBlocked) return featureBlocked
+
     const authUser = await authenticateRequest(request)
     if (!authUser) {
       return NextResponse.json(

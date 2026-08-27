@@ -5,6 +5,7 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { emitChatEvent } from '@/lib/chat-events'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
+import { requireFeature } from '@/lib/check-feature'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,6 +98,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const pkBlocked = await requireFeature('PK_ENABLED')
+    if (pkBlocked) return pkBlocked
+
     const authUser = await authenticateRequest(request)
     if (!authUser) {
       return NextResponse.json(

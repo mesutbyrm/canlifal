@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { requireFeature } from '@/lib/check-feature'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,9 @@ function slugify(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const roomBlocked = await requireFeature('VOICE_ROOM_ENABLED')
+    if (roomBlocked) return roomBlocked
+
     const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })

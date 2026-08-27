@@ -8,6 +8,7 @@ import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { requireFeature } from '@/lib/check-feature'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -64,6 +65,9 @@ export async function GET(req: NextRequest) {
 // POST - Create PK battle request or accept/reject/cancel
 export async function POST(req: NextRequest) {
   try {
+    const pkBlocked = await requireFeature('PK_ENABLED')
+    if (pkBlocked) return pkBlocked
+
     // Dual auth: mobile JWT OR web session
     const mobileUser = await authenticateRequest(req)
     const session = !mobileUser ? await getServerSession(authOptions) : null

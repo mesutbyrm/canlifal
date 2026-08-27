@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { requireFeature } from '@/lib/check-feature'
 import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission } from '@/lib/agency-commission'
@@ -17,6 +18,10 @@ export const dynamic = 'force-dynamic'
 // POST - Send a gift in a chat room
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
+    // Feature flag kontrolü
+    const featureBlocked = await requireFeature('GIFTS_ENABLED')
+    if (featureBlocked) return featureBlocked
+
     const mobileUser = await authenticateRequest(req)
     const session = !mobileUser ? await getServerSession(authOptions) : null
     const giftUserId = mobileUser?.id || session?.user?.id

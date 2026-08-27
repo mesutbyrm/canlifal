@@ -9,6 +9,7 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { emitChatEvent } from '@/lib/chat-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { emitPkInvite } from '@/lib/voice-room-events'
+import { requireFeature } from '@/lib/check-feature'
 
 /**
  * PK Battle endpoints for Chat Rooms.
@@ -77,6 +78,9 @@ export async function POST(
   { params }: { params: { roomId: string } }
 ) {
   try {
+    const pkBlocked = await requireFeature('PK_ENABLED')
+    if (pkBlocked) return pkBlocked
+
     // Dual auth: mobile JWT OR web session
     const mobileUser = await authenticateRequest(req)
     const session = !mobileUser ? await getServerSession(authOptions) : null

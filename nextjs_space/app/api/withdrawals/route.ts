@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCachedPlatformSetting } from '@/lib/cache';
+import { requireFeature } from '@/lib/check-feature';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,10 @@ export async function GET(request: NextRequest) {
 // POST: Create a new withdrawal request
 export async function POST(request: NextRequest) {
   try {
+    // Feature flag kontrolü
+    const featureBlocked = await requireFeature('WITHDRAWAL_ENABLED')
+    if (featureBlocked) return featureBlocked
+
     const authUser = await authenticateRequest(request)
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
