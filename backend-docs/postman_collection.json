@@ -11997,15 +11997,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"\",\n  \"battleId\": \"\",\n  \"duration\": \"\",\n  \"targetRoomId\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           }
         },
@@ -12527,6 +12518,432 @@
           }
         },
         {
+          "name": "DELETE /api/chat/rooms/{roomId}/speak-request",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/chat/rooms/{roomId}/speak-request",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/chat/rooms/{roomId}/speak-request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/chat/rooms/{roomId}/speak-request/{userId}/block",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request/:userId/block",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request",
+                ":userId",
+                "block"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                },
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/chat/rooms/{roomId}/speak-request/{userId}/block",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request/:userId/block",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request",
+                ":userId",
+                "block"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                },
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/chat/rooms/{roomId}/speak-request/{userId}/reject",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request/:userId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request",
+                ":userId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                },
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/chat/rooms/{roomId}/speak-request/{userId}/reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-request/:userId/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-request",
+                ":userId",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                },
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/chat/rooms/{roomId}/speak-requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-requests"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/chat/rooms/{roomId}/speak-requests/{targetUserId}/approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/:roomId/speak-requests/:targetUserId/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "rooms",
+                ":roomId",
+                "speak-requests",
+                ":targetUserId",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": ""
+                },
+                {
+                  "key": "targetUserId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "GET /api/chat/rooms/{roomId}/state",
           "request": {
             "method": "GET",
@@ -12845,6 +13262,54 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "GET /api/chat/youtube-audio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/youtube-audio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "youtube-audio"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/chat/youtube-audio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/youtube-audio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "youtube-audio"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         },
         {
@@ -15693,6 +16158,40 @@
           }
         },
         {
+          "name": "POST /api/games/auto-match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/auto-match",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "auto-match"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "GET /api/games/daily-reward",
           "request": {
             "method": "GET",
@@ -16680,6 +17179,30 @@
           }
         },
         {
+          "name": "GET /api/games/rooms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/rooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "rooms"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
           "name": "GET /api/games/sos",
           "request": {
             "method": "GET",
@@ -17292,6 +17815,114 @@
       "name": "gifts",
       "item": [
         {
+          "name": "GET /api/gifts/battles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/battles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "battles"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/gifts/battles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/battles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "battles"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participants\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/gifts/battles/{battleId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/battles/:battleId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "battles",
+                ":battleId"
+              ],
+              "variable": [
+                {
+                  "key": "battleId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
           "name": "GET /api/gifts/catalog",
           "request": {
             "method": "GET",
@@ -17365,6 +17996,390 @@
                   "language": "json"
                 }
               }
+            }
+          }
+        },
+        {
+          "name": "GET /api/gifts/goals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/goals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "goals"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/gifts/goals",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/goals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "goals"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/album/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/album/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "album",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/badge/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/badge/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "badge",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/collection/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/collection/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "collection",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/feed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "feed"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/first-gifter/{context}/{contextId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/first-gifter/:context/:contextId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "first-gifter",
+                ":context",
+                ":contextId"
+              ],
+              "variable": [
+                {
+                  "key": "context",
+                  "value": ""
+                },
+                {
+                  "key": "contextId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/leaderboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "leaderboard"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/map",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/map",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "map"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/me/badge",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/me/badge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "me",
+                "badge"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/me/history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/me/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "me",
+                "history"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/gifts/insights/me/recommendations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/insights/me/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "insights",
+                "me",
+                "recommendations"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             }
           }
         },
@@ -17479,6 +18494,107 @@
                   "language": "json"
                 }
               }
+            }
+          }
+        },
+        {
+          "name": "GET /api/gifts/missions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/missions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "missions"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/gifts/missions/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/missions/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "missions",
+                "me"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/gifts/missions/{missionId}/claim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gifts/missions/:missionId/claim",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gifts",
+                "missions",
+                ":missionId",
+                "claim"
+              ],
+              "variable": [
+                {
+                  "key": "missionId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             }
           }
         },
@@ -18087,6 +19203,108 @@
           }
         },
         {
+          "name": "GET /api/live/guest",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live/guest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "live",
+                "guest"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/live/guest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live/guest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "live",
+                "guest"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"muted\": \"\",\n  \"videoOff\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/live/guest/list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live/guest/list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "live",
+                "guest",
+                "list"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
           "name": "POST /api/live/heartbeat",
           "request": {
             "method": "POST",
@@ -18395,6 +19613,31 @@
           }
         },
         {
+          "name": "GET /api/live/pk/active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live/pk/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "live",
+                "pk",
+                "active"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
           "name": "POST /api/live/pk/score",
           "request": {
             "method": "POST",
@@ -18618,6 +19861,35 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "membership",
+      "item": [
+        {
+          "name": "GET /api/membership/plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/membership/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "membership",
+                "plans"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]
@@ -19606,6 +20878,155 @@
                 "api",
                 "payments",
                 "settings"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "pk",
+      "item": [
+        {
+          "name": "GET /api/pk/active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pk/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pk",
+                "active"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/pk/leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pk/leaderboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pk",
+                "leaderboard"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/pk/me/invites",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pk/me/invites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pk",
+                "me",
+                "invites"
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/pk/{matchId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pk/:matchId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pk",
+                ":matchId"
+              ],
+              "variable": [
+                {
+                  "key": "matchId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/pk/{matchId}/stream",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pk/:matchId/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pk",
+                ":matchId",
+                "stream"
+              ],
+              "variable": [
+                {
+                  "key": "matchId",
+                  "value": ""
+                }
               ]
             },
             "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
@@ -25686,15 +27107,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"isHidden\": \"\",\n  \"nickname\": \"\",\n  \"question\": \"\",\n  \"typeId\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           }
         },
@@ -26074,6 +27486,47 @@
                 "video-streams",
                 ":streamId",
                 "live-started"
+              ],
+              "variable": [
+                {
+                  "key": "streamId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/video-streams/{streamId}/media-heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/video-streams/:streamId/media-heartbeat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "video-streams",
+                ":streamId",
+                "media-heartbeat"
               ],
               "variable": [
                 {
@@ -27008,6 +28461,156 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "{unmatched}",
+      "item": [
+        {
+          "name": "DELETE /api/{unmatched}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/:unmatched",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                ":unmatched"
+              ],
+              "variable": [
+                {
+                  "key": "unmatched",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "GET /api/{unmatched}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/:unmatched",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                ":unmatched"
+              ],
+              "variable": [
+                {
+                  "key": "unmatched",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "PATCH /api/{unmatched}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/:unmatched",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                ":unmatched"
+              ],
+              "variable": [
+                {
+                  "key": "unmatched",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "POST /api/{unmatched}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/:unmatched",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                ":unmatched"
+              ],
+              "variable": [
+                {
+                  "key": "unmatched",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        },
+        {
+          "name": "PUT /api/{unmatched}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/:unmatched",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                ":unmatched"
+              ],
+              "variable": [
+                {
+                  "key": "unmatched",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]

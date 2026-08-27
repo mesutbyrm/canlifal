@@ -4305,12 +4305,7 @@
     "pathParams": [
       "roomId"
     ],
-    "bodyFields": [
-      "action",
-      "battleId",
-      "duration",
-      "targetRoomId"
-    ],
+    "bodyFields": [],
     "tag": "chat",
     "dynamic": true
   },
@@ -4499,6 +4494,132 @@
     "dynamic": true
   },
   {
+    "path": "/api/chat/rooms/{roomId}/speak-request",
+    "method": "DELETE",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-request",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-request",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [
+      "message"
+    ],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-request/{userId}/block",
+    "method": "DELETE",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId",
+      "userId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-request/{userId}/block",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId",
+      "userId"
+    ],
+    "bodyFields": [
+      "reason"
+    ],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-request/{userId}/reject",
+    "method": "DELETE",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId",
+      "userId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-request/{userId}/reject",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId",
+      "userId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-requests",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/rooms/{roomId}/speak-requests/{targetUserId}/approve",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "roomId",
+      "targetUserId"
+    ],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
     "path": "/api/chat/rooms/{roomId}/state",
     "method": "GET",
     "auth": "dual",
@@ -4592,6 +4713,28 @@
     "bodyFields": [
       "type"
     ],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/youtube-audio",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "chat",
+    "dynamic": true
+  },
+  {
+    "path": "/api/chat/youtube-audio",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
     "tag": "chat",
     "dynamic": true
   },
@@ -5578,6 +5721,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/games/auto-match",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "games",
+    "dynamic": true
+  },
+  {
     "path": "/api/games/daily-reward",
     "method": "GET",
     "auth": "dual",
@@ -5903,6 +6057,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/games/rooms",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "games",
+    "dynamic": true
+  },
+  {
     "path": "/api/games/sos",
     "method": "GET",
     "auth": "dual",
@@ -6104,6 +6269,43 @@
     "dynamic": true
   },
   {
+    "path": "/api/gifts/battles",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/battles",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "participants"
+    ],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/battles/{battleId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "battleId"
+    ],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
     "path": "/api/gifts/catalog",
     "method": "GET",
     "auth": "dual",
@@ -6126,6 +6328,147 @@
     ],
     "tag": "gifts",
     "dynamic": false
+  },
+  {
+    "path": "/api/gifts/goals",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/goals",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/album/{userId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "userId"
+    ],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/badge/{userId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "userId"
+    ],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/collection/{userId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "userId"
+    ],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/feed",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/first-gifter/{context}/{contextId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "context",
+      "contextId"
+    ],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/leaderboard",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/map",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/me/badge",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/me/history",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/insights/me/recommendations",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
   },
   {
     "path": "/api/gifts/lucky/config",
@@ -6162,6 +6505,41 @@
       "giftTypeId",
       "quantity"
     ],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/missions",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/missions/me",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "gifts",
+    "dynamic": true
+  },
+  {
+    "path": "/api/gifts/missions/{missionId}/claim",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "missionId"
+    ],
+    "bodyFields": [],
     "tag": "gifts",
     "dynamic": true
   },
@@ -6385,6 +6763,42 @@
     "dynamic": true
   },
   {
+    "path": "/api/live/guest",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "live",
+    "dynamic": true
+  },
+  {
+    "path": "/api/live/guest",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [
+      "muted",
+      "videoOff"
+    ],
+    "tag": "live",
+    "dynamic": true
+  },
+  {
+    "path": "/api/live/guest/list",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "live",
+    "dynamic": true
+  },
+  {
     "path": "/api/live/heartbeat",
     "method": "POST",
     "auth": "dual",
@@ -6489,6 +6903,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/live/pk/active",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "live",
+    "dynamic": true
+  },
+  {
     "path": "/api/live/pk/score",
     "method": "POST",
     "auth": "dual",
@@ -6573,6 +6998,17 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "membership-badges",
+    "dynamic": true
+  },
+  {
+    "path": "/api/membership/plans",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "membership",
     "dynamic": true
   },
   {
@@ -6902,6 +7338,65 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "payments",
+    "dynamic": true
+  },
+  {
+    "path": "/api/pk/active",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "pk",
+    "dynamic": true
+  },
+  {
+    "path": "/api/pk/leaderboard",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "pk",
+    "dynamic": true
+  },
+  {
+    "path": "/api/pk/me/invites",
+    "method": "GET",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "pk",
+    "dynamic": true
+  },
+  {
+    "path": "/api/pk/{matchId}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "matchId"
+    ],
+    "bodyFields": [],
+    "tag": "pk",
+    "dynamic": true
+  },
+  {
+    "path": "/api/pk/{matchId}/stream",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "matchId"
+    ],
+    "bodyFields": [],
+    "tag": "pk",
     "dynamic": true
   },
   {
@@ -8943,12 +9438,7 @@
     "pathParams": [
       "streamId"
     ],
-    "bodyFields": [
-      "isHidden",
-      "nickname",
-      "question",
-      "typeId"
-    ],
+    "bodyFields": [],
     "tag": "video-streams",
     "dynamic": false
   },
@@ -9065,6 +9555,19 @@
   },
   {
     "path": "/api/video-streams/{streamId}/live-started",
+    "method": "POST",
+    "auth": "dual",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "streamId"
+    ],
+    "bodyFields": [],
+    "tag": "video-streams",
+    "dynamic": true
+  },
+  {
+    "path": "/api/video-streams/{streamId}/media-heartbeat",
     "method": "POST",
     "auth": "dual",
     "admin": false,
@@ -9369,6 +9872,71 @@
     "pathParams": [],
     "bodyFields": [],
     "tag": "youtube",
+    "dynamic": true
+  },
+  {
+    "path": "/api/{unmatched}",
+    "method": "DELETE",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "unmatched"
+    ],
+    "bodyFields": [],
+    "tag": "{unmatched}",
+    "dynamic": true
+  },
+  {
+    "path": "/api/{unmatched}",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "unmatched"
+    ],
+    "bodyFields": [],
+    "tag": "{unmatched}",
+    "dynamic": true
+  },
+  {
+    "path": "/api/{unmatched}",
+    "method": "PATCH",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "unmatched"
+    ],
+    "bodyFields": [],
+    "tag": "{unmatched}",
+    "dynamic": true
+  },
+  {
+    "path": "/api/{unmatched}",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "unmatched"
+    ],
+    "bodyFields": [],
+    "tag": "{unmatched}",
+    "dynamic": true
+  },
+  {
+    "path": "/api/{unmatched}",
+    "method": "PUT",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [
+      "unmatched"
+    ],
+    "bodyFields": [],
+    "tag": "{unmatched}",
     "dynamic": true
   }
 ]
