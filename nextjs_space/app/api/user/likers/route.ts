@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 export const dynamic = 'force-dynamic'
 
 interface LikeUser {
@@ -31,6 +33,31 @@ export async function GET(req: NextRequest) {
     })
 
     const postIds = userPosts.map((p: { id: string }) => p.id)
+
+    const likerInclude = {
+      user: { select: { id: true, name: true, username: true, image: true } },
+    }
+
+    // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile)
+    if (isCursorMode(req)) {
+      const { cursor, limit } = parseCursorParams(req, 30, 100)
+      const { items, meta } = await fetchCursorPage(
+        (args) => prisma.socialLike.findMany(args),
+        cursor,
+        limit,
+        { where: { postId: { in: postIds } }, include: likerInclude, orderBy: { createdAt: 'desc' } }
+      )
+      // Sayfa içinde yinelenen kullanıcıları ayıkla (sayfa sınırı korunur)
+      const seen = new Set<string>()
+      const page: LikeUser[] = []
+      for (const l of items as unknown as LikeWithUser[]) {
+        if (!seen.has(l.user.id)) {
+          seen.add(l.user.id)
+          page.push(l.user)
+        }
+      }
+      return apiPaginated(page, meta)
+    }
 
     // Get unique users who liked these posts
     const likes = await prisma.socialLike.findMany({

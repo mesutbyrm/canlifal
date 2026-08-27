@@ -11,6 +11,8 @@ import {
   serializeGift,
   serializeUser,
 } from '@/lib/gift-insights'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +41,19 @@ export async function GET(request: NextRequest) {
     else if (direction === 'received') where.receiverId = userId
     else where.OR = [{ senderId: userId }, { receiverId: userId }]
     if (status) where.status = status
+
+    // Faz 19 — opt-in imleç modu (?cursor= veya ?paginate=cursor). Aksi hâlde eski davranış.
+    if (isCursorMode(request)) {
+      const cp = parseCursorParams(request, 50, 100)
+      const { items: cEvents, meta } = await fetchCursorPage(
+        (args) => prisma.giftEvent.findMany(args),
+        cp.cursor,
+        cp.limit,
+        { where, orderBy: { createdAt: 'desc' } }
+      )
+      const shaped = await shapeEvents(cEvents, userId)
+      return apiPaginated(shaped, meta)
+    }
 
     const [total, events] = await Promise.all([
       prisma.giftEvent.count({ where }),
@@ -101,4 +116,43 @@ export async function GET(request: NextRequest) {
     console.error('[gifts/insights/me/history]', error)
     return NextResponse.json({ error: 'Hediye geçmişi alınamadı' }, { status: 500 })
   }
+}
+
+/** Faz 19 — imleç modunda ham GiftEvent kayıtlarını eski gövde şekline dönüştürür. */
+async function shapeEvents(events: any[], userId: string) {
+  if (events.length === 0) return []
+  const counterpartyIds = Array.from(
+    new Set(events.map((e) => (e.senderId === userId ? e.receiverId : e.senderId)))
+  )
+  const giftIds = Array.from(new Set(events.map((e) => e.giftTypeId)))
+  const [users, gifts] = await Promise.all([
+    prisma.user.findMany({ where: { id: { in: counterpartyIds } }, select: USER_SELECT }),
+    prisma.giftType.findMany({ where: { id: { in: giftIds } }, select: GIFT_SELECT }),
+  ])
+  const uMap = new Map(users.map((u) => [u.id, u]))
+  const gMap = new Map(gifts.map((g) => [g.id, g]))
+  return events.map((e) => {
+    const isSent = e.senderId === userId
+    const otherId = isSent ? e.receiverId : e.senderId
+    const other = uMap.get(otherId)
+    const gift = gMap.get(e.giftTypeId)
+    return {
+      id: e.id,
+      direction: isSent ? 'sent' : 'received',
+      status: e.status,
+      counterparty: serializeUser(other, otherId),
+      counterpartyName: displayNameOf(other),
+      gift: serializeGift(gift, e.giftTypeId),
+      giftName: gift?.name || '',
+      giftIcon: gift?.iconImageUrl || gift?.thumbnailUrl || gift?.icon || null,
+      quantity: e.quantity,
+      amount: isSent ? e.grossAmount : e.receiverAmount,
+      grossAmount: e.grossAmount,
+      receiverAmount: e.receiverAmount,
+      context: e.context,
+      contextId: e.contextId,
+      createdAt: e.createdAt.toISOString(),
+      at: e.createdAt.toISOString(),
+    }
+  })
 }

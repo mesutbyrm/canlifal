@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
+import { apiPaginated } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
+
+const MEMBER_INCLUDE = {
+  user: {
+    select: { id: true, name: true, username: true, image: true, createdAt: true, lastActiveAt: true },
+  },
+} as const
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,13 +27,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
+    // Faz 19 — opt-in imleç modu (?cursor= veya ?paginate=cursor).
+    // Eski çağrılar (parametresiz) bit düzeyinde aynı gövdeyi almaya devam eder.
+    if (isCursorMode(req)) {
+      const cp = parseCursorParams(req, 30, 100)
+      const { items, meta } = await fetchCursorPage(
+        (args) => prisma.agencyUser.findMany(args),
+        cp.cursor,
+        cp.limit,
+        {
+          where: { agencyId: membership.agencyId },
+          include: MEMBER_INCLUDE,
+          orderBy: { joinedAt: 'desc' },
+        }
+      )
+      const total = await prisma.agencyUser.count({ where: { agencyId: membership.agencyId } })
+      return apiPaginated(items, { ...meta, total })
+    }
+
     const members = await prisma.agencyUser.findMany({
       where: { agencyId: membership.agencyId },
-      include: {
-        user: {
-          select: { id: true, name: true, username: true, image: true, createdAt: true, lastActiveAt: true }
-        }
-      },
+      include: MEMBER_INCLUDE,
       orderBy: { joinedAt: 'desc' },
     })
 

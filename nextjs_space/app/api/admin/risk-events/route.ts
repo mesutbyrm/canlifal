@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import { resolveUser, isAdminRole } from '@/lib/rbac'
 import { apiPaginated, apiError, apiForbidden, apiUnauthorized } from '@/lib/api-response'
 import { getRiskEvents } from '@/lib/risk-score'
+import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 
 // GET /api/admin/risk-events — sayfalanmış risk olay listesi + özet
 export async function GET(req: NextRequest) {
@@ -22,6 +23,34 @@ export async function GET(req: NextRequest) {
     const reviewedParam = url.searchParams.get('reviewed')
     const reviewed =
       reviewedParam === 'true' ? true : reviewedParam === 'false' ? false : undefined
+
+    // Faz 19 — opt-in imleç modu; eski sayfa/limit davranışı korunur.
+    if (isCursorMode(req)) {
+      const cp = parseCursorParams(req, 50, 100)
+      const cWhere: Record<string, any> = {}
+      if (userId) cWhere.userId = userId
+      if (category) cWhere.category = category
+      if (level) cWhere.level = level
+      if (typeof reviewed === 'boolean') cWhere.reviewed = reviewed
+      const { items: cItems, meta } = await fetchCursorPage(
+        (args) => prisma.riskEvent.findMany(args),
+        cp.cursor,
+        cp.limit,
+        { where: cWhere, orderBy: { createdAt: 'desc' } }
+      )
+      const cUserIds = Array.from(new Set(cItems.map((i: any) => i.userId)))
+      const cUsers = cUserIds.length
+        ? await prisma.user.findMany({
+            where: { id: { in: cUserIds } },
+            select: { id: true, name: true, username: true, email: true },
+          })
+        : []
+      const cMap = new Map(cUsers.map((u) => [u.id, u]))
+      return apiPaginated(
+        cItems.map((i: any) => ({ ...i, user: cMap.get(i.userId) || null })),
+        meta
+      )
+    }
 
     const { items, total } = await getRiskEvents({
       page,
