@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **776 endpoint handler** (498 benzersiz yol), **167 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **778 endpoint handler** (500 benzersiz yol), **170 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -63,6 +63,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/roles](#cat-admin-roles) (4)
 - [admin/room-themes](#cat-admin-room-themes) (3)
 - [admin/rooms](#cat-admin-rooms) (2)
+- [admin/rtc-telemetry](#cat-admin-rtc-telemetry) (1)
 - [admin/seo-settings](#cat-admin-seo-settings) (2)
 - [admin/settings](#cat-admin-settings) (2)
 - [admin/site-pages](#cat-admin-site-pages) (4)
@@ -89,6 +90,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [auth](#cat-auth) (14)
 - [bana-ozel](#cat-bana-ozel) (2)
 - [blog](#cat-blog) (10)
+- [bootstrap](#cat-bootstrap) (1)
 - [broadcast-images](#cat-broadcast-images) (1)
 - [cache](#cat-cache) (2)
 - [chat](#cat-chat) (54)
@@ -98,6 +100,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [credit-packages](#cat-credit-packages) (1)
 - [daily-login](#cat-daily-login) (2)
 - [daily-missions](#cat-daily-missions) (2)
+- [deeplink](#cat-deeplink) (1)
 - [devices](#cat-devices) (2)
 - [dream-contest](#cat-dream-contest) (4)
 - [dream-diary](#cat-dream-diary) (3)
@@ -144,6 +147,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [referral](#cat-referral) (2)
 - [room](#cat-room) (12)
 - [room-themes](#cat-room-themes) (1)
+- [rtc](#cat-rtc) (1)
 - [search](#cat-search) (2)
 - [seo-settings](#cat-seo-settings) (1)
 - [settings](#cat-settings) (4)
@@ -169,7 +173,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [upload](#cat-upload) (3)
 - [user](#cat-user) (32)
 - [users](#cat-users) (7)
-- [v1](#cat-v1) (2)
 - [verification](#cat-verification) (2)
 - [video-streams](#cat-video-streams) (53)
 - [wallet](#cat-wallet) (1)
@@ -694,6 +697,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **PATCH** | `/api/admin/rooms` | 🌐 Oturum 🔒 | — | `giftBeneficiaryId`, `giftCommissionPercent`, `roomId` |
 
 
+## <a name="cat-admin-rtc-telemetry"></a>`admin/rtc-telemetry`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/rtc-telemetry` | 🌍 Public 🔒 | — | — |
+
+
 ## <a name="cat-admin-seo-settings"></a>`admin/seo-settings`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -948,6 +958,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/blog/zodiac` | 🌍 Public | — | — |
 
 
+## <a name="cat-bootstrap"></a>`bootstrap`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/bootstrap` | 🌍 Public | — | — |
+
+
 ## <a name="cat-broadcast-images"></a>`broadcast-images`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1065,6 +1082,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/daily-missions` | 🔄 Dual | — | — |
 | **POST** | `/api/daily-missions` | 🔄 Dual | — | `taskType` |
+
+
+## <a name="cat-deeplink"></a>`deeplink`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/deeplink/resolve` | 🌍 Public | — | — |
 
 
 ## <a name="cat-devices"></a>`devices`
@@ -1570,6 +1594,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/room-themes/catalog` | 🔄 Dual | — | — |
 
 
+## <a name="cat-rtc"></a>`rtc`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **POST** | `/api/rtc/telemetry` | 🌍 Public | var (özel) | `samples` |
+
+
 ## <a name="cat-search"></a>`search`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1835,14 +1866,6 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/users/{userId}/follow` | 🔄 Dual | — | — |
 | **POST** | `/api/users/{userId}/follow` | 🔄 Dual | — | — |
 | **GET** | `/api/users/{userId}/posts` | 🔄 Dual | — | — |
-
-
-## <a name="cat-v1"></a>`v1`
-
-| Method | Endpoint | Auth | Rate Limit | Body Alanları |
-|--------|----------|------|-----------|---------------|
-| **GET** | `/api/v1/bootstrap` | 🌍 Public | — | — |
-| **GET** | `/api/v1/deeplink/resolve` | 🌍 Public | — | — |
 
 
 ## <a name="cat-verification"></a>`verification`

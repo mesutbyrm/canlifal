@@ -2987,6 +2987,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/rtc-telemetry",
+    "method": "GET",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/rtc-telemetry",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/seo-settings",
     "method": "GET",
     "auth": "session",
@@ -4269,6 +4280,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/bootstrap",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "bootstrap",
+    "dynamic": true
+  },
+  {
     "path": "/api/broadcast-images",
     "method": "GET",
     "auth": "dual",
@@ -5183,6 +5205,17 @@
       "taskType"
     ],
     "tag": "daily-missions",
+    "dynamic": true
+  },
+  {
+    "path": "/api/deeplink/resolve",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "deeplink",
     "dynamic": true
   },
   {
@@ -8071,6 +8104,19 @@
     "dynamic": true
   },
   {
+    "path": "/api/rtc/telemetry",
+    "method": "POST",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": "var (özel)",
+    "pathParams": [],
+    "bodyFields": [
+      "samples"
+    ],
+    "tag": "rtc",
+    "dynamic": true
+  },
+  {
     "path": "/api/search",
     "method": "GET",
     "auth": "public",
@@ -9544,28 +9590,6 @@
     ],
     "bodyFields": [],
     "tag": "users",
-    "dynamic": true
-  },
-  {
-    "path": "/api/v1/bootstrap",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "v1",
-    "dynamic": true
-  },
-  {
-    "path": "/api/v1/deeplink/resolve",
-    "method": "GET",
-    "auth": "public",
-    "admin": false,
-    "rateLimit": null,
-    "pathParams": [],
-    "bodyFields": [],
-    "tag": "v1",
     "dynamic": true
   },
   {

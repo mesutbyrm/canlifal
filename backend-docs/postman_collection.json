@@ -8166,6 +8166,35 @@
       ]
     },
     {
+      "name": "admin/rtc-telemetry",
+      "item": [
+        {
+          "name": "GET /api/admin/rtc-telemetry",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rtc-telemetry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rtc-telemetry"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/seo-settings",
       "item": [
         {
@@ -11838,6 +11867,34 @@
       ]
     },
     {
+      "name": "bootstrap",
+      "item": [
+        {
+          "name": "GET /api/bootstrap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bootstrap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bootstrap"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        }
+      ]
+    },
+    {
       "name": "broadcast-images",
       "item": [
         {
@@ -14505,6 +14562,35 @@
                 }
               }
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "deeplink",
+      "item": [
+        {
+          "name": "GET /api/deeplink/resolve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/deeplink/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "deeplink",
+                "resolve"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]
@@ -22934,6 +23020,44 @@
       ]
     },
     {
+      "name": "rtc",
+      "item": [
+        {
+          "name": "POST /api/rtc/telemetry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rtc/telemetry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rtc",
+                "telemetry"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Rate limit: var (özel). Dinamik (force-dynamic).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"samples\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "search",
       "item": [
         {
@@ -27225,60 +27349,6 @@
                 }
               ]
             }
-          }
-        }
-      ]
-    },
-    {
-      "name": "v1",
-      "item": [
-        {
-          "name": "GET /api/v1/bootstrap",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/bootstrap",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "bootstrap"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
-          }
-        },
-        {
-          "name": "GET /api/v1/deeplink/resolve",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/deeplink/resolve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "deeplink",
-                "resolve"
-              ]
-            },
-            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]

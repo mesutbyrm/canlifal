@@ -173,20 +173,79 @@ SEAT_STALE_MS = 45000
 
 ---
 
-## 10. Telemetri (§76 — Planlanan)
+## 10. Telemetri (§76 — UYGULANDI, Faz 15)
 
-Şu an için backend tarafında WebRTC telemetri kaydı **mevcut değildir**. Planlanan metrikler:
+WebRTC bağlantı kalite telemetrisi backend tarafında **uygulanmıştır**. Tamamen
+eklemeli bir katmandır: medya taşıma mimarisine, sinyalleşme akışına veya mevcut
+uç davranışına dokunulmamıştır.
 
-| Metrik | Açıklama |
-|--------|----------|
-| connection_state | Bağlantı durumu |
-| ice_state | ICE bağlantı durumu |
-| reconnect_count | Yeniden bağlanma sayısı |
-| rtt | Round-trip time |
-| packet_loss | Paket kaybı |
-| jitter | Ses/video titreşimi |
-| bitrate | Bit hızı |
-| freeze | Donma olayları |
-| connection_duration | Bağlantı süresi |
+### 10.1 Veri modeli — `RtcTelemetry` (`rtc_telemetry`)
 
-**Not:** Bu metrikler istemci tarafında toplanıp periyodik olarak backend'e raporlanabilir. TRTC SDK kalite callback'leri bu verileri sağlar.
+İlişkisiz (relation'sız), yalnızca ekleme yapılan bir tablodur. 5 indeks:
+`userId+createdAt`, `context+createdAt`, `contextId`, `qualityLevel+createdAt`,
+`createdAt`.
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| userId | String | Raporlayan kullanıcı |
+| context | String | live_session / voice_room / video_stream / pk |
+| contextId | String? | Oturum / oda / yayın kimliği |
+| peerId | String? | Karşı taraf kimliği |
+| connectionState | String? | RTCPeerConnection durumu |
+| iceState | String? | ICE bağlantı durumu |
+| reconnectCount | Int | Yeniden bağlanma sayısı |
+| rttMs | Int? | Gidiş-dönüş gecikmesi (0-60000 kırpılır) |
+| packetLossPercent | Float? | Paket kaybı % (0-100 kırpılır) |
+| jitterMs | Int? | Titreşim (0-10000 kırpılır) |
+| bitrateKbps | Int? | Bit hızı |
+| freezeCount | Int | Donma olayı sayısı |
+| freezeDurationMs | Int | Toplam donma süresi |
+| durationSeconds | Int | Örnekleme penceresi |
+| platform | String? | web / android / ios |
+| networkType | String? | wifi / 4g / 5g / ethernet |
+| qualityScore | Int | 0-100 hesaplanan skor |
+| qualityLevel | String | excellent / good / fair / poor / critical |
+| metadata | Json? | Serbest alan |
+
+**Gizlilik:** IP adresi, çerez veya medya içeriği saklanmaz — yalnızca sayısal
+ağ metrikleri ve kaba platform bilgisi tutulur.
+
+### 10.2 Kalite skoru
+
+`lib/rtc-telemetry.ts` → `computeRtcQuality(input)` 0-100 arası ağırlıklı bir
+skor üretir:
+
+| Sinyal | Ağırlık | iyi | orta | kötü |
+|--------|---------|-----|------|------|
+| RTT (ms) | 30 | ≤150 | ≤300 | ≤500 |
+| Paket kaybı (%) | 30 | ≤1 | ≤3 | ≤8 |
+| Jitter (ms) | 20 | ≤30 | ≤60 | ≤100 |
+| Yeniden bağlanma | 10 | 0 | ≤1 | ≤3 |
+| Donma sayısı | 10 | 0 | ≤2 | ≤5 |
+
+Seviye sınırları: excellent ≥85, good ≥70, fair ≥50, poor ≥30, altı critical.
+Eşikler `rtc_quality_thresholds` RemoteConfig kaydı ile ezilebilir (60 sn önbellek);
+kayıt okunamazsa sessizce varsayılanlara düşer.
+
+### 10.3 Uç noktalar
+
+| Uç | Yöntem | Auth | Açıklama |
+|----|--------|------|----------|
+| `/api/rtc/telemetry` (ve `/api/v1/rtc/telemetry`) | POST | Kullanıcı | Tekil veya toplu (≤20) örüntü gönderimi. Rate limit scope `rtc_telemetry` (30/dk) |
+| `/api/admin/rtc-telemetry` | GET | Admin | Sayfalı liste + özet (ortalamalar, seviye dağılımı) |
+
+Yanıt zarfı yeni uç standardıdır (`apiSuccess` / `apiError` / `apiPaginated`).
+
+### 10.4 Admin arayüzü
+
+`/admin/rtc-telemetry` — 6 özet kartı (kayıt sayısı, ortalama skor, ortalama RTT,
+ortalama paket kaybı, ortalama jitter, toplam yeniden bağlanma), seviye dağılım
+çubuğu, 4 filtre (bağlam, seviye, kullanıcı, zaman aralığı) ve sayfalama.
+Admin panelinde "📡 Bağlantı Kalitesi" bağlantısı ile erişilir.
+
+### 10.5 İstemci entegrasyonu (öneri)
+
+TRTC SDK kalite callback'lerinden (`onNetworkQuality`, `onStatistics`) 10-30
+saniyede bir örnek toplanıp toplu olarak `POST /api/v1/rtc/telemetry` ucuna
+gönderilmelidir. Gönderim hatası kullanıcı deneyimini etkilememelidir
+(fire-and-forget).

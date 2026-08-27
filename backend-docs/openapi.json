@@ -189,6 +189,9 @@
       "name": "admin/rooms"
     },
     {
+      "name": "admin/rtc-telemetry"
+    },
+    {
       "name": "admin/seo-settings"
     },
     {
@@ -267,6 +270,9 @@
       "name": "blog"
     },
     {
+      "name": "bootstrap"
+    },
+    {
       "name": "broadcast-images"
     },
     {
@@ -292,6 +298,9 @@
     },
     {
       "name": "daily-missions"
+    },
+    {
+      "name": "deeplink"
     },
     {
       "name": "devices"
@@ -432,6 +441,9 @@
       "name": "room-themes"
     },
     {
+      "name": "rtc"
+    },
+    {
       "name": "search"
     },
     {
@@ -505,9 +517,6 @@
     },
     {
       "name": "users"
-    },
-    {
-      "name": "v1"
     },
     {
       "name": "verification"
@@ -13134,6 +13143,46 @@
         }
       }
     },
+    "/api/admin/rtc-telemetry": {
+      "get": {
+        "tags": [
+          "admin/rtc-telemetry"
+        ],
+        "summary": "GET /api/admin/rtc-telemetry",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
     "/api/admin/seo-settings": {
       "get": {
         "tags": [
@@ -18576,6 +18625,46 @@
         }
       }
     },
+    "/api/bootstrap": {
+      "get": {
+        "tags": [
+          "bootstrap"
+        ],
+        "summary": "GET /api/bootstrap",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
     "/api/broadcast-images": {
       "get": {
         "tags": [
@@ -22504,6 +22593,46 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/deeplink/resolve": {
+      "get": {
+        "tags": [
+          "deeplink"
+        ],
+        "summary": "GET /api/deeplink/resolve",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
           }
         }
       }
@@ -34816,6 +34945,60 @@
         }
       }
     },
+    "/api/rtc/telemetry": {
+      "post": {
+        "tags": [
+          "rtc"
+        ],
+        "summary": "POST /api/rtc/telemetry",
+        "description": "Kimlik doğrulama gerektirmez (public). Rate limit: var (özel). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "samples": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/search": {
       "get": {
         "tags": [
@@ -41077,86 +41260,6 @@
             "cookieAuth": []
           }
         ]
-      }
-    },
-    "/api/v1/bootstrap": {
-      "get": {
-        "tags": [
-          "v1"
-        ],
-        "summary": "GET /api/v1/bootstrap",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
-      }
-    },
-    "/api/v1/deeplink/resolve": {
-      "get": {
-        "tags": [
-          "v1"
-        ],
-        "summary": "GET /api/v1/deeplink/resolve",
-        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Başarılı",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Geçersiz istek / doğrulama hatası"
-          },
-          "401": {
-            "description": "Kimlik doğrulama gerekli / geçersiz token"
-          },
-          "403": {
-            "description": "Yetki yok"
-          },
-          "404": {
-            "description": "Bulunamadı"
-          },
-          "429": {
-            "description": "Rate limit aşıldı"
-          },
-          "500": {
-            "description": "Sunucu hatası"
-          }
-        }
       }
     },
     "/api/verification": {
