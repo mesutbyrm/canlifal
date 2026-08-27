@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { recordLedger } from '@/lib/ledger'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const userId = authUser.id
+
+    // Rate limit: üyelik satın alma
+    const rateLimited = await guardRateLimit(req, 'membership', { userId })
+    if (rateLimited) return rateLimited
 
     const { planId, paymentMethod } = await req.json()
     if (!planId) {

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/db'
 import { resolveUser } from '@/lib/rbac'
 import { apiSuccess, apiError, apiUnauthorized, apiValidation } from '@/lib/api-response'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +32,10 @@ export async function POST(req: NextRequest) {
   try {
     const user = await resolveUser(req)
     if (!user) return apiUnauthorized()
+
+    // Rate limit: doğrulama talebi
+    const rateLimited = await guardRateLimit(req, 'report', { userId: user.id })
+    if (rateLimited) return rateLimited
 
     const body = await req.json().catch(() => ({}))
     const type = (body.type || 'identity').trim()

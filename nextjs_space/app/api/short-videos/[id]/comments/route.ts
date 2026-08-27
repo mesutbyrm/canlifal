@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { mapAuthor, safeInt, parseMentions } from '@/lib/short-videos'
 
 /**
@@ -79,6 +80,10 @@ export async function POST(
         { status: 401 }
       )
     }
+
+    // Rate limit: kısa video yorumu
+    const rateLimited = await guardRateLimit(req, 'comment', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     const { id: videoId } = await params
     const body = await req.json().catch(() => ({}))

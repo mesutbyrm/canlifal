@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 // GET messages with a specific user
 export async function GET(
@@ -126,6 +127,11 @@ export async function POST(
   try {
     const currentUserId = auth.id
     const otherUserId = params.userId
+
+    // Rate limit: mesaj gönderme
+    const rateLimited = await guardRateLimit(request, 'chat_message', { userId: currentUserId })
+    if (rateLimited) return rateLimited
+
     const { content, imageUrl } = await request.json()
 
     if (!content?.trim() && !imageUrl) {

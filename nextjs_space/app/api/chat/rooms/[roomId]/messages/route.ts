@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 
 export const dynamic = 'force-dynamic'
@@ -185,6 +186,10 @@ export async function POST(
         { status: 401 }
       )
     }
+
+    // Rate limit: sohbet mesajı
+    const rateLimited = await guardRateLimit(request, 'chat_message', { userId: postUserId })
+    if (rateLimited) return rateLimited
 
     const { roomId } = await params
     const { content, nickname } = await request.json()

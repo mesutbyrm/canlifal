@@ -875,8 +875,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/agency/my` | 🔄 Dual | — | — |
 | **PATCH** | `/api/agency/my` | 🔄 Dual | — | `description`, `name` |
 | **GET** | `/api/agency/tasks` | 🔄 Dual | — | — |
-| **GET** | `/api/agency/withdrawals` | 🔄 Dual | — | — |
-| **POST** | `/api/agency/withdrawals` | 🔄 Dual | — | `action`, `note`, `requestId` |
+| **GET** | `/api/agency/withdrawals` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/agency/withdrawals` | 🔄 Dual | var (özel) | `action`, `note`, `requestId` |
 
 
 ## <a name="cat-announcements"></a>`announcements`
@@ -938,9 +938,9 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/blog` | 🌍 Public | — | — |
 | **GET** | `/api/blog/categories` | 🌍 Public | — | — |
-| **DELETE** | `/api/blog/comments` | 🔄 Dual 🔒 | — | — |
-| **GET** | `/api/blog/comments` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/blog/comments` | 🔄 Dual 🔒 | — | `content`, `parentId`, `postId` |
+| **DELETE** | `/api/blog/comments` | 🔄 Dual 🔒 | var (özel) | — |
+| **GET** | `/api/blog/comments` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/blog/comments` | 🔄 Dual 🔒 | var (özel) | `content`, `parentId`, `postId` |
 | **POST** | `/api/blog/favorite` | 🔄 Dual | — | `postId` |
 | **GET** | `/api/blog/interactions` | 🔄 Dual | — | — |
 | **POST** | `/api/blog/like` | 🔄 Dual | — | `postId` |
@@ -977,11 +977,11 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/chat/rooms/pk-list` | 🌍 Public | — | — |
 | **GET** | `/api/chat/rooms/{roomId}/dj` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/chat/rooms/{roomId}/dj` | 🔄 Dual 🔒 | — | `action`, `userId` |
-| **GET** | `/api/chat/rooms/{roomId}/gifts` | 🔄 Dual | — | — |
-| **POST** | `/api/chat/rooms/{roomId}/gifts` | 🔄 Dual | — | `battleId`, `giftTypeId`, `platform`, `quantity`, `receiverName`, `senderName`, `side`, `streamId` |
-| **DELETE** | `/api/chat/rooms/{roomId}/messages` | 🔄 Dual 🔒 | — | — |
-| **GET** | `/api/chat/rooms/{roomId}/messages` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/chat/rooms/{roomId}/messages` | 🔄 Dual 🔒 | — | `content`, `nickname` |
+| **GET** | `/api/chat/rooms/{roomId}/gifts` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/chat/rooms/{roomId}/gifts` | 🔄 Dual | var (özel) | `battleId`, `giftTypeId`, `platform`, `quantity`, `receiverName`, `senderName`, `side`, `streamId` |
+| **DELETE** | `/api/chat/rooms/{roomId}/messages` | 🔄 Dual 🔒 | var (özel) | — |
+| **GET** | `/api/chat/rooms/{roomId}/messages` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/chat/rooms/{roomId}/messages` | 🔄 Dual 🔒 | var (özel) | `content`, `nickname` |
 | **GET** | `/api/chat/rooms/{roomId}/moderation` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/chat/rooms/{roomId}/moderation` | 🔄 Dual 🔒 | — | `action`, `duration`, `message`, `reason`, `role`, `targetUserId`, `ttl` |
 | **DELETE** | `/api/chat/rooms/{roomId}/music` | 🔄 Dual 🔒 | — | — |
@@ -1121,9 +1121,9 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/dreams/recommendations` | 🔄 Dual | — | — |
 | **GET** | `/api/dreams/trends` | 🌍 Public | — | — |
 | **GET** | `/api/dreams/{slug}` | 🌍 Public | — | — |
-| **DELETE** | `/api/dreams/{slug}/comments` | 🔄 Dual 🔒 | — | `commentId` |
-| **GET** | `/api/dreams/{slug}/comments` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/dreams/{slug}/comments` | 🔄 Dual 🔒 | — | `content`, `didComeTrue`, `experienceType` |
+| **DELETE** | `/api/dreams/{slug}/comments` | 🔄 Dual 🔒 | var (özel) | `commentId` |
+| **GET** | `/api/dreams/{slug}/comments` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/dreams/{slug}/comments` | 🔄 Dual 🔒 | var (özel) | `content`, `didComeTrue`, `experienceType` |
 | **GET** | `/api/dreams/{slug}/favorite` | 🔄 Dual | — | — |
 | **POST** | `/api/dreams/{slug}/favorite` | 🔄 Dual | — | — |
 | **POST** | `/api/dreams/{slug}/view` | 🔄 Dual | — | — |
@@ -1289,7 +1289,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/gifts/insights/me/recommendations` | 🔄 Dual | — | — |
 | **GET** | `/api/gifts/lucky/config` | 🔄 Dual | — | — |
 | **GET** | `/api/gifts/lucky/history` | 🔄 Dual | — | — |
-| **POST** | `/api/gifts/lucky/send` | 🔄 Dual | — | `context`, `contextId`, `giftTypeId`, `quantity` |
+| **POST** | `/api/gifts/lucky/send` | 🔄 Dual | var (özel) | `context`, `contextId`, `giftTypeId`, `quantity` |
 | **GET** | `/api/gifts/missions` | 🌍 Public | — | — |
 | **GET** | `/api/gifts/missions/me` | 🔄 Dual | — | — |
 | **POST** | `/api/gifts/missions/{missionId}/claim` | 🔄 Dual | — | — |
@@ -1364,15 +1364,15 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **POST** | `/api/live/create-room` | 🔄 Dual | — | `category`, `coverUrl`, `description`, `thumbnailUrl`, `title` |
 | **GET** | `/api/live/gift-types` | 🔄 Dual | — | — |
-| **POST** | `/api/live/gift/send` | 🔄 Dual | — | `giftTypeId`, `quantity`, `recipientId`, `roomId`, `roomType` |
+| **POST** | `/api/live/gift/send` | 🔄 Dual | var (özel) | `giftTypeId`, `quantity`, `recipientId`, `roomId`, `roomType` |
 | **GET** | `/api/live/guest` | 🔄 Dual | — | — |
 | **POST** | `/api/live/guest` | 🔄 Dual | — | `muted`, `videoOff` |
 | **GET** | `/api/live/guest/list` | 🌍 Public | — | — |
 | **POST** | `/api/live/heartbeat` | 🔄 Dual | — | `roomId`, `roomType` |
 | **POST** | `/api/live/join-room` | 🔄 Dual | — | — |
 | **POST** | `/api/live/leave-room` | 🔄 Dual | — | `roomId`, `roomType` |
-| **GET** | `/api/live/message` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/live/message` | 🔄 Dual 🔒 | — | `content`, `roomId`, `roomType` |
+| **GET** | `/api/live/message` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/live/message` | 🔄 Dual 🔒 | var (özel) | `content`, `roomId`, `roomType` |
 | **GET** | `/api/live/online-users` | 🔄 Dual | — | — |
 | **GET** | `/api/live/pk` | 🔄 Dual | var (özel) | — |
 | **POST** | `/api/live/pk` | 🔄 Dual | var (özel) | `action`, `battleId`, `duration`, `roomId`, `targetRoomId` |
@@ -1411,7 +1411,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/memberships` | 🌍 Public | — | — |
 | **GET** | `/api/memberships/packages` | 🌍 Public | — | — |
-| **POST** | `/api/memberships/purchase` | 🔄 Dual | — | `paymentMethod`, `planId` |
+| **POST** | `/api/memberships/purchase` | 🔄 Dual | var (özel) | `paymentMethod`, `planId` |
 
 
 ## <a name="cat-messages"></a>`messages`
@@ -1421,8 +1421,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/messages` | 🔄 Dual | — | — |
 | **PATCH** | `/api/messages/request` | 🔄 Dual | — | `action`, `requestId` |
 | **POST** | `/api/messages/request` | 🔄 Dual | — | `message`, `receiverId` |
-| **GET** | `/api/messages/{userId}` | 🔄 Dual | — | — |
-| **POST** | `/api/messages/{userId}` | 🔄 Dual | — | `content`, `imageUrl` |
+| **GET** | `/api/messages/{userId}` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/messages/{userId}` | 🔄 Dual | var (özel) | `content`, `imageUrl` |
 
 
 ## <a name="cat-mobile"></a>`mobile`
@@ -1560,7 +1560,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/room/{sessionId}/review` | 🔄 Dual | — | `comment`, `rating` |
 | **GET** | `/api/room/{sessionId}/stream` | 🔄 Dual | — | — |
 | **GET** | `/api/room/{sessionId}/summary` | 🔄 Dual | — | — |
-| **POST** | `/api/room/{sessionId}/tip` | 🔄 Dual 🔒 | — | `amount` |
+| **POST** | `/api/room/{sessionId}/tip` | 🔄 Dual 🔒 | var (özel) | `amount` |
 
 
 ## <a name="cat-room-themes"></a>`room-themes`
@@ -1612,13 +1612,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/short-videos/music` | 🌍 Public | — | — |
 | **GET** | `/api/short-videos/profile/{userId}` | 🔄 Dual | — | — |
 | **POST** | `/api/short-videos/register` | 🔄 Dual | — | — |
-| **POST** | `/api/short-videos/upload` | 🔄 Dual | — | — |
+| **POST** | `/api/short-videos/upload` | 🔄 Dual | var (özel) | — |
 | **POST** | `/api/short-videos/upload-url` | 🔄 Dual | — | — |
 | **GET** | `/api/short-videos/user/{userId}` | 🔄 Dual | — | — |
 | **DELETE** | `/api/short-videos/{id}` | 🔄 Dual 🔒 | — | — |
 | **GET** | `/api/short-videos/{id}` | 🔄 Dual 🔒 | — | — |
-| **GET** | `/api/short-videos/{id}/comments` | 🔄 Dual | — | — |
-| **POST** | `/api/short-videos/{id}/comments` | 🔄 Dual | — | `content`, `parentId` |
+| **GET** | `/api/short-videos/{id}/comments` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/short-videos/{id}/comments` | 🔄 Dual | var (özel) | `content`, `parentId` |
 | **DELETE** | `/api/short-videos/{id}/comments/{commentId}` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/short-videos/{id}/comments/{commentId}/like` | 🔄 Dual | — | — |
 | **POST** | `/api/short-videos/{id}/comments/{commentId}/pin` | 🔄 Dual 🔒 | — | — |
@@ -1647,13 +1647,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **GET** | `/api/social/posts` | 🔄 Dual | — | — |
-| **POST** | `/api/social/posts` | 🔄 Dual | — | `content`, `fortuneId`, `fortuneType`, `imageUrl`, `isPublic`, `postType`, `youtubeUrl` |
+| **GET** | `/api/social/posts` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/social/posts` | 🔄 Dual | var (özel) | `content`, `fortuneId`, `fortuneType`, `imageUrl`, `isPublic`, `postType`, `youtubeUrl` |
 | **DELETE** | `/api/social/posts/{postId}` | 🔄 Dual 🔒 | — | — |
 | **GET** | `/api/social/posts/{postId}` | 🔄 Dual 🔒 | — | — |
-| **DELETE** | `/api/social/posts/{postId}/comments` | 🔄 Dual 🔒 | — | — |
-| **GET** | `/api/social/posts/{postId}/comments` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/social/posts/{postId}/comments` | 🔄 Dual 🔒 | — | `content` |
+| **DELETE** | `/api/social/posts/{postId}/comments` | 🔄 Dual 🔒 | var (özel) | — |
+| **GET** | `/api/social/posts/{postId}/comments` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/social/posts/{postId}/comments` | 🔄 Dual 🔒 | var (özel) | `content` |
 | **POST** | `/api/social/posts/{postId}/likes` | 🔄 Dual | — | — |
 | **POST** | `/api/social/posts/{postId}/view` | 🌍 Public | — | — |
 
@@ -1662,17 +1662,17 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **DELETE** | `/api/stories` | 🔄 Dual | — | — |
-| **GET** | `/api/stories` | 🔄 Dual | — | — |
-| **POST** | `/api/stories` | 🔄 Dual | — | `caption`, `mediaType`, `mediaUrl` |
+| **DELETE** | `/api/stories` | 🔄 Dual | var (özel) | — |
+| **GET** | `/api/stories` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/stories` | 🔄 Dual | var (özel) | `caption`, `mediaType`, `mediaUrl` |
 
 
 ## <a name="cat-support"></a>`support`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **GET** | `/api/support/tickets` | 🌍 Public | — | — |
-| **POST** | `/api/support/tickets` | 🌍 Public | — | `category`, `message`, `subject` |
+| **GET** | `/api/support/tickets` | 🌍 Public | var (özel) | — |
+| **POST** | `/api/support/tickets` | 🌍 Public | var (özel) | `category`, `message`, `subject` |
 | **GET** | `/api/support/tickets/{ticketId}` | 🌍 Public | — | — |
 | **PATCH** | `/api/support/tickets/{ticketId}` | 🌍 Public | — | `assignedTo`, `priority`, `status` |
 | **POST** | `/api/support/tickets/{ticketId}/messages` | 🌍 Public | — | `body`, `isInternal`, `message` |
@@ -1809,7 +1809,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/user/profile` | 🔄 Dual | — | — |
 | **PATCH** | `/api/user/profile` | 🔄 Dual | — | `bio`, `birthDate`, `birthTime`, `email`, `favoriteTeam`, `hideProfileViews`, `image`, `messagePrivacy`, `name`, `phone`, `risingSign`, `username` … |
 | **GET** | `/api/user/received-gifts` | 🔄 Dual | — | — |
-| **POST** | `/api/user/report` | 🔄 Dual | — | `details`, `reason`, `userId` |
+| **POST** | `/api/user/report` | 🔄 Dual | var (özel) | `details`, `reason`, `userId` |
 | **GET** | `/api/user/statistics` | 🔄 Dual | — | — |
 | **GET** | `/api/user/stats` | 🔄 Dual | — | — |
 | **POST** | `/api/user/stats` | 🔄 Dual | — | `minutesToAdd` |
@@ -1849,8 +1849,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **GET** | `/api/verification` | 🌍 Public | — | — |
-| **POST** | `/api/verification` | 🌍 Public | — | `documentType`, `documentUrls`, `fullName`, `note`, `type` |
+| **GET** | `/api/verification` | 🌍 Public | var (özel) | — |
+| **POST** | `/api/verification` | 🌍 Public | var (özel) | `documentType`, `documentUrls`, `fullName`, `note`, `type` |
 
 
 ## <a name="cat-video-streams"></a>`video-streams`
@@ -1878,16 +1878,16 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **PATCH** | `/api/video-streams/{streamId}/co-broadcast` | 🔄 Dual | — | `action` |
 | **POST** | `/api/video-streams/{streamId}/co-broadcast` | 🔄 Dual | — | `action`, `userId` |
 | **POST** | `/api/video-streams/{streamId}/co-broadcast/invite` | 🔄 Dual | — | `inviteeId` |
-| **GET** | `/api/video-streams/{streamId}/comments` | 🔄 Dual | — | — |
-| **POST** | `/api/video-streams/{streamId}/comments` | 🔄 Dual | — | `content`, `isHidden`, `nickname` |
+| **GET** | `/api/video-streams/{streamId}/comments` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/video-streams/{streamId}/comments` | 🔄 Dual | var (özel) | `content`, `isHidden`, `nickname` |
 | **POST** | `/api/video-streams/{streamId}/end` | 🔄 Dual 🔒 | — | — |
 | **DELETE** | `/api/video-streams/{streamId}/fortune-requests` | 🔄 Dual 🔒 | — | — |
 | **GET** | `/api/video-streams/{streamId}/fortune-requests` | 🔄 Dual 🔒 | — | — |
 | **PATCH** | `/api/video-streams/{streamId}/fortune-requests` | 🔄 Dual 🔒 | — | `action`, `requestId` |
 | **POST** | `/api/video-streams/{streamId}/fortune-requests` | 🔄 Dual 🔒 | — | — |
 | **GET** | `/api/video-streams/{streamId}/fortune-requests/my-status` | 🔄 Dual | — | — |
-| **GET** | `/api/video-streams/{streamId}/gifts` | 🔄 Dual | — | — |
-| **POST** | `/api/video-streams/{streamId}/gifts` | 🔄 Dual | — | `giftTypeId`, `quantity` |
+| **GET** | `/api/video-streams/{streamId}/gifts` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/video-streams/{streamId}/gifts` | 🔄 Dual | var (özel) | `giftTypeId`, `quantity` |
 | **DELETE** | `/api/video-streams/{streamId}/join` | 🔄 Dual | — | — |
 | **POST** | `/api/video-streams/{streamId}/join` | 🔄 Dual | — | — |
 | **POST** | `/api/video-streams/{streamId}/leave` | 🔄 Dual | — | `viewerId` |

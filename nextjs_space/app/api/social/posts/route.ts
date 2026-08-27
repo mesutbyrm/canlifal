@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,6 +87,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const userId = authUser.id
+
+    // Rate limit: içerik oluşturma
+    const rateLimited = await guardRateLimit(request, 'content_create', { userId })
+    if (rateLimited) return rateLimited
 
     const { content, postType, fortuneType, fortuneId, imageUrl, youtubeUrl, isPublic = true } = await request.json()
 

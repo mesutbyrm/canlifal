@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { isExcludedFromFinance } from '@/lib/admin-check'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,10 @@ export async function POST(request: NextRequest) {
     const webSession = !mobileUser ? await getServerSession(authOptions) : null
     const userId = mobileUser?.id || (webSession?.user as any)?.id
     const userName = mobileUser?.name || webSession?.user?.name || 'Kullanıcı'
+
+    // Rate limit: şanslı hediye
+    const rateLimited = await guardRateLimit(request, 'lucky_gift', { userId })
+    if (rateLimited) return rateLimited
 
     if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })

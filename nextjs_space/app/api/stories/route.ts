@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 // GET - fetch active stories (not expired) grouped by user, followed users first
 export async function GET(req: NextRequest) {
@@ -77,6 +78,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const userId = authUser.id
+
+    // Rate limit: hikaye oluşturma
+    const rateLimited = await guardRateLimit(req, 'content_create', { userId })
+    if (rateLimited) return rateLimited
 
     const body = await req.json()
     const { mediaUrl, mediaType, caption } = body

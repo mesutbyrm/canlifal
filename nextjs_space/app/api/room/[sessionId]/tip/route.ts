@@ -8,7 +8,8 @@ import { getCachedPlatformSetting } from '@/lib/cache';
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger';
 import { recordContribution } from '@/lib/supporter-level';
 import { recordTeamPoints } from '@/lib/team-points';
-import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency';
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import { guardRateLimit } from '@/lib/rate-limit-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,10 @@ export async function POST(
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
+
+    // Rate limit: bahşiş
+    const rateLimited = await guardRateLimit(request, 'tip', { userId: authUser.id });
+    if (rateLimited) return rateLimited;
 
     const { amount } = await request.json();
     

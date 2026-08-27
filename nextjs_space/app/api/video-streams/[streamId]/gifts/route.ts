@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { logActivity } from '@/lib/activity-logger'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
@@ -106,6 +107,10 @@ export async function POST(
     if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+
+    // Rate limit: yayın hediye
+    const rateLimited = await guardRateLimit(request, 'gift_send', { userId })
+    if (rateLimited) return rateLimited
 
     const { giftTypeId, quantity = 1 } = await request.json()
 

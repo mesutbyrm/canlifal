@@ -3825,7 +3825,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "agency",
@@ -3836,7 +3836,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "action",
@@ -4177,7 +4177,7 @@
     "method": "DELETE",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "blog",
@@ -4188,7 +4188,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "blog",
@@ -4199,7 +4199,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "content",
@@ -4443,7 +4443,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -4456,7 +4456,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -4478,7 +4478,7 @@
     "method": "DELETE",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -4491,7 +4491,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -4504,7 +4504,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -5444,7 +5444,7 @@
     "method": "DELETE",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "slug"
     ],
@@ -5459,7 +5459,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "slug"
     ],
@@ -5472,7 +5472,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "slug"
     ],
@@ -6854,7 +6854,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "context",
@@ -7107,7 +7107,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "giftTypeId",
@@ -7199,7 +7199,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "live",
@@ -7210,7 +7210,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "content",
@@ -7395,7 +7395,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "paymentMethod",
@@ -7448,7 +7448,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "userId"
     ],
@@ -7461,7 +7461,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "userId"
     ],
@@ -8060,7 +8060,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "sessionId"
     ],
@@ -8231,7 +8231,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "short-videos",
@@ -8292,7 +8292,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "id"
     ],
@@ -8305,7 +8305,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "id"
     ],
@@ -8463,7 +8463,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "social",
@@ -8474,7 +8474,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "content",
@@ -8519,7 +8519,7 @@
     "method": "DELETE",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "postId"
     ],
@@ -8532,7 +8532,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "postId"
     ],
@@ -8545,7 +8545,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "postId"
     ],
@@ -8586,7 +8586,7 @@
     "method": "DELETE",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "stories",
@@ -8597,7 +8597,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "stories",
@@ -8608,7 +8608,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "caption",
@@ -8623,7 +8623,7 @@
     "method": "GET",
     "auth": "public",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "support",
@@ -8634,7 +8634,7 @@
     "method": "POST",
     "auth": "public",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "category",
@@ -9305,7 +9305,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "details",
@@ -9573,7 +9573,7 @@
     "method": "GET",
     "auth": "public",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "verification",
@@ -9584,7 +9584,7 @@
     "method": "POST",
     "auth": "public",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "documentType",
@@ -9894,7 +9894,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "streamId"
     ],
@@ -9907,7 +9907,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "streamId"
     ],
@@ -10005,7 +10005,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "streamId"
     ],
@@ -10018,7 +10018,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "streamId"
     ],

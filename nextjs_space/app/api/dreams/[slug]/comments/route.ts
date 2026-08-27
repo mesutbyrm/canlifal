@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +67,10 @@ export async function POST(
     if (!authUser) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
+
+    // Rate limit: yorum
+    const rateLimited = await guardRateLimit(req, 'comment', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     const dream = await prisma.dreamInterpretation.findUnique({
       where: { slug: params.slug, isPublished: true },

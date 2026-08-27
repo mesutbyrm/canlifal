@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
+import { guardRateLimit } from '@/lib/rate-limit-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
+
+    // Rate limit: ajans çekim onayı
+    const rateLimited = await guardRateLimit(request, 'withdrawal', { userId: authUser.id });
+    if (rateLimited) return rateLimited;
 
     const membership = await prisma.agencyUser.findFirst({
       where: { userId: authUser.id, isActive: true, role: { in: ['owner', 'manager'] } },

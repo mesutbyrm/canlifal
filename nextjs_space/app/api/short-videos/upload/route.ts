@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { uploadToR2 } from '@/lib/r2-storage'
 import { getMp4DurationSec } from '@/lib/mp4-duration'
 import {
@@ -31,6 +32,10 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       )
     }
+
+    // Rate limit: video yükleme
+    const rateLimited = await guardRateLimit(req, 'upload', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     let formData: FormData
     try {

@@ -27,13 +27,20 @@ export const DEFAULT_RATE_LIMITS: Record<string, number> = {
   api_default: 60,
   auth: 10, // per 15 min — see WINDOW_OVERRIDES
   gift_send: 10,
-  chat_message: 5,
+  lucky_gift: 10,
+  chat_message: 30,
+  comment: 20,
+  content_create: 10,
   withdrawal: 5,
   payment: 10,
   stream_create: 5,
   room_create: 5,
   pk_create: 10,
   agency_action: 5,
+  tip: 10,
+  membership: 5,
+  report: 5,
+  upload: 5,
 }
 
 // Buckets whose window is not the default 60s.

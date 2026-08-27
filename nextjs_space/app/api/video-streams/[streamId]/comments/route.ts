@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 
 export async function GET(
   request: NextRequest,
@@ -54,6 +55,10 @@ export async function POST(
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+
+    // Rate limit: yayın yorumu
+    const rateLimited = await guardRateLimit(request, 'comment', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     const { content, nickname, isHidden } = await request.json()
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { requireFeature } from '@/lib/check-feature'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { isExcludedFromFinance } from '@/lib/admin-check'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
@@ -42,6 +43,10 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
+
+    // Rate limit: hediye gönderme
+    const rateLimited = await guardRateLimit(request, 'gift_send', { userId: authUser.id })
+    if (rateLimited) return rateLimited
 
     const body = await request.json()
     const { roomId, roomType, giftTypeId, recipientId: bodyRecipientId } = body
