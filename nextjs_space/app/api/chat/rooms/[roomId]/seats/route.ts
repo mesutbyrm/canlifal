@@ -121,56 +121,62 @@ export async function PATCH(
       }
     }
 
-    // Check the seat is available (if claiming a seat, not vacating)
-    if (seatIndex >= 0) {
+    // ── Atomic seat check + assignment (interactive tx → TOCTOU koruması) ──
+    const result = await prisma.$transaction(async (tx: any) => {
       const presenceTimeout = seatStaleThreshold()
-      const seatTaken = await prisma.chatPresence.findFirst({
-        where: {
-          roomId,
-          seatIndex,
-          lastSeen: { gte: presenceTimeout },
-          userId: { not: actualTargetId }
-        }
-      })
-      if (seatTaken) {
-        // If forceThrone and seat 0, displace the current occupant to next available seat
-        if ((forceThrone && seatIndex === 0) || forceAssign) {
-          // Find next empty seat for displaced user
-          const allPresences = await prisma.chatPresence.findMany({
-            where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
-            select: { seatIndex: true }
-          })
-          const occupiedSet = new Set(allPresences.map(p => p.seatIndex))
-          let nextSeat = -1
-          for (let i = 1; i < SEAT_COUNT; i++) {
-            if (!occupiedSet.has(i)) { nextSeat = i; break }
+
+      if (seatIndex >= 0) {
+        const seatTaken = await tx.chatPresence.findFirst({
+          where: {
+            roomId,
+            seatIndex,
+            lastSeen: { gte: presenceTimeout },
+            userId: { not: actualTargetId }
           }
-          // Move displaced user to next seat (or -1 if all full)
-          await prisma.chatPresence.update({
-            where: { roomId_userId: { roomId, userId: seatTaken.userId } },
-            data: { seatIndex: nextSeat }
-          })
-        } else {
-          return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
+        })
+        if (seatTaken) {
+          if ((forceThrone && seatIndex === 0) || forceAssign) {
+            const allPresences = await tx.chatPresence.findMany({
+              where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
+              select: { seatIndex: true }
+            })
+            const occupiedSet = new Set(allPresences.map((p: any) => p.seatIndex))
+            let nextSeat = -1
+            for (let i = 1; i < SEAT_COUNT; i++) {
+              if (!occupiedSet.has(i)) { nextSeat = i; break }
+            }
+            await tx.chatPresence.update({
+              where: { roomId_userId: { roomId, userId: seatTaken.userId } },
+              data: { seatIndex: nextSeat }
+            })
+          } else {
+            return { conflict: true } as const
+          }
         }
       }
+
+      // Capture previous seat for the realtime event
+      const prevPresence = await tx.chatPresence.findUnique({
+        where: { roomId_userId: { roomId, userId: actualTargetId } },
+        select: { seatIndex: true }
+      })
+
+      // Atomic upsert inside the same tx
+      await tx.chatPresence.upsert({
+        where: { roomId_userId: { roomId, userId: actualTargetId } },
+        update: { seatIndex, lastSeen: new Date() },
+        create: { roomId, userId: actualTargetId, seatIndex, lastSeen: new Date() }
+      })
+
+      return { conflict: false, prevSeatIndex: prevPresence?.seatIndex ?? -1 } as const
+    })
+
+    if (result.conflict) {
+      return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
     }
 
-    // Capture previous seat for the realtime event
-    const prevPresence = await prisma.chatPresence.findUnique({
-      where: { roomId_userId: { roomId, userId: actualTargetId } },
-      select: { seatIndex: true }
-    })
-
-    // Update the target user's seat (upsert in case no presence record yet)
-    await prisma.chatPresence.upsert({
-      where: { roomId_userId: { roomId, userId: actualTargetId } },
-      update: { seatIndex, lastSeen: new Date() },
-      create: { roomId, userId: actualTargetId, seatIndex, lastSeen: new Date() }
-    })
-
     // Broadcast the seat change (web + Flutter via SSE)
-    emitSeatChanged(roomId, actualTargetId, seatIndex, prevPresence?.seatIndex ?? -1)
+    emitSeatChanged(roomId, actualTargetId, seatIndex, result.prevSeatIndex)
 
     return NextResponse.json({ success: true, seatIndex })
   } catch (error) {
