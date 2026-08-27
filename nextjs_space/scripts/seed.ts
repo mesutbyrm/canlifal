@@ -1737,6 +1737,7 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     { key: 'withdrawal_limits', value: { minAmount: 100, maxDaily: 10000, cooldownHours: 24 }, group: 'wallet', description: 'Para çekme limitleri (TL)' },
     { key: 'room_capacity', value: { free: 15, normal: 100, vip: 500 }, group: 'rooms', description: 'Oda kapasite limitleri' },
     { key: 'rate_limits', value: { chat_message: 5, gift_send: 10, api_default: 60 }, group: 'general', description: 'Varsayılan rate limitler (/dk)' },
+    { key: 'rtc_quality_thresholds', value: { rtt_good: 150, rtt_fair: 300, rtt_poor: 500, loss_good: 1, loss_fair: 3, loss_poor: 8, jitter_good: 30, jitter_fair: 60, jitter_poor: 100, level_excellent: 85, level_good: 70, level_fair: 50, level_poor: 30 }, group: 'webrtc', description: 'WebRTC bağlantı kalite eşikleri (§76)' },
   ]
   for (const c of defaultConfigs) {
     await prisma.remoteConfig.upsert({

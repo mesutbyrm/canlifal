@@ -4427,3 +4427,57 @@ model RiskEvent {
   @@index([createdAt])
   @@map("risk_events")
 }
+
+/// Faz 15 — WebRTC Telemetri (§76) ve Gözlemlenebilirlik (§74)
+/// Salt-ekleme (append-only) ölçüm kaydı. Hiçbir medya akışına veya sinyalleşme
+/// davranışına müdahale etmez; yalnızca istemcinin bildirdiği bağlantı kalite
+/// metriklerini saklar. Kişisel içerik (ses/görüntü) ASLA saklanmaz.
+model RtcTelemetry {
+  id String @id @default(cuid())
+
+  /// Ölçümü bildiren kullanıcı (ilişki kurulmadı — şema karmaşası önlenir)
+  userId String
+
+  /// Bağlam: 'live_session' | 'voice_room' | 'video_stream' | 'pk'
+  context String
+
+  /// İlgili oturum/oda/yayın kimliği (serbest metin)
+  contextId String?
+
+  /// Karşı taraf kullanıcı kimliği (varsa)
+  peerId String?
+
+  /// WebRTC durumları
+  connectionState String? // new|connecting|connected|disconnected|failed|closed
+  iceState        String? // new|checking|connected|completed|disconnected|failed|closed
+
+  /// Sayısal kalite metrikleri
+  reconnectCount     Int   @default(0)
+  rttMs              Float?
+  packetLossPercent  Float?
+  jitterMs           Float?
+  bitrateKbps        Float?
+  freezeCount        Int   @default(0)
+  freezeDurationMs   Int   @default(0)
+  durationSeconds    Int   @default(0)
+
+  /// Türetilmiş kalite: 0-100 skor ve seviye (excellent|good|fair|poor|critical)
+  qualityScore Int?
+  qualityLevel String?
+
+  /// Ortam bilgisi (privacy-safe: IP saklanmaz)
+  platform    String? // web|android|ios
+  networkType String? // wifi|cellular|ethernet|unknown
+
+  /// Ham istatistik özeti (isteğe bağlı, küçük tutulmalı)
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([context])
+  @@index([contextId])
+  @@index([qualityLevel])
+  @@index([createdAt])
+  @@map("rtc_telemetry")
+}
