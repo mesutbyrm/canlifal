@@ -11,6 +11,7 @@ import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expi
 import { emitPkInvite } from '@/lib/voice-room-events'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 /**
  * PK Battle endpoints for Chat Rooms.
@@ -78,6 +79,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { roomId: string } }
 ) {
+  let _idempotencyRecord: string | null = null
   try {
     const pkBlocked = await requireFeature('PK_ENABLED')
     if (pkBlocked) return pkBlocked
@@ -90,6 +92,11 @@ export async function POST(
 
     const rateLimited = await guardRateLimit(req, 'pk_create', { userId: currentUserId })
     if (rateLimited) return rateLimited
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(req, 'pk_action', currentUserId)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const { roomId } = params
     const body = await req.json()
@@ -387,6 +394,7 @@ export async function POST(
 
     return NextResponse.json({ error: 'Geçersiz action. Geçerli: create, accept, reject, cancel, end' }, { status: 400 })
   } catch (e) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('Chat PK POST error:', e)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }

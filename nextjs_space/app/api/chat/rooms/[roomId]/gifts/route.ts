@@ -16,11 +16,13 @@ import { processGiftSend } from '@/lib/gift-engine'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 export const dynamic = 'force-dynamic'
 
 // POST - Send a gift in a chat room
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
+  let _idempotencyRecord: string | null = null
   try {
     // Feature flag kontrolü
     const featureBlocked = await requireFeature('GIFTS_ENABLED')
@@ -37,6 +39,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Rate limit: sohbet odası hediye
     const rateLimited = await guardRateLimit(req, 'gift_send', { userId: giftUserId })
     if (rateLimited) return rateLimited
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(req, 'chatroom_gift', giftUserId)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const { roomId } = params
     const body = await req.json()
@@ -380,7 +387,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       })
     }
 
-    return NextResponse.json({
+    const giftResult = {
       success: true,
       gift: {
         id: gift.id,
@@ -399,8 +406,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       },
       engine: enginePayload,
       pkUpdate
-    })
+    }
+    await completeIdempotent(replay.record, 200, giftResult)
+    return NextResponse.json(giftResult)
   } catch (error) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('Chat room gift error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }

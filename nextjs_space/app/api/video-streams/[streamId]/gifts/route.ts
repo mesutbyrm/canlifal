@@ -17,6 +17,7 @@ import { processGiftSend } from '@/lib/gift-engine'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -96,6 +97,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { streamId: string } }
 ) {
+  let _idempotencyRecord: string | null = null
   try {
     // Dual auth: mobile JWT or web session
     const mobileUser = await authenticateRequest(request)
@@ -111,6 +113,11 @@ export async function POST(
     // Rate limit: yayın hediye
     const rateLimited = await guardRateLimit(request, 'gift_send', { userId })
     if (rateLimited) return rateLimited
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(request, 'stream_gift', userId)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const { giftTypeId, quantity = 1 } = await request.json()
 
@@ -361,15 +368,18 @@ export async function POST(
       })
     }
 
-    return NextResponse.json({
+    const streamGiftResult = {
       success: true,
       gift,
       giftRender: renderMeta,
       engine: enginePayload,
       newBalance: senderExcluded ? (user?.jetonBalance ?? 0) : (user?.jetonBalance ?? 0) - totalPrice,
       pkUpdate
-    })
+    }
+    await completeIdempotent(replay.record, 200, streamGiftResult)
+    return NextResponse.json(streamGiftResult)
   } catch (error) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('Error sending gift:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

@@ -7,6 +7,7 @@ import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commis
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { heavyLimiter } from '@/lib/rate-limiter'
 import { recordLedger } from '@/lib/ledger'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 async function createGiftAnnouncement(
   senderName: string | null, senderUsername: string | null,
@@ -54,6 +55,7 @@ async function createGiftAnnouncement(
 }
 
 export async function POST(req: NextRequest) {
+  let _idempotencyRecord: string | null = null
   try {
     const authUser = await authenticateRequest(req)
     if (!authUser) {
@@ -66,6 +68,11 @@ export async function POST(req: NextRequest) {
     if (!rateLimitOk) {
       return NextResponse.json({ error: 'Çok hızlı hediye gönderiyorsunuz. Biraz bekleyin.' }, { status: 429 })
     }
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(req, 'gift_send', userId)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const { recipientUsername, giftTypeId, jetonAmount, type } = await req.json()
     // type: 'gift' or 'jeton'
@@ -222,7 +229,7 @@ export async function POST(req: NextRequest) {
       }
 
       const isBigGift = giftType.price >= 1000
-      return NextResponse.json({
+      const giftPayload = {
         success: true,
         message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
         bigGift: isBigGift ? {
@@ -232,7 +239,9 @@ export async function POST(req: NextRequest) {
           giftType: giftType.name,
           amount: giftType.price
         } : null
-      })
+      }
+      await completeIdempotent(replay.record, 200, giftPayload)
+      return NextResponse.json(giftPayload)
 
     } else if (type === 'jeton' && jetonAmount) {
       // Send jetons
@@ -341,8 +350,7 @@ export async function POST(req: NextRequest) {
       }
 
       const isBigJetonGift = amount >= 1000
-
-      return NextResponse.json({
+      const jetonPayload = {
         success: true,
         message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,
         bigGift: isBigJetonGift ? {
@@ -352,11 +360,14 @@ export async function POST(req: NextRequest) {
           giftType: 'Jeton',
           amount
         } : null
-      })
+      }
+      await completeIdempotent(replay.record, 200, jetonPayload)
+      return NextResponse.json(jetonPayload)
     }
 
     return NextResponse.json({ error: 'Invalid request type' }, { status: 400 })
   } catch (error) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('Gift send error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }

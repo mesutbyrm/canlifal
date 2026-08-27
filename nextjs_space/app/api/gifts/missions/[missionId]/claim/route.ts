@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { missionProgressForUser, todayKey } from '@/lib/gift-insights'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { missionId: string } }
 ) {
+  let _idempotencyRecord: string | null = null
   try {
     const mobileUser = await authenticateRequest(request)
     const webSession = !mobileUser ? await getServerSession(authOptions) : null
@@ -23,6 +25,11 @@ export async function POST(
     if (!userId) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(request, 'mission_claim', userId)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const key = params.missionId
     const mission = await prisma.giftMission.findFirst({
@@ -78,7 +85,7 @@ export async function POST(
       return tx.user.findUnique({ where: { id: userId }, select: { jetonBalance: true, credits: true } })
     })
 
-    return NextResponse.json({
+    const claimPayload = {
       success: true,
       missionId: mission.id,
       code: mission.code,
@@ -93,8 +100,11 @@ export async function POST(
       rewardLabel: current.rewardLabel,
       jetonBalance: result?.jetonBalance ?? null,
       credits: result?.credits ?? null,
-    })
+    }
+    await completeIdempotent(replay.record, 200, claimPayload)
+    return NextResponse.json(claimPayload)
   } catch (error) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('[gifts/missions/claim]', error)
     return NextResponse.json({ error: 'Ödül alınamadı' }, { status: 500 })
   }

@@ -10,6 +10,7 @@ import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expi
 import { emitStreamEvent } from '@/lib/stream-events'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -65,6 +66,7 @@ export async function GET(req: NextRequest) {
 
 // POST - Create PK battle request or accept/reject/cancel
 export async function POST(req: NextRequest) {
+  let _idempotencyRecord: string | null = null
   try {
     const pkBlocked = await requireFeature('PK_ENABLED')
     if (pkBlocked) return pkBlocked
@@ -77,6 +79,11 @@ export async function POST(req: NextRequest) {
 
     const rateLimited = await guardRateLimit(req, 'pk_create', { userId: currentUserId })
     if (rateLimited) return rateLimited
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(req, 'stream_pk', currentUserId)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const body = await req.json()
     const { action, streamId, targetStreamId, battleId, duration } = body
@@ -262,6 +269,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Geçersiz action' }, { status: 400 })
   } catch (e) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('PK POST error:', e)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }

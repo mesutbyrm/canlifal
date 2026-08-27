@@ -7,6 +7,7 @@ import { emitStreamEvent } from '@/lib/stream-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,6 +99,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let _idempotencyRecord: string | null = null
   try {
     const pkBlocked = await requireFeature('PK_ENABLED')
     if (pkBlocked) return pkBlocked
@@ -112,6 +114,11 @@ export async function POST(request: NextRequest) {
 
     const rateLimited = await guardRateLimit(request, 'pk_create', { userId: authUser.id })
     if (rateLimited) return rateLimited
+
+    // Faz 22 (§71) — idempotency koruması
+    const replay = await beginIdempotent(request, 'live_pk', authUser.id)
+    if (replay.response) return replay.response
+    _idempotencyRecord = replay.record
 
     const body = await request.json()
     const { action, roomId, targetRoomId, battleId, duration } = body
@@ -294,6 +301,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   } catch (error) {
+    await releaseIdempotent(_idempotencyRecord)
     console.error('[LIVE/pk] POST error:', error)
     return NextResponse.json(
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'PK işlemi başarısız' } },
