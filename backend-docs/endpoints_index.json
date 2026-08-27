@@ -151,6 +151,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/audit-logs",
+    "method": "GET",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/audit-logs",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/awards",
     "method": "DELETE",
     "auth": "session",
@@ -1871,6 +1882,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/ledger",
+    "method": "GET",
+    "auth": "session",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/ledger",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/live-tellers",
     "method": "GET",
     "auth": "session",
@@ -3438,7 +3460,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "contactEmail",
@@ -3490,7 +3512,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "inviteCode"
@@ -4173,7 +4195,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "description",
@@ -4410,7 +4432,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -4423,7 +4445,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [
       "roomId"
     ],
@@ -7012,7 +7034,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "live",
@@ -7023,7 +7045,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "action",
@@ -7440,7 +7462,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "payments",
@@ -7451,7 +7473,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "amount",
@@ -9189,7 +9211,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "video-streams",
@@ -9200,7 +9222,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "category",
@@ -9229,7 +9251,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "video-streams",
@@ -9240,7 +9262,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": true,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "action",
@@ -9975,7 +9997,7 @@
     "method": "GET",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [],
     "tag": "withdrawals",
@@ -9986,7 +10008,7 @@
     "method": "POST",
     "auth": "dual",
     "admin": false,
-    "rateLimit": null,
+    "rateLimit": "var (özel)",
     "pathParams": [],
     "bodyFields": [
       "accountDetails",

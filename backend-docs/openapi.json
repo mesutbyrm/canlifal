@@ -48,6 +48,9 @@
       "name": "admin/announcement-sections"
     },
     {
+      "name": "admin/audit-logs"
+    },
+    {
       "name": "admin/awards"
     },
     {
@@ -127,6 +130,9 @@
     },
     {
       "name": "admin/homepage-fortune-cards"
+    },
+    {
+      "name": "admin/ledger"
     },
     {
       "name": "admin/live-tellers"
@@ -1140,6 +1146,54 @@
             }
           }
         }
+      }
+    },
+    "/api/admin/audit-logs": {
+      "get": {
+        "tags": [
+          "admin/audit-logs"
+        ],
+        "summary": "GET /api/admin/audit-logs",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
       }
     },
     "/api/admin/awards": {
@@ -8385,6 +8439,54 @@
         }
       }
     },
+    "/api/admin/ledger": {
+      "get": {
+        "tags": [
+          "admin/ledger"
+        ],
+        "summary": "GET /api/admin/ledger",
+        "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/api/admin/live-tellers": {
       "get": {
         "tags": [
@@ -15058,7 +15160,7 @@
           "agency"
         ],
         "summary": "POST /api/agency/apply",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -15288,7 +15390,7 @@
           "agency"
         ],
         "summary": "POST /api/agency/join",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -18121,7 +18223,7 @@
           "chat"
         ],
         "summary": "POST /api/chat/rooms/create",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -19154,7 +19256,7 @@
           "chat"
         ],
         "summary": "GET /api/chat/rooms/{roomId}/pk",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
         "parameters": [
           {
             "name": "roomId",
@@ -19210,7 +19312,7 @@
           "chat"
         ],
         "summary": "POST /api/chat/rooms/{roomId}/pk",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
         "parameters": [
           {
             "name": "roomId",
@@ -30356,7 +30458,7 @@
           "live"
         ],
         "summary": "GET /api/live/pk",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -30402,7 +30504,7 @@
           "live"
         ],
         "summary": "POST /api/live/pk",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -32161,7 +32263,7 @@
           "payments"
         ],
         "summary": "GET /api/payments/requests",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -32207,7 +32309,7 @@
           "payments"
         ],
         "summary": "POST /api/payments/requests",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -39620,7 +39722,7 @@
           "video-streams"
         ],
         "summary": "GET /api/video-streams",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel).",
         "parameters": [],
         "responses": {
           "200": {
@@ -39666,7 +39768,7 @@
           "video-streams"
         ],
         "summary": "POST /api/video-streams",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel).",
         "parameters": [],
         "responses": {
           "200": {
@@ -39791,7 +39893,7 @@
           "video-streams"
         ],
         "summary": "GET /api/video-streams/pk",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
         "parameters": [],
         "responses": {
           "200": {
@@ -39837,7 +39939,7 @@
           "video-streams"
         ],
         "summary": "POST /api/video-streams/pk",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
         "parameters": [],
         "responses": {
           "200": {
@@ -43081,7 +43183,7 @@
           "withdrawals"
         ],
         "summary": "GET /api/withdrawals",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {
@@ -43127,7 +43229,7 @@
           "withdrawals"
         ],
         "summary": "POST /api/withdrawals",
-        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+        "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
         "parameters": [],
         "responses": {
           "200": {

@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **746 endpoint handler** (478 benzersiz yol), **154 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **748 endpoint handler** (480 benzersiz yol), **156 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -16,6 +16,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/ad-networks](#cat-admin-ad-networks) (3)
 - [admin/agencies](#cat-admin-agencies) (3)
 - [admin/announcement-sections](#cat-admin-announcement-sections) (2)
+- [admin/audit-logs](#cat-admin-audit-logs) (1)
 - [admin/awards](#cat-admin-awards) (3)
 - [admin/backup](#cat-admin-backup) (1)
 - [admin/badges](#cat-admin-badges) (4)
@@ -43,6 +44,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/gifts](#cat-admin-gifts) (6)
 - [admin/homepage-buttons](#cat-admin-homepage-buttons) (4)
 - [admin/homepage-fortune-cards](#cat-admin-homepage-fortune-cards) (5)
+- [admin/ledger](#cat-admin-ledger) (1)
 - [admin/live-tellers](#cat-admin-live-tellers) (12)
 - [admin/lucky-gifts](#cat-admin-lucky-gifts) (4)
 - [admin/membership-badges](#cat-admin-membership-badges) (4)
@@ -208,6 +210,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 |--------|----------|------|-----------|---------------|
 | **GET** | `/api/admin/announcement-sections` | 🌐 Oturum 🔒 | — | — |
 | **POST** | `/api/admin/announcement-sections` | 🌐 Oturum 🔒 | — | `categoryConfig`, `categoryKey`, `categorySettings`, `giftAnnouncementSettings` |
+
+
+## <a name="cat-admin-audit-logs"></a>`admin/audit-logs`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/audit-logs` | 🌐 Oturum 🔒 | — | — |
 
 
 ## <a name="cat-admin-awards"></a>`admin/awards`
@@ -485,6 +494,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **PATCH** | `/api/admin/homepage-fortune-cards` | 🌐 Oturum 🔒 | — | `key`, `settings`, `value` |
 | **POST** | `/api/admin/homepage-fortune-cards` | 🌐 Oturum 🔒 | — | `href`, `icon`, `id`, `image`, `isActive`, `name`, `sortOrder` |
 | **PUT** | `/api/admin/homepage-fortune-cards` | 🌐 Oturum 🔒 | — | `id` |
+
+
+## <a name="cat-admin-ledger"></a>`admin/ledger`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/ledger` | 🌐 Oturum 🔒 | — | — |
 
 
 ## <a name="cat-admin-live-tellers"></a>`admin/live-tellers`
@@ -791,11 +807,11 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **POST** | `/api/agency/apply` | 🔄 Dual | — | `contactEmail`, `contactPhone`, `description`, `name` |
+| **POST** | `/api/agency/apply` | 🔄 Dual | var (özel) | `contactEmail`, `contactPhone`, `description`, `name` |
 | **GET** | `/api/agency/earnings` | 🔄 Dual | — | — |
 | **GET** | `/api/agency/invite` | 🔄 Dual | — | — |
 | **POST** | `/api/agency/invite` | 🔄 Dual | — | `expiresInDays`, `maxUses` |
-| **POST** | `/api/agency/join` | 🔄 Dual | — | `inviteCode` |
+| **POST** | `/api/agency/join` | 🔄 Dual | var (özel) | `inviteCode` |
 | **GET** | `/api/agency/leaderboard` | 🌍 Public | — | — |
 | **DELETE** | `/api/agency/leave` | 🔄 Dual | — | — |
 | **POST** | `/api/agency/leave` | 🔄 Dual | — | `action`, `reason`, `requestId`, `reviewNote` |
@@ -903,7 +919,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/chat/cleanup` | 🌍 Public | — | — |
 | **GET** | `/api/chat/rooms` | 🌍 Public | — | — |
 | **GET** | `/api/chat/rooms/backgrounds` | 🌍 Public | — | — |
-| **POST** | `/api/chat/rooms/create` | 🔄 Dual | — | `description`, `icon`, `name`, `paymentType`, `roomType` |
+| **POST** | `/api/chat/rooms/create` | 🔄 Dual | var (özel) | `description`, `icon`, `name`, `paymentType`, `roomType` |
 | **GET** | `/api/chat/rooms/pk-list` | 🌍 Public | — | — |
 | **GET** | `/api/chat/rooms/{roomId}/dj` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/chat/rooms/{roomId}/dj` | 🔄 Dual 🔒 | — | `action`, `userId` |
@@ -919,8 +935,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/chat/rooms/{roomId}/music` | 🔄 Dual 🔒 | — | `duration`, `title`, `videoId` |
 | **GET** | `/api/chat/rooms/{roomId}/music-queue` | 🔄 Dual | — | — |
 | **POST** | `/api/chat/rooms/{roomId}/music/stop` | 🔄 Dual | — | — |
-| **GET** | `/api/chat/rooms/{roomId}/pk` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/chat/rooms/{roomId}/pk` | 🔄 Dual 🔒 | — | — |
+| **GET** | `/api/chat/rooms/{roomId}/pk` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/chat/rooms/{roomId}/pk` | 🔄 Dual 🔒 | var (özel) | — |
 | **POST** | `/api/chat/rooms/{roomId}/pk/score` | 🔄 Dual | — | `amount`, `battleId`, `side` |
 | **DELETE** | `/api/chat/rooms/{roomId}/presence` | 🔄 Dual 🔒 | — | — |
 | **GET** | `/api/chat/rooms/{roomId}/presence` | 🔄 Dual 🔒 | — | — |
@@ -1297,8 +1313,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/live/message` | 🔄 Dual 🔒 | — | — |
 | **POST** | `/api/live/message` | 🔄 Dual 🔒 | — | `content`, `roomId`, `roomType` |
 | **GET** | `/api/live/online-users` | 🔄 Dual | — | — |
-| **GET** | `/api/live/pk` | 🔄 Dual | — | — |
-| **POST** | `/api/live/pk` | 🔄 Dual | — | `action`, `battleId`, `duration`, `roomId`, `targetRoomId` |
+| **GET** | `/api/live/pk` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/live/pk` | 🔄 Dual | var (özel) | `action`, `battleId`, `duration`, `roomId`, `targetRoomId` |
 | **GET** | `/api/live/pk/active` | 🌍 Public | — | — |
 | **POST** | `/api/live/pk/score` | 🔄 Dual | — | `amount`, `battleId`, `roomId`, `side` |
 | **GET** | `/api/live/rooms` | 🔄 Dual | — | — |
@@ -1398,8 +1414,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/payments/methods` | 🌍 Public | — | — |
 | **GET** | `/api/payments/notify` | 🔄 Dual | — | — |
 | **POST** | `/api/payments/notify` | 🔄 Dual | — | `amount`, `notes`, `paymentMethod`, `senderName`, `transactionId` |
-| **GET** | `/api/payments/requests` | 🔄 Dual | — | — |
-| **POST** | `/api/payments/requests` | 🔄 Dual | — | `amount`, `method`, `notes`, `senderInfo` |
+| **GET** | `/api/payments/requests` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/payments/requests` | 🔄 Dual | var (özel) | `amount`, `method`, `notes`, `senderInfo` |
 | **GET** | `/api/payments/settings` | 🌍 Public | — | — |
 
 
@@ -1736,11 +1752,11 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **GET** | `/api/video-streams` | 🔄 Dual | — | — |
-| **POST** | `/api/video-streams` | 🔄 Dual | — | `category`, `coverUrl`, `description`, `tags`, `thumbnailUrl`, `title` |
+| **GET** | `/api/video-streams` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/video-streams` | 🔄 Dual | var (özel) | `category`, `coverUrl`, `description`, `tags`, `thumbnailUrl`, `title` |
 | **GET** | `/api/video-streams/gifts` | 🔄 Dual | — | — |
-| **GET** | `/api/video-streams/pk` | 🔄 Dual 🔒 | — | — |
-| **POST** | `/api/video-streams/pk` | 🔄 Dual 🔒 | — | `action`, `battleId`, `duration`, `opponentVoiceRoomId`, `streamId`, `targetStreamId` |
+| **GET** | `/api/video-streams/pk` | 🔄 Dual 🔒 | var (özel) | — |
+| **POST** | `/api/video-streams/pk` | 🔄 Dual 🔒 | var (özel) | `action`, `battleId`, `duration`, `opponentVoiceRoomId`, `streamId`, `targetStreamId` |
 | **GET** | `/api/video-streams/pk/list` | 🌍 Public | — | — |
 | **POST** | `/api/video-streams/pk/score` | 🌍 Public | — | `battleId`, `points`, `streamId` |
 | **DELETE** | `/api/video-streams/signal` | 🔄 Dual | — | — |
@@ -1817,8 +1833,8 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
 |--------|----------|------|-----------|---------------|
-| **GET** | `/api/withdrawals` | 🔄 Dual | — | — |
-| **POST** | `/api/withdrawals` | 🔄 Dual | — | `accountDetails`, `amount`, `method` |
+| **GET** | `/api/withdrawals` | 🔄 Dual | var (özel) | — |
+| **POST** | `/api/withdrawals` | 🔄 Dual | var (özel) | `accountDetails`, `amount`, `method` |
 
 
 ## <a name="cat-youtube"></a>`youtube`

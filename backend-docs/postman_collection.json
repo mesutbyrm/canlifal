@@ -473,6 +473,45 @@
       ]
     },
     {
+      "name": "admin/audit-logs",
+      "item": [
+        {
+          "name": "GET /api/admin/audit-logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit-logs"
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/awards",
       "item": [
         {
@@ -5115,6 +5154,45 @@
       ]
     },
     {
+      "name": "admin/ledger",
+      "item": [
+        {
+          "name": "GET /api/admin/ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ledger",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ledger"
+              ]
+            },
+            "description": "Web oturumu (NextAuth). Mobilde JWT Bearer ile de çalışır eğer route authenticateRequest kullanıyorsa. Dinamik (force-dynamic). [ADMIN]",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/live-tellers",
       "item": [
         {
@@ -9575,7 +9653,7 @@
                 "apply"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -9729,7 +9807,7 @@
                 "join"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -11581,7 +11659,7 @@
                 "create"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -12291,7 +12369,7 @@
                 }
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic). [ADMIN]",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic). [ADMIN]",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -12333,7 +12411,7 @@
                 }
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic). [ADMIN]",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic). [ADMIN]",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -19930,7 +20008,7 @@
                 "pk"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -19964,7 +20042,7 @@
                 "pk"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -21177,7 +21255,7 @@
                 "requests"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -21211,7 +21289,7 @@
                 "requests"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -26348,7 +26426,7 @@
                 "video-streams"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -26381,7 +26459,7 @@
                 "video-streams"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir.",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -26458,7 +26536,7 @@
                 "pk"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic). [ADMIN]",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic). [ADMIN]",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -26492,7 +26570,7 @@
                 "pk"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic). [ADMIN]",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic). [ADMIN]",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -28743,7 +28821,7 @@
                 "withdrawals"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -28776,7 +28854,7 @@
                 "withdrawals"
               ]
             },
-            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Dinamik (force-dynamic).",
+            "description": "Dual-auth: mobil JWT Bearer token **veya** web oturumu kabul edilir. Rate limit: var (özel). Dinamik (force-dynamic).",
             "auth": {
               "type": "bearer",
               "bearer": [
