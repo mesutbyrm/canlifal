@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { recordLedger } from '@/lib/ledger'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  let idemRecord: string | null = null
   try {
     const authUser = await authenticateRequest(req)
     if (!authUser) {
@@ -40,6 +42,11 @@ export async function POST(req: NextRequest) {
     }
 
     const isStaff = user.role === 'yonetici'
+
+    // Idempotency: reserved after validation
+    const idem = await beginIdempotent(req, 'membership_purchase', userId)
+    if (idem.response) return idem.response
+    idemRecord = idem.record
 
     // Allow payment with jeton or CFC (staff skip payment)
     if (!isStaff) {
@@ -169,14 +176,17 @@ export async function POST(req: NextRequest) {
       }).catch((e) => console.error('[Ledger][membership-bonus]', e))
     }
 
-    return NextResponse.json({
+    const responseBody = {
       success: true,
       message: `${plan.name} üyeliğiniz aktifleştirildi!`,
       membership: plan.tier,
       expiresAt: expiresAt.toISOString()
-    })
+    }
+    completeIdempotent(idemRecord, 200, responseBody).catch(() => {})
+    return NextResponse.json(responseBody)
   } catch (error) {
     console.error('Membership purchase error:', error)
+    releaseIdempotent(idemRecord).catch(() => {})
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

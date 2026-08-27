@@ -5497,6 +5497,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/effects/resolve",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "effects",
+    "dynamic": true
+  },
+  {
     "path": "/api/favorite-tellers",
     "method": "GET",
     "auth": "dual",
@@ -9506,6 +9517,17 @@
     ],
     "bodyFields": [],
     "tag": "users",
+    "dynamic": true
+  },
+  {
+    "path": "/api/v1/bootstrap",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "v1",
     "dynamic": true
   },
   {

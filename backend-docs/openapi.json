@@ -309,6 +309,9 @@
       "name": "dreams"
     },
     {
+      "name": "effects"
+    },
+    {
       "name": "favorite-tellers"
     },
     {
@@ -499,6 +502,9 @@
     },
     {
       "name": "users"
+    },
+    {
+      "name": "v1"
     },
     {
       "name": "verification"
@@ -23850,6 +23856,46 @@
         ]
       }
     },
+    "/api/effects/resolve": {
+      "get": {
+        "tags": [
+          "effects"
+        ],
+        "summary": "GET /api/effects/resolve",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
     "/api/favorite-tellers": {
       "get": {
         "tags": [
@@ -40921,6 +40967,46 @@
             "cookieAuth": []
           }
         ]
+      }
+    },
+    "/api/v1/bootstrap": {
+      "get": {
+        "tags": [
+          "v1"
+        ],
+        "summary": "GET /api/v1/bootstrap",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
       }
     },
     "/api/verification": {

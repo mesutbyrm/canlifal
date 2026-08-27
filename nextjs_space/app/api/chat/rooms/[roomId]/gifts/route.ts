@@ -14,6 +14,7 @@ import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-reve
 import { processGiftSend } from '@/lib/gift-engine'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
+import { recordTeamPoints } from '@/lib/team-points'
 
 export const dynamic = 'force-dynamic'
 
@@ -264,6 +265,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         metadata: { roomId, roomType, giftTypeId: giftType.id, quantity },
       }).catch((e) => console.error('[Ledger][chat-gift]', e))
       recordContribution(sender.id, recipient.id, price).catch(() => {})
+      recordTeamPoints(sender.id, price).catch(() => {})
     }
 
     // Create system chat message for the gift

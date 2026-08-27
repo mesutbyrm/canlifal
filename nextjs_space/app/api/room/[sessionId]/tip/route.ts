@@ -7,6 +7,8 @@ import { processAgencyCommission } from '@/lib/agency-commission';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger';
 import { recordContribution } from '@/lib/supporter-level';
+import { recordTeamPoints } from '@/lib/team-points';
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +17,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
+  let idemRecord: string | null = null;
   try {
     const authUser = await authenticateRequest(request)
     if (!authUser) {
@@ -73,6 +76,11 @@ export async function POST(
         sourceId: params.sessionId,
       }).catch(err => console.error('[Tip] Agency commission error:', err));
     }
+
+    // Idempotency: reserved after validation
+    const idem = await beginIdempotent(request, 'tip', authUser.id);
+    if (idem.response) return idem.response;
+    idemRecord = idem.record;
 
     // Transaction: deduct jetons, add to teller earnings, create system messages
     const tipTx: any[] = [
@@ -146,6 +154,7 @@ export async function POST(
         metadata: { tellerId: liveSession.tellerId, commissionRate },
       }).catch((e) => console.error('[Ledger][tip]', e));
       recordContribution(authUser.id, liveSession.tellerId, amount).catch(() => {});
+      recordTeamPoints(authUser.id, amount).catch(() => {});
     }
 
     // Get updated balance
@@ -154,13 +163,12 @@ export async function POST(
       select: { jetonBalance: true }
     });
 
-    return NextResponse.json({ 
-      success: true,
-      amount,
-      jetonsRemaining: updatedUser?.jetonBalance ?? 0
-    });
+    const responseBody = { success: true, amount, jetonsRemaining: updatedUser?.jetonBalance ?? 0 };
+    completeIdempotent(idemRecord, 200, responseBody).catch(() => {});
+    return NextResponse.json(responseBody);
   } catch (error) {
     console.error('Tip error:', error);
+    releaseIdempotent(idemRecord).catch(() => {});
     return NextResponse.json({ error: 'Bahşiş gönderilemedi' }, { status: 500 });
   }
 }

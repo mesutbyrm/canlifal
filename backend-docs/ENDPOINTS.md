@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **771 endpoint handler** (493 benzersiz yol), **164 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **773 endpoint handler** (495 benzersiz yol), **166 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -103,6 +103,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [dream-stats](#cat-dream-stats) (1)
 - [dream-symbols](#cat-dream-symbols) (2)
 - [dreams](#cat-dreams) (14)
+- [effects](#cat-effects) (1)
 - [favorite-tellers](#cat-favorite-tellers) (2)
 - [football](#cat-football) (1)
 - [fortune-access](#cat-fortune-access) (2)
@@ -167,6 +168,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [upload](#cat-upload) (3)
 - [user](#cat-user) (32)
 - [users](#cat-users) (7)
+- [v1](#cat-v1) (1)
 - [verification](#cat-verification) (2)
 - [video-streams](#cat-video-streams) (53)
 - [wallet](#cat-wallet) (1)
@@ -1118,6 +1120,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **POST** | `/api/dreams/{slug}/view` | 🔄 Dual | — | — |
 
 
+## <a name="cat-effects"></a>`effects`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/effects/resolve` | 🌍 Public | — | — |
+
+
 ## <a name="cat-favorite-tellers"></a>`favorite-tellers`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1817,6 +1826,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/users/{userId}/follow` | 🔄 Dual | — | — |
 | **POST** | `/api/users/{userId}/follow` | 🔄 Dual | — | — |
 | **GET** | `/api/users/{userId}/posts` | 🔄 Dual | — | — |
+
+
+## <a name="cat-v1"></a>`v1`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/v1/bootstrap` | 🌍 Public | — | — |
 
 
 ## <a name="cat-verification"></a>`verification`

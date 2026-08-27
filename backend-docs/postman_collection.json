@@ -15443,6 +15443,35 @@
       ]
     },
     {
+      "name": "effects",
+      "item": [
+        {
+          "name": "GET /api/effects/resolve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/effects/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "effects",
+                "resolve"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
+          }
+        }
+      ]
+    },
+    {
       "name": "favorite-tellers",
       "item": [
         {
@@ -27127,6 +27156,35 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "v1",
+      "item": [
+        {
+          "name": "GET /api/v1/bootstrap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bootstrap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bootstrap"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]
