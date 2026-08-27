@@ -10,7 +10,7 @@ import {
   X, ChevronDown, Settings, Megaphone, Save, CheckCircle, Eye, Video,
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
   DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
-  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award, HardDrive,
+  Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award, HardDrive, MonitorCheck,
   Smile, Wand2, Frame
 } from 'lucide-react'
 import Link from 'next/link'
@@ -203,6 +203,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/roles`, icon: Settings, trLabel: 'Rol & Yetki', enLabel: 'Roles & Permissions', emoji: '🔐', desc: 'Rollerin izinlerini yönetin' },
       { href: `/admin/risk`, icon: ShieldAlert, trLabel: 'Risk & Dolandırıcılık', enLabel: 'Risk & Fraud', emoji: '⚠️', desc: 'Finansal işlemlerde risk sinyalleri' },
       { href: `/admin/rtc-telemetry`, icon: Activity, trLabel: 'Bağlantı Kalitesi', enLabel: 'Connection Quality', emoji: '📡', desc: 'Canlı görüşme ağ kalite ölçümleri' },
+      { href: `/admin/system-monitor`, icon: MonitorCheck, trLabel: 'Sistem Durumu', enLabel: 'System Monitor', emoji: '🖥️', desc: 'Canlı üretim izleme metrikleri' },
       { href: `/admin/effect-rules`, icon: Sparkles, trLabel: 'Efekt Kuralları', enLabel: 'Effect Rules', emoji: '✨', desc: 'Seviye/harcamaya göre efekt atama' },
       { href: `/admin/themes`, icon: Palette, trLabel: 'Tema Yönetimi', enLabel: 'Theme Management', emoji: '🎨', desc: 'Site renk & tema değiştir' },
       { href: `/admin/homepage-buttons`, icon: LayoutDashboard, trLabel: 'Ana Sayfa Butonları', enLabel: 'Homepage Buttons', emoji: '🔘', desc: 'Anasayfa buton düzeni' },
