@@ -4198,3 +4198,54 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// ─────────────────────────────────────────────────────────────
+// RBAC — Role / Permission (Phase 6)
+// Additive: existing hardcoded string role checks keep working.
+// This layer runs in parallel and lets admins manage permissions in DB.
+// ─────────────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(cuid())
+  key         String   @unique          // 'admin' | 'yonetici' | 'moderator' | 'finans' | custom
+  name        String
+  description String?
+  level       Int      @default(0)      // higher = more privileged
+  isSystem    Boolean  @default(false)  // system roles cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+
+  @@index([level])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique          // e.g. 'finance.withdrawal.approve'
+  name        String
+  description String?
+  group       String?                   // 'finance' | 'content' | 'moderation' | 'system'
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@index([group])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}

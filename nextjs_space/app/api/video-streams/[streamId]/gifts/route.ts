@@ -13,6 +13,7 @@ import { emitStreamEvent } from '@/lib/stream-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { serializeGiftMedia } from '@/lib/media-url'
 import { processGiftSend } from '@/lib/gift-engine'
+import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -172,13 +173,17 @@ export async function POST(
       )
     }
 
+    // Ledger için yayıncıya giden net tutar (blok dışında da erişilebilsin)
+    let ledgerRecipientAmount = 0
+
     // Sadece normal kullanıcıların hediyeleri yayıncıya bakiye olarak yansır
     if (!senderExcluded) {
       // Get configurable commission rate from platform settings (default 30%)
       const streamCommissionStr = await getPlatformSetting('stream_gift_commission', '30')
       const streamCommissionPercent = Math.min(100, Math.max(0, parseInt(streamCommissionStr) || 30))
       const recipientAmount = Math.floor(totalPrice * (100 - streamCommissionPercent) / 100)
-      
+      ledgerRecipientAmount = recipientAmount
+
       if (recipientAmount > 0) {
         txOps.push(
           prisma.user.update({
@@ -206,6 +211,37 @@ export async function POST(
     )
 
     const [gift] = await prisma.$transaction(txOps)
+
+    // ── Immutable ledger (fire-and-forget) ──
+    if (!senderExcluded) {
+      const siteAmount = totalPrice - ledgerRecipientAmount
+      const legs: LedgerLeg[] = [
+        {
+          accountType: 'user_jeton',
+          accountId: userId,
+          direction: 'debit',
+          amount: totalPrice,
+          balanceBefore: user?.jetonBalance ?? 0,
+          balanceAfter: (user?.jetonBalance ?? 0) - totalPrice,
+        },
+      ]
+      if (ledgerRecipientAmount > 0) {
+        legs.push({ accountType: 'user_jeton', accountId: stream.userId, direction: 'credit', amount: ledgerRecipientAmount })
+      }
+      if (siteAmount > 0) {
+        legs.push({ accountType: 'platform_jeton', accountId: 'platform', direction: 'credit', amount: siteAmount })
+      }
+      recordMultiLeg({
+        legs,
+        category: 'gift_send',
+        currency: 'jeton',
+        description: `Video yayın hediyesi x${quantity}`,
+        referenceType: 'StreamGift',
+        referenceId: (gift as any)?.id,
+        actorId: userId,
+        metadata: { streamId: params.streamId, giftTypeId, quantity },
+      }).catch((e) => console.error('[Ledger][video-stream-gift]', e))
+    }
 
     // Log gift activity
     logActivity({

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { recordLedger } from '@/lib/ledger'
 
 // GET - Get jeton balance, streak, daily tasks
 export async function GET(req: NextRequest) {
@@ -115,6 +116,24 @@ export async function POST(req: NextRequest) {
           },
         }),
       ])
+
+      // ── Immutable ledger (fire-and-forget) ──
+      recordLedger({
+        debit: { accountType: 'platform_cfc', accountId: 'platform' },
+        credit: {
+          accountType: 'user_cfc',
+          accountId: userId,
+          balanceBefore: currentCredits,
+          balanceAfter: newCreditsBalance,
+        },
+        amount: bonusAmount,
+        category: 'daily_bonus',
+        currency: 'cfc',
+        description: 'Günlük giriş bonusu',
+        referenceType: 'DailyTask',
+        referenceId: userId,
+        actorId: userId,
+      }).catch((e) => console.error('[Ledger][daily-bonus]', e))
 
       return NextResponse.json({ success: true, creditsEarned: bonusAmount, newCreditsBalance })
     }

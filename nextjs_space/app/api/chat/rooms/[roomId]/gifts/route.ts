@@ -12,6 +12,7 @@ import { emitChatEvent } from '@/lib/chat-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 import { processGiftSend } from '@/lib/gift-engine'
+import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
 
@@ -214,6 +215,54 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         beneficiaryId: dist.ownerNet > 0 ? roomOwnerId : null
       }
     })
+
+    // ── Immutable ledger (fire-and-forget, never blocks the money flow) ──
+    if (!isStaff && !senderExcluded) {
+      const legs: LedgerLeg[] = [
+        {
+          accountType: 'user_jeton',
+          accountId: sender.id,
+          direction: 'debit',
+          amount: price,
+          balanceBefore: sender.jetonBalance ?? 0,
+          balanceAfter: (sender.jetonBalance ?? 0) - price,
+        },
+      ]
+      if (dist.receiverNet > 0) {
+        legs.push({
+          accountType: 'user_jeton',
+          accountId: recipient.id,
+          direction: 'credit',
+          amount: dist.receiverNet,
+        })
+      }
+      if (dist.ownerNet > 0 && roomOwnerId) {
+        legs.push({
+          accountType: 'user_jeton',
+          accountId: roomOwnerId,
+          direction: 'credit',
+          amount: dist.ownerNet,
+        })
+      }
+      if (dist.siteAmount > 0) {
+        legs.push({
+          accountType: 'platform_jeton',
+          accountId: 'platform',
+          direction: 'credit',
+          amount: dist.siteAmount,
+        })
+      }
+      recordMultiLeg({
+        legs,
+        category: 'gift_send',
+        currency: 'jeton',
+        description: `Sohbet odası hediyesi: ${giftType.name} x${quantity}`,
+        referenceType: 'ChatRoomGift',
+        referenceId: gift.id,
+        actorId: sender.id,
+        metadata: { roomId, roomType, giftTypeId: giftType.id, quantity },
+      }).catch((e) => console.error('[Ledger][chat-gift]', e))
+    }
 
     // Create system chat message for the gift
     const qtyText = quantity > 1 ? ` x${quantity}` : ''

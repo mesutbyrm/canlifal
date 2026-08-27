@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { processAgencyCommission } from '@/lib/agency-commission';
 import { getCachedPlatformSetting } from '@/lib/cache';
+import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,6 +105,46 @@ export async function POST(
       );
     }
     await prisma.$transaction(tipTx);
+
+    // ── Immutable ledger (fire-and-forget) ──
+    if (!tipperIsStaff) {
+      const legs: LedgerLeg[] = [
+        {
+          accountType: 'user_jeton',
+          accountId: liveSession.userId,
+          direction: 'debit',
+          amount,
+          balanceBefore: liveSession.user.jetonBalance ?? 0,
+          balanceAfter: (liveSession.user.jetonBalance ?? 0) - amount,
+        },
+      ];
+      if (tellerEarnings > 0) {
+        legs.push({
+          accountType: 'teller_earning',
+          accountId: liveSession.tellerId,
+          direction: 'credit',
+          amount: tellerEarnings,
+        });
+      }
+      if (commissionAmount > 0) {
+        legs.push({
+          accountType: 'platform_jeton',
+          accountId: 'platform',
+          direction: 'credit',
+          amount: commissionAmount,
+        });
+      }
+      recordMultiLeg({
+        legs,
+        category: 'tip',
+        currency: 'jeton',
+        description: `Fal seansı bahşişi`,
+        referenceType: 'LiveSession',
+        referenceId: params.sessionId,
+        actorId: authUser.id,
+        metadata: { tellerId: liveSession.tellerId, commissionRate },
+      }).catch((e) => console.error('[Ledger][tip]', e));
+    }
 
     // Get updated balance
     const updatedUser = await prisma.user.findUnique({

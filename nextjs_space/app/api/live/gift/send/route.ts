@@ -9,6 +9,7 @@ import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-reve
 import { emitStreamEvent } from '@/lib/stream-events'
 import { emitChatEvent } from '@/lib/chat-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
+import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
 
@@ -175,6 +176,36 @@ export async function POST(request: NextRequest) {
       const [gift] = await prisma.$transaction(txOps)
       giftRecord = gift
 
+      // ── Immutable ledger (fire-and-forget) ──
+      if (!senderExcluded) {
+        const legs: LedgerLeg[] = [
+          {
+            accountType: 'user_jeton',
+            accountId: sender.id,
+            direction: 'debit',
+            amount: totalPrice,
+            balanceBefore: sender.jetonBalance ?? 0,
+            balanceAfter: (sender.jetonBalance ?? 0) - totalPrice,
+          },
+        ]
+        if (recipientAmount > 0) {
+          legs.push({ accountType: 'user_jeton', accountId: stream.userId, direction: 'credit', amount: recipientAmount })
+        }
+        if (siteAmount > 0) {
+          legs.push({ accountType: 'platform_jeton', accountId: 'platform', direction: 'credit', amount: siteAmount })
+        }
+        recordMultiLeg({
+          legs,
+          category: 'gift_send',
+          currency: 'jeton',
+          description: `Canlı yayın hediyesi x${quantity}`,
+          referenceType: 'StreamGift',
+          referenceId: (gift as any)?.id,
+          actorId: sender.id,
+          metadata: { streamId: stream.id, giftTypeId, quantity, commissionPercent },
+        }).catch((e) => console.error('[Ledger][stream-gift]', e))
+      }
+
       // PK score update
       try {
         const activePK = await prisma.pKBattle.findFirst({
@@ -337,6 +368,39 @@ export async function POST(request: NextRequest) {
 
       // Log revenue
       logRoomRevenue({ roomId: room.id, eventType: 'gift', totalAmount: totalPrice, receiverAmount: dist.receiverNet, ownerAmount: dist.ownerNet, siteAmount: dist.siteAmount, senderId: sender.id, receiverId: recipientId, ownerId: room.ownerId || undefined }).catch(() => {})
+
+      // ── Immutable ledger (fire-and-forget) ──
+      if (!isStaff && !senderExcluded) {
+        const legs: LedgerLeg[] = [
+          {
+            accountType: 'user_jeton',
+            accountId: sender.id,
+            direction: 'debit',
+            amount: totalPrice,
+            balanceBefore: sender.jetonBalance ?? 0,
+            balanceAfter: (sender.jetonBalance ?? 0) - totalPrice,
+          },
+        ]
+        if (dist.receiverNet > 0) {
+          legs.push({ accountType: 'user_jeton', accountId: recipient.id, direction: 'credit', amount: dist.receiverNet })
+        }
+        if (dist.ownerNet > 0 && room.ownerId && room.ownerId !== recipient.id) {
+          legs.push({ accountType: 'user_jeton', accountId: room.ownerId, direction: 'credit', amount: dist.ownerNet })
+        }
+        if (dist.siteAmount > 0) {
+          legs.push({ accountType: 'platform_jeton', accountId: 'platform', direction: 'credit', amount: dist.siteAmount })
+        }
+        recordMultiLeg({
+          legs,
+          category: 'gift_send',
+          currency: 'jeton',
+          description: `Sesli oda hediyesi x${quantity}`,
+          referenceType: 'ChatRoomGift',
+          referenceId: (gift as any)?.id,
+          actorId: sender.id,
+          metadata: { roomId: room.id, roomType: roomType2, giftTypeId, quantity },
+        }).catch((e) => console.error('[Ledger][live-room-gift]', e))
+      }
 
       // PK score update for voice room PK
       try {

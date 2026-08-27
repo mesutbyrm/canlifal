@@ -6,6 +6,7 @@ import prisma from '@/lib/db';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { emitRoomEvent, clearRoomEvents } from '@/lib/room-events';
+import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -347,6 +348,51 @@ export async function PATCH(
             totalEarnings: { increment: tellerEarnings }
           }
         });
+
+        // ── Immutable ledger (fire-and-forget) ──
+        if (actualCost > 0) {
+          const sessionLegs: LedgerLeg[] = [
+            {
+              accountType: 'user_jeton',
+              accountId: liveSession.userId,
+              direction: 'debit',
+              amount: actualCost,
+            },
+          ];
+          if (tellerEarnings > 0) {
+            sessionLegs.push({
+              accountType: 'teller_earning',
+              accountId: liveSession.tellerId,
+              direction: 'credit',
+              amount: tellerEarnings,
+            });
+          }
+          if (commissionAmount > 0) {
+            sessionLegs.push({
+              accountType: 'platform_jeton',
+              accountId: 'platform',
+              direction: 'credit',
+              amount: commissionAmount,
+            });
+          }
+          recordMultiLeg({
+            legs: sessionLegs,
+            category: 'fortune_session',
+            currency: 'jeton',
+            description: `Fal seansı kapanışı (${actualMinutesUsed} dk)`,
+            referenceType: 'LiveSession',
+            referenceId: params.sessionId,
+            actorId: currentUserId,
+            metadata: {
+              tellerId: liveSession.tellerId,
+              minutesUsed: actualMinutesUsed,
+              refundAmount,
+              commissionRate,
+              tellerEarningsTl,
+              clientSpentTl,
+            },
+          }).catch((e) => console.error('[Ledger][fortune-session]', e));
+        }
 
         // Notification to the other party
         if (isTeller) {

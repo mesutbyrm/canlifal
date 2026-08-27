@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { recordLedger } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +107,31 @@ export async function POST(req: NextRequest) {
       }
     })
 
+    // ── Immutable ledger (fire-and-forget) ──
+    if (!isStaff && plan.price > 0) {
+      const isCfc = method === 'cfc'
+      recordLedger({
+        debit: {
+          accountType: isCfc ? 'user_cfc' : 'user_jeton',
+          accountId: userId,
+          balanceBefore: isCfc ? user.credits : user.jetonBalance,
+          balanceAfter: (isCfc ? user.credits : user.jetonBalance) - plan.price,
+        },
+        credit: {
+          accountType: isCfc ? 'platform_cfc' : 'platform_jeton',
+          accountId: 'platform',
+        },
+        amount: plan.price,
+        category: 'membership',
+        currency: isCfc ? 'cfc' : 'jeton',
+        description: `${plan.name} üyelik satın alımı`,
+        referenceType: 'MembershipPlan',
+        referenceId: plan.id,
+        actorId: userId,
+        metadata: { tier: plan.tier, durationDays: plan.durationDays, method },
+      }).catch((e) => console.error('[Ledger][membership]', e))
+    }
+
     // Add bonus jetons if any
     if (plan.bonusJetons > 0) {
       const updatedUser = await prisma.user.update({
@@ -124,6 +150,23 @@ export async function POST(req: NextRequest) {
           balanceAfter: updatedUser.jetonBalance
         }
       })
+
+      recordLedger({
+        debit: { accountType: 'platform_jeton', accountId: 'platform' },
+        credit: {
+          accountType: 'user_jeton',
+          accountId: userId,
+          balanceBefore: updatedUser.jetonBalance - plan.bonusJetons,
+          balanceAfter: updatedUser.jetonBalance,
+        },
+        amount: plan.bonusJetons,
+        category: 'membership',
+        currency: 'jeton',
+        description: `${plan.name} üyelik bonus jetonları`,
+        referenceType: 'MembershipPlan',
+        referenceId: plan.id,
+        actorId: userId,
+      }).catch((e) => console.error('[Ledger][membership-bonus]', e))
     }
 
     return NextResponse.json({
