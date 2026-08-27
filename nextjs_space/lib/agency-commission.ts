@@ -47,33 +47,29 @@ export async function processAgencyCommission({
     const commissionAmount = Math.floor(earnedAmount * commissionRate / 100)
     if (commissionAmount <= 0) return 0
 
-    // Record the earning
-    await prisma.agencyEarning.create({
-      data: {
-        agencyId: membership.agencyId,
-        userId,
-        amount: commissionAmount,
-        sourceType,
-        sourceId,
-        originalAmount: earnedAmount,
-        commissionRate,
-      }
-    })
-
-    // Update agency totals
-    await prisma.agency.update({
-      where: { id: membership.agencyId },
-      data: {
-        totalEarnings: { increment: commissionAmount },
-      }
-    })
-
-    // Update member totals
-    await prisma.agencyUser.update({
-      where: { id: membership.id },
-      data: {
-        totalEarnings: { increment: commissionAmount },
-      }
+    // Faz 20 — §77 Transaction Safety: 3 yazım (earning + agency + member)
+    // tek bir interactive transaction içinde sarılır; arızada kısmi güncelleme
+    // olmaz.
+    await prisma.$transaction(async (tx: any) => {
+      await tx.agencyEarning.create({
+        data: {
+          agencyId: membership.agencyId,
+          userId,
+          amount: commissionAmount,
+          sourceType,
+          sourceId,
+          originalAmount: earnedAmount,
+          commissionRate,
+        }
+      })
+      await tx.agency.update({
+        where: { id: membership.agencyId },
+        data: { totalEarnings: { increment: commissionAmount } }
+      })
+      await tx.agencyUser.update({
+        where: { id: membership.id },
+        data: { totalEarnings: { increment: commissionAmount } }
+      })
     })
 
     return commissionAmount

@@ -76,46 +76,34 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
     if (action === 'daily_login') {
-      // Check if already claimed
-      const existing = await prisma.dailyTask.findUnique({
-        where: { userId_taskType_date: { userId: userId, taskType: 'login', date: today } },
-      })
-      if (existing) {
-        return NextResponse.json({ error: 'Günlük bonus zaten alındı', alreadyClaimed: true }, { status: 400 })
-      }
-
-      // Daily login bonus goes to CREDITS (not jetons)
-      // Jetons are only obtained through real money purchases
+      // Faz 20 — §78 Race Condition: kontrol + kredi artışı + dailyTask tek interactive
+      // transaction içinde; iki eş zamanlı istek çift bonus veremez.
       const bonusAmount = 5
-      const userFull = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { credits: true },
-      })
-      const currentCredits = userFull?.credits ?? 0
-      const newCreditsBalance = currentCredits + bonusAmount
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: userId },
-          data: { credits: { increment: bonusAmount } },
-        }),
-        prisma.creditTransaction.create({
-          data: {
-            userId: userId,
-            amount: bonusAmount,
-            type: 'daily_bonus',
-            description: 'Günlük giriş bonusu',
-            balance: newCreditsBalance,
-          },
-        }),
-        prisma.dailyTask.create({
-          data: {
-            userId: userId,
-            taskType: 'login',
-            jetonEarned: bonusAmount,
-            date: today,
-          },
-        }),
-      ])
+      let currentCredits = 0
+      let newCreditsBalance = 0
+      try {
+        const txResult = await prisma.$transaction(async (tx: any) => {
+          const existing = await tx.dailyTask.findUnique({
+            where: { userId_taskType_date: { userId, taskType: 'login', date: today } },
+          })
+          if (existing) return { alreadyClaimed: true } as const
+          const userFull = await tx.user.findUnique({ where: { id: userId }, select: { credits: true } })
+          currentCredits = userFull?.credits ?? 0
+          newCreditsBalance = currentCredits + bonusAmount
+          await tx.user.update({ where: { id: userId }, data: { credits: { increment: bonusAmount } } })
+          await tx.creditTransaction.create({
+            data: { userId, amount: bonusAmount, type: 'daily_bonus', description: 'Günlük giriş bonusu', balance: newCreditsBalance },
+          })
+          await tx.dailyTask.create({ data: { userId, taskType: 'login', jetonEarned: bonusAmount, date: today } })
+          return { ok: true } as const
+        })
+        if ('alreadyClaimed' in txResult) {
+          return NextResponse.json({ error: 'Günlük bonus zaten alındı', alreadyClaimed: true }, { status: 400 })
+        }
+      } catch (txErr: any) {
+        if (txErr?.code === 'P2002') return NextResponse.json({ error: 'Günlük bonus zaten alındı', alreadyClaimed: true }, { status: 400 })
+        throw txErr
+      }
 
       // ── Immutable ledger (fire-and-forget) ──
       recordLedger({

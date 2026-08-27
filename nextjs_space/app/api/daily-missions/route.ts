@@ -77,51 +77,66 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz görev' }, { status: 400 })
     }
 
-    // Check already completed
-    const existing = await prisma.dailyTask.findUnique({
-      where: { userId_taskType_date: { userId: authUser.id, taskType, date: today } },
-    })
-    if (existing) {
-      return NextResponse.json({ error: 'Bu görev zaten tamamlandı', alreadyClaimed: true }, { status: 400 })
-    }
+    // Faz 20 — §78 Race Condition: tekrarlı talep koruması.
+    // Kontrol + kredi artışı + dailyTask oluşturma tek interactive transaction
+    // içinde; iki eş zamanlı istek aynı görevi iki kez tamamlayamaz.
 
     // All complete bonus
     if (taskType === 'all_complete_bonus') {
-      const completedTasks = await prisma.dailyTask.findMany({
-        where: { userId: authUser.id, date: today },
-      })
-      const completedTypes = new Set(completedTasks.map((t: any) => t.taskType))
-      const allDone = MISSIONS.every(m => completedTypes.has(m.type))
-      if (!allDone) {
-        return NextResponse.json({ error: 'Tüm görevleri tamamlamadan bonus alamazsınız' }, { status: 400 })
+      try {
+        const result = await prisma.$transaction(async (tx: any) => {
+          const dup = await tx.dailyTask.findUnique({
+            where: { userId_taskType_date: { userId: authUser.id, taskType: 'all_complete_bonus', date: today } },
+          })
+          if (dup) return { alreadyClaimed: true } as const
+          const completedTasks = await tx.dailyTask.findMany({
+            where: { userId: authUser.id, date: today },
+          })
+          const completedTypes = new Set(completedTasks.map((t: any) => t.taskType))
+          const allDone = MISSIONS.every(m => completedTypes.has(m.type))
+          if (!allDone) return { notReady: true } as const
+          const bonusAmount = 25
+          const user = await tx.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
+          const newBalance = (user?.credits || 0) + bonusAmount
+          await tx.user.update({ where: { id: authUser.id }, data: { credits: { increment: bonusAmount } } })
+          await tx.creditTransaction.create({
+            data: { userId: authUser.id, amount: bonusAmount, type: 'daily_bonus', description: 'Tüm günlük görevler tamamlandı bonusu', balance: newBalance },
+          })
+          await tx.dailyTask.create({ data: { userId: authUser.id, taskType: 'all_complete_bonus', jetonEarned: bonusAmount, date: today } })
+          return { creditsEarned: bonusAmount } as const
+        })
+        if ('alreadyClaimed' in result) return NextResponse.json({ error: 'Bu görev zaten tamamlandı', alreadyClaimed: true }, { status: 400 })
+        if ('notReady' in result) return NextResponse.json({ error: 'Tüm görevleri tamamlamadan bonus alamazsınız' }, { status: 400 })
+        return NextResponse.json({ success: true, creditsEarned: result.creditsEarned })
+      } catch (txErr: any) {
+        if (txErr?.code === 'P2002') return NextResponse.json({ error: 'Bu görev zaten tamamlandı', alreadyClaimed: true }, { status: 400 })
+        throw txErr
       }
-
-      const bonusAmount = 25
-      const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
-      const newBalance = (user?.credits || 0) + bonusAmount
-      await prisma.$transaction([
-        prisma.user.update({ where: { id: authUser.id }, data: { credits: { increment: bonusAmount } } }),
-        prisma.creditTransaction.create({
-          data: { userId: authUser.id, amount: bonusAmount, type: 'daily_bonus', description: 'Tüm günlük görevler tamamlandı bonusu', balance: newBalance },
-        }),
-        prisma.dailyTask.create({ data: { userId: authUser.id, taskType: 'all_complete_bonus', jetonEarned: bonusAmount, date: today } }),
-      ])
-      return NextResponse.json({ success: true, creditsEarned: bonusAmount })
     }
 
     // Complete a regular mission
-    const reward = mission!.reward
-    const user = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
-    const newBalance = (user?.credits || 0) + reward
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: authUser.id }, data: { credits: { increment: reward } } }),
-      prisma.creditTransaction.create({
-        data: { userId: authUser.id, amount: reward, type: 'daily_bonus', description: `Günlük görev: ${mission!.title}`, balance: newBalance },
-      }),
-      prisma.dailyTask.create({ data: { userId: authUser.id, taskType, jetonEarned: reward, date: today } }),
-    ])
-
-    return NextResponse.json({ success: true, creditsEarned: reward })
+    try {
+      const result = await prisma.$transaction(async (tx: any) => {
+        const dup = await tx.dailyTask.findUnique({
+          where: { userId_taskType_date: { userId: authUser.id, taskType, date: today } },
+        })
+        if (dup) return { alreadyClaimed: true } as const
+        const reward = mission!.reward
+        const user = await tx.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
+        const newBalance = (user?.credits || 0) + reward
+        await tx.user.update({ where: { id: authUser.id }, data: { credits: { increment: reward } } })
+        await tx.creditTransaction.create({
+          data: { userId: authUser.id, amount: reward, type: 'daily_bonus', description: `Günlük görev: ${mission!.title}`, balance: newBalance },
+        })
+        await tx.dailyTask.create({ data: { userId: authUser.id, taskType, jetonEarned: reward, date: today } })
+        return { creditsEarned: reward } as const
+      })
+      if ('alreadyClaimed' in result) return NextResponse.json({ error: 'Bu görev zaten tamamlandı', alreadyClaimed: true }, { status: 400 })
+      return NextResponse.json({ success: true, creditsEarned: result.creditsEarned })
+    } catch (txErr: any) {
+      if (txErr?.code === 'P2002') return NextResponse.json({ error: 'Bu görev zaten tamamlandı', alreadyClaimed: true }, { status: 400 })
+      throw txErr
+    }
   } catch (error: any) {
     console.error('[DailyMissions POST] Error:', error)
     return NextResponse.json({ error: 'Görev tamamlanamadı' }, { status: 500 })

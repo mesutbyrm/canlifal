@@ -340,45 +340,50 @@ export async function POST(
       }
     }
     
-    // If user wants a seat, validate it's not taken
-    if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < SEAT_COUNT) {
-      const seatTaken = await prisma.chatPresence.findFirst({
-        where: {
-          roomId,
-          seatIndex,
-          lastSeen: { gte: seatStaleThreshold() },
-          userId: { not: userId }
-        }
-      })
-      if (seatTaken) {
-        return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
-      }
-    }
-
-    // Update presence with nickname & seatIndex (handle race condition with retry)
+    // Faz 20 — §78 Race Condition: koltuk kontrolü + upsert tek bir interactive
+    // transaction içinde. İki istek aynı koltuğa aynı anda ulaşırsa ikincisi
+    // serialization hatası alır ve listener olarak kalır (seatIndex = -1).
+    let seatConflict = false
     try {
-      await prisma.chatPresence.upsert({
-        where: {
-          roomId_userId: {
-            roomId,
-            userId: userId
+      await prisma.$transaction(async (tx: any) => {
+        if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < SEAT_COUNT) {
+          const seatTaken = await tx.chatPresence.findFirst({
+            where: {
+              roomId,
+              seatIndex,
+              lastSeen: { gte: seatStaleThreshold() },
+              userId: { not: userId }
+            }
+          })
+          if (seatTaken) {
+            seatConflict = true
+            seatIndex = -1 // çakışma — dinleyici olarak otur
           }
-        },
-        update: { 
-          lastSeen: new Date(),
-          ...(nickname ? { nickname } : {}),
-          ...(seatIndex !== undefined ? { seatIndex } : {})
-        },
-        create: {
-          roomId,
-          userId: userId,
-          ...(nickname ? { nickname } : {}),
-          seatIndex: seatIndex !== undefined ? seatIndex : -1
         }
-      })
-    } catch (upsertError: unknown) {
-      // Handle unique constraint error (race condition) by trying update only
-      if ((upsertError as { code?: string })?.code === 'P2002') {
+
+        await tx.chatPresence.upsert({
+          where: {
+            roomId_userId: {
+              roomId,
+              userId: userId
+            }
+          },
+          update: {
+            lastSeen: new Date(),
+            ...(nickname ? { nickname } : {}),
+            ...(seatIndex !== undefined ? { seatIndex } : {})
+          },
+          create: {
+            roomId,
+            userId: userId,
+            ...(nickname ? { nickname } : {}),
+            seatIndex: seatIndex !== undefined ? seatIndex : -1
+          }
+        })
+      }, { isolationLevel: 'ReadCommitted' })
+    } catch (txError: unknown) {
+      // P2002 unique constraint — eski geri dönüş davranışı
+      if ((txError as { code?: string })?.code === 'P2002') {
         await prisma.chatPresence.update({
           where: {
             roomId_userId: {
@@ -386,15 +391,19 @@ export async function POST(
               userId: userId
             }
           },
-          data: { 
+          data: {
             lastSeen: new Date(),
             ...(nickname ? { nickname } : {}),
             ...(seatIndex !== undefined ? { seatIndex } : {})
           }
         })
       } else {
-        throw upsertError
+        throw txError
       }
+    }
+    if (seatConflict) {
+      // Koltuk doluydu, dinleyici olarak katıldı — hata dönmek yerine devam et;
+      // istemci presence yanıtından seatIndex=-1 görüp uygun UI gösterir.
     }
     
     // GHOST PREVENTION: on a NEW join, force-leave any OTHER room this user is
