@@ -3135,6 +3135,17 @@
     "dynamic": true
   },
   {
+    "path": "/api/admin/system-stats",
+    "method": "GET",
+    "auth": "public",
+    "admin": true,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "admin/system-stats",
+    "dynamic": true
+  },
+  {
     "path": "/api/admin/teller-levels",
     "method": "POST",
     "auth": "session",
@@ -7015,6 +7026,17 @@
     ],
     "bodyFields": [],
     "tag": "hashtags",
+    "dynamic": true
+  },
+  {
+    "path": "/api/health",
+    "method": "GET",
+    "auth": "public",
+    "admin": false,
+    "rateLimit": null,
+    "pathParams": [],
+    "bodyFields": [],
+    "tag": "health",
     "dynamic": true
   },
   {

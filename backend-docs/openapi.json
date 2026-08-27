@@ -207,6 +207,9 @@
       "name": "admin/support"
     },
     {
+      "name": "admin/system-stats"
+    },
+    {
       "name": "admin/teller-levels"
     },
     {
@@ -352,6 +355,9 @@
     },
     {
       "name": "hashtags"
+    },
+    {
+      "name": "health"
     },
     {
       "name": "homepage-buttons"
@@ -13716,6 +13722,46 @@
           "admin/support"
         ],
         "summary": "GET /api/admin/support",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
+      }
+    },
+    "/api/admin/system-stats": {
+      "get": {
+        "tags": [
+          "admin/system-stats"
+        ],
+        "summary": "GET /api/admin/system-stats",
         "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).\n\n**🔒 Yalnızca yönetici (admin/yonetici) erişimi.**",
         "parameters": [],
         "responses": {
@@ -30355,6 +30401,46 @@
             "cookieAuth": []
           }
         ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "GET /api/health",
+        "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Geçersiz istek / doğrulama hatası"
+          },
+          "401": {
+            "description": "Kimlik doğrulama gerekli / geçersiz token"
+          },
+          "403": {
+            "description": "Yetki yok"
+          },
+          "404": {
+            "description": "Bulunamadı"
+          },
+          "429": {
+            "description": "Rate limit aşıldı"
+          },
+          "500": {
+            "description": "Sunucu hatası"
+          }
+        }
       }
     },
     "/api/homepage-buttons": {

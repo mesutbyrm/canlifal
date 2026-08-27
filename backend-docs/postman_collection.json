@@ -8577,6 +8577,35 @@
       ]
     },
     {
+      "name": "admin/system-stats",
+      "item": [
+        {
+          "name": "GET /api/admin/system-stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/system-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "system-stats"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic). [ADMIN]"
+          }
+        }
+      ]
+    },
+    {
       "name": "admin/teller-levels",
       "item": [
         {
@@ -19837,6 +19866,34 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Kimlik doğrulama gerektirmez (public). Dinamik (force-dynamic)."
           }
         }
       ]

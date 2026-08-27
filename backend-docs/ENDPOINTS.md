@@ -1,6 +1,6 @@
 # 📌CanlıFal — Tüm API Endpoint Listesi
 
-> Otomatik keşifle çıkarılmış **778 endpoint handler** (500 benzersiz yol), **170 kategori**. Hiçbir endpoint atlanmamıştır.
+> Otomatik keşifle çıkarılmış **780 endpoint handler** (502 benzersiz yol), **172 kategori**. Hiçbir endpoint atlanmamıştır.
 
 
 Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum** = web oturumu (NextAuth) · **🌍 Public** = kimliksiz. **🔒 ADMIN** = yönetici rolü gerekir.
@@ -69,6 +69,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [admin/site-pages](#cat-admin-site-pages) (4)
 - [admin/statistics](#cat-admin-statistics) (1)
 - [admin/support](#cat-admin-support) (1)
+- [admin/system-stats](#cat-admin-system-stats) (1)
 - [admin/teller-levels](#cat-admin-teller-levels) (1)
 - [admin/teller-performance](#cat-admin-teller-performance) (1)
 - [admin/teller-verification](#cat-admin-teller-verification) (2)
@@ -118,6 +119,7 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 - [gift-engine](#cat-gift-engine) (3)
 - [gifts](#cat-gifts) (27)
 - [hashtags](#cat-hashtags) (3)
+- [health](#cat-health) (1)
 - [homepage-buttons](#cat-homepage-buttons) (1)
 - [homepage-fortune-cards](#cat-homepage-fortune-cards) (1)
 - [homepage-ticker](#cat-homepage-ticker) (1)
@@ -744,6 +746,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/admin/support` | 🌍 Public 🔒 | — | — |
 
 
+## <a name="cat-admin-system-stats"></a>`admin/system-stats`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/admin/system-stats` | 🌍 Public 🔒 | — | — |
+
+
 ## <a name="cat-admin-teller-levels"></a>`admin/teller-levels`
 
 | Method | Endpoint | Auth | Rate Limit | Body Alanları |
@@ -1330,6 +1339,13 @@ Auth rüzgarları: **🔄 Dual** = mobil JWT veya web oturumu · **🌐 Oturum**
 | **GET** | `/api/hashtags/search` | 🌍 Public | — | — |
 | **GET** | `/api/hashtags/trending` | 🌍 Public | — | — |
 | **GET** | `/api/hashtags/{name}` | 🔄 Dual | — | — |
+
+
+## <a name="cat-health"></a>`health`
+
+| Method | Endpoint | Auth | Rate Limit | Body Alanları |
+|--------|----------|------|-----------|---------------|
+| **GET** | `/api/health` | 🌍 Public | — | — |
 
 
 ## <a name="cat-homepage-buttons"></a>`homepage-buttons`
