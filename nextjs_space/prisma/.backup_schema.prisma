@@ -742,10 +742,17 @@ model Notification {
   fromUserName String?
   isRead       Boolean  @default(false)
   createdAt    DateTime @default(now())
+  // Faz 21 (§53) — tekilleştirme anahtarı: aynı olay için aynı kullanıcıya
+  // pencere içinde ikinci bir bildirim üretilmesini engeller.
+  dedupeKey    String?
+  // Faz 21 (§53) — bildirimin hedef derin bağlantısı (canlifal://... ) 
+  deepLink     String?
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([createdAt])
+  // Perf: tekilleştirme penceresi sorgusu
+  @@index([userId, dedupeKey, createdAt(sort: Desc)])
   // Perf: "my notifications" list sorted by createdAt desc
   @@index([userId, createdAt(sort: Desc)])
   // Perf: unread notifications count + ordered list

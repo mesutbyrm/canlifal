@@ -3,6 +3,20 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
+import { resolveNotificationDeepLink } from '@/lib/notify'
+
+// Faz 21 (§53) — eski kayıtlarda deepLink boş olabilir; okuma anında türetilir.
+function withDeepLink<T extends { type: string; postId: string | null; fromUserId: string | null; deepLink: string | null }>(n: T): T {
+  if (n.deepLink) return n
+  return {
+    ...n,
+    deepLink: resolveNotificationDeepLink({
+      type: n.type,
+      postId: n.postId,
+      fromUserId: n.fromUserId,
+    }),
+  }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +49,7 @@ export async function GET(request: NextRequest) {
       fromUserName: true,
       isRead: true,
       createdAt: true,
+      deepLink: true,
     }
 
     // Opt-in imleç sayfalama (yalnızca ?cursor= / ?paginate=cursor ile)
@@ -49,7 +64,7 @@ export async function GET(request: NextRequest) {
         ),
         prisma.notification.count({ where: { userId, isRead: false } }),
       ])
-      return apiPaginated(items, { ...meta, total: unreadCount })
+      return apiPaginated(items.map(withDeepLink), { ...meta, total: unreadCount })
     }
 
     // Run both queries in parallel instead of sequentially
@@ -70,6 +85,7 @@ export async function GET(request: NextRequest) {
           fromUserName: true,
           isRead: true,
           createdAt: true,
+          deepLink: true,
         }
       }),
       prisma.notification.count({
@@ -77,7 +93,7 @@ export async function GET(request: NextRequest) {
       })
     ])
 
-    return NextResponse.json({ notifications, unreadCount })
+    return NextResponse.json({ notifications: notifications.map(withDeepLink), unreadCount })
   } catch (error) {
     console.error('Notifications fetch error:', error)
     return NextResponse.json({ error: 'Bildirimler alınamadı' }, { status: 500 })
