@@ -4144,3 +4144,57 @@ model IdempotencyRecord {
   @@index([expiresAt])
   @@map("idempotency_records")
 }
+
+// ─── IMMUTABLE LEDGER ───
+// Double-entry bookkeeping. Every financial movement creates exactly two entries
+// (debit + credit) sharing the same transactionId. Rows are append-only — never
+// UPDATE or DELETE. balanceAfter is the running balance per account at the time.
+model LedgerEntry {
+  id             String   @id @default(cuid())
+  transactionId  String   // groups debit+credit pair (or N entries in multi-leg)
+  accountType    String   // "user_jeton", "user_cfc", "platform_jeton", "platform_cfc", "agency_jeton", "teller_earning"
+  accountId      String   // userId, agencyId, or "PLATFORM"
+  direction      String   // "debit" or "credit"
+  amount         Int      // always positive; direction indicates sign
+  currency       String   @default("jeton") // "jeton", "cfc", "tl"
+  balanceBefore  Int      @default(0)
+  balanceAfter   Int      @default(0)
+  category       String   // "gift_send", "gift_receive", "withdrawal", "purchase", "fortune_session", "daily_bonus", "commission", "admin_adjust", "refund", "game", "room_create", "song_request", "tip", "membership"
+  description    String?
+  referenceType  String?  // "GiftEvent", "WithdrawalRequest", "Payment", "LiveSession", etc.
+  referenceId    String?  // ID of the source record
+  metadata       Json?    // extra context (giftName, roomId, etc.)
+  actorId        String?  // who triggered it (userId or adminId)
+  createdAt      DateTime @default(now())
+
+  @@index([transactionId])
+  @@index([accountType, accountId])
+  @@index([accountId, createdAt])
+  @@index([category])
+  @@index([referenceType, referenceId])
+  @@index([createdAt])
+  @@map("ledger_entries")
+}
+
+// ─── AUDIT LOG ───
+// Captures admin/system actions for accountability. Immutable (append-only).
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String   // userId of the admin/system performing the action
+  actorRole   String?  // "admin", "yonetici", "moderator", "finans", "system"
+  actorIp     String?
+  action      String   // "user_ban", "balance_adjust", "withdrawal_approve", "payment_approve", "gift_create", "config_change", "feature_toggle", etc.
+  targetType  String?  // "User", "WithdrawalRequest", "Payment", "FeatureFlag", etc.
+  targetId    String?  // ID of the affected record
+  before      Json?    // state before the change (relevant fields only)
+  after       Json?    // state after the change
+  description String?  @db.Text
+  metadata    Json?    // extra context
+  createdAt   DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

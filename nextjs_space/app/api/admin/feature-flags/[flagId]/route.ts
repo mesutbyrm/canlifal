@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
+import { recordAudit } from '@/lib/audit-log'
 
 const ADMIN_ROLES = ['admin', 'yonetici']
 
@@ -33,6 +34,17 @@ export async function PATCH(
   })
 
   invalidateCache('config:public')
+
+  recordAudit({
+    actorId: session.user.id,
+    actorRole: (session.user as any).role,
+    action: 'feature_toggle',
+    targetType: 'FeatureFlag',
+    targetId: params.flagId,
+    after: { key: flag.key, enabled: flag.enabled, platform: flag.platform, percentage: flag.percentage },
+    description: `Feature flag "${flag.key}" güncellendi`,
+  }).catch(e => console.error('[Audit] feature flag error:', e))
+
   return NextResponse.json({ success: true, data: flag })
 }
 
@@ -46,7 +58,19 @@ export async function DELETE(
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 
+  const flag = await prisma.featureFlag.findUnique({ where: { id: params.flagId } })
   await prisma.featureFlag.delete({ where: { id: params.flagId } })
   invalidateCache('config:public')
+
+  recordAudit({
+    actorId: session.user.id,
+    actorRole: (session.user as any).role,
+    action: 'feature_delete',
+    targetType: 'FeatureFlag',
+    targetId: params.flagId,
+    before: flag ? { key: flag.key, enabled: flag.enabled } : undefined,
+    description: `Feature flag silindi${flag ? `: ${flag.key}` : ''}`,
+  }).catch(e => console.error('[Audit] feature flag delete error:', e))
+
   return NextResponse.json({ success: true })
 }

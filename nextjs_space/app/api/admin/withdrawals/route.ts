@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { recordAudit } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,6 +126,18 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    // Audit: record admin withdrawal action
+    recordAudit({
+      actorId: session.user.id,
+      actorRole: (session.user as any).role || 'admin',
+      action: `withdrawal_${action}`,
+      targetType: 'WithdrawalRequest',
+      targetId: requestId,
+      before: { status: wr.status },
+      after: { status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed', adminNote },
+      description: `Çekim talebi ${action}: ${wr.amount} jeton (${wr.amountTL} TL)`,
+    }).catch(e => console.error('[Audit] withdrawal action error:', e))
 
     return NextResponse.json({ success: true });
   } catch (error) {

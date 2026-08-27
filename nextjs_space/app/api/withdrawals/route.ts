@@ -5,7 +5,8 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { requireFeature } from '@/lib/check-feature';
-import { guardRateLimit } from '@/lib/rate-limit-guard';
+import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { recordLedger } from '@/lib/ledger';
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
@@ -126,6 +127,18 @@ export async function POST(request: NextRequest) {
         status: agencyMembership ? 'pending' : 'agency_approved',
       },
     });
+
+    // Ledger: record withdrawal request (fire-and-forget)
+    recordLedger({
+      debit: { accountType: 'user_jeton', accountId: authUser.id },
+      credit: { accountType: 'platform_jeton', accountId: 'PLATFORM' },
+      amount,
+      category: 'withdrawal',
+      referenceType: 'WithdrawalRequest',
+      referenceId: withdrawal.id,
+      actorId: authUser.id,
+      metadata: { amountTL, method },
+    }).catch(e => console.error('[Ledger] withdrawal error:', e))
 
     const responseBody = { success: true, withdrawal };
     await completeIdempotent(idemRecord, 200, responseBody);

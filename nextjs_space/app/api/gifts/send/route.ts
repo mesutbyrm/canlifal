@@ -6,6 +6,7 @@ import { isExcludedFromFinance } from '@/lib/admin-check'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { heavyLimiter } from '@/lib/rate-limiter'
+import { recordLedger } from '@/lib/ledger'
 
 async function createGiftAnnouncement(
   senderName: string | null, senderUsername: string | null,
@@ -206,6 +207,20 @@ export async function POST(req: NextRequest) {
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price, giftType.id).catch(err => console.error('Gift announcement error:', err))
 
+      // Ledger: record gift send (fire-and-forget)
+      if (!isStaff) {
+        recordLedger({
+          debit: { accountType: 'user_jeton', accountId: sender.id, balanceBefore: senderJetons, balanceAfter: senderJetons - giftType.price },
+          credit: { accountType: senderExcluded ? 'platform_jeton' : 'user_jeton', accountId: senderExcluded ? 'PLATFORM' : recipient.id },
+          amount: giftType.price,
+          category: 'gift_send',
+          referenceType: 'GiftType',
+          referenceId: giftType.id,
+          actorId: sender.id,
+          metadata: { giftName: giftType.name, recipientId: recipient.id, commission: commissionAmount },
+        }).catch(e => console.error('[Ledger] gift send error:', e))
+      }
+
       const isBigGift = giftType.price >= 1000
       return NextResponse.json({
         success: true,
@@ -313,6 +328,18 @@ export async function POST(req: NextRequest) {
 
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, '🪙', 'Jeton', amount).catch(err => console.error('Jeton gift announcement error:', err))
+      // Ledger: record jeton transfer (fire-and-forget)
+      if (!isStaff) {
+        recordLedger({
+          debit: { accountType: 'user_jeton', accountId: sender.id, balanceBefore: senderJetonBalance, balanceAfter: senderJetonBalance - amount },
+          credit: { accountType: senderExcluded ? 'platform_jeton' : 'user_jeton', accountId: senderExcluded ? 'PLATFORM' : recipient.id },
+          amount,
+          category: 'gift_send',
+          actorId: sender.id,
+          metadata: { type: 'jeton_transfer', recipientId: recipient.id, commission: jetonCommission },
+        }).catch(e => console.error('[Ledger] jeton transfer error:', e))
+      }
+
       const isBigJetonGift = amount >= 1000
 
       return NextResponse.json({
