@@ -283,6 +283,7 @@ model LiveFortuneTeller {
   @@index([isBanned])
   // Perf: teller list orderBy [isOnline desc, rating desc]
   @@index([isOnline, rating(sort: Desc)])
+  @@index([verificationStatus])
   @@map("live_fortune_tellers")
 }
 
@@ -547,6 +548,8 @@ model ChatPresence {
   @@unique([roomId, userId])
   @@index([roomId])
   @@index([roomId, lastSeen])
+  @@index([lastSeen])
+  @@index([userId])
   @@map("chat_presences")
 }
 
@@ -562,6 +565,7 @@ model ChatUserRole {
 
   @@unique([roomId, userId])
   @@index([roomId])
+  @@index([userId])
   @@map("chat_user_roles")
 }
 
@@ -937,6 +941,7 @@ model VideoStreamViewer {
 
   @@unique([streamId, viewerId])
   @@index([streamId])
+  @@index([streamId, leftAt])
   @@map("video_stream_viewers")
 }
 
@@ -1249,6 +1254,7 @@ model StreamCoBroadcaster {
 
   @@unique([streamId, userId])
   @@index([streamId])
+  @@index([streamId, status])
   @@index([userId])
   @@map("stream_co_broadcasters")
 }
@@ -2030,6 +2036,7 @@ model SosGame {
   viewers      SosGameViewer[]
 
   @@index([status])
+  @@index([status, isAI])
   @@index([player1Id])
   @@index([player2Id])
   @@index([createdAt])
@@ -2851,6 +2858,7 @@ model AgencyEarning {
   @@index([userId])
   @@index([createdAt])
   @@index([sourceType])
+  @@index([agencyId, createdAt])
   @@map("agency_earnings")
 }
 
