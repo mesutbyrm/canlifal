@@ -161,11 +161,25 @@ export const REFERRAL_PAYOUT_CURRENCY = 'cfc'
 export const REFERRAL_PAYOUT_BALANCE_FIELD = 'credits'
 
 /**
- * Ajans komisyonu: JETON.
- * Ajans kazançları gelir sayılır (ödül değil), bu yüzden çevrilebilir jeton olarak ödenir.
+ * Ajans davet ödülü: varsayılan CFC.
+ * KURAL: Ajans birini davet ettiğinde ödülünü CFC olarak alır.
+ * Yalnızca JETON alımlarından doğan komisyon jeton olarak ödenir.
+ * Canlı yayın / sesli sohbet / misafirlik komisyonları `lib/agency-commission.ts`
+ * içinde ayrıca jeton olarak işlenir (bu dosya onlara dokunmaz).
  */
-export const AGENCY_PAYOUT_CURRENCY = 'jeton'
-export const AGENCY_PAYOUT_BALANCE_FIELD = 'jetonBalance'
+export const AGENCY_PAYOUT_CURRENCY = 'cfc'
+export const AGENCY_PAYOUT_BALANCE_FIELD = 'credits'
+
+/** Yükleme para birimine göre ajans komisyon ödemesini belirler. */
+export function resolveAgencyPayout(topupCurrency?: string): {
+  currency: 'jeton' | 'cfc'
+  balanceField: 'jetonBalance' | 'credits'
+  label: string
+} {
+  return topupCurrency === 'jeton'
+    ? { currency: 'jeton', balanceField: 'jetonBalance', label: 'Jeton' }
+    : { currency: 'cfc', balanceField: 'credits', label: 'CFC' }
+}
 
 export interface TopupCommissionResult {
   referral: { earnerId: string; amount: number } | null
@@ -271,6 +285,7 @@ export async function awardTopupCommissions(
         agency.ownerId &&
         agency.ownerId !== user.id
       ) {
+        const agencyPayoutInfo = resolveAgencyPayout(currency)
         const desired = Math.floor((amount * config.agencyRate) / 100)
         if (desired > 0) {
           const payout = await applyLimits(
@@ -292,7 +307,7 @@ export async function awardTopupCommissions(
                   topupCurrency: currency,
                   rate: config.agencyRate,
                   amount: payout,
-                  currency: AGENCY_PAYOUT_CURRENCY,
+                  currency: agencyPayoutInfo.currency,
                   sourceType,
                   sourceId: input.sourceId || null,
                   note: `${sourceName} yüklemesinden ajans payı`,
@@ -300,7 +315,7 @@ export async function awardTopupCommissions(
               }),
               prisma.user.update({
                 where: { id: agency.ownerId },
-                data: { [AGENCY_PAYOUT_BALANCE_FIELD]: { increment: payout } } as any,
+                data: { [agencyPayoutInfo.balanceField]: { increment: payout } } as any,
               }),
               prisma.agency.update({
                 where: { id: agency.id },
@@ -313,8 +328,8 @@ export async function awardTopupCommissions(
               userId: agency.ownerId,
               type: 'agency_commission',
               title: '🏢 Ajans kazancı',
-              message: `${sourceName} yükleme yaptı, ajansın ${payout} Jeton kazandı!`,
-              data: JSON.stringify({ amount: payout, rate: config.agencyRate, currency: AGENCY_PAYOUT_CURRENCY }),
+              message: `${sourceName} yükleme yaptı, ajansın ${payout} ${agencyPayoutInfo.label} kazandı!`,
+              data: JSON.stringify({ amount: payout, rate: config.agencyRate, currency: agencyPayoutInfo.currency }),
               targetPath: '/ajans-paneli',
             }).catch((e) => console.error('[Commission] agency notify error:', e))
           }

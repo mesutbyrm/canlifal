@@ -67,6 +67,7 @@ interface PlatformSettings {
   vr_normal_room_max_users: string
   vr_vip_room_max_users: string
   vr_seat_count: string
+  bana_ozel_ad_daily_limit: string
 }
 
 export default function AdminSettingsPage() {
@@ -114,7 +115,8 @@ export default function AdminSettingsPage() {
     vr_free_room_max_users: '15',
     vr_normal_room_max_users: '100',
     vr_vip_room_max_users: '500',
-    vr_seat_count: '15'
+    vr_seat_count: '15',
+    bana_ozel_ad_daily_limit: '0'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -152,7 +154,7 @@ export default function AdminSettingsPage() {
       ])
       if (res.ok) {
         const data = await res.json()
-        setSettings({ ...data, vr_seat_count: data.vr_seat_count ?? '15' })
+        setSettings({ ...data, vr_seat_count: data.vr_seat_count ?? '15', bana_ozel_ad_daily_limit: data.bana_ozel_ad_daily_limit ?? '0' })
         if (data.onesignal_enabled !== undefined) {
           setOnesignalEnabled(data.onesignal_enabled === 'true' || data.onesignal_enabled === '1')
         }
@@ -845,6 +847,34 @@ export default function AdminSettingsPage() {
                   ))}
                 </div>
                 <p className="text-xs text-purple-400 mt-2">Ücretsiz odalarda müzik geliri tamamen siteye gider. Normal/VIP odalarda kalan kısım siteye gider.</p>
+              </div>
+
+              {/* Bana Özel reklam limiti */}
+              <div>
+                <h4 className="text-sm font-semibold text-purple-300 mb-3">📺 &quot;Bana Özel&quot; Reklam İzleme Limiti</h4>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-purple-200">Bakiyesi yetmeyen kullanıcının günde kaç kez reklam izleyerek açabileceği</span>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={settings.bana_ozel_ad_daily_limit}
+                      onChange={(e) => setSettings(prev => ({ ...prev, bana_ozel_ad_daily_limit: e.target.value }))}
+                      className="w-24 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white text-sm text-center focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      onClick={() => saveSetting('bana_ozel_ad_daily_limit', settings.bana_ozel_ad_daily_limit)}
+                      disabled={saving === 'bana_ozel_ad_daily_limit'}
+                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm"
+                    >
+                      {saving === 'bana_ozel_ad_daily_limit' ? '...' : saved === 'bana_ozel_ad_daily_limit' ? '✓' : 'Kaydet'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-purple-400 mt-2">
+                    <strong>0 = sınırsız</strong> (varsayılan). Ödeme sırası: önce CFC, yetmezse Jeton,
+                    ikisi de yetmezse reklam izleyerek ücretsiz açma.
+                  </p>
+                </div>
               </div>
 
               {/* Koltuk Sayısı — BÖLÜM 2 */}

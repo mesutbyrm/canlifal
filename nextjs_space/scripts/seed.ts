@@ -1787,8 +1787,8 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     currency_cfc_name_en: 'CFC',
     currency_cfc_icon: '/currency/cfc.svg',
     currency_cfc_color: '#A78BFA',
-    // "Bana Özel": bakiye yoksa reklam izleyerek açma günlük limiti
-    bana_ozel_ad_daily_limit: '3',
+    // "Bana Özel": bakiye yoksa reklam izleyerek açma günlük limiti (0 = sınırsız)
+    bana_ozel_ad_daily_limit: '0',
   }
   for (const [key, value] of Object.entries(currencySettingDefaults)) {
     await prisma.platformSettings.upsert({

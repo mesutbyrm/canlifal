@@ -91,11 +91,12 @@ export async function POST(req: NextRequest) {
     const cfcBalance = user.credits ?? 0
     const jetonBalance = user.jetonBalance ?? 0
 
-    // Reklamla açma günlük limiti (varsayılan 3)
+    // Reklamla açma günlük limiti — 0 (varsayılan) = SINIRSIZ, admin panelinden ayarlanır
     const AD_DAILY_LIMIT = parseInt(
-      (await getCachedPlatformSetting('bana_ozel_ad_daily_limit', '3')) || '3',
+      (await getCachedPlatformSetting('bana_ozel_ad_daily_limit', '0')) || '0',
       10,
     ) || 0
+    const AD_UNLIMITED = AD_DAILY_LIMIT <= 0
 
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
@@ -106,22 +107,26 @@ export async function POST(req: NextRequest) {
     } else if (jetonBalance >= cost) {
       payment = 'jeton'
     } else {
-      const adOpensToday = await prisma.banaOzelHistory.count({
-        where: { userId: authUser.id, jetonSpent: 0, createdAt: { gte: startOfToday } },
-      })
-      const adRemaining = Math.max(0, AD_DAILY_LIMIT - adOpensToday)
-      if (!useAd || adRemaining <= 0) {
+      const adOpensToday = AD_UNLIMITED
+        ? 0
+        : await prisma.banaOzelHistory.count({
+            where: { userId: authUser.id, jetonSpent: 0, createdAt: { gte: startOfToday } },
+          })
+      const adRemaining = AD_UNLIMITED ? -1 : Math.max(0, AD_DAILY_LIMIT - adOpensToday)
+      const canWatchAd = AD_UNLIMITED || adRemaining > 0
+      if (!useAd || !canWatchAd) {
         return NextResponse.json(
           {
-            error: adRemaining > 0
+            error: canWatchAd
               ? 'Yetersiz bakiye — reklam izleyerek açabilirsin'
               : 'Yetersiz bakiye ve günlük reklam hakkın doldu',
             required: cost,
             current: cfcBalance,
             cfcBalance,
             jetonBalance,
-            canWatchAd: adRemaining > 0,
+            canWatchAd,
             adRemaining,
+            adUnlimited: AD_UNLIMITED,
           },
           { status: 402 },
         )
