@@ -79,7 +79,8 @@ export default function SiteAnimationsAdmin() {
   const { language } = useLanguage()
   const { theme } = useSiteTheme()
   const isTr = String(language) !== 'en'
-  const isMystical = theme === 'mystical'
+  // 'facebook' tek açık temadır; diğer tüm temalar koyu — admin panelinin genelindeki kural.
+  const isMystical = theme !== 'facebook'
 
   const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-purple-900/30' : 'bg-white border-gray-200'
   const textColor = isMystical ? 'text-white' : 'text-gray-900'
