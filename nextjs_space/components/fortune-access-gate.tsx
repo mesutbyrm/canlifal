@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Sparkles, LogIn, UserPlus, Play, Coins, ShoppingCart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AdWatchModal from './ad-watch-modal'
+import { CurrencyName } from './currency-amount'
 
 interface FortuneAccessGateProps {
   fortuneType: string // e.g. 'tarot', 'coffee'
@@ -48,7 +49,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
           setAccessStatus('needs_login')
         }
       } else {
-        // Registered user - check Jeton
+        // Registered user - check CFC
         const res = await fetch('/api/fortune-access/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -170,7 +171,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
     )
   }
 
-  // Needs Jeton (registered user, insufficient credits)
+  // Needs CFC (registered user, insufficient credits)
   if (accessStatus === 'needs_cfc') {
     return (
       <>
@@ -181,10 +182,10 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
         >
           <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <Coins className="w-10 h-10 text-red-400 mx-auto mb-2" />
-            <h3 className="text-white font-bold text-lg">Yetersiz Jeton</h3>
+            <h3 className="text-white font-bold text-lg">Yetersiz <CurrencyName currency="cfc" /></h3>
             <p className="text-purple-300 text-sm mt-2">
-              Bu fal <span className="text-gold-400 font-bold">{cost} Jeton</span> gerektiriyor.
-              Bakiyeniz: <span className="text-red-400 font-bold">{userCredits ?? 0} Jeton</span>
+              Bu fal <span className="text-gold-400 font-bold">{cost} <CurrencyName currency="cfc" /></span> gerektiriyor.
+              Bakiyeniz: <span className="text-red-400 font-bold">{userCredits ?? 0} <CurrencyName currency="cfc" /></span>
             </p>
           </div>
 
@@ -203,7 +204,7 @@ export default function FortuneAccessGate({ fortuneType, cost, children, onAcces
               className="flex-1 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
-              Jeton Satın Al
+              Bakiye Yükle
             </button>
             <button
               onClick={() => setShowAdModal(true)}

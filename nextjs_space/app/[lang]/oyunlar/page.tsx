@@ -15,6 +15,7 @@ import {
   TrendingUp, Activity, Radio, DoorOpen, UserPlus,
   PieChart, Lightbulb, Medal, Timer, ChevronDown, Bot
 } from 'lucide-react'
+import { CurrencyIcon, CurrencyName } from '@/components/currency-amount'
 
 // Dynamic imports for mini-game components
 const Game2048 = dynamic(() => import('@/components/mini-games/game-2048'), { ssr: false })
@@ -1577,14 +1578,14 @@ export default function GameLobbyPage() {
             {profile && (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-fuchsia-900/40 rounded-full border border-fuchsia-500/30">
-                  <Coins className="w-4 h-4 text-yellow-400" />
+                  <CurrencyIcon currency="cfc" size={16} />
                   <span className="text-yellow-300 font-bold text-sm">{profile.cfcBalance}</span>
-                  <span className="text-fuchsia-400/60 text-xs">CFC</span>
+                  <span className="text-fuchsia-400/60 text-xs"><CurrencyName currency="cfc" /></span>
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-900/40 rounded-full border border-blue-500/30">
-                  <Zap className="w-4 h-4 text-blue-400" />
+                  <CurrencyIcon currency="jeton" size={16} />
                   <span className="text-blue-300 font-bold text-sm">{profile.jetonBalance}</span>
-                  <span className="text-blue-400/60 text-xs">Jeton</span>
+                  <span className="text-blue-400/60 text-xs"><CurrencyName currency="jeton" /></span>
                 </div>
               </div>
             )}

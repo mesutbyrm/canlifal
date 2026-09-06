@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import FramedAvatar from './framed-avatar'
+import { CurrencyIcon, CurrencyName } from './currency-amount'
 
 interface UserProfile {
   id: string
@@ -171,8 +172,8 @@ export default function FloatingProfile() {
                 {/* Credits */}
                 <div className="mt-3 flex items-center justify-between bg-purple-900/30 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-gold-400" />
-                    <span className="text-purple-200 text-sm">{'CFC'}</span>
+                    <CurrencyIcon currency="cfc" size={16} />
+                    <span className="text-purple-200 text-sm"><CurrencyName currency="cfc" /></span>
                   </div>
                   <span className="text-gold-400 font-semibold">{profile?.credits || 0}</span>
                 </div>
@@ -228,7 +229,7 @@ export default function FloatingProfile() {
                   className="flex items-center gap-3 px-3 py-2.5 text-purple-200 hover:bg-purple-900/30 rounded-lg transition-colors"
                 >
                   <Wallet className="w-5 h-5 text-purple-400" />
-                  <span>{'CFC Al'}</span>
+                  <span><CurrencyName currency="cfc" /> {'Al'}</span>
                 </Link>
 
                 <Link

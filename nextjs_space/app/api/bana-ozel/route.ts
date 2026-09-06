@@ -15,15 +15,17 @@ export async function GET(req: NextRequest) {
     })
 
     let jetonBalance = 0
+    let cfcBalance = 0
     let streak = { currentStreak: 0, longestStreak: 0, totalFortunes: 0 }
     let todayTasks: string[] = []
 
     if (authUser?.id) {
       const user = await prisma.user.findUnique({
         where: { id: authUser.id },
-        select: { jetonBalance: true },
+        select: { jetonBalance: true, credits: true },
       })
       jetonBalance = user?.jetonBalance ?? 0
+      cfcBalance = user?.credits ?? 0
 
       const streakData = await prisma.userFortuneStreak.findUnique({
         where: { userId: authUser.id },
@@ -48,6 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       items,
       jetonBalance,
+      cfcBalance,
       streak,
       todayTasks,
     })

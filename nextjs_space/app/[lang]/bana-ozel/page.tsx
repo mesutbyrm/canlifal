@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Coins, Flame, Gift, Loader2, Sparkles, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import AdWatchModal from '@/components/ad-watch-modal'
+import { CurrencyIcon, CurrencyName } from '@/components/currency-amount'
 
 interface BanaOzelItem {
   id: string
@@ -40,6 +41,8 @@ export default function BanaOzelPage() {
   const router = useRouter()
   const [items, setItems] = useState<BanaOzelItem[]>([])
   const [jetonBalance, setJetonBalance] = useState(0)
+  const [cfcBalance, setCfcBalance] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState<'cfc' | 'jeton' | 'ad'>('cfc')
   const [streak, setStreak] = useState<StreakInfo>({ currentStreak: 0, longestStreak: 0, totalFortunes: 0 })
   const [todayTasks, setTodayTasks] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,6 +62,7 @@ export default function BanaOzelPage() {
         const data = await res.json()
         setItems(data.items || [])
         setJetonBalance(data.jetonBalance || 0)
+        setCfcBalance(data.cfcBalance || 0)
         setStreak(data.streak || { currentStreak: 0, longestStreak: 0, totalFortunes: 0 })
         setTodayTasks(data.todayTasks || [])
         setLoginBonusClaimed((data.todayTasks || []).includes('login'))
@@ -111,7 +115,9 @@ export default function BanaOzelPage() {
         return
       }
       setModalContent(data.content)
-      setJetonBalance(typeof data.cfcBalance === 'number' ? data.cfcBalance : data.newBalance)
+      if (data.paymentMethod) setPaymentMethod(data.paymentMethod)
+      if (typeof data.cfcBalance === 'number') setCfcBalance(data.cfcBalance)
+      if (typeof data.jetonBalance === 'number') setJetonBalance(data.jetonBalance)
       if (data.tarotCard) {
         setTarotCard(data.tarotCard)
         setTimeout(() => setTarotFlipped(true), 1000)
@@ -177,8 +183,12 @@ export default function BanaOzelPage() {
                 <span className="text-orange-300/60 text-[10px] hidden sm:inline">gün</span>
               </div>
             )}
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 border border-purple-400/40 rounded-full px-2.5 py-1">
+              <CurrencyIcon currency="cfc" size={14} />
+              <span className="text-purple-200 text-sm font-bold">{cfcBalance}</span>
+            </div>
             <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/40 rounded-full px-2.5 py-1">
-              <Coins className="w-3.5 h-3.5 text-yellow-400" />
+              <CurrencyIcon currency="jeton" size={14} />
               <span className="text-yellow-300 text-sm font-bold">{jetonBalance}</span>
             </div>
           </div>
@@ -249,10 +259,10 @@ export default function BanaOzelPage() {
                   {item.nameTr}
                 </span>
                 
-                {/* Jeton cost */}
+                {/* Cost */}
                 <div className="flex items-center gap-1 bg-black/30 rounded-full px-2.5 py-1">
-                  <Coins className="w-3 h-3 text-yellow-400" />
-                  <span className="text-yellow-300 text-xs font-bold">{item.jetonCost}</span>
+                  <CurrencyIcon currency="cfc" size={12} />
+                  <span className="text-purple-200 text-xs font-bold">{item.jetonCost}</span>
                 </div>
               </motion.button>
             )
@@ -310,8 +320,14 @@ export default function BanaOzelPage() {
                   <div className="flex-1">
                     <h3 className="text-white font-bold text-lg">{selectedItem.nameTr}</h3>
                     <div className="flex items-center gap-1">
-                      <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                      <span className="text-yellow-300 text-xs">{selectedItem.jetonCost} Jeton Harcandı</span>
+                      {paymentMethod === 'ad' ? (
+                        <span className="text-green-300 text-xs">Reklam ile ücretsiz açıldı</span>
+                      ) : (
+                        <>
+                          <CurrencyIcon currency={paymentMethod} size={14} />
+                          <span className="text-yellow-300 text-xs">{selectedItem.jetonCost} <CurrencyName currency={paymentMethod} /> Harcandı</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
