@@ -38,9 +38,14 @@ export default function ReferralPage() {
   const [data, setData] = useState<ReferralData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [earnings, setEarnings] = useState<any>(null)
 
   useEffect(() => {
     if (status === 'authenticated') {
+      fetch('/api/user/referral-earnings?limit=5')
+        .then(res => (res.ok ? res.json() : null))
+        .then(setEarnings)
+        .catch(() => {})
       fetch('/api/referral')
         .then(res => res.json())
         .then(setData)
@@ -183,6 +188,51 @@ export default function ReferralPage() {
         </motion.div>
 
         {/* Milestones */}
+        {/* Komisyon Kazançları */}
+        {earnings?.rates?.referralEnabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-deep-purple-900/50 border border-emerald-500/30 rounded-xl p-6 mb-8"
+          >
+            <h2 className="font-serif text-xl text-emerald-400 mb-2">💰 Yükleme Komisyonun</h2>
+            <p className="text-sm text-deep-purple-300 mb-4">
+              Davet ettiğin kişilerin her jeton/CFC yüklemesinden
+              <strong className="text-emerald-300"> %{earnings.rates.referralRate}</strong> komisyon kazanırsın.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Toplam Kazanç', value: earnings.summary?.totalEarned || 0 },
+                { label: 'Bu Ay', value: earnings.summary?.monthlyEarned || 0 },
+                { label: 'İşlem Sayısı', value: earnings.summary?.transactionCount || 0 },
+                { label: 'Davet Edilen', value: earnings.summary?.invitedCount || 0 },
+              ].map(s => (
+                <div key={s.label} className="p-4 rounded-lg bg-deep-purple-950/50 border border-deep-purple-700 text-center">
+                  <div className="text-2xl font-bold text-emerald-400">
+                    {new Intl.NumberFormat('tr-TR').format(s.value)}
+                  </div>
+                  <div className="text-xs text-deep-purple-300 mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {Array.isArray(earnings.items) && earnings.items.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {earnings.items.slice(0, 5).map((it: any) => (
+                  <div key={it.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-deep-purple-950/40">
+                    <span className="text-deep-purple-200">
+                      {it.sourceUser?.name || it.sourceUser?.username || 'Kullanıcı'}
+                    </span>
+                    <span className="text-emerald-400 font-semibold">
+                      +{new Intl.NumberFormat('tr-TR').format(it.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

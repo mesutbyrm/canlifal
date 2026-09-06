@@ -154,6 +154,8 @@ model User {
   animationAssignments      AnimationAssignment[]   @relation("AnimationAssignmentUser")
   animationAssignmentsGiven AnimationAssignment[]   @relation("AnimationAssignmentAssigner")
   animationPlaybackLogs     AnimationPlaybackLog[]
+  commissionsEarned         ReferralCommission[]    @relation("CommissionEarner")
+  commissionsGenerated      ReferralCommission[]    @relation("CommissionSource")
 
   @@index([referralCode])
   @@index([isBot])
@@ -4641,4 +4643,31 @@ model AdPlacement {
   @@index([adType])
   @@index([adNetworkId])
   @@map("ad_placements")
+}
+
+// ── BÖLÜM 6: Referans & Ajans komisyon defteri ──
+model ReferralCommission {
+  id             String   @id @default(cuid())
+  earnerId       String   // komisyonu kazanan kullanıcı
+  sourceUserId   String   // jeton yükleyen kullanıcı
+  agencyId       String?  // ajans komisyonu ise ilgili ajans
+  commissionType String   @default("referral") // referral | agency_invite
+  topupAmount    Int      // yüklenen miktar
+  topupCurrency  String   @default("credits") // credits | jeton | cfc
+  rate           Float    // uygulanan yüzde
+  amount         Int      // kazanılan miktar
+  currency       String   @default("credits")
+  sourceType     String   @default("admin_credit") // admin_credit | cfc_payment
+  sourceId       String?
+  note           String?
+  createdAt      DateTime @default(now())
+  earner         User     @relation("CommissionEarner", fields: [earnerId], references: [id], onDelete: Cascade)
+  sourceUser     User     @relation("CommissionSource", fields: [sourceUserId], references: [id], onDelete: Cascade)
+
+  @@index([earnerId, createdAt])
+  @@index([sourceUserId])
+  @@index([agencyId, createdAt])
+  @@index([commissionType])
+  @@index([createdAt])
+  @@map("referral_commissions")
 }

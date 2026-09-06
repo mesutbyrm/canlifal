@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { recordLedger } from '@/lib/ledger'
 import { recordAudit } from '@/lib/audit-log'
+import { awardTopupCommissions } from '@/lib/referral-commission'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,6 +65,16 @@ export async function POST(request: Request) {
       after: { [currency]: amount, newBalance: currency === 'jeton' ? user.jetonBalance : user.credits },
       description: `Admin ${amount > 0 ? 'ekledi' : 'düştü'}: ${Math.abs(amount)} ${currency}`,
     }).catch(e => console.error('[Audit] admin credit error:', e))
+
+    // Referans / ajans komisyonu (yalnızca yükleme işlemlerinde)
+    if (amount > 0) {
+      awardTopupCommissions({
+        userId,
+        amount,
+        currency: currency === 'jeton' ? 'jeton' : 'credits',
+        sourceType: 'admin_credit',
+      }).catch(e => console.error('[Commission] admin credit error:', e))
+    }
 
     return NextResponse.json({
       success: true,
