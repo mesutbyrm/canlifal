@@ -2730,6 +2730,8 @@ model AdNetwork {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  placements AdPlacement[]
+
   @@index([isActive])
   @@map("ad_networks")
 }
@@ -4607,4 +4609,36 @@ model AnimationPlaybackLog {
   @@index([animationId, playedAt])
   @@index([userId, playedAt])
   @@map("animation_playback_logs")
+}
+
+// ============================================================
+// BOLUM 5 - Reklam Yerlesimleri (Ad Placements)
+// Additive: mevcut AdNetwork modeli ve /api/ads/active bozulmadi.
+// ============================================================
+
+model AdPlacement {
+  id           String   @id @default(cuid())
+  placementKey String   @unique // home_banner, fortune_interstitial, chat_room_banner ...
+  name         String // Turkce gorunen isim
+  description  String?  @db.Text
+  adNetworkId  String? // null ise genel aktif ag kullanilir
+  adType       String   @default("banner") // banner, interstitial, rewarded, native, pre_roll
+  position     String? // top, bottom, inline, overlay
+  platform     String   @default("all") // all, web, mobile
+  isActive     Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  customCode   String?  @db.Text
+  targeting    Json? // { membershipTiers: [], hideForMembership: [], minLevel: n }
+  frequencyCap Int      @default(0) // 0 = sinirsiz, gunluk gosterim limiti
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  adNetwork AdNetwork? @relation(fields: [adNetworkId], references: [id], onDelete: SetNull)
+
+  @@index([isActive, sortOrder])
+  @@index([adType])
+  @@index([adNetworkId])
+  @@map("ad_placements")
 }

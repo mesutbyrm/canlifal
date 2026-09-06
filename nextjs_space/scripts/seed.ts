@@ -1748,6 +1748,35 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Remote config seeded!')
 
+  // Reklam yerleşimleri (varsayılan 8 yerleşim, pasif olarak eklenir)
+  const defaultAdPlacements = [
+    { placementKey: 'home_banner', name: 'Ana Sayfa Banner', description: 'Ana sayfanın üst veya alt bölümünde gösterilen banner reklam.', adType: 'banner', position: 'top', sortOrder: 1 },
+    { placementKey: 'fortune_interstitial', name: 'Fal Arası Reklam', description: 'Fal sonucu gösterilmeden önce çıkan tam ekran geçiş reklamı.', adType: 'interstitial', position: 'overlay', sortOrder: 2 },
+    { placementKey: 'chat_room_banner', name: 'Sesli Oda Banner', description: 'Sesli oda ekranının alt kısmında gösterilen banner.', adType: 'banner', position: 'bottom', sortOrder: 3 },
+    { placementKey: 'stream_pre_roll', name: 'Yayın Öncesi Reklam', description: 'Canlı yayına girmeden önce oynatılan kısa video reklam.', adType: 'pre_roll', position: 'overlay', sortOrder: 4 },
+    { placementKey: 'profile_native', name: 'Profil Sayfası Reklam', description: 'Profil sayfası içeriği arasına yerleştirilen doğal reklam.', adType: 'native', position: 'inline', sortOrder: 5 },
+    { placementKey: 'blog_inline', name: 'Blog İçi Reklam', description: 'Blog yazısı paragrafları arasında gösterilen reklam.', adType: 'native', position: 'inline', sortOrder: 6 },
+    { placementKey: 'game_rewarded', name: 'Oyun Ödüllü Reklam', description: 'Oyun sonunda ödül karşılığı izlenen video reklam.', adType: 'rewarded', position: 'overlay', sortOrder: 7 },
+    { placementKey: 'fortune_list_native', name: 'Fal Listesi Reklam', description: 'Fal kartları listesinin arasına yerleştirilen doğal reklam.', adType: 'native', position: 'inline', sortOrder: 8 },
+  ]
+  for (const p of defaultAdPlacements) {
+    await prisma.adPlacement.upsert({
+      where: { placementKey: p.placementKey },
+      update: {},
+      create: {
+        placementKey: p.placementKey,
+        name: p.name,
+        description: p.description,
+        adType: p.adType,
+        position: p.position,
+        platform: 'all',
+        isActive: false,
+        sortOrder: p.sortOrder,
+      },
+    })
+  }
+  console.log('Ad placements seeded!')
+
   console.log('Seed completed successfully!')
 }
 

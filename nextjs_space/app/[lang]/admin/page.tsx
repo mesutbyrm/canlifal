@@ -194,6 +194,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/audit`, icon: Shield, trLabel: 'Denetim & Defter', enLabel: 'Audit & Ledger', emoji: '🛡️', desc: 'Denetim kaydı & finansal defter' },
       { href: `/admin/risk`, icon: ShieldAlert, trLabel: 'Risk & Dolandırıcılık', enLabel: 'Risk & Fraud', emoji: '⚠️', desc: 'Finansal işlemlerde risk sinyalleri' },
       { href: `/admin/ad-networks`, icon: Monitor, trLabel: 'Reklam Ağı Yönetimi', enLabel: 'Ad Network Management', emoji: '📺', desc: 'Reklam entegrasyonları' },
+      { href: `/admin/ad-placements`, icon: Monitor, trLabel: 'Reklam Yerleşimleri', enLabel: 'Ad Placements', emoji: '📢', desc: 'Reklamların nerede gösterileceği' },
     ],
   },
   {
