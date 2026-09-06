@@ -156,6 +156,17 @@ export interface TopupCommissionInput {
 export const COMMISSION_PAYOUT_CURRENCY = 'cfc'
 export const COMMISSION_PAYOUT_BALANCE_FIELD = 'credits'
 
+/** Referans komisyonu: CFC (paraya çevrilemez ödül). */
+export const REFERRAL_PAYOUT_CURRENCY = 'cfc'
+export const REFERRAL_PAYOUT_BALANCE_FIELD = 'credits'
+
+/**
+ * Ajans komisyonu: JETON.
+ * Ajans kazançları gelir sayılır (ödül değil), bu yüzden çevrilebilir jeton olarak ödenir.
+ */
+export const AGENCY_PAYOUT_CURRENCY = 'jeton'
+export const AGENCY_PAYOUT_BALANCE_FIELD = 'jetonBalance'
+
 export interface TopupCommissionResult {
   referral: { earnerId: string; amount: number } | null
   agency: { earnerId: string; agencyId: string; amount: number } | null
@@ -281,7 +292,7 @@ export async function awardTopupCommissions(
                   topupCurrency: currency,
                   rate: config.agencyRate,
                   amount: payout,
-                  currency: COMMISSION_PAYOUT_CURRENCY,
+                  currency: AGENCY_PAYOUT_CURRENCY,
                   sourceType,
                   sourceId: input.sourceId || null,
                   note: `${sourceName} yüklemesinden ajans payı`,
@@ -289,7 +300,7 @@ export async function awardTopupCommissions(
               }),
               prisma.user.update({
                 where: { id: agency.ownerId },
-                data: { [balanceField]: { increment: payout } } as any,
+                data: { [AGENCY_PAYOUT_BALANCE_FIELD]: { increment: payout } } as any,
               }),
               prisma.agency.update({
                 where: { id: agency.id },
@@ -302,8 +313,8 @@ export async function awardTopupCommissions(
               userId: agency.ownerId,
               type: 'agency_commission',
               title: '🏢 Ajans kazancı',
-              message: `${sourceName} yükleme yaptı, ajansın ${payout} CFC kazandı!`,
-              data: JSON.stringify({ amount: payout, rate: config.agencyRate, currency: COMMISSION_PAYOUT_CURRENCY }),
+              message: `${sourceName} yükleme yaptı, ajansın ${payout} Jeton kazandı!`,
+              data: JSON.stringify({ amount: payout, rate: config.agencyRate, currency: AGENCY_PAYOUT_CURRENCY }),
               targetPath: '/ajans-paneli',
             }).catch((e) => console.error('[Commission] agency notify error:', e))
           }

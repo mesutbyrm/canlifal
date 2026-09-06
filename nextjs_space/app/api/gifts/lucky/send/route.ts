@@ -23,7 +23,7 @@ function pickTier(tiers: { id: string; multiplier: number; weight: number; isJac
 /**
  * POST /api/gifts/lucky/send
  * Body: { giftTypeId, quantity?, context?, contextId? }
- * Sends a lucky gift: deducts bet jetons, rolls a weighted reward tier,
+ * Sends a lucky gift: deducts the bet from CFC, rolls a weighted reward tier,
  * credits winnings, logs the outcome, and triggers a jackpot announcement.
  * Dual-auth (web session or mobile JWT).
  */
@@ -65,18 +65,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Şanslı hediye henüz yapılandırılmamış' }, { status: 503 })
     }
 
+    // KURAL: Şanslı hediye tamamen CFC ile çalışır (bahis CFC, kazanç CFC).
+    // Jeton paraya çevrilebildiği için ne bahis alınır ne de ödül olarak verilir.
     const betJetons = giftType.price * quantity
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, jetonBalance: true, role: true },
+      select: { id: true, credits: true, role: true },
     })
     if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
     const excluded = await isExcludedFromFinance(userId)
 
-    if (!excluded && (user.jetonBalance ?? 0) < betJetons) {
-      return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
+    if (!excluded && (user.credits ?? 0) < betJetons) {
+      return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
     }
 
     // Roll the reward
@@ -85,10 +87,8 @@ export async function POST(request: NextRequest) {
     const wonJetons = betJetons * multiplier
     const netJetons = wonJetons - betJetons
 
-    const balanceBefore = user.jetonBalance ?? 0
-    // KURAL: bahis jetondan düşülür ancak KAZANÇ CFC olarak ödenir.
-    // Jeton paraya çevrilebildiği için ödül olarak dağıtılmaz.
-    const balanceAfter = excluded ? balanceBefore : balanceBefore - betJetons
+    const balanceBefore = user.credits ?? 0
+    const balanceAfter = excluded ? balanceBefore : balanceBefore - betJetons + wonJetons
 
     const ops: any[] = [
       prisma.luckyGiftReward.create({
@@ -113,31 +113,29 @@ export async function POST(request: NextRequest) {
         prisma.user.update({
           where: { id: userId },
           data: {
-            jetonBalance: { decrement: betJetons },
-            ...(wonJetons > 0 ? { credits: { increment: wonJetons } } : {}),
+            // net = kazanç - bahis (tek alan, tek işlem)
+            credits: { increment: netJetons },
           },
         }),
-        prisma.jetonTransaction.create({
+        prisma.creditTransaction.create({
           data: {
             userId,
             amount: -betJetons,
             type: 'lucky_gift_bet',
-            description: `Şanslı hediye: ${giftType.name} x${quantity}`,
-            balanceBefore,
-            balanceAfter: balanceBefore - betJetons,
+            description: `Şanslı hediye bahsi (CFC): ${giftType.name} x${quantity}`,
+            balance: balanceBefore - betJetons,
           },
         }),
       )
       if (wonJetons > 0) {
         ops.push(
-          prisma.jetonTransaction.create({
+          prisma.creditTransaction.create({
             data: {
               userId,
               amount: wonJetons,
               type: 'lucky_gift_win',
               description: `Şanslı hediye kazancı (${multiplier}x): ${giftType.name} → CFC`,
-              balanceBefore: balanceBefore - betJetons,
-              balanceAfter,
+              balance: balanceAfter,
             },
           }),
         )
@@ -176,6 +174,7 @@ export async function POST(request: NextRequest) {
         icon: tier.icon,
         isWin: multiplier >= 1,
       },
+      currency: 'cfc',
       newBalance: balanceAfter,
     })
   } catch (e) {

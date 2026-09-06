@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Coins, Flame, Gift, Loader2, ChevronRight, Sparkles } from 'lucide-react'
+import AdWatchModal from '@/components/ad-watch-modal'
 
 interface BanaOzelItem {
   id: string
@@ -71,7 +72,10 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
     }
   }, [isOpen, session, fetchData])
 
-  const handleOpenItem = async (item: BanaOzelItem) => {
+  const [showAdModal, setShowAdModal] = useState(false)
+  const [adItem, setAdItem] = useState<BanaOzelItem | null>(null)
+
+  const handleOpenItem = async (item: BanaOzelItem, useAd = false) => {
     setSelectedItem(item)
     setModalContent('')
     setTarotCard(null)
@@ -83,16 +87,24 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
       const res = await fetch('/api/bana-ozel/open', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: item.slug }),
+        body: JSON.stringify({ slug: item.slug, useAd }),
       })
       const data = await res.json()
       if (!res.ok) {
+        // Bakiye yetersiz → reklam izleyerek açma seçeneği
+        if (res.status === 402 && data?.canWatchAd) {
+          setAdItem(item)
+          setShowAdModal(true)
+          setError('')
+          setModalLoading(false)
+          return
+        }
         setError(data.error || 'Bir hata oluştu')
         setModalLoading(false)
         return
       }
       setModalContent(data.content)
-      setJetonBalance(data.newBalance)
+      setJetonBalance(typeof data.cfcBalance === 'number' ? data.cfcBalance : data.newBalance)
       if (data.tarotCard) {
         setTarotCard(data.tarotCard)
         setTimeout(() => setTarotFlipped(true), 1000)
@@ -407,6 +419,16 @@ export default function BanaOzelPopup({ isOpen, onClose }: BanaOzelPopupProps) {
                   </motion.div>
                 )}
               </AnimatePresence>
+      <AdWatchModal
+        isOpen={showAdModal}
+        onClose={() => { setShowAdModal(false); setAdItem(null) }}
+        onRewardEarned={() => {
+          const target = adItem
+          setShowAdModal(false)
+          setAdItem(null)
+          if (target) handleOpenItem(target, true)
+        }}
+      />
             </div>
           </motion.div>
         </motion.div>

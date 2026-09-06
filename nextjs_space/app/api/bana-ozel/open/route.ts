@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { getCachedPlatformSetting } from '@/lib/cache'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -63,7 +64,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
     }
 
-    const { slug } = await req.json()
+    const body = await req.json().catch(() => ({}))
+    const slug = body?.slug
+    const useAd = body?.useAd === true || body?.adWatched === true
     if (!slug) {
       return NextResponse.json({ error: 'İçerik belirtilmedi' }, { status: 400 })
     }
@@ -74,14 +77,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'İçerik bulunamadı' }, { status: 404 })
     }
 
-    // Check jeton balance
+    // KURAL: "Bana Özel" önce CFC'den düşer, CFC yetmezse jetondan düşer,
+    // ikisi de yetmezse kullanıcı reklam izleyerek ücretsiz açabilir.
     const user = await prisma.user.findUnique({
       where: { id: authUser.id },
-      select: { credits: true, name: true, zodiacSign: true },
+      select: { credits: true, jetonBalance: true, name: true, zodiacSign: true },
     })
-    // KURAL: "Bana Özel" bölümü CFC ile çalışır (CFC paraya çevrilemez).
-    if (!user || user.credits < item.jetonCost) {
-      return NextResponse.json({ error: 'Yetersiz CFC bakiyesi', required: item.jetonCost, current: user?.credits ?? 0 }, { status: 402 })
+    if (!user) {
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+    }
+
+    const cost = item.jetonCost
+    const cfcBalance = user.credits ?? 0
+    const jetonBalance = user.jetonBalance ?? 0
+
+    // Reklamla açma günlük limiti (varsayılan 3)
+    const AD_DAILY_LIMIT = parseInt(
+      (await getCachedPlatformSetting('bana_ozel_ad_daily_limit', '3')) || '3',
+      10,
+    ) || 0
+
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+
+    let payment: 'cfc' | 'jeton' | 'ad'
+    if (cfcBalance >= cost) {
+      payment = 'cfc'
+    } else if (jetonBalance >= cost) {
+      payment = 'jeton'
+    } else {
+      const adOpensToday = await prisma.banaOzelHistory.count({
+        where: { userId: authUser.id, jetonSpent: 0, createdAt: { gte: startOfToday } },
+      })
+      const adRemaining = Math.max(0, AD_DAILY_LIMIT - adOpensToday)
+      if (!useAd || adRemaining <= 0) {
+        return NextResponse.json(
+          {
+            error: adRemaining > 0
+              ? 'Yetersiz bakiye — reklam izleyerek açabilirsin'
+              : 'Yetersiz bakiye ve günlük reklam hakkın doldu',
+            required: cost,
+            current: cfcBalance,
+            cfcBalance,
+            jetonBalance,
+            canWatchAd: adRemaining > 0,
+            adRemaining,
+          },
+          { status: 402 },
+        )
+      }
+      payment = 'ad'
     }
 
     // Generate content via LLM
@@ -103,33 +148,61 @@ export async function POST(req: NextRequest) {
       content = 'Evrenin enerjisi şu anda yoğun. Lütfen birazdan tekrar deneyin. ✨'
     }
 
-    // Deduct jeton in a transaction
-    const newBalance = user.credits - item.jetonCost
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: authUser.id },
-        data: { credits: newBalance },
-      }),
-      prisma.jetonTransaction.create({
-        data: {
-          userId: authUser.id,
-          amount: -item.jetonCost,
-          type: 'spend',
-          description: `${item.nameTr} (CFC)`,
-          itemSlug: slug,
-          balanceBefore: user.credits,
-          balanceAfter: newBalance,
-        },
-      }),
+    // Ödeme: CFC / Jeton / Reklam (ücretsiz)
+    const charged = payment === 'ad' ? 0 : cost
+    const newCfcBalance = payment === 'cfc' ? cfcBalance - cost : cfcBalance
+    const newJetonBalance = payment === 'jeton' ? jetonBalance - cost : jetonBalance
+    const newBalance = payment === 'jeton' ? newJetonBalance : newCfcBalance
+
+    const txOps: any[] = []
+    if (payment === 'cfc') {
+      txOps.push(
+        prisma.user.update({
+          where: { id: authUser.id },
+          data: { credits: { decrement: cost } },
+        }),
+        prisma.creditTransaction.create({
+          data: {
+            userId: authUser.id,
+            amount: -cost,
+            type: 'bana_ozel',
+            description: `${item.nameTr} (CFC)`,
+            balance: newCfcBalance,
+          },
+        }),
+      )
+    } else if (payment === 'jeton') {
+      txOps.push(
+        prisma.user.update({
+          where: { id: authUser.id },
+          data: { jetonBalance: { decrement: cost } },
+        }),
+        prisma.jetonTransaction.create({
+          data: {
+            userId: authUser.id,
+            amount: -cost,
+            type: 'spend',
+            description: `${item.nameTr} (Jeton)`,
+            itemSlug: slug,
+            balanceBefore: jetonBalance,
+            balanceAfter: newJetonBalance,
+          },
+        }),
+      )
+    }
+
+    txOps.push(
       prisma.banaOzelHistory.create({
         data: {
           userId: authUser.id,
           itemSlug: slug,
           content,
-          jetonSpent: item.jetonCost,
+          jetonSpent: charged,
         },
       }),
-    ])
+    )
+
+    await prisma.$transaction(txOps)
 
     // Update streak
     const today = new Date()
@@ -232,8 +305,12 @@ export async function POST(req: NextRequest) {
       success: true,
       content,
       tarotCard,
-      jetonSpent: item.jetonCost,
+      jetonSpent: charged,
+      paymentMethod: payment,
+      currency: payment === 'jeton' ? 'jeton' : payment === 'cfc' ? 'cfc' : 'ad',
       newBalance: newBalance,
+      cfcBalance: newCfcBalance,
+      jetonBalance: newJetonBalance,
       item: { nameTr: item.nameTr, nameEn: item.nameEn, icon: item.icon },
     })
   } catch (error) {
