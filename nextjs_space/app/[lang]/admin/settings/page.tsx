@@ -152,7 +152,7 @@ export default function AdminSettingsPage() {
       ])
       if (res.ok) {
         const data = await res.json()
-        setSettings(data)
+        setSettings({ ...data, vr_seat_count: data.vr_seat_count ?? '15' })
         if (data.onesignal_enabled !== undefined) {
           setOnesignalEnabled(data.onesignal_enabled === 'true' || data.onesignal_enabled === '1')
         }
