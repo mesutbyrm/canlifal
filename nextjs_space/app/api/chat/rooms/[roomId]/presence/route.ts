@@ -49,9 +49,12 @@ export async function GET(
       }),
       prisma.chatRoom.findUnique({
         where: { id: roomId },
-        select: { isMuted: true }
+        select: { isMuted: true, seatCount: true }
       })
     ])
+
+    // BÖLÜM 2: dinamik koltuk sayısı (istemci ızgarayı buna göre çizer)
+    const getSeatCount = await resolveRoomSeatCount(roomId, (room as any)?.seatCount ?? null)
 
     // Get chat roles for all active users
     const userIds = presences.map((p: any) => p.userId)
@@ -99,6 +102,7 @@ export async function GET(
     return NextResponse.json({
       users: activeUsers,
       roomMuted: room?.isMuted || false,
+      seatCount: getSeatCount,
       onlineCount: activeUsers.length,
       totalCount: activeUsers.length
     })
@@ -601,6 +605,7 @@ export async function POST(
     return NextResponse.json({
       users: activeUsers,
       roomMuted: room?.isMuted || false,
+      seatCount: roomSeatCount,
       onlineCount: activeUsers.length,
       totalCount: activeUsers.length
     })

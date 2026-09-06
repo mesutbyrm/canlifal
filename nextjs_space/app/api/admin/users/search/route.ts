@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         email: true,
         image: true,
         role: true,
+        membership: true,
       },
       take: limit,
       orderBy: { name: 'asc' },

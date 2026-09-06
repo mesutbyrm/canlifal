@@ -123,6 +123,8 @@ export default function ChatRoomPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [marqueeJoinEvents, setMarqueeJoinEvents] = useState<{ id: string; name: string; isVip: boolean; vipType?: string }[]>([])
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([])
+  // BÖLÜM 2: sunucudan gelen dinamik koltuk sayısı (2–15, oda bazlı veya global varsayılan)
+  const [roomSeatCount, setRoomSeatCount] = useState<number>(15)
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -513,6 +515,9 @@ export default function ChatRoomPage() {
       if (res.ok) {
         const data = await res.json()
         setActiveUsers(data.users || [])
+        if (typeof data.seatCount === 'number' && data.seatCount > 0) {
+          setRoomSeatCount(data.seatCount)
+        }
       }
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -2939,7 +2944,7 @@ export default function ChatRoomPage() {
 
         {/* ── Dynamic Seat Grid (only show occupied rows + 1 extra) ── */}
         {(() => {
-          const TOTAL_SEATS = 11
+          const TOTAL_SEATS = roomSeatCount
           const COLS = 5
           
           // Build seats — sorted by authority rank (highest first)
@@ -2957,17 +2962,11 @@ export default function ChatRoomPage() {
             seats[i] = u
           })
           
-          // Find the last occupied row and show up to that row + 1 extra row
-          let lastOccupiedRow = -1
-          for (let i = 0; i < TOTAL_SEATS; i++) {
-            if (seats[i]) {
-              const row = Math.floor(i / COLS)
-              if (row > lastOccupiedRow) lastOccupiedRow = row
-            }
-          }
-          // Show at least 1 row, and 1 extra empty row after last occupied
-          const visibleRows = Math.min(Math.max(lastOccupiedRow + 2, 1), 3)
-          const visibleSeats = visibleRows * COLS
+          // BÖLÜM 2 — kademeli açılım: dolu koltuk sayısı + 1 adet boş "+" koltuğu göster.
+          // Oda boşken sadece taht koltuğu + 1 boş koltuk görünür; her yeni oturan ile
+          // yanında bir koltuk daha açılır, TOTAL_SEATS'e (en fazla 15) kadar.
+          const occupiedCount = seatedUsers.length
+          const visibleSeats = Math.min(Math.max(occupiedCount + 1, 2), TOTAL_SEATS)
           
           // Can I manage seats (admin/owner)?
           const canManageSeats = myPermissions?.isRoomOwner || myPermissions?.isGlobalAdmin || 
@@ -2988,6 +2987,7 @@ export default function ChatRoomPage() {
               } else {
                 const data = await res.json()
                 if (res.status === 409) alert(data.error || 'Bu koltuk dolu!')
+                else if (res.status === 403) alert(data.error || 'Bu koltuğa oturma yetkiniz yok.')
               }
             } catch {}
           }

@@ -158,6 +158,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/profile-frames`, icon: Shield, trLabel: 'Profil Çerçeve Yönetimi', enLabel: 'Profile Frame Management', emoji: '🖼️', desc: 'Profil çerçeveleri' },
       { href: `/admin/membership-badges`, icon: Award, trLabel: 'Üyelik Rozetleri', enLabel: 'Membership Badges', emoji: '🎖️', desc: 'Üyelik seviye rozetleri' },
       { href: `/admin/name-effects`, icon: Wand2, trLabel: 'İsim Efektleri', enLabel: 'Name Effects', emoji: '✨', desc: 'Renkli/animasyonlu isim stilleri' },
+      { href: `/admin/animations`, icon: Sparkles, trLabel: 'Site Animasyonları', enLabel: 'Site Animations', emoji: '🎨', desc: 'Merkezi animasyon kütüphanesi & atamalar' },
       { href: `/admin/entrance-effects`, icon: Zap, trLabel: 'Giriş Efektleri', enLabel: 'Entrance Effects', emoji: '⚡', desc: 'Odaya giriş animasyonları' },
       { href: `/admin/chat-bubbles`, icon: MessageCircle, trLabel: 'Sohbet Balonları', enLabel: 'Chat Bubbles', emoji: '💬', desc: 'Mesaj balonu görünümleri' },
       { href: `/admin/mic-frames`, icon: Mic, trLabel: 'Mikrofon Çerçeveleri', enLabel: 'Mic Frames', emoji: '🎤', desc: 'Koltuk/mikrofon çerçeveleri' },
