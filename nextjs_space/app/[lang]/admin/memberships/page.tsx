@@ -71,9 +71,13 @@ interface PurchaseStats {
 
 const TIER_OPTIONS = [
   { value: 'basic', label: 'Basic', color: 'text-gray-400' },
-  { value: 'premium', label: 'Premium', color: 'text-blue-400' },
+  { value: 'silver', label: 'Silver', color: 'text-slate-300' },
   { value: 'gold', label: 'Gold', color: 'text-amber-400' },
-  { value: 'diamond', label: 'Diamond', color: 'text-purple-400' }
+  { value: 'premium', label: 'Premium', color: 'text-blue-400' },
+  { value: 'platinum', label: 'Platinum', color: 'text-teal-300' },
+  { value: 'diamond', label: 'Diamond', color: 'text-purple-400' },
+  { value: 'vip', label: 'VIP', color: 'text-pink-400' },
+  { value: 'svip', label: 'SVIP', color: 'text-red-400' }
 ]
 
 const PRICE_TYPE_OPTIONS = [

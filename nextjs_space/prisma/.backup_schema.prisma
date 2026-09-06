@@ -12,145 +12,148 @@ datasource db {
 }
 
 model User {
-  id                     String                  @id @default(cuid())
-  email                  String                  @unique
-  emailVerified          DateTime?
-  password               String?
-  name                   String
-  username               String?                 @unique
-  phone                  String?
-  image                  String?
-  preferredLanguage      String                  @default("tr")
-  credits                Int                     @default(50)
-  role                   String                  @default("user")
-  membership             String                  @default("basic") // basic, premium, gold
-  membershipExpiresAt    DateTime?
-  createdAt              DateTime                @default(now())
-  referralCode           String?                 @unique
-  referralCreditsEarned  Int                     @default(0)
-  referredById           String?
+  id                        String                  @id @default(cuid())
+  email                     String                  @unique
+  emailVerified             DateTime?
+  password                  String?
+  name                      String
+  username                  String?                 @unique
+  phone                     String?
+  image                     String?
+  preferredLanguage         String                  @default("tr")
+  credits                   Int                     @default(50)
+  role                      String                  @default("user")
+  membership                String                  @default("basic") // basic, premium, gold
+  membershipExpiresAt       DateTime?
+  createdAt                 DateTime                @default(now())
+  referralCode              String?                 @unique
+  referralCreditsEarned     Int                     @default(0)
+  referredById              String?
   // Profile fields
-  bio                    String? // User bio/about text
-  birthDate              DateTime?
-  birthTime              String? // HH:mm format for rising sign calculation
-  zodiacSign             String?
-  risingSign             String?
-  favoriteTeam           String?
-  lastHoroscopeDate      DateTime? // Track when daily horoscope was last generated
+  bio                       String? // User bio/about text
+  birthDate                 DateTime?
+  birthTime                 String? // HH:mm format for rising sign calculation
+  zodiacSign                String?
+  risingSign                String?
+  favoriteTeam              String?
+  lastHoroscopeDate         DateTime? // Track when daily horoscope was last generated
   // Privacy settings
-  messagePrivacy         String                  @default("everyone") // everyone, followers, nobody
-  hideProfileViews       Boolean                 @default(false) // hide from profile view tracking
+  messagePrivacy            String                  @default("everyone") // everyone, followers, nobody
+  hideProfileViews          Boolean                 @default(false) // hide from profile view tracking
   // Theme preference
-  theme                  String                  @default("mystical") // mystical, facebook
+  theme                     String                  @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
-  jetonBalance           Int                     @default(0)
+  jetonBalance              Int                     @default(0)
   // Location for gift leaderboards / sender map (added, optional)
-  city                   String?
-  country                String?                 @default("TR")
+  city                      String?
+  country                   String?                 @default("TR")
   // Profile customization
-  specialBadges          String? // JSON array of special badge types (vip, beta_tester, verified, etc.)
-  profileEffect          String? // Profile background effect (sparkles, fire, rainbow, etc.)
-  profileFrameId         String? // Selected profile frame ID
-  profileFrame           ProfileFrame?           @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
-  adminAssignedFrameId   String? // Admin-assigned profile frame (overrides user selection)
-  adminAssignedFrame     ProfileFrame?           @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
+  specialBadges             String? // JSON array of special badge types (vip, beta_tester, verified, etc.)
+  profileEffect             String? // Profile background effect (sparkles, fire, rainbow, etc.)
+  profileFrameId            String? // Selected profile frame ID
+  profileFrame              ProfileFrame?           @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
+  adminAssignedFrameId      String? // Admin-assigned profile frame (overrides user selection)
+  adminAssignedFrame        ProfileFrame?           @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
   // Cosmetic selections (Part 13 premium cosmetics) - plain id/key references, no relation
-  nameEffect             String? // Selected name-text effect key (gold, silver, neon, rainbow, ...)
-  entranceEffectId       String? // Selected entrance (room-join) effect id
-  chatBubbleId           String? // Selected chat bubble skin id
-  micFrameId             String? // Selected microphone frame id
-  avatarAccessoryIds     String? // JSON array of selected avatar accessory ids
+  nameEffect                String? // Selected name-text effect key (gold, silver, neon, rainbow, ...)
+  entranceEffectId          String? // Selected entrance (room-join) effect id
+  chatBubbleId              String? // Selected chat bubble skin id
+  micFrameId                String? // Selected microphone frame id
+  avatarAccessoryIds        String? // JSON array of selected avatar accessory ids
   // Withdrawal settings (admin-controlled)
-  withdrawalLimit        Int                     @default(0) // 0 means cannot withdraw
+  withdrawalLimit           Int                     @default(0) // 0 means cannot withdraw
   // Statistics
-  totalTimeSpentMinutes  Int                     @default(0)
-  lastActiveAt           DateTime?
-  activeDeviceToken      String?
-  accounts               Account[]
-  bannedOthers           ChatBan[]               @relation("Banner")
-  bannedIn               ChatBan[]               @relation("BannedUser")
-  chatMessages           ChatMessage[]
-  mutedOthers            ChatMute[]              @relation("Muter")
-  mutedIn                ChatMute[]              @relation("MutedUser")
-  chatPresences          ChatPresence[]
-  chatRoles              ChatUserRole[]
-  ownedChatRooms         ChatRoom[]              @relation("RoomOwner")
-  beneficiaryRooms       ChatRoom[]              @relation("RoomGiftBeneficiary")
-  fortunes               Fortune[]
-  fortuneTellerProfile   LiveFortuneTeller?
-  liveSessions           LiveSession[]           @relation("SessionUser")
-  notifications          Notification[]
-  passwordResets         PasswordResetToken[]
-  referredHistory        Referral[]              @relation("Referred")
-  referralHistory        Referral[]              @relation("Referrer")
-  sessions               Session[]
-  socialComments         SocialComment[]
-  socialLikes            SocialLike[]
-  socialPosts            SocialPost[]
-  payments               Payment[]
-  referredBy             User?                   @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals              User[]                  @relation("UserReferrals")
-  videoStreams           VideoStream[]
-  videoStreamComments    VideoStreamComment[]
-  videoStreamLikes       VideoStreamLike[]
-  streamGifts            StreamGift[]
-  sentChatRoomGifts      ChatRoomGift[]          @relation("ChatGiftSender")
-  receivedChatRoomGifts  ChatRoomGift[]          @relation("ChatGiftRecipient")
-  followers              Follow[]                @relation("Following")
-  following              Follow[]                @relation("Follower")
-  sentMessages           DirectMessage[]         @relation("SentMessages")
-  receivedMessages       DirectMessage[]         @relation("ReceivedMessages")
-  conversationsAsUser1   Conversation[]          @relation("ConversationUser1")
-  conversationsAsUser2   Conversation[]          @relation("ConversationUser2")
-  sentRequests           MessageRequest[]        @relation("SentRequests")
-  receivedRequests       MessageRequest[]        @relation("ReceivedRequests")
-  dreamComments          DreamComment[]
-  dreamFavorites         DreamFavorite[]
-  dreamViews             DreamView[]
-  dreamDiaryEntries      DreamDiaryEntry[]
-  dailyLoginRewards      DailyLoginReward[]
-  dreamContestEntries    DreamContestEntry[]
-  dreamContestVotes      DreamContestVote[]
-  weeklyDreamReports     WeeklyDreamReport[]
-  liveActivities         LiveActivity[]          @relation("userActivities")
+  totalTimeSpentMinutes     Int                     @default(0)
+  lastActiveAt              DateTime?
+  activeDeviceToken         String?
+  accounts                  Account[]
+  bannedOthers              ChatBan[]               @relation("Banner")
+  bannedIn                  ChatBan[]               @relation("BannedUser")
+  chatMessages              ChatMessage[]
+  mutedOthers               ChatMute[]              @relation("Muter")
+  mutedIn                   ChatMute[]              @relation("MutedUser")
+  chatPresences             ChatPresence[]
+  chatRoles                 ChatUserRole[]
+  ownedChatRooms            ChatRoom[]              @relation("RoomOwner")
+  beneficiaryRooms          ChatRoom[]              @relation("RoomGiftBeneficiary")
+  fortunes                  Fortune[]
+  fortuneTellerProfile      LiveFortuneTeller?
+  liveSessions              LiveSession[]           @relation("SessionUser")
+  notifications             Notification[]
+  passwordResets            PasswordResetToken[]
+  referredHistory           Referral[]              @relation("Referred")
+  referralHistory           Referral[]              @relation("Referrer")
+  sessions                  Session[]
+  socialComments            SocialComment[]
+  socialLikes               SocialLike[]
+  socialPosts               SocialPost[]
+  payments                  Payment[]
+  referredBy                User?                   @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals                 User[]                  @relation("UserReferrals")
+  videoStreams              VideoStream[]
+  videoStreamComments       VideoStreamComment[]
+  videoStreamLikes          VideoStreamLike[]
+  streamGifts               StreamGift[]
+  sentChatRoomGifts         ChatRoomGift[]          @relation("ChatGiftSender")
+  receivedChatRoomGifts     ChatRoomGift[]          @relation("ChatGiftRecipient")
+  followers                 Follow[]                @relation("Following")
+  following                 Follow[]                @relation("Follower")
+  sentMessages              DirectMessage[]         @relation("SentMessages")
+  receivedMessages          DirectMessage[]         @relation("ReceivedMessages")
+  conversationsAsUser1      Conversation[]          @relation("ConversationUser1")
+  conversationsAsUser2      Conversation[]          @relation("ConversationUser2")
+  sentRequests              MessageRequest[]        @relation("SentRequests")
+  receivedRequests          MessageRequest[]        @relation("ReceivedRequests")
+  dreamComments             DreamComment[]
+  dreamFavorites            DreamFavorite[]
+  dreamViews                DreamView[]
+  dreamDiaryEntries         DreamDiaryEntry[]
+  dailyLoginRewards         DailyLoginReward[]
+  dreamContestEntries       DreamContestEntry[]
+  dreamContestVotes         DreamContestVote[]
+  weeklyDreamReports        WeeklyDreamReport[]
+  liveActivities            LiveActivity[]          @relation("userActivities")
   // XP & Level system
-  xp                     Int                     @default(0)
-  level                  Int                     @default(1)
-  loginStreak            Int                     @default(0)
-  lastLoginRewardDate    DateTime?               @db.Date
+  xp                        Int                     @default(0)
+  level                     Int                     @default(1)
+  loginStreak               Int                     @default(0)
+  lastLoginRewardDate       DateTime?               @db.Date
   // Agency system
-  agencyMembership       AgencyUser?
-  agencyLeaveRequests    AgencyLeaveRequest[]
+  agencyMembership          AgencyUser?
+  agencyLeaveRequests       AgencyLeaveRequest[]
   // Celebrity follows
-  celebrityFollows       CelebrityFollow[]
+  celebrityFollows          CelebrityFollow[]
   // Fan clubs
-  fanClubMemberships     FanClubMember[]
-  fanClubPosts           FanClubPost[]
-  fanClubPostLikes       FanClubPostLike[]
-  fanClubPolls           FanClubPoll[]
-  fanClubPollVotes       FanClubPollVote[]
+  fanClubMemberships        FanClubMember[]
+  fanClubPosts              FanClubPost[]
+  fanClubPostLikes          FanClubPostLike[]
+  fanClubPolls              FanClubPoll[]
+  fanClubPollVotes          FanClubPollVote[]
   // Celebrity posts
-  celebrityPostLikes     CelebrityPostLike[]
-  celebrityPostComments  CelebrityPostComment[]
-  stories                UserStory[]
+  celebrityPostLikes        CelebrityPostLike[]
+  celebrityPostComments     CelebrityPostComment[]
+  stories                   UserStory[]
   // Bot system
-  isBot                  Boolean                 @default(false)
-  botProfile             BotProfile?
+  isBot                     Boolean                 @default(false)
+  botProfile                BotProfile?
   // CFC (CanlıFal Coin) balance
-  cfcBalance             Int                     @default(0)
-  cfcPaymentRequests     CfcPaymentRequest[]
-  devices                UserDevice[]
-  shortVideos            ShortVideo[]
-  shortVideoLikes        ShortVideoLike[]
-  shortVideoComments     ShortVideoComment[]
-  shortVideoViews        ShortVideoView[]
-  shortVideoSaves        ShortVideoSave[]
-  shortVideoCommentLikes ShortVideoCommentLike[]
-  shortVideoMentions     ShortVideoMention[]     @relation("ShortVideoMentioned")
-  blockedUsers           UserBlock[]             @relation("Blocker")
-  blockedByUsers         UserBlock[]             @relation("Blocked")
-  reportsMade            UserReport[]            @relation("Reporter")
-  reportsReceived        UserReport[]            @relation("Reported")
+  cfcBalance                Int                     @default(0)
+  cfcPaymentRequests        CfcPaymentRequest[]
+  devices                   UserDevice[]
+  shortVideos               ShortVideo[]
+  shortVideoLikes           ShortVideoLike[]
+  shortVideoComments        ShortVideoComment[]
+  shortVideoViews           ShortVideoView[]
+  shortVideoSaves           ShortVideoSave[]
+  shortVideoCommentLikes    ShortVideoCommentLike[]
+  shortVideoMentions        ShortVideoMention[]     @relation("ShortVideoMentioned")
+  blockedUsers              UserBlock[]             @relation("Blocker")
+  blockedByUsers            UserBlock[]             @relation("Blocked")
+  reportsMade               UserReport[]            @relation("Reporter")
+  reportsReceived           UserReport[]            @relation("Reported")
+  animationAssignments      AnimationAssignment[]   @relation("AnimationAssignmentUser")
+  animationAssignmentsGiven AnimationAssignment[]   @relation("AnimationAssignmentAssigner")
+  animationPlaybackLogs     AnimationPlaybackLog[]
 
   @@index([referralCode])
   @@index([isBot])
@@ -478,6 +481,7 @@ model ChatRoom {
   pinnedAnnouncement    String? // Pinned announcement text
   tags                  String? // Comma-separated tags
   bannerImage           String? // Room banner image URL
+  seatCount             Int? // null = use global default (vr_seat_count)
   createdAt             DateTime         @default(now())
   bans                  ChatBan[]
   messages              ChatMessage[]
@@ -954,113 +958,113 @@ model VideoStreamViewer {
 
 // Gift types available for purchase
 model GiftType {
-  id                  String         @id @default(cuid())
-  name                String
-  nameEn              String
-  icon                String // emoji or icon name
-  animation           String? // animation type
-  price               Int // price in credits
-  sortOrder           Int            @default(0)
-  isActive            Boolean        @default(true)
-  createdAt           DateTime       @default(now())
+  id                    String          @id @default(cuid())
+  name                  String
+  nameEn                String
+  icon                  String // emoji or icon name
+  animation             String? // animation type
+  price                 Int // price in credits
+  sortOrder             Int             @default(0)
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
   // ── Gift store: uploadable rich assets (added) ──
-  thumbnailUrl        String? // small preview image (ready-to-use URL)
-  assetUrl            String? // full gift asset URL (video/lottie/svga/gif/png)
-  assetType           String?        @default("image") // image | video | lottie | svga | gif
-  cloudStoragePath    String? // internal storage key for the asset
-  thumbnailCloudPath  String? // internal storage key for the thumbnail
+  thumbnailUrl          String? // small preview image (ready-to-use URL)
+  assetUrl              String? // full gift asset URL (video/lottie/svga/gif/png)
+  assetType             String?         @default("image") // image | video | lottie | svga | gif
+  cloudStoragePath      String? // internal storage key for the asset
+  thumbnailCloudPath    String? // internal storage key for the thumbnail
   // ── Media metadata (added; nullable/backward-compatible) ──
-  assetWidth          Int?           // intrinsic width in px (video/image)
-  assetHeight         Int?           // intrinsic height in px (video/image)
-  assetDurationMs     Int?           // media duration in ms (video/audio)
-  assetMimeType       String?        // e.g. video/mp4, image/png
-  category            String? // optional grouping (e.g. "luxury", "romantic")
-  description         String?        @db.Text
-  updatedAt           DateTime       @default(now()) @updatedAt
+  assetWidth            Int? // intrinsic width in px (video/image)
+  assetHeight           Int? // intrinsic height in px (video/image)
+  assetDurationMs       Int? // media duration in ms (video/audio)
+  assetMimeType         String? // e.g. video/mp4, image/png
+  category              String? // optional grouping (e.g. "luxury", "romantic")
+  description           String?         @db.Text
+  updatedAt             DateTime        @default(now()) @updatedAt
   // ── Premium ecosystem fields (added) ──
-  soundUrl            String? // optional sound effect URL
-  soundCloudPath      String? // internal storage key for the sound
-  animationDurationMs Int? // animation duration in ms
-  isFullscreen        Boolean        @default(false) // full-screen animation gift
-  tier                String         @default("small") // small | big | huge (animation intensity)
-  isPopular           Boolean        @default(false)
-  isNew               Boolean        @default(false)
-  isSpecialEvent      Boolean        @default(false)
-  isHidden            Boolean        @default(false) // "gizli" gift — invisible until first sent/owned
-  seasonStart         DateTime? // seasonal availability window start
-  seasonEnd           DateTime? // seasonal availability window end
-  isFeatured          Boolean        @default(false) // "Hediye Günü" highlight
-  firstReleasedAt     DateTime? // album: first release date
+  soundUrl              String? // optional sound effect URL
+  soundCloudPath        String? // internal storage key for the sound
+  animationDurationMs   Int? // animation duration in ms
+  isFullscreen          Boolean         @default(false) // full-screen animation gift
+  tier                  String          @default("small") // small | big | huge (animation intensity)
+  isPopular             Boolean         @default(false)
+  isNew                 Boolean         @default(false)
+  isSpecialEvent        Boolean         @default(false)
+  isHidden              Boolean         @default(false) // "gizli" gift — invisible until first sent/owned
+  seasonStart           DateTime? // seasonal availability window start
+  seasonEnd             DateTime? // seasonal availability window end
+  isFeatured            Boolean         @default(false) // "Hediye Günü" highlight
+  firstReleasedAt       DateTime? // album: first release date
   // ── Admin panel: static icon image, effect color & behavior flags (added) ──
-  iconImageUrl        String? // static PNG/webP icon shown in panel/list (distinct from emoji `icon`)
-  iconImageCloudPath  String? // internal storage key for the static icon image
-  effectColor         String? // hex effect color, e.g. #FF6B6B
-  comboEnabled        Boolean        @default(false) // gift supports combo sending
-  isPremium           Boolean        @default(false) // premium gift
+  iconImageUrl          String? // static PNG/webP icon shown in panel/list (distinct from emoji `icon`)
+  iconImageCloudPath    String? // internal storage key for the static icon image
+  effectColor           String? // hex effect color, e.g. #FF6B6B
+  comboEnabled          Boolean         @default(false) // gift supports combo sending
+  isPremium             Boolean         @default(false) // premium gift
   // ── Görüneceği Yerler (visibility locations) ──
-  visibleInVoiceRoom  Boolean        @default(true)
-  visibleInLiveStream Boolean        @default(true)
-  visibleInPK         Boolean        @default(true)
-  visibleInProfile    Boolean        @default(false)
-  visibleInMessaging  Boolean        @default(false)
-  visibleInTrend      Boolean        @default(false)
-  visibleInStories    Boolean        @default(false)
-  visibleInFortune    Boolean        @default(false)
-  visibleInNotification Boolean      @default(false)
-  visibleAsMini       Boolean        @default(false) // mini animasyon
-  visibleAsFullscreen Boolean        @default(false) // tam ekran animasyon
+  visibleInVoiceRoom    Boolean         @default(true)
+  visibleInLiveStream   Boolean         @default(true)
+  visibleInPK           Boolean         @default(true)
+  visibleInProfile      Boolean         @default(false)
+  visibleInMessaging    Boolean         @default(false)
+  visibleInTrend        Boolean         @default(false)
+  visibleInStories      Boolean         @default(false)
+  visibleInFortune      Boolean         @default(false)
+  visibleInNotification Boolean         @default(false)
+  visibleAsMini         Boolean         @default(false) // mini animasyon
+  visibleAsFullscreen   Boolean         @default(false) // tam ekran animasyon
   // ── Hediye Türü (gift display type) ──
-  displayType         String         @default("static") // static|animation|video|3d|lottie|effect|fullscreen|mini|continuous|play_once
+  displayType           String          @default("static") // static|animation|video|3d|lottie|effect|fullscreen|mini|continuous|play_once
   // ── Hediye Özellikleri (gift properties) ──
-  requiresVip         Boolean        @default(false)
-  eventOnly           Boolean        @default(false)
-  pkOnly              Boolean        @default(false)
-  liveOnly            Boolean        @default(false)
-  voiceOnly           Boolean        @default(false)
-  newUserOnly         Boolean        @default(false)
-  timedCampaign       Boolean        @default(false)
-  campaignStart       DateTime?
-  campaignEnd         DateTime?
-  isSeasonal          Boolean        @default(false)
-  isReusable          Boolean        @default(true)
-  dailySendLimit      Int?           // null = sınırsız
+  requiresVip           Boolean         @default(false)
+  eventOnly             Boolean         @default(false)
+  pkOnly                Boolean         @default(false)
+  liveOnly              Boolean         @default(false)
+  voiceOnly             Boolean         @default(false)
+  newUserOnly           Boolean         @default(false)
+  timedCampaign         Boolean         @default(false)
+  campaignStart         DateTime?
+  campaignEnd           DateTime?
+  isSeasonal            Boolean         @default(false)
+  isReusable            Boolean         @default(true)
+  dailySendLimit        Int? // null = sınırsız
   // ── Animasyon Ayarları ──
-  startDelayMs        Int?           // animasyon başlangıç gecikmesi (ms)
-  displayDurationMs   Int?           // ekranda kalma süresi (ms)
-  repeatCount         Int            @default(1) // tekrar sayısı (0 = sonsuz)
-  volume              Int            @default(100) // ses seviyesi 0-100
-  particleEffect      String?        // confetti|heart|star|light|glow|none
-  hasVibration        Boolean        @default(false)
-  hasColorChange      Boolean        @default(false)
+  startDelayMs          Int? // animasyon başlangıç gecikmesi (ms)
+  displayDurationMs     Int? // ekranda kalma süresi (ms)
+  repeatCount           Int             @default(1) // tekrar sayısı (0 = sonsuz)
+  volume                Int             @default(100) // ses seviyesi 0-100
+  particleEffect        String? // confetti|heart|star|light|glow|none
+  hasVibration          Boolean         @default(false)
+  hasColorChange        Boolean         @default(false)
   // ── Ekrandaki Konumu ──
-  screenPosition      String         @default("center") // bottom|top|center|right|left|above_seat|user_avatar|room_center|fullscreen|background|message_area|header|footer
-  animStartPoint      String?        // animasyon başlangıç noktası
-  animEndPoint        String?        // animasyon bitiş noktası
+  screenPosition        String          @default("center") // bottom|top|center|right|left|above_seat|user_avatar|room_center|fullscreen|background|message_area|header|footer
+  animStartPoint        String? // animasyon başlangıç noktası
+  animEndPoint          String? // animasyon bitiş noktası
   // ── Koleksiyon İlişkisi ──
-  collectionId        String?
-  collection          GiftCollection? @relation(fields: [collectionId], references: [id])
+  collectionId          String?
+  collection            GiftCollection? @relation(fields: [collectionId], references: [id])
   // ── Müzik / ek ses dosyası ──
-  musicUrl            String?        // hediye özel müzik
-  musicCloudPath      String?        // müzik cloud key
+  musicUrl              String? // hediye özel müzik
+  musicCloudPath        String? // müzik cloud key
   // ── Şanslı Hediye (Lucky Gift) ──
-  isLucky             Boolean        @default(false) // şanslı hediye — gönderiminde jeton ödülü kazandırır
+  isLucky               Boolean         @default(false) // şanslı hediye — gönderiminde jeton ödülü kazandırır
   // ── Gift Engine (professional queue/animation engine) ──
   // Explicit, admin-editable engine attributes. These are ADDITIVE; when null
   // the engine falls back to the legacy fields (tier/screenPosition/assetType/
   // animationDurationMs) so existing gifts keep working unchanged.
-  priority            String         @default("MEDIUM") // SMALL | MEDIUM | LARGE | ULTRA
-  animationType       String?        // PNG | SVG | LOTTIE | MP4 | WEBM | PARTICLE
-  displayArea         String?        // FULL_SCREEN | CENTER | SEAT | BOTTOM | TOP
-  seatEffect          String?        // GLOW | SHAKE | PARTICLE | BORDER | PULSE | NONE
-  seatEffectEnabled   Boolean        @default(true) // admin can toggle seat effect on/off
-  soundEffectEnabled  Boolean        @default(true) // admin can toggle sound effect on/off
-  comboWindowMs       Int            @default(4000) // window to keep a combo alive (ms)
+  priority              String          @default("MEDIUM") // SMALL | MEDIUM | LARGE | ULTRA
+  animationType         String? // PNG | SVG | LOTTIE | MP4 | WEBM | PARTICLE
+  displayArea           String? // FULL_SCREEN | CENTER | SEAT | BOTTOM | TOP
+  seatEffect            String? // GLOW | SHAKE | PARTICLE | BORDER | PULSE | NONE
+  seatEffectEnabled     Boolean         @default(true) // admin can toggle seat effect on/off
+  soundEffectEnabled    Boolean         @default(true) // admin can toggle sound effect on/off
+  comboWindowMs         Int             @default(4000) // window to keep a combo alive (ms)
   // ── Senkronizasyon ──
-  contentVersion      Int            @default(1) // her değişiklikte artar
+  contentVersion        Int             @default(1) // her değişiklikte artar
   // ── Relations ──
-  gifts               StreamGift[]
-  chatRoomGifts       ChatRoomGift[]
-  giftEvents          GiftEvent[]
+  gifts                 StreamGift[]
+  chatRoomGifts         ChatRoomGift[]
+  giftEvents            GiftEvent[]
 
   @@index([collectionId])
   @@index([displayType])
@@ -1081,8 +1085,8 @@ model GiftType {
 // queueIndex order; each entry is marked finished when its animation completes.
 model GiftQueue {
   id          String    @id @default(cuid())
-  context     String    // voice_room | live_stream | pk
-  contextId   String    // roomId | streamId | battleId
+  context     String // voice_room | live_stream | pk
+  contextId   String // roomId | streamId | battleId
   giftTypeId  String
   senderId    String
   receiverId  String
@@ -1151,38 +1155,38 @@ model GiftHistory {
 
 // ── Hediye Koleksiyonları ──
 model GiftCollection {
-  id          String     @id @default(cuid())
-  name        String     // Romantik, VIP, Komik, Lüks...
-  nameEn      String     @default("")
-  slug        String     @unique
-  description String?    @db.Text
-  iconEmoji   String?    // 💕, 👑, 🎉...
-  iconUrl     String?    // opsiyonel ikon görseli
+  id            String     @id @default(cuid())
+  name          String // Romantik, VIP, Komik, Lüks...
+  nameEn        String     @default("")
+  slug          String     @unique
+  description   String?    @db.Text
+  iconEmoji     String? // 💕, 👑, 🎉...
+  iconUrl       String? // opsiyonel ikon görseli
   iconCloudPath String?
-  sortOrder   Int        @default(0)
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now()) @updatedAt
-  gifts       GiftType[]
+  sortOrder     Int        @default(0)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+  gifts         GiftType[]
 
   @@map("gift_collections")
 }
 
 // ── Şanslı Hediye ödül kademeleri (admin tarafından yapılandırılır) ──
 model LuckyGiftTier {
-  id         String   @id @default(cuid())
-  name       String   // "2x", "Jackpot 500x"...
-  nameEn     String   @default("")
-  multiplier Int      // ödül çarpanı — kazanılan jeton = betJetons * multiplier (0 = ödül yok)
-  weight     Int      @default(1) // ağırlıklı olasılık payı (yüksek = daha olası)
-  isJackpot  Boolean  @default(false) // jackpot kademesi — oda geneli duyuru tetikler
-  color      String?  // hex renk, ör. #FFD700
-  icon       String?  // emoji/ikon
-  isActive   Boolean  @default(true)
-  sortOrder  Int      @default(0)
-  contentVersion Int   @default(1)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  id             String   @id @default(cuid())
+  name           String // "2x", "Jackpot 500x"...
+  nameEn         String   @default("")
+  multiplier     Int // ödül çarpanı — kazanılan jeton = betJetons * multiplier (0 = ödül yok)
+  weight         Int      @default(1) // ağırlıklı olasılık payı (yüksek = daha olası)
+  isJackpot      Boolean  @default(false) // jackpot kademesi — oda geneli duyuru tetikler
+  color          String? // hex renk, ör. #FFD700
+  icon           String? // emoji/ikon
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  contentVersion Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 
   @@index([isActive])
   @@map("lucky_gift_tiers")
@@ -1193,13 +1197,13 @@ model LuckyGiftReward {
   id         String   @id @default(cuid())
   userId     String
   giftTypeId String
-  context    String?  // voice_room | live_stream | pk | profile | messaging
-  contextId  String?  // roomId | streamId
-  betJetons  Int      // harcanan jeton (hediye fiyatı * adet)
+  context    String? // voice_room | live_stream | pk | profile | messaging
+  contextId  String? // roomId | streamId
+  betJetons  Int // harcanan jeton (hediye fiyatı * adet)
   quantity   Int      @default(1)
-  multiplier Int      // uygulanan çarpan
-  wonJetons  Int      // kazanılan jeton
-  netJetons  Int      // wonJetons - betJetons (kar/zarar)
+  multiplier Int // uygulanan çarpan
+  wonJetons  Int // kazanılan jeton
+  netJetons  Int // wonJetons - betJetons (kar/zarar)
   isJackpot  Boolean  @default(false)
   tierId     String?
   createdAt  DateTime @default(now())
@@ -4033,37 +4037,37 @@ model AvatarAccessory {
 }
 
 model RoomTheme {
-  id              String    @id @default(cuid())
-  name            String
-  nameEn          String    @default("")
-  backgroundUrl   String // static image / lottie / mp4
-  cloudStoragePath String?  // S3 key for the background
-  thumbnailUrl    String?   // small preview
+  id                 String    @id @default(cuid())
+  name               String
+  nameEn             String    @default("")
+  backgroundUrl      String // static image / lottie / mp4
+  cloudStoragePath   String? // S3 key for the background
+  thumbnailUrl       String? // small preview
   thumbnailCloudPath String?
-  assetType       String    @default("image") // image|lottie|video|gradient|animated|svg
-  tier            String    @default("free") // free|gold|vip|premium|event
-  isActive        Boolean   @default(true)
-  activeFrom      DateTime? // seasonal themes window
-  activeTo        DateTime?
-  sortOrder       Int       @default(0)
+  assetType          String    @default("image") // image|lottie|video|gradient|animated|svg
+  tier               String    @default("free") // free|gold|vip|premium|event
+  isActive           Boolean   @default(true)
+  activeFrom         DateTime? // seasonal themes window
+  activeTo           DateTime?
+  sortOrder          Int       @default(0)
   // ── Faz 3: Genişletilmiş arka plan ayarları ──
-  category        String?   // night|day|season|event|theme|custom
-  description     String?   @db.Text
-  animationSpeed  Float?    @default(1.0) // 0.1-3.0
-  blurAmount      Int?      @default(0) // 0-20 px
-  opacity         Float?    @default(1.0) // 0.0-1.0
-  hasParallax     Boolean   @default(false)
-  hasZoom         Boolean   @default(false)
-  videoLoop       Boolean   @default(true)
-  soundUrl        String?   // ambient sound for this background
-  soundCloudPath  String?
-  soundVolume     Int?      @default(50) // 0-100
-  isPremium       Boolean   @default(false)
-  isVipOnly       Boolean   @default(false)
-  isEventOnly     Boolean   @default(false)
-  contentVersion  Int       @default(1)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  category           String? // night|day|season|event|theme|custom
+  description        String?   @db.Text
+  animationSpeed     Float?    @default(1.0) // 0.1-3.0
+  blurAmount         Int?      @default(0) // 0-20 px
+  opacity            Float?    @default(1.0) // 0.0-1.0
+  hasParallax        Boolean   @default(false)
+  hasZoom            Boolean   @default(false)
+  videoLoop          Boolean   @default(true)
+  soundUrl           String? // ambient sound for this background
+  soundCloudPath     String?
+  soundVolume        Int?      @default(50) // 0-100
+  isPremium          Boolean   @default(false)
+  isVipOnly          Boolean   @default(false)
+  isEventOnly        Boolean   @default(false)
+  contentVersion     Int       @default(1)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([tier, isActive])
   @@index([category])
@@ -4110,12 +4114,12 @@ model ChatSpeakBlock {
 // Backend tarafından sunulan özellik bayrakları. Client'lar GET /api/v1/config ile çeker.
 model FeatureFlag {
   id          String   @id @default(cuid())
-  key         String   @unique           // örn: PHONE_LOGIN_ENABLED, LIVE_ENABLED
+  key         String   @unique // örn: PHONE_LOGIN_ENABLED, LIVE_ENABLED
   enabled     Boolean  @default(false)
-  description String?                     // admin panelinde açıklama
-  platform    String   @default("all")   // all | web | mobile | ios | android
-  percentage  Int      @default(100)     // kademeli açma: 0-100
-  metadata    Json?                       // ek JSON veri
+  description String? // admin panelinde açıklama
+  platform    String   @default("all") // all | web | mobile | ios | android
+  percentage  Int      @default(100) // kademeli açma: 0-100
+  metadata    Json? // ek JSON veri
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -4127,9 +4131,9 @@ model FeatureFlag {
 // Seviye eşikleri, PK süreleri, ödüller, UI ayarları vb. backend tarafından sunulur.
 model RemoteConfig {
   id          String   @id @default(cuid())
-  key         String   @unique           // örn: level_thresholds, pk_durations, gift_values
-  value       Json                        // JSON değer (dizi, nesne, sayı...)
-  valueType   String   @default("json")  // json | string | number | boolean
+  key         String   @unique // örn: level_thresholds, pk_durations, gift_values
+  value       Json // JSON değer (dizi, nesne, sayı...)
+  valueType   String   @default("json") // json | string | number | boolean
   group       String   @default("general") // gruplama: general, gifts, pk, levels, rooms, live
   description String?
   platform    String   @default("all")
@@ -4165,22 +4169,22 @@ model IdempotencyRecord {
 // (debit + credit) sharing the same transactionId. Rows are append-only — never
 // UPDATE or DELETE. balanceAfter is the running balance per account at the time.
 model LedgerEntry {
-  id             String   @id @default(cuid())
-  transactionId  String   // groups debit+credit pair (or N entries in multi-leg)
-  accountType    String   // "user_jeton", "user_cfc", "platform_jeton", "platform_cfc", "agency_jeton", "teller_earning"
-  accountId      String   // userId, agencyId, or "PLATFORM"
-  direction      String   // "debit" or "credit"
-  amount         Int      // always positive; direction indicates sign
-  currency       String   @default("jeton") // "jeton", "cfc", "tl"
-  balanceBefore  Int      @default(0)
-  balanceAfter   Int      @default(0)
-  category       String   // "gift_send", "gift_receive", "withdrawal", "purchase", "fortune_session", "daily_bonus", "commission", "admin_adjust", "refund", "game", "room_create", "song_request", "tip", "membership"
-  description    String?
-  referenceType  String?  // "GiftEvent", "WithdrawalRequest", "Payment", "LiveSession", etc.
-  referenceId    String?  // ID of the source record
-  metadata       Json?    // extra context (giftName, roomId, etc.)
-  actorId        String?  // who triggered it (userId or adminId)
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  transactionId String // groups debit+credit pair (or N entries in multi-leg)
+  accountType   String // "user_jeton", "user_cfc", "platform_jeton", "platform_cfc", "agency_jeton", "teller_earning"
+  accountId     String // userId, agencyId, or "PLATFORM"
+  direction     String // "debit" or "credit"
+  amount        Int // always positive; direction indicates sign
+  currency      String   @default("jeton") // "jeton", "cfc", "tl"
+  balanceBefore Int      @default(0)
+  balanceAfter  Int      @default(0)
+  category      String // "gift_send", "gift_receive", "withdrawal", "purchase", "fortune_session", "daily_bonus", "commission", "admin_adjust", "refund", "game", "room_create", "song_request", "tip", "membership"
+  description   String?
+  referenceType String? // "GiftEvent", "WithdrawalRequest", "Payment", "LiveSession", etc.
+  referenceId   String? // ID of the source record
+  metadata      Json? // extra context (giftName, roomId, etc.)
+  actorId       String? // who triggered it (userId or adminId)
+  createdAt     DateTime @default(now())
 
   @@index([transactionId])
   @@index([accountType, accountId])
@@ -4195,16 +4199,16 @@ model LedgerEntry {
 // Captures admin/system actions for accountability. Immutable (append-only).
 model AuditLog {
   id          String   @id @default(cuid())
-  actorId     String   // userId of the admin/system performing the action
-  actorRole   String?  // "admin", "yonetici", "moderator", "finans", "system"
+  actorId     String // userId of the admin/system performing the action
+  actorRole   String? // "admin", "yonetici", "moderator", "finans", "system"
   actorIp     String?
-  action      String   // "user_ban", "balance_adjust", "withdrawal_approve", "payment_approve", "gift_create", "config_change", "feature_toggle", etc.
-  targetType  String?  // "User", "WithdrawalRequest", "Payment", "FeatureFlag", etc.
-  targetId    String?  // ID of the affected record
-  before      Json?    // state before the change (relevant fields only)
-  after       Json?    // state after the change
+  action      String // "user_ban", "balance_adjust", "withdrawal_approve", "payment_approve", "gift_create", "config_change", "feature_toggle", etc.
+  targetType  String? // "User", "WithdrawalRequest", "Payment", "FeatureFlag", etc.
+  targetId    String? // ID of the affected record
+  before      Json? // state before the change (relevant fields only)
+  after       Json? // state after the change
   description String?  @db.Text
-  metadata    Json?    // extra context
+  metadata    Json? // extra context
   createdAt   DateTime @default(now())
 
   @@index([actorId])
@@ -4222,11 +4226,11 @@ model AuditLog {
 
 model Role {
   id          String   @id @default(cuid())
-  key         String   @unique          // 'admin' | 'yonetici' | 'moderator' | 'finans' | custom
+  key         String   @unique // 'admin' | 'yonetici' | 'moderator' | 'finans' | custom
   name        String
   description String?
-  level       Int      @default(0)      // higher = more privileged
-  isSystem    Boolean  @default(false)  // system roles cannot be deleted
+  level       Int      @default(0) // higher = more privileged
+  isSystem    Boolean  @default(false) // system roles cannot be deleted
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -4238,10 +4242,10 @@ model Role {
 
 model Permission {
   id          String   @id @default(cuid())
-  key         String   @unique          // e.g. 'finance.withdrawal.approve'
+  key         String   @unique // e.g. 'finance.withdrawal.approve'
   name        String
   description String?
-  group       String?                   // 'finance' | 'content' | 'moderation' | 'system'
+  group       String? // 'finance' | 'content' | 'moderation' | 'system'
   createdAt   DateTime @default(now())
 
   roles RolePermission[]
@@ -4271,12 +4275,12 @@ model RolePermission {
 
 model SupportTicket {
   id            String   @id @default(cuid())
-  userId        String   // opener
+  userId        String // opener
   subject       String
   category      String   @default("general") // general | payment | account | technical | abuse
-  status        String   @default("open")    // open | pending | resolved | closed
-  priority      String   @default("normal")  // low | normal | high | urgent
-  assignedTo    String?  // admin userId handling the ticket
+  status        String   @default("open") // open | pending | resolved | closed
+  priority      String   @default("normal") // low | normal | high | urgent
+  assignedTo    String? // admin userId handling the ticket
   lastMessageAt DateTime @default(now())
   metadata      Json?
   createdAt     DateTime @default(now())
@@ -4293,14 +4297,14 @@ model SupportTicket {
 }
 
 model SupportMessage {
-  id         String   @id @default(cuid())
-  ticketId   String
-  senderId   String   // userId (customer or admin)
-  senderRole String   @default("user") // user | admin | system
-  body       String   @db.Text
-  isInternal Boolean  @default(false)  // internal admin note, hidden from user
-  attachments Json?   // array of cloud_storage_path
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  ticketId    String
+  senderId    String // userId (customer or admin)
+  senderRole  String   @default("user") // user | admin | system
+  body        String   @db.Text
+  isInternal  Boolean  @default(false) // internal admin note, hidden from user
+  attachments Json? // array of cloud_storage_path
+  createdAt   DateTime @default(now())
 
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
@@ -4311,20 +4315,20 @@ model SupportMessage {
 }
 
 model Verification {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String
-  type         String   @default("identity") // identity | broadcaster | agency
-  status       String   @default("pending")  // pending | approved | rejected
+  type         String    @default("identity") // identity | broadcaster | agency
+  status       String    @default("pending") // pending | approved | rejected
   fullName     String?
-  documentType String?  // id_card | passport | driver_license
-  documentUrls Json?    // array of cloud_storage_path
-  note         String?  @db.Text // applicant note
-  reviewNote   String?  @db.Text // reviewer note
-  reviewedBy   String?  // admin userId
+  documentType String? // id_card | passport | driver_license
+  documentUrls Json? // array of cloud_storage_path
+  note         String?   @db.Text // applicant note
+  reviewNote   String?   @db.Text // reviewer note
+  reviewedBy   String? // admin userId
   reviewedAt   DateTime?
   metadata     Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -4338,7 +4342,7 @@ model Team {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
-  ownerId     String   // userId of team owner
+  ownerId     String // userId of team owner
   description String?  @db.Text
   logoUrl     String?
   memberCount Int      @default(1)
@@ -4373,16 +4377,16 @@ model TeamMember {
 }
 
 model SupporterLevel {
-  id              String   @id @default(cuid())
-  userId          String   // the supporter (fan)
-  broadcasterId   String   // the supported broadcaster/teller
-  totalContributed Int     @default(0) // cumulative jeton value contributed
-  level           Int      @default(0)
-  levelName       String?  // "Bronze", "Silver", "Gold", ...
+  id                String    @id @default(cuid())
+  userId            String // the supporter (fan)
+  broadcasterId     String // the supported broadcaster/teller
+  totalContributed  Int       @default(0) // cumulative jeton value contributed
+  level             Int       @default(0)
+  levelName         String? // "Bronze", "Silver", "Gold", ...
   lastContributedAt DateTime?
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@unique([userId, broadcasterId])
   @@index([broadcasterId, totalContributed])
@@ -4392,20 +4396,20 @@ model SupporterLevel {
 }
 
 model EffectRule {
-  id            String   @id @default(cuid())
-  key           String   @unique
-  name          String
-  description   String?
-  effectType    String   // entrance | name_effect | chat_bubble | mic_frame | badge | avatar_accessory
-  effectRefId   String?  // id of the cosmetic item granted
-  conditionType String   // level | supporter_level | membership | spend_threshold | manual
-  threshold     Int      @default(0) // numeric threshold for the condition
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  description    String?
+  effectType     String // entrance | name_effect | chat_bubble | mic_frame | badge | avatar_accessory
+  effectRefId    String? // id of the cosmetic item granted
+  conditionType  String // level | supporter_level | membership | spend_threshold | manual
+  threshold      Int      @default(0) // numeric threshold for the condition
   conditionValue String? // string condition (e.g. membership tier key)
-  isActive      Boolean  @default(true)
-  priority      Int      @default(0) // higher wins when multiple rules match
-  metadata      Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isActive       Boolean  @default(true)
+  priority       Int      @default(0) // higher wins when multiple rules match
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([effectType])
   @@index([conditionType])
@@ -4417,23 +4421,23 @@ model EffectRule {
 // Salt-ekleme (append-only) risk olay kaydı. Mevcut para akışlarını DEĞİŞTİRMEZ;
 // yalnızca gözlem amaçlı skor üretir ve admin denetimine sunar.
 model RiskEvent {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
-  category      String   // withdrawal | payment_request | gift_send | membership | login
-  score         Int      @default(0) // 0-100
-  level         String   // low | medium | high | critical
-  signals       Json?    // [{ key, weight, detail }]
+  category      String // withdrawal | payment_request | gift_send | membership | login
+  score         Int       @default(0) // 0-100
+  level         String // low | medium | high | critical
+  signals       Json? // [{ key, weight, detail }]
   amount        Float?
-  currency      String?  // jeton | cfc | tl
+  currency      String? // jeton | cfc | tl
   referenceType String?
   referenceId   String?
   ip            String?
-  reviewed      Boolean  @default(false)
+  reviewed      Boolean   @default(false)
   reviewedBy    String?
   reviewedAt    DateTime?
-  reviewNote    String?  @db.Text
+  reviewNote    String?   @db.Text
   metadata      Json?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   @@index([userId])
   @@index([category])
@@ -4467,14 +4471,14 @@ model RtcTelemetry {
   iceState        String? // new|checking|connected|completed|disconnected|failed|closed
 
   /// Sayısal kalite metrikleri
-  reconnectCount     Int   @default(0)
-  rttMs              Float?
-  packetLossPercent  Float?
-  jitterMs           Float?
-  bitrateKbps        Float?
-  freezeCount        Int   @default(0)
-  freezeDurationMs   Int   @default(0)
-  durationSeconds    Int   @default(0)
+  reconnectCount    Int    @default(0)
+  rttMs             Float?
+  packetLossPercent Float?
+  jitterMs          Float?
+  bitrateKbps       Float?
+  freezeCount       Int    @default(0)
+  freezeDurationMs  Int    @default(0)
+  durationSeconds   Int    @default(0)
 
   /// Türetilmiş kalite: 0-100 skor ve seviye (excellent|good|fair|poor|critical)
   qualityScore Int?
@@ -4495,4 +4499,112 @@ model RtcTelemetry {
   @@index([qualityLevel])
   @@index([createdAt])
   @@map("rtc_telemetry")
+}
+
+// ============================================================
+// MERKEZI ANIMASYON SISTEMI (Central Animation System)
+// Additive: legacy cosmetic models (EntranceEffect, NameEffect,
+// ProfileFrame, ChatBubbleSkin, MicFrame, AvatarAccessory,
+// MembershipBadge) remain untouched and are bridged via
+// legacyType / legacyRefId.
+// ============================================================
+
+model Animation {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  category        String // entrance|exit|seat|profile|profile_frame|avatar|microphone|host|gift|level_up|vip|system|page_transition
+  type            String // lottie|svga|gif|video|image|apng
+  assetUrl        String
+  thumbnailUrl    String?
+  previewUrl      String?
+  soundUrl        String?
+  durationMs      Int       @default(3000)
+  priority        Int       @default(10)
+  status          String    @default("active") // active|inactive|scheduled|archived
+  rarity          String    @default("normal") // normal|rare|epic|legendary
+  membershipLevel String? // basic|silver|gold|premium|platinum|diamond|vip|svip|admin
+  contexts        Json? // ["voice_room","live_stream","social",...]
+  position        String    @default("center") // top_left|top_center|top_right|center|bottom_left|bottom_right|seat
+  scale           String    @default("medium") // small|medium|large
+  anchor          String    @default("room") // room|user|seat|host
+  cooldownMs      Int       @default(0)
+  canSkip         Boolean   @default(true)
+  activeFrom      DateTime?
+  activeTo        DateTime?
+  legacyType      String? // entrance_effect|name_effect|profile_frame|chat_bubble|mic_frame|avatar_accessory|membership_badge
+  legacyRefId     String?
+  sortOrder       Int       @default(0)
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  assignments        AnimationAssignment[]
+  membershipDefaults AnimationMembershipDefault[]
+  playbackLogs       AnimationPlaybackLog[]
+
+  @@index([category, status])
+  @@index([membershipLevel])
+  @@index([status, priority])
+  @@index([legacyType, legacyRefId])
+  @@map("animations")
+}
+
+model AnimationAssignment {
+  id             String    @id @default(cuid())
+  userId         String
+  animationId    String
+  assignmentType String    @default("user_custom") // admin_custom|user_custom|event_reward|purchase
+  context        String? // optional context restriction
+  category       String? // denormalized for fast filtering
+  startDate      DateTime?
+  endDate        DateTime?
+  priority       Int       @default(50)
+  isActive       Boolean   @default(true)
+  assignedBy     String?
+  note           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user      User      @relation("AnimationAssignmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  assigner  User?     @relation("AnimationAssignmentAssigner", fields: [assignedBy], references: [id], onDelete: SetNull)
+  animation Animation @relation(fields: [animationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@index([animationId])
+  @@index([endDate])
+  @@index([userId, category, isActive])
+  @@map("animation_assignments")
+}
+
+model AnimationMembershipDefault {
+  id             String   @id @default(cuid())
+  membershipTier String // basic|silver|gold|premium|platinum|diamond|vip|svip
+  category       String
+  animationId    String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  animation Animation @relation(fields: [animationId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipTier, category])
+  @@index([animationId])
+  @@map("animation_membership_defaults")
+}
+
+model AnimationPlaybackLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  animationId String
+  roomId      String?
+  context     String?
+  playedAt    DateTime @default(now())
+
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  animation Animation @relation(fields: [animationId], references: [id], onDelete: Cascade)
+
+  @@index([animationId, playedAt])
+  @@index([userId, playedAt])
+  @@map("animation_playback_logs")
 }

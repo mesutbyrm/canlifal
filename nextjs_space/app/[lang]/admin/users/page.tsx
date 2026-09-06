@@ -73,14 +73,18 @@ interface UserDetail {
   videoStreams: { id: string; title: string; viewerCount: number }[]
 }
 
-type BadgeType = 'basic' | 'premium' | 'gold' | 'diamond'
+type BadgeType = 'basic' | 'silver' | 'gold' | 'premium' | 'platinum' | 'diamond' | 'vip' | 'svip'
 type EffectType = 'sparkles' | 'pulse' | 'rainbow' | 'fire' | 'glow' | 'none'
 
 const BADGE_CONFIG: Record<BadgeType, { label: string; color: string; bgColor: string }> = {
   basic: { label: 'Basic', color: '#9ca3af', bgColor: 'bg-gray-500/20' },
-  premium: { label: 'Premium', color: '#a855f7', bgColor: 'bg-purple-500/20' },
+  silver: { label: 'Silver', color: '#cbd5e1', bgColor: 'bg-slate-500/20' },
   gold: { label: 'Gold', color: '#fbbf24', bgColor: 'bg-yellow-500/20' },
-  diamond: { label: 'Diamond', color: '#38bdf8', bgColor: 'bg-cyan-500/20' }
+  premium: { label: 'Premium', color: '#a855f7', bgColor: 'bg-purple-500/20' },
+  platinum: { label: 'Platinum', color: '#5eead4', bgColor: 'bg-teal-500/20' },
+  diamond: { label: 'Diamond', color: '#38bdf8', bgColor: 'bg-cyan-500/20' },
+  vip: { label: 'VIP', color: '#f472b6', bgColor: 'bg-pink-500/20' },
+  svip: { label: 'SVIP', color: '#f87171', bgColor: 'bg-red-500/20' }
 }
 
 const EFFECT_CONFIG: Record<EffectType, { label: string; labelTr: string }> = {
@@ -420,7 +424,7 @@ export default function AdminUsersPage() {
     try {
       const parsed = JSON.parse(badgesString)
       return Array.isArray(parsed) ? parsed.filter((b: string) => 
-        ['basic', 'premium', 'gold', 'diamond'].includes(b)
+        ['basic', 'silver', 'gold', 'premium', 'platinum', 'diamond', 'vip', 'svip'].includes(b)
       ) as BadgeType[] : []
     } catch {
       return []
@@ -543,9 +547,13 @@ export default function AdminUsersPage() {
           >
             <option value="all">{'Tüm Üyelikler'}</option>
             <option value="basic">Basic</option>
-            <option value="premium">Premium</option>
+            <option value="silver">Silver</option>
             <option value="gold">Gold</option>
+            <option value="premium">Premium</option>
+            <option value="platinum">Platinum</option>
             <option value="diamond">Diamond</option>
+            <option value="vip">VIP</option>
+            <option value="svip">SVIP</option>
           </select>
         </div>
 
@@ -901,9 +909,13 @@ export default function AdminUsersPage() {
                             className="w-full bg-white/5 border border-purple-500/30 rounded-lg px-4 py-2 text-white"
                           >
                             <option value="basic">Basic</option>
-                            <option value="premium">Premium</option>
+                            <option value="silver">Silver</option>
                             <option value="gold">Gold</option>
+                            <option value="premium">Premium</option>
+                            <option value="platinum">Platinum</option>
                             <option value="diamond">Diamond</option>
+                            <option value="vip">VIP</option>
+                            <option value="svip">SVIP</option>
                           </select>
                         </div>
                       </div>

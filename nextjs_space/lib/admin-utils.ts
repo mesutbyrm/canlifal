@@ -33,11 +33,24 @@ export const ROLE_LABELS: Record<string, string> = {
   yonetici: 'Yönetici',
 };
 
-export const MEMBERSHIP_ORDER = ['basic', 'premium', 'gold', 'diamond'] as const;
+export const MEMBERSHIP_ORDER = [
+  'basic',
+  'silver',
+  'gold',
+  'premium',
+  'platinum',
+  'diamond',
+  'vip',
+  'svip',
+] as const;
 
 export const MEMBERSHIP_LABELS: Record<string, string> = {
   basic: 'Basic',
-  premium: 'Premium',
+  silver: 'Silver',
   gold: 'Gold',
+  premium: 'Premium',
+  platinum: 'Platinum',
   diamond: 'Diamond',
+  vip: 'VIP',
+  svip: 'SVIP',
 };
