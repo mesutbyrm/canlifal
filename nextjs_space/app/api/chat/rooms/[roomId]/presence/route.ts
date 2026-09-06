@@ -7,9 +7,10 @@ import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissio
 import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
-import { emitUserJoined, emitUserLeft } from '@/lib/voice-room-events'
+import { emitUserJoined, emitUserLeft, emitSeatChanged, emitHostChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { SEAT_COUNT, findFirstFreeSeat, seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
 
 export const dynamic = 'force-dynamic'
 
@@ -327,14 +328,40 @@ export async function POST(
     // them on the first free seat (0..SEAT_COUNT-1). If the room is full of
     // seated users they stay a listener (seatIndex -1). Heartbeats never trigger
     // this because seatIndex stays undefined and isNewJoin is false.
+    // ── BÖLÜM 2: odanın etkin koltuk sayısı + kullanıcının koltuk yetkisi ──
+    const roomForSeats = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      select: { seatCount: true, ownerId: true }
+    })
+    const roomSeatCount = await resolveRoomSeatCount(roomId, roomForSeats?.seatCount ?? null)
+    const [seatUserRow, seatChatRole] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { role: true, membership: true } }),
+      prisma.chatUserRole.findUnique({
+        where: { roomId_userId: { roomId, userId } },
+        select: { role: true }
+      }).catch(() => null)
+    ])
+    const seatCtx: SeatUserContext = {
+      userId,
+      role: seatUserRow?.role ?? null,
+      membership: seatUserRow?.membership ?? null,
+      isRoomOwner: roomForSeats?.ownerId === userId,
+      chatRole: seatChatRole?.role ?? null
+    }
+
+    // Kademe kuralı: kullanıcı istediği koltuğa oturamıyorsa dinleyici kalır.
+    if (typeof seatIndex === 'number' && seatIndex >= 0 && !canSitOnSeat(seatCtx, seatIndex, roomSeatCount)) {
+      seatIndex = -1
+    }
+
     if (isNewJoin && seatIndex === undefined) {
       // Use the short seat-stale window so seats freed by users who left
       // (ghosts) are re-assignable immediately.
       const seated = await prisma.chatPresence.findMany({
-        where: { roomId, lastSeen: { gte: seatStaleThreshold() }, seatIndex: { gte: 0, lt: SEAT_COUNT }, userId: { not: userId } },
+        where: { roomId, lastSeen: { gte: seatStaleThreshold() }, seatIndex: { gte: 0, lt: roomSeatCount }, userId: { not: userId } },
         select: { seatIndex: true }
       })
-      const freeSeat = findFirstFreeSeat(seated.map((s) => s.seatIndex as number))
+      const freeSeat = findFirstFreeSeatFor(seatCtx, seated.map((s) => s.seatIndex as number), roomSeatCount)
       if (freeSeat >= 0) {
         seatIndex = freeSeat
       }
@@ -346,7 +373,7 @@ export async function POST(
     let seatConflict = false
     try {
       await prisma.$transaction(async (tx: any) => {
-        if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < SEAT_COUNT) {
+        if (seatIndex !== undefined && seatIndex >= 0 && seatIndex < roomSeatCount) {
           const seatTaken = await tx.chatPresence.findFirst({
             where: {
               roomId,
@@ -425,6 +452,16 @@ export async function POST(
       }
       // Broadcast the join to everyone in this room (web + Flutter via SSE)
       emitUserJoined(roomId, userId, nickname || userName || 'Kullanıcı', userImage)
+      if (typeof seatIndex === 'number' && seatIndex >= 0) {
+        emitSeatChanged(roomId, userId, seatIndex, -1, {
+          seatKind: seatKind(seatIndex, roomSeatCount),
+          seatCount: roomSeatCount,
+          name: nickname || userName || 'Kullanıcı'
+        })
+        if (seatIndex === 0) {
+          emitHostChanged(roomId, userId, true, nickname || userName || 'Kullanıcı')
+        }
+      }
     }
 
     // Log chat join activity (only on new joins)

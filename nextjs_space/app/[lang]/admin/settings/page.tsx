@@ -66,6 +66,7 @@ interface PlatformSettings {
   vr_free_room_max_users: string
   vr_normal_room_max_users: string
   vr_vip_room_max_users: string
+  vr_seat_count: string
 }
 
 export default function AdminSettingsPage() {
@@ -112,7 +113,8 @@ export default function AdminSettingsPage() {
     vr_vip_music_owner_percent: '70',
     vr_free_room_max_users: '15',
     vr_normal_room_max_users: '100',
-    vr_vip_room_max_users: '500'
+    vr_vip_room_max_users: '500',
+    vr_seat_count: '15'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -843,6 +845,36 @@ export default function AdminSettingsPage() {
                   ))}
                 </div>
                 <p className="text-xs text-purple-400 mt-2">Ücretsiz odalarda müzik geliri tamamen siteye gider. Normal/VIP odalarda kalan kısım siteye gider.</p>
+              </div>
+
+              {/* Koltuk Sayısı — BÖLÜM 2 */}
+              <div>
+                <h4 className="text-sm font-semibold text-purple-300 mb-3">🪑 Varsayılan Koltuk Sayısı</h4>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-purple-200">Sesli odalarda mikrofon koltuğu sayısı (2–15)</span>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="2"
+                      max="15"
+                      value={settings.vr_seat_count}
+                      onChange={(e) => setSettings(prev => ({ ...prev, vr_seat_count: e.target.value }))}
+                      className="w-24 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white text-sm text-center focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      onClick={() => saveSetting('vr_seat_count', settings.vr_seat_count)}
+                      disabled={saving === 'vr_seat_count'}
+                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm"
+                    >
+                      {saving === 'vr_seat_count' ? '...' : saved === 'vr_seat_count' ? '✓' : 'Kaydet'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-purple-400 mt-2">
+                    Dağılım: 1 oda sahibi + en fazla 10 misafir + en fazla 4 ayrıcalıklı koltuk
+                    (admin / yönetici / moderatör veya Gold ve üstü üyelikler). Bir odada bu değer
+                    oda ayarlarından ayrıca değiştirilebilir.
+                  </p>
+                </div>
               </div>
 
               {/* Max Users */}

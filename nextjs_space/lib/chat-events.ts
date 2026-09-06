@@ -6,9 +6,24 @@
  */
 
 interface ChatEvent {
+  /**
+   * Benzersiz olay kimliği (BÖLÜM 2). İstemciler (web + Flutter) aynı olayın
+   * SSE yeniden bağlanması / `Last-Event-ID` tekrar oynatması yüzünden iki kez
+   * işlenmesini engellemek için bu değeri kullanmalıdır. Biçim:
+   * `<roomId>:<epochMs>:<sayac>:<rastgele>`
+   */
+  eventId: string
   timestamp: number
   type: 'message' | 'presence' | 'typing' | 'system' | 'gift' | 'pk' | 'room'
   data: any
+}
+
+let eventSeq = 0
+
+/** Olay kimliği üretici — aynı milisaniyede üretilen olaylar için de benzersiz. */
+export function nextEventId(roomId: string): string {
+  eventSeq = (eventSeq + 1) % 1_000_000
+  return `${roomId}:${Date.now()}:${eventSeq}:${Math.random().toString(36).slice(2, 8)}`
 }
 
 // Per-room event buffer
@@ -23,7 +38,13 @@ const EVENT_TTL_MS = 2 * 60 * 1000 // 2 minutes
  */
 export function emitChatEvent(roomId: string, type: ChatEvent['type'], data: any) {
   const events = roomEvents.get(roomId) || []
-  events.push({ timestamp: Date.now(), type, data })
+  const eventId = nextEventId(roomId)
+  // `eventId` hem zarfta hem de payload içinde taşınır; böylece SSE yayınını
+  // payload düzeyinde okuyan mevcut istemciler de kopya kontrolü yapabilir.
+  if (data && typeof data === 'object' && !Array.isArray(data) && (data as any).eventId === undefined) {
+    try { (data as any).eventId = eventId } catch { /* dondurulmuş nesne — yoksay */ }
+  }
+  events.push({ eventId, timestamp: Date.now(), type, data })
   if (events.length > MAX_EVENTS_PER_ROOM) {
     events.splice(0, events.length - MAX_EVENTS_PER_ROOM)
   }

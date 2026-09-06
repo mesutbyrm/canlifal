@@ -19,6 +19,8 @@ export type RoomEventKind =
   | 'seat_changed'
   | 'room_closed'
   | 'owner_changed'
+  // BÖLÜM 2 — oda sunuculuğu (host) değişimi
+  | 'host_changed'
   // Konuşma isteği (el kaldırma) akışı
   | 'voice_request'
   | 'hand_raised'
@@ -43,6 +45,14 @@ export interface RoomEventPayload {
   // seat_changed
   seatIndex?: number
   previousSeatIndex?: number
+  /** BÖLÜM 2 — koltuğun türü: owner | guest | privileged */
+  seatKind?: 'owner' | 'guest' | 'privileged'
+  /** BÖLÜM 2 — odanın o anki etkin koltuk sayısı */
+  seatCount?: number
+  /** BÖLÜM 2 — host_changed */
+  isHost?: boolean
+  /** BÖLÜM 2 — kopya kontrolü için benzersiz olay kimliği (otomatik eklenir) */
+  eventId?: string
   // owner_changed
   newOwnerId?: string
   newOwnerName?: string
@@ -82,8 +92,22 @@ export function emitMicChanged(roomId: string, userId: string, micOn: boolean, n
   emit(roomId, { event: 'mic_changed', userId, micOn, name })
 }
 
-export function emitSeatChanged(roomId: string, userId: string, seatIndex: number, previousSeatIndex?: number) {
-  emit(roomId, { event: 'seat_changed', userId, seatIndex, previousSeatIndex })
+export function emitSeatChanged(
+  roomId: string,
+  userId: string,
+  seatIndex: number,
+  previousSeatIndex?: number,
+  extra?: { seatKind?: 'owner' | 'guest' | 'privileged'; seatCount?: number; name?: string }
+) {
+  emit(roomId, { event: 'seat_changed', userId, seatIndex, previousSeatIndex, ...extra })
+}
+
+/**
+ * BÖLÜM 2 — oda sunuculuğu (host) değişti: bir kullanıcı host koltuğuna oturdu
+ * veya host yetkisi başkasına geçti. `isHost=false` host'un bıraktığını belirtir.
+ */
+export function emitHostChanged(roomId: string, userId: string, isHost: boolean, name?: string) {
+  emit(roomId, { event: 'host_changed', userId, isHost, name })
 }
 
 export function emitRoomClosed(roomId: string) {

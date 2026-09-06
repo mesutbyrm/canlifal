@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getUserPermissions, ROLE_HIERARCHY } from '@/lib/chat-permissions'
+import { clampSeatCount } from '@/lib/voice-room-seats'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,6 +57,7 @@ export async function GET(
         welcomeMessage: true,
         pinnedAnnouncement: true,
         tags: true,
+        seatCount: true,
         bannerImage: true,
       }
     })
@@ -118,6 +120,13 @@ export async function PATCH(
     if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage || null
     if (pinnedAnnouncement !== undefined) updateData.pinnedAnnouncement = pinnedAnnouncement || null
     if (tags !== undefined) updateData.tags = tags || null
+    // BÖLÜM 2 — oda bazlı koltuk sayısı: null gönderilirse global varsayılana döner
+    if (body.seatCount !== undefined) {
+      updateData.seatCount =
+        body.seatCount === null || body.seatCount === ''
+          ? null
+          : clampSeatCount(body.seatCount)
+    }
     if (bannerImage !== undefined) updateData.bannerImage = bannerImage || null
     if (roomPassword !== undefined) updateData.password = roomPassword || null
 
@@ -163,6 +172,7 @@ export async function PATCH(
         welcomeMessage: true,
         pinnedAnnouncement: true,
         tags: true,
+        seatCount: true,
         bannerImage: true,
       }
     })

@@ -4,9 +4,16 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
-import { emitSeatChanged } from '@/lib/voice-room-events'
+import { emitSeatChanged, emitHostChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { SEAT_COUNT, seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import {
+  resolveRoomSeatCount,
+  buildSeatLayout,
+  seatKind,
+  canSitOnSeat,
+  type SeatUserContext
+} from '@/lib/voice-room-seats'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +27,11 @@ export async function GET(
     const { roomId } = await params
     // Short seat-stale window: ghost seats (users who left) free up fast.
     const presenceTimeout = seatStaleThreshold()
+    const roomRow = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      select: { seatCount: true }
+    })
+    const SEAT_COUNT = await resolveRoomSeatCount(roomId, roomRow?.seatCount ?? null)
     const seated = await prisma.chatPresence.findMany({
       where: { roomId, lastSeen: { gte: presenceTimeout }, seatIndex: { gte: 0, lt: SEAT_COUNT } },
       select: {
@@ -61,7 +73,22 @@ export async function GET(
         }
       }
     }
-    return NextResponse.json({ success: true, seats })
+    // BÖLÜM 2 — kademeli koltuk düzeni ve "+" açılımı (ek alanlar; mevcut
+    // `seats` alanı hiç değişmedi, eski istemciler etkilenmez).
+    const occupantByIndex = new Map<number, string>()
+    for (const s of seated) {
+      if (typeof s.seatIndex === 'number' && s.seatIndex >= 0) occupantByIndex.set(s.seatIndex, s.userId)
+    }
+    const layoutInfo = buildSeatLayout(Array.from(occupantByIndex.keys()), SEAT_COUNT, occupantByIndex)
+
+    return NextResponse.json({
+      success: true,
+      seats,
+      seatCount: layoutInfo.seatCount,
+      visibleSeatCount: layoutInfo.visibleSeatCount,
+      composition: layoutInfo.composition,
+      seatLayout: layoutInfo.layout
+    })
   } catch (error) {
     console.error('Error fetching seats:', error)
     return NextResponse.json({ error: 'Koltuklar getirilemedi' }, { status: 500 })
@@ -86,12 +113,44 @@ export async function PATCH(
     const body = await request.json()
     const { targetUserId, seatIndex, forceThrone, forceAssign } = body
 
+    const roomSeatRow = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      select: { seatCount: true, ownerId: true }
+    })
+    const SEAT_COUNT = await resolveRoomSeatCount(roomId, roomSeatRow?.seatCount ?? null)
+
     if (typeof seatIndex !== 'number' || seatIndex < -1 || seatIndex >= SEAT_COUNT) {
       return NextResponse.json({ error: 'Geçersiz koltuk numarası' }, { status: 400 })
     }
 
     const isSelfAction = targetUserId === seatUserId || !targetUserId
     const actualTargetId = targetUserId || seatUserId
+
+    // ── BÖLÜM 2: kademeli koltuk yetkisi ──
+    // Kendi kendine oturma isteklerinde koltuk türü kuralı uygulanır.
+    // Yetkili biri (oda sahibi / admin / sop) başkasını taşıyorsa kural esnetilir.
+    if (isSelfAction && seatIndex >= 0) {
+      const [meRow, myChatRole] = await Promise.all([
+        prisma.user.findUnique({ where: { id: seatUserId }, select: { role: true, membership: true } }),
+        prisma.chatUserRole.findUnique({
+          where: { roomId_userId: { roomId, userId: seatUserId } },
+          select: { role: true }
+        }).catch(() => null)
+      ])
+      const meCtx: SeatUserContext = {
+        userId: seatUserId,
+        role: meRow?.role ?? null,
+        membership: meRow?.membership ?? null,
+        isRoomOwner: roomSeatRow?.ownerId === seatUserId,
+        chatRole: myChatRole?.role ?? null
+      }
+      if (!canSitOnSeat(meCtx, seatIndex, SEAT_COUNT)) {
+        return NextResponse.json(
+          { error: 'Bu koltuk yalnızca yetkili kullanıcılar içindir', code: 'SEAT_REQUIRES_PRIVILEGE' },
+          { status: 403 }
+        )
+      }
+    }
 
     // If moving someone else, check admin/owner permission
     if (!isSelfAction) {
@@ -176,9 +235,18 @@ export async function PATCH(
     }
 
     // Broadcast the seat change (web + Flutter via SSE)
-    emitSeatChanged(roomId, actualTargetId, seatIndex, result.prevSeatIndex)
+    emitSeatChanged(roomId, actualTargetId, seatIndex, result.prevSeatIndex, {
+      seatKind: seatIndex >= 0 ? seatKind(seatIndex, SEAT_COUNT) : undefined,
+      seatCount: SEAT_COUNT
+    })
+    // Host koltuğu (0) değişimi ayrı bir olay olarak da yayınlanır.
+    if (seatIndex === 0) {
+      emitHostChanged(roomId, actualTargetId, true)
+    } else if (result.prevSeatIndex === 0) {
+      emitHostChanged(roomId, actualTargetId, false)
+    }
 
-    return NextResponse.json({ success: true, seatIndex })
+    return NextResponse.json({ success: true, seatIndex, seatCount: SEAT_COUNT })
   } catch (error) {
     console.error('Error updating seat:', error)
     return NextResponse.json({ error: 'Koltuk güncellenemedi' }, { status: 500 })

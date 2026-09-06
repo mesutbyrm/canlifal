@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
-import { SEAT_COUNT, MAX_SEAT_INDEX, seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { resolveRoomSeatCount } from '@/lib/voice-room-seats'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,7 +95,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // ── validate seatIndex for take/swap ──
+    // ── validate seatIndex for take/swap (BÖLÜM 2: dinamik koltuk sayısı) ──
+    const SEAT_COUNT = await resolveRoomSeatCount(roomId)
+    const MAX_SEAT_INDEX = SEAT_COUNT - 1
     if (typeof seatIndex !== 'number' || seatIndex < 0 || seatIndex > MAX_SEAT_INDEX) {
       return NextResponse.json(
         { success: false, error: { code: 'INVALID_SEAT', message: `Geçersiz koltuk numarası (0-${MAX_SEAT_INDEX})` } },
@@ -245,7 +248,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: { roomId, seats, totalSeats: SEAT_COUNT }
+      data: { roomId, seats, totalSeats: await resolveRoomSeatCount(roomId) }
     })
   } catch (error) {
     console.error('Error in GET /api/live/seats:', error)

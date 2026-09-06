@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
-import { SEAT_COUNT, findFirstFreeSeat, seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { resolveRoomSeatCount, findFirstFreeSeatFor, type SeatUserContext } from '@/lib/voice-room-seats'
 import { ROLE_HIERARCHY, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getCachedChatRoom } from '@/lib/cache'
 import { withTiming } from '@/lib/perf'
@@ -256,11 +257,28 @@ async function handleJoinRoom(request: NextRequest) {
       // ── Auto-seat on fresh join: assign first free seat (0..SEAT_COUNT-1) ──
       let autoSeatIndex = -1
       if (isFreshJoin && (existingPresence?.seatIndex ?? -1) < 0) {
+        // BÖLÜM 2 — dinamik koltuk sayısı + kademeli yerleştirme
+        const seatCountJoin = await resolveRoomSeatCount(room.id, (room as any).seatCount ?? null)
         const seatedNow = await prisma.chatPresence.findMany({
-          where: { roomId: room.id, lastSeen: { gte: presenceTimeoutJoin }, seatIndex: { gte: 0, lt: SEAT_COUNT }, userId: { not: authUser.id } },
+          where: { roomId: room.id, lastSeen: { gte: presenceTimeoutJoin }, seatIndex: { gte: 0, lt: seatCountJoin }, userId: { not: authUser.id } },
           select: { seatIndex: true }
         })
-        autoSeatIndex = findFirstFreeSeat(seatedNow.map((s: any) => s.seatIndex as number))
+        const joinerRow = await prisma.user.findUnique({
+          where: { id: authUser.id },
+          select: { role: true, membership: true }
+        })
+        const joinerChatRole = await prisma.chatUserRole.findUnique({
+          where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
+          select: { role: true }
+        }).catch(() => null)
+        const joinerCtx: SeatUserContext = {
+          userId: authUser.id,
+          role: joinerRow?.role ?? null,
+          membership: joinerRow?.membership ?? null,
+          isRoomOwner: (room as any).ownerId === authUser.id,
+          chatRole: joinerChatRole?.role ?? null
+        }
+        autoSeatIndex = findFirstFreeSeatFor(joinerCtx, seatedNow.map((s: any) => s.seatIndex as number), seatCountJoin)
       }
 
       // Upsert presence

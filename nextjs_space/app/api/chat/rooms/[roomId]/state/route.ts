@@ -6,7 +6,8 @@ import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { SEAT_COUNT, seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { resolveRoomSeatCount, buildSeatLayout } from '@/lib/voice-room-seats'
 import { withTiming } from '@/lib/perf'
 import { buildDjPayload } from '@/lib/chat-dj-events'
 import { expireAllStalePKs } from '@/lib/pk-expiry'
@@ -119,6 +120,8 @@ async function handleState(
     // occupant's heartbeat is still fresh (< SEAT_STALE_MS). This frees
     // ghost seats fast so re-join works even after an unclean leave.
     const seatStaleMs = seatStaleThreshold().getTime()
+    // BÖLÜM 2 — odanın etkin koltuk sayısı (oda özel değeri → global varsayılan)
+    const SEAT_COUNT = await resolveRoomSeatCount(roomId, (room as any).seatCount ?? null)
     const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean; receivedJetons: number }> = new Array(SEAT_COUNT).fill(null)
     for (const p of participants) {
       const seatFresh = new Date(p.lastSeen).getTime() >= seatStaleMs
@@ -134,6 +137,11 @@ async function handleState(
         }
       }
     }
+
+    // BÖLÜM 2 — kademeli koltuk düzeni (ek alanlar; `seats` değişmedi)
+    const occupantByIndex = new Map<number, string>()
+    seats.forEach((s, i) => { if (s) occupantByIndex.set(i, s.userId) })
+    const seatLayoutInfo = buildSeatLayout(Array.from(occupantByIndex.keys()), SEAT_COUNT, occupantByIndex)
 
     const me = currentUserId ? participants.find(p => p.id === currentUserId) || null : null
 
@@ -196,6 +204,10 @@ async function handleState(
         },
         participants,
         seats,
+        seatCount: seatLayoutInfo.seatCount,
+        visibleSeatCount: seatLayoutInfo.visibleSeatCount,
+        seatComposition: seatLayoutInfo.composition,
+        seatLayout: seatLayoutInfo.layout,
         onlineCount: participants.length,
         me,
         trtc: {
