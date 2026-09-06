@@ -10,7 +10,7 @@ import {
   MessageCircle, Mic, Sparkles, Star, Globe, Flame,
   Gamepad2, Gift, UserPlus, Zap, Coins, TrendingUp,
   X, Heart, Play, Instagram, Twitter, Youtube,
-  Users, ChevronRight, Menu, Search, Trophy, Type, Send, Newspaper, Upload, Film
+  Users, ChevronRight, Menu, Search, Trophy, Type, Send, Newspaper, Upload, Film, Wallet
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -352,6 +352,12 @@ export default function CanliDarkHome() {
             <NotificationBell />
             <span>Bildirim</span>
           </div>
+          {session && (
+            <Link href="/kazanc" className="canlidark-nav-item">
+              <Wallet className="w-5 h-5" />
+              <span>Bakiye</span>
+            </Link>
+          )}
           <Link href={(session?.user as any)?.role === 'admin' ? '/admin' : (session?.user as any)?.role === 'yonetici' ? '/admin' : '/panel'} className="canlidark-nav-item">
             <Sparkles className="w-5 h-5" />
             <span>{(session?.user as any)?.role === 'admin' ? 'Admin Paneli' : (session?.user as any)?.role === 'yonetici' ? 'Yönetici Paneli' : 'Panelim'}</span>
