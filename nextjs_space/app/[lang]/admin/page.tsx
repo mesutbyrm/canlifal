@@ -196,6 +196,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/ad-networks`, icon: Monitor, trLabel: 'Reklam Ağı Yönetimi', enLabel: 'Ad Network Management', emoji: '📺', desc: 'Reklam entegrasyonları' },
       { href: `/admin/ad-placements`, icon: Monitor, trLabel: 'Reklam Yerleşimleri', enLabel: 'Ad Placements', emoji: '📢', desc: 'Reklamların nerede gösterileceği' },
       { href: `/admin/referral-commission`, icon: Users, trLabel: 'Referans & Ajans Komisyonu', enLabel: 'Referral Commission', emoji: '🤝', desc: 'Yükleme başına davet/ajans komisyonu' },
+      { href: `/admin/currency-settings`, icon: Coins, trLabel: 'Para Birimi & Bonus', enLabel: 'Currency & Bonus', emoji: '🪙', desc: 'Jeton/CFC isim-ikon ve yükleme bonus kademeleri' },
     ],
   },
   {

@@ -54,7 +54,7 @@ function DailyLoginReward_DISABLED() {
       const res = await fetch('/api/daily-login', { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        setReward({ xp: data.xpEarned, jeton: data.jetonEarned })
+        setReward({ xp: data.xpEarned, jeton: data.cfcEarned ?? data.jetonEarned ?? 0 })
         setStreak(data.streak)
         setClaimed(true)
       }
@@ -122,7 +122,7 @@ function DailyLoginReward_DISABLED() {
                         +{r.xp}
                       </span>
                       {r.jeton > 0 && (
-                        <span className="block text-[10px] text-yellow-400">+{r.jeton}J</span>
+                        <span className="block text-[10px] text-purple-300">+{r.jeton} CFC</span>
                       )}
                     </div>
                   )
@@ -151,7 +151,7 @@ function DailyLoginReward_DISABLED() {
                 </div>
                 {reward.jeton > 0 && (
                   <div className="bg-yellow-900/40 px-4 py-2 rounded-lg">
-                    <span className="text-yellow-300 font-bold">+{reward.jeton} Jeton</span>
+                    <span className="text-purple-200 font-bold">+{reward.jeton} CFC</span>
                   </div>
                 )}
               </div>

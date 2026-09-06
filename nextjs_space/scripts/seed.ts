@@ -1777,6 +1777,40 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Ad placements seeded!')
 
+  // ---- Para birimi markalama ayarları + yükleme bonus kademeleri (Bölüm 6b) ----
+  const currencySettingDefaults: Record<string, string> = {
+    currency_jeton_name: 'Jeton',
+    currency_jeton_name_en: 'Jeton',
+    currency_jeton_icon: '/currency/jeton.svg',
+    currency_jeton_color: '#F5C542',
+    currency_cfc_name: 'CFC',
+    currency_cfc_name_en: 'CFC',
+    currency_cfc_icon: '/currency/cfc.svg',
+    currency_cfc_color: '#A78BFA',
+  }
+  for (const [key, value] of Object.entries(currencySettingDefaults)) {
+    await prisma.platformSettings.upsert({
+      where: { key },
+      update: {},
+      create: { key, value },
+    })
+  }
+
+  const defaultBonusTiers = [
+    { label: '10.000+ (%5)', minAmount: 10000, bonusPercent: 5, sortOrder: 1 },
+    { label: '25.000+ (%7)', minAmount: 25000, bonusPercent: 7, sortOrder: 2 },
+    { label: '50.000+ (%10)', minAmount: 50000, bonusPercent: 10, sortOrder: 3 },
+  ]
+  for (const t of defaultBonusTiers) {
+    const existing = await prisma.topupBonusTier.findFirst({ where: { minAmount: t.minAmount, currency: 'all', sourceType: 'all' } })
+    if (!existing) {
+      await prisma.topupBonusTier.create({
+        data: { label: t.label, minAmount: t.minAmount, bonusPercent: t.bonusPercent, currency: 'all', sourceType: 'all', isActive: true, sortOrder: t.sortOrder },
+      })
+    }
+  }
+  console.log('Currency branding & bonus tiers seeded!')
+
   console.log('Seed completed successfully!')
 }
 

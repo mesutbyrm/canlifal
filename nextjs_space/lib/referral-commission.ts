@@ -149,6 +149,13 @@ export interface TopupCommissionInput {
   sourceId?: string | null
 }
 
+/**
+ * Komisyon ödemesi HER ZAMAN CFC olarak yapılır.
+ * CFC paraya çevrilemez; jeton çevrilebilir olduğu için ödül/komisyon olarak verilmez.
+ */
+export const COMMISSION_PAYOUT_CURRENCY = 'cfc'
+export const COMMISSION_PAYOUT_BALANCE_FIELD = 'credits'
+
 export interface TopupCommissionResult {
   referral: { earnerId: string; amount: number } | null
   agency: { earnerId: string; agencyId: string; amount: number } | null
@@ -179,7 +186,9 @@ export async function awardTopupCommissions(
     })
     if (!user) return result
 
-    const balanceField = currency === 'jeton' ? 'jetonBalance' : currency === 'cfc' ? 'cfcBalance' : 'credits'
+    // ⚠️ KURAL: Komisyon HER ZAMAN CFC olarak ödenir (jeton asla ödül olarak verilmez).
+    // Yükleme hangi para biriminde olursa olsun kazanç CFC'ye yazılır.
+    const balanceField = COMMISSION_PAYOUT_BALANCE_FIELD
     const sourceName = user.name || user.username || 'Bir kullanıcı'
 
     // ── 1) Referans komisyonu ──
@@ -204,7 +213,7 @@ export async function awardTopupCommissions(
                 topupCurrency: currency,
                 rate: config.referralRate,
                 amount: payout,
-                currency,
+                currency: COMMISSION_PAYOUT_CURRENCY,
                 sourceType,
                 sourceId: input.sourceId || null,
                 note: `${sourceName} yüklemesinden referans payı`,
@@ -224,8 +233,8 @@ export async function awardTopupCommissions(
             userId: user.referredById,
             type: 'referral_commission',
             title: '🎉 Referans kazancı',
-            message: `${sourceName} yükleme yaptı, ${payout} kazandın!`,
-            data: JSON.stringify({ amount: payout, rate: config.referralRate, currency }),
+            message: `${sourceName} yükleme yaptı, ${payout} CFC kazandın!`,
+            data: JSON.stringify({ amount: payout, rate: config.referralRate, currency: COMMISSION_PAYOUT_CURRENCY }),
             targetPath: '/kazanc',
           }).catch((e) => console.error('[Commission] referral notify error:', e))
         }
@@ -272,7 +281,7 @@ export async function awardTopupCommissions(
                   topupCurrency: currency,
                   rate: config.agencyRate,
                   amount: payout,
-                  currency,
+                  currency: COMMISSION_PAYOUT_CURRENCY,
                   sourceType,
                   sourceId: input.sourceId || null,
                   note: `${sourceName} yüklemesinden ajans payı`,
@@ -293,8 +302,8 @@ export async function awardTopupCommissions(
               userId: agency.ownerId,
               type: 'agency_commission',
               title: '🏢 Ajans kazancı',
-              message: `${sourceName} yükleme yaptı, ajansın ${payout} kazandı!`,
-              data: JSON.stringify({ amount: payout, rate: config.agencyRate, currency }),
+              message: `${sourceName} yükleme yaptı, ajansın ${payout} CFC kazandı!`,
+              data: JSON.stringify({ amount: payout, rate: config.agencyRate, currency: COMMISSION_PAYOUT_CURRENCY }),
               targetPath: '/ajans-paneli',
             }).catch((e) => console.error('[Commission] agency notify error:', e))
           }

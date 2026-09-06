@@ -10,6 +10,7 @@ import { recordLedger } from '@/lib/ledger';
 import { recordRiskEvent } from '@/lib/risk-score';
 import { getAuditIp } from '@/lib/audit-log';
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency';
+import { isConvertibleCurrency } from '@/lib/currency-branding';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +52,15 @@ export async function POST(request: NextRequest) {
     const limited = await guardRateLimit(request, 'withdrawal', { userId: authUser.id });
     if (limited) return limited;
 
-    const { amount, method, accountDetails } = await request.json();
+    const { amount, method, accountDetails, currency } = await request.json();
+
+    // ⚠️ KURAL: Yalnızca JETON paraya çevrilebilir. CFC asla çekilemez.
+    if (currency && !isConvertibleCurrency(currency)) {
+      return NextResponse.json(
+        { error: 'Bu para birimi paraya çevrilemez. Yalnızca jeton bakiyesi çekilebilir.' },
+        { status: 400 }
+      );
+    }
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: 'Geçersiz miktar' }, { status: 400 });

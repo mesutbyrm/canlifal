@@ -90,7 +90,8 @@ export async function POST(req: NextRequest) {
         lastLoginRewardDate: today,
         xp: newXp,
         level: newLevel,
-        jetonBalance: { increment: reward.jeton },
+        // KURAL: ödüller CFC olarak verilir (jeton asla ödül değildir)
+        credits: { increment: reward.jeton },
       },
     })
 
@@ -98,7 +99,8 @@ export async function POST(req: NextRequest) {
       success: true,
       streak: newStreak,
       xpEarned: reward.xp,
-      jetonEarned: reward.jeton,
+      cfcEarned: reward.jeton,
+      jetonEarned: 0,
       totalXp: newXp,
       level: newLevel,
     })

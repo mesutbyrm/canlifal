@@ -26,7 +26,7 @@ const DEFAULT_CONFIGS = [
   { area: 'live_session', areaName: 'Canlı Falcı Seansı', currencyType: 'jeton', cost: 0 },
   { area: 'live_stream_gift', areaName: 'Canlı Yayın Hediyeleri', currencyType: 'jeton', cost: 0 },
   { area: 'chat_room_gift', areaName: 'Sohbet Odası Hediyeleri', currencyType: 'jeton', cost: 0 },
-  { area: 'game_entry', areaName: 'Oyun Katılım', currencyType: 'jeton', cost: 0 },
+  { area: 'game_entry', areaName: 'Oyun Katılım', currencyType: 'cfc', cost: 0 },
 ]
 
 export async function GET() {

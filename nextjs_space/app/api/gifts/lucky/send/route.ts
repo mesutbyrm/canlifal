@@ -86,7 +86,9 @@ export async function POST(request: NextRequest) {
     const netJetons = wonJetons - betJetons
 
     const balanceBefore = user.jetonBalance ?? 0
-    const balanceAfter = excluded ? balanceBefore : balanceBefore + netJetons
+    // KURAL: bahis jetondan düşülür ancak KAZANÇ CFC olarak ödenir.
+    // Jeton paraya çevrilebildiği için ödül olarak dağıtılmaz.
+    const balanceAfter = excluded ? balanceBefore : balanceBefore - betJetons
 
     const ops: any[] = [
       prisma.luckyGiftReward.create({
@@ -110,7 +112,10 @@ export async function POST(request: NextRequest) {
       ops.push(
         prisma.user.update({
           where: { id: userId },
-          data: { jetonBalance: { increment: netJetons } },
+          data: {
+            jetonBalance: { decrement: betJetons },
+            ...(wonJetons > 0 ? { credits: { increment: wonJetons } } : {}),
+          },
         }),
         prisma.jetonTransaction.create({
           data: {
@@ -130,7 +135,7 @@ export async function POST(request: NextRequest) {
               userId,
               amount: wonJetons,
               type: 'lucky_gift_win',
-              description: `Şanslı hediye kazancı (${multiplier}x): ${giftType.name}`,
+              description: `Şanslı hediye kazancı (${multiplier}x): ${giftType.name} → CFC`,
               balanceBefore: balanceBefore - betJetons,
               balanceAfter,
             },
@@ -145,7 +150,7 @@ export async function POST(request: NextRequest) {
         prisma.siteAnnouncement.create({
           data: {
             type: 'lucky_jackpot',
-            message: `🍰 ${userName} Şanslı Hediye JACKPOT! ${giftType.icon} ${giftType.name} → ${multiplier}x = ${wonJetons.toLocaleString('tr-TR')} Jeton! 🎉`,
+            message: `🍰 ${userName} Şanslı Hediye JACKPOT! ${giftType.icon} ${giftType.name} → ${multiplier}x = ${wonJetons.toLocaleString('tr-TR')} CFC! 🎉`,
             color: 'gift',
             maxPasses: 2,
             expiresAt: new Date(Date.now() + 3 * 60 * 1000),

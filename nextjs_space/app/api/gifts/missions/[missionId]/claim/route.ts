@@ -76,8 +76,10 @@ export async function POST(
         return tx.user.update({
           where: { id: userId },
           data: {
-            ...(rewardJetons > 0 ? { jetonBalance: { increment: rewardJetons } } : {}),
-            ...(rewardCredits > 0 ? { credits: { increment: rewardCredits } } : {}),
+            // KURAL: görev ödülleri CFC olarak ödenir (jeton ödül olarak verilmez)
+            ...(rewardJetons + rewardCredits > 0
+              ? { credits: { increment: rewardJetons + rewardCredits } }
+              : {}),
           },
           select: { jetonBalance: true, credits: true },
         })

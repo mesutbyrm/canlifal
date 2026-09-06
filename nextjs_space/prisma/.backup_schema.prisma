@@ -4671,3 +4671,26 @@ model ReferralCommission {
   @@index([createdAt])
   @@map("referral_commissions")
 }
+
+// ─────────────────────────────────────────────────────────────
+// BÖLÜM 6b — Kademeli yükleme bonusu
+// Belirli tutarın üzerindeki yüklemelere yüzdelik ek bakiye verir.
+// Örn: 10.000 ve üzeri yüklemelere %5, 50.000 ve üzerine %10.
+// ─────────────────────────────────────────────────────────────
+model TopupBonusTier {
+  id           String   @id @default(cuid())
+  label        String?
+  minAmount    Int
+  bonusPercent Float    @default(0)
+  currency     String   @default("all") // all | jeton | cfc
+  sourceType   String   @default("all") // all | admin_credit | cfc_payment | package
+  maxBonus     Int      @default(0) // 0 = sınırsız
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, minAmount])
+  @@index([currency])
+  @@map("topup_bonus_tiers")
+}

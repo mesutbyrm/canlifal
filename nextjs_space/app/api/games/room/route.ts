@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
     if (!VALID_TYPES.includes(gameType)) return NextResponse.json({ error: 'Geçersiz oyun tipi' }, { status: 400 })
 
     // AI games are always free - no betting allowed
-    const currency = isAI ? 'FREE' : (['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE')
+    // KURAL: oyunlarda yalnızca CFC kullanılır. Eski JETON seçimi CFC'ye çevrilir.
+    const rawCurrency = betCurrency === 'JETON' ? 'CFC' : betCurrency
+    const currency = isAI ? 'FREE' : (['FREE', 'CFC'].includes(rawCurrency) ? rawCurrency : 'FREE')
     const amount = isAI ? 0 : (currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0)))
     const timer = [0, 10, 15, 20].includes(turnTimer) ? turnTimer : 0
     // Grid size for XOX (default 3, range 3-30)

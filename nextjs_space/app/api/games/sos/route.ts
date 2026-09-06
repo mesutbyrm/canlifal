@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
     // Accept any grid size from 6 to 30 (admin-configurable)
     const size = (typeof gridSize === 'number' && gridSize >= 6 && gridSize <= 30) ? Math.floor(gridSize) : 6
     // AI games are always free - no betting allowed
-    const currency = isAI ? 'FREE' : (['FREE', 'CFC', 'JETON'].includes(betCurrency) ? betCurrency : 'FREE')
+    // KURAL: oyunlarda yalnızca CFC kullanılır. Eski JETON seçimi CFC'ye çevrilir.
+    const rawCurrency = betCurrency === 'JETON' ? 'CFC' : betCurrency
+    const currency = isAI ? 'FREE' : (['FREE', 'CFC'].includes(rawCurrency) ? rawCurrency : 'FREE')
     const amount = isAI ? 0 : (currency === 'FREE' ? 0 : Math.max(0, Math.floor(betAmount || 0)))
     const timer = [0, 10, 15, 20].includes(turnTimer) ? turnTimer : 0
 

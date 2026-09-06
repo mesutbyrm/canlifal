@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import { recordLedger } from '@/lib/ledger'
 import { recordAudit } from '@/lib/audit-log'
 import { awardTopupCommissions } from '@/lib/referral-commission'
+import { applyTopupBonus } from '@/lib/currency-branding'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,16 @@ export async function POST(request: Request) {
       after: { [currency]: amount, newBalance: currency === 'jeton' ? user.jetonBalance : user.credits },
       description: `Admin ${amount > 0 ? 'ekledi' : 'düştü'}: ${Math.abs(amount)} ${currency}`,
     }).catch(e => console.error('[Audit] admin credit error:', e))
+
+    // Kademeli yükleme bonusu (yalnızca yükleme işlemlerinde)
+    if (amount > 0) {
+      applyTopupBonus({
+        userId,
+        amount,
+        currency: currency === 'jeton' ? 'jeton' : 'credits',
+        sourceType: 'admin_credit',
+      }).catch(e => console.error('[TopupBonus] admin credit error:', e))
+    }
 
     // Referans / ajans komisyonu (yalnızca yükleme işlemlerinde)
     if (amount > 0) {

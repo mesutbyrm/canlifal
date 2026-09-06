@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { awardTopupCommissions } from '@/lib/referral-commission'
+import { applyTopupBonus } from '@/lib/currency-branding'
 
 export const dynamic = 'force-dynamic'
 
@@ -112,6 +113,17 @@ export async function PATCH(request: NextRequest) {
         targetId: requestId,
         urgent: true,
       }).catch(err => console.error('CFC approve push error:', err))
+
+      // Kademeli yükleme bonusu
+      if (paymentRequest.amount > 0) {
+        applyTopupBonus({
+          userId: paymentRequest.userId,
+          amount: paymentRequest.amount,
+          currency: 'cfc',
+          sourceType: 'cfc_payment',
+          sourceId: requestId,
+        }).catch(err => console.error('[TopupBonus] cfc approve error:', err))
+      }
 
       // Referans / ajans komisyonu
       if (paymentRequest.amount > 0) {

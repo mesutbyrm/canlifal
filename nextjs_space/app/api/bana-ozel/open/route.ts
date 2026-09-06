@@ -77,10 +77,11 @@ export async function POST(req: NextRequest) {
     // Check jeton balance
     const user = await prisma.user.findUnique({
       where: { id: authUser.id },
-      select: { jetonBalance: true, name: true, zodiacSign: true },
+      select: { credits: true, name: true, zodiacSign: true },
     })
-    if (!user || user.jetonBalance < item.jetonCost) {
-      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi', required: item.jetonCost, current: user?.jetonBalance ?? 0 }, { status: 402 })
+    // KURAL: "Bana Özel" bölümü CFC ile çalışır (CFC paraya çevrilemez).
+    if (!user || user.credits < item.jetonCost) {
+      return NextResponse.json({ error: 'Yetersiz CFC bakiyesi', required: item.jetonCost, current: user?.credits ?? 0 }, { status: 402 })
     }
 
     // Generate content via LLM
@@ -103,20 +104,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Deduct jeton in a transaction
-    const newBalance = user.jetonBalance - item.jetonCost
+    const newBalance = user.credits - item.jetonCost
     await prisma.$transaction([
       prisma.user.update({
         where: { id: authUser.id },
-        data: { jetonBalance: newBalance },
+        data: { credits: newBalance },
       }),
       prisma.jetonTransaction.create({
         data: {
           userId: authUser.id,
           amount: -item.jetonCost,
           type: 'spend',
-          description: item.nameTr,
+          description: `${item.nameTr} (CFC)`,
           itemSlug: slug,
-          balanceBefore: user.jetonBalance,
+          balanceBefore: user.credits,
           balanceAfter: newBalance,
         },
       }),
