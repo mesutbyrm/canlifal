@@ -42,7 +42,7 @@ export default function AdminBadgesPage() {
   const [editBadge, setEditBadge] = useState<Badge | null>(null)
   const [form, setForm] = useState({ name: '', icon: '⭐', color: '#fbbf24', bgColor: '#78350f', description: '', tier: '', userId: '' })
 
-  const isMystical = theme === 'mystical'
+  const isMystical = theme !== 'facebook'
   const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-purple-900/30' : 'bg-white border-gray-200'
   const textColor = isMystical ? 'text-white' : 'text-gray-900'
   const subText = isMystical ? 'text-purple-200' : 'text-gray-500'

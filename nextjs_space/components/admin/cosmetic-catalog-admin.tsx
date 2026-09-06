@@ -54,7 +54,7 @@ export default function CosmeticCatalogAdmin({ config }: { config: CosmeticCatal
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadTargetField = useRef<string>('')
 
-  const isMystical = theme === 'mystical'
+  const isMystical = theme !== 'facebook'
   const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-purple-900/30' : 'bg-white border-gray-200'
   const textColor = isMystical ? 'text-white' : 'text-gray-900'
   const subText = isMystical ? 'text-purple-200' : 'text-gray-500'

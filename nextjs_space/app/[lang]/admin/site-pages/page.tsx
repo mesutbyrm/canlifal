@@ -32,7 +32,7 @@ export default function AdminSitePagesPage() {
   const [editPage, setEditPage] = useState<SitePage | null>(null)
   const [form, setForm] = useState({ title: '', titleEn: '', slug: '', content: '', contentEn: '', isPublished: true, showInFooter: true, showInHeader: false })
 
-  const isMystical = theme === 'mystical'
+  const isMystical = theme !== 'facebook'
   const cardBg = isMystical ? 'bg-[#1a0a2e]/80 border-fuchsia-900/30' : 'bg-white border-gray-200'
   const textColor = isMystical ? 'text-white' : 'text-gray-900'
   const subText = isMystical ? 'text-fuchsia-200' : 'text-gray-500'
