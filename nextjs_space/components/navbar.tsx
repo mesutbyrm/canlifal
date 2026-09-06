@@ -12,7 +12,7 @@ import {
   Sparkles, LogOut, User, Shield, Globe, MessageCircle, 
   Menu, X, Video, Trophy, Coins, Home, LayoutGrid, Users,
   Settings, CreditCard, ChevronDown, Camera, Loader2, Radio, Mail, Send, AlertCircle, BookOpen,
-  Search, Plus, Minus, TrendingDown
+  Search, Plus, Minus, TrendingDown, Wallet
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import CfcCoin from './cfc-coin'
@@ -488,6 +488,15 @@ export default function Navbar() {
                            <span className={`font-bold ${isLight ? 'text-[#1877F2]' : 'text-amber-400'}`}>{jetonBalance}</span>
                            <p className={`text-[10px] ${isLight ? 'text-[#65676B]' : 'text-amber-300/70'}`}>{(jetonBalance * jetonTlRate).toFixed(0)} TL</p>
                          </div>
+                       </Link>
+                       {/* Bakiye & Kazanç */}
+                       <Link
+                         href={`/kazanc`}
+                         className={`flex items-center gap-3 px-4 py-2.5 ${isLight ? 'text-[#050505] hover:bg-[#F0F2F5]' : 'text-fuchsia-200 hover:bg-fuchsia-800/30'}`}
+                         onClick={() => setShowProfileMenu(false)}
+                       >
+                         <Wallet className={`w-5 h-5 ${isLight ? 'text-[#1877F2]' : 'text-emerald-400'}`} />
+                         {'Bakiye & Kazanç'}
                        </Link>
                       
                       {/* Payment Notification / Admin Payment Orders */}
