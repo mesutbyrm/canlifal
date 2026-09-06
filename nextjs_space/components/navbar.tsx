@@ -15,7 +15,7 @@ import {
   Search, Plus, Minus, TrendingDown, Wallet
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import CfcCoin from './cfc-coin'
+import CurrencyAmount, { CurrencyIcon, CurrencyName } from './currency-amount'
 import FramedAvatar from './framed-avatar'
 import MembershipBadge from './membership-badge'
 import UserLevelBadge from './user-level-badge'
@@ -469,10 +469,10 @@ export default function Navbar() {
                          onClick={() => setShowProfileMenu(false)}
                        >
                          <div className="flex items-center gap-3">
-                           <CfcCoin size={20} />
-                           {"CFC'lerim"}
+                           <CurrencyIcon currency="cfc" size={20} />
+                           <span><CurrencyName currency="cfc" />{'\u2019lerim'}</span>
                          </div>
-                         <span className={`font-bold ${isLight ? 'text-[#1877F2]' : 'text-gold-400'}`}>{credits} CFC</span>
+                         <CurrencyAmount currency="cfc" amount={credits} showIcon={false} colored={!isLight} className={isLight ? 'text-[#1877F2] font-bold' : ''} />
                        </Link>
                        {/* Jeton display with TL */}
                        <Link
@@ -481,11 +481,11 @@ export default function Navbar() {
                          onClick={() => setShowProfileMenu(false)}
                        >
                          <div className="flex items-center gap-3">
-                           <span className="w-5 h-5 text-center text-lg leading-5">🪙</span>
-                           {'Jetonlarım'}
+                           <CurrencyIcon currency="jeton" size={20} />
+                           <span><CurrencyName currency="jeton" />{'\u2019larım'}</span>
                          </div>
                          <div className="text-right">
-                           <span className={`font-bold ${isLight ? 'text-[#1877F2]' : 'text-amber-400'}`}>{jetonBalance}</span>
+                           <CurrencyAmount currency="jeton" amount={jetonBalance} showIcon={false} showName={false} colored={!isLight} className={isLight ? 'text-[#1877F2] font-bold' : ''} />
                            <p className={`text-[10px] ${isLight ? 'text-[#65676B]' : 'text-amber-300/70'}`}>{(jetonBalance * jetonTlRate).toFixed(0)} TL</p>
                          </div>
                        </Link>

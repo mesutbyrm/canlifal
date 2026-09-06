@@ -4,6 +4,7 @@ import './globals.css'
 import SessionProviderWrapper from '@/components/session-provider-wrapper'
 import OneSignalProvider from '@/components/onesignal-provider'
 import { LanguageProvider } from '@/lib/language-context'
+import { CurrencyBrandingProvider } from '@/lib/currency-branding-context'
 import SiteThemeWrapper from '@/components/site-theme-wrapper'
 import PWAInstallPrompt from '@/components/pwa-install-prompt'
 
@@ -270,8 +271,10 @@ export default function RootLayout({
         <SessionProviderWrapper>
           <SiteThemeWrapper>
             <LanguageProvider>
-              <OneSignalProvider />
-              {children}
+              <CurrencyBrandingProvider>
+                <OneSignalProvider />
+                {children}
+              </CurrencyBrandingProvider>
             </LanguageProvider>
           </SiteThemeWrapper>
         </SessionProviderWrapper>

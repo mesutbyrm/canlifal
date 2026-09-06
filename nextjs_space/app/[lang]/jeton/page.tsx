@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CurrencyIcon, CurrencyName } from '@/components/currency-amount'
 import {
   Coins,
   Building2,
@@ -21,7 +22,6 @@ import {
   CreditCard,
   User,
   Crown,
-  Sparkles,
   Send
 } from 'lucide-react'
 import PaymentNotifyForm from '@/components/payment-notify-form'
@@ -284,13 +284,13 @@ export default function CreditsPage() {
           {session?.user && (
             <div className="flex items-center gap-2 flex-wrap">
               <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
-                <Coins className={`w-3.5 h-3.5 ${goldColor}`} />
-                <span className={textSecondary}>Jeton:</span>
+                <CurrencyIcon currency="jeton" size={14} />
+                <span className={textSecondary}><CurrencyName currency="jeton" />:</span>
                 <span className={`${goldColor} font-bold`}>{userJetons}</span>
               </div>
               <div className={`inline-flex items-center gap-1.5 ${balanceBg} px-3 py-1.5 rounded-full border text-sm`}>
-                <Sparkles className={`w-3.5 h-3.5 ${isFacebook ? 'text-purple-600' : 'text-purple-400'}`} />
-                <span className={textSecondary}>CFC:</span>
+                <CurrencyIcon currency="cfc" size={14} />
+                <span className={textSecondary}><CurrencyName currency="cfc" />:</span>
                 <span className={`${isFacebook ? 'text-purple-600' : 'text-purple-400'} font-bold`}>{userCredits}</span>
               </div>
             </div>
