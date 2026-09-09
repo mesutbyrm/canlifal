@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { finalizeExpiredTournaments } from '@/lib/tournament-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,7 +41,8 @@ async function ensureCurrentTournament() {
           title: t.title,
           description: t.description,
           status: 'active',
-          rewards: JSON.stringify([{ rank: 1, prize: 500 }, { rank: 2, prize: 300 }, { rank: 3, prize: 100 }]),
+          category: 'general',
+          rewards: JSON.stringify([{ rank: 1, prize: 500, currency: 'cfc' }, { rank: 2, prize: 300, currency: 'cfc' }, { rank: 3, prize: 100, currency: 'cfc' }]),
         }
       })
       tournaments.push(created)
@@ -49,19 +53,55 @@ async function ensureCurrentTournament() {
 
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await authenticateRequest(request)
-    const userId = authUser?.id
+    // Süresi dolmuş aktif turnuvaları kapat (lazy finalize)
+    finalizeExpiredTournaments().catch(() => {})
 
-    // Aktif turnuvaları getir veya oluştur
-    const tournaments = await ensureCurrentTournament()
+    const mobileUser = await authenticateRequest(request)
+    const session = !mobileUser ? await getServerSession(authOptions) : null
+    const userId = mobileUser?.id || (session?.user as any)?.id || null
 
-    // Her turnuva için top 20 giriş ve kullanıcı bilgisi
+    const url = new URL(request.url)
+    const filter = url.searchParams.get('filter') // active, completed, all
+    const category = url.searchParams.get('category') // stream, voice, general
+
+    let tournaments: any[]
+
+    if (filter === 'all') {
+      // Tüm turnuvalar (admin turnuvaları dahil)
+      const where: any = { status: { not: 'draft' } }
+      if (category) where.category = category
+      tournaments = await prisma.weeklyTournament.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      })
+    } else if (filter === 'completed') {
+      tournaments = await prisma.weeklyTournament.findMany({
+        where: { status: { in: ['completed', 'rewarded'] } },
+        orderBy: { weekEnd: 'desc' },
+        take: 20,
+      })
+    } else {
+      // Varsayılan: bu haftanın otomatik turnuvaları + admin'in açtığı aktifler
+      const auto = await ensureCurrentTournament()
+      const adminActive = await prisma.weeklyTournament.findMany({
+        where: { status: { in: ['registration', 'active'] }, createdBy: { not: null } },
+        orderBy: { weekEnd: 'asc' },
+        take: 20,
+      })
+      // Benzersizleştir
+      const seen = new Set<string>()
+      tournaments = []
+      for (const t of [...auto, ...adminActive]) {
+        if (!seen.has(t.id)) { seen.add(t.id); tournaments.push(t) }
+      }
+    }
+
+    // Her turnuva için leaderboard
     const result = await Promise.all(tournaments.map(async (t) => {
-      // Sıralama için skor hesapla
       let entries: any[] = []
       
       if (t.type === 'jeton_spend') {
-        // Bu haftaki jeton harcamaları
         const spends = (await prisma.$queryRawUnsafe(`
           SELECT user_id, SUM(ABS(amount)) as total_spend
           FROM jeton_transactions
@@ -74,7 +114,6 @@ export async function GET(request: NextRequest) {
           if (user) entries.push({ userId: s.user_id, score: Number(s.total_spend), user })
         }
       } else if (t.type === 'fortune_count') {
-        // Bu haftaki fal sayıları
         const fortunes = (await prisma.$queryRawUnsafe(`
           SELECT user_id, COUNT(*) as fortune_count
           FROM fortunes
@@ -86,14 +125,24 @@ export async function GET(request: NextRequest) {
           const user = await prisma.user.findUnique({ where: { id: f.user_id }, select: { id: true, name: true, username: true, image: true } })
           if (user) entries.push({ userId: f.user_id, score: Number(f.fortune_count), user })
         }
+      } else if (t.type === 'gift_sent' || t.type === 'pk_score') {
+        // Veritabanındaki entry tablosundan al
+        const dbEntries = await prisma.weeklyTournamentEntry.findMany({
+          where: { tournamentId: t.id },
+          orderBy: { score: 'desc' },
+          take: 20,
+        })
+        for (const e of dbEntries) {
+          const user = await prisma.user.findUnique({ where: { id: e.userId }, select: { id: true, name: true, username: true, image: true } })
+          if (user) entries.push({ userId: e.userId, score: e.score, user })
+        }
       }
 
-      // Kullanıcının kendi sıralamasını bul
+      // Kullanıcının kendi sıralaması
       let myEntry = null
       if (userId) {
         myEntry = entries.find(e => e.userId === userId) || null
         if (!myEntry) {
-          // Kullanıcı top 20'de değil, kendi skorunu hesapla
           if (t.type === 'jeton_spend') {
             const mySpend = (await prisma.$queryRawUnsafe(`
               SELECT SUM(ABS(amount)) as total_spend FROM jeton_transactions WHERE user_id = $1 AND amount < 0 AND created_at >= $2 AND created_at <= $3
@@ -104,11 +153,23 @@ export async function GET(request: NextRequest) {
               SELECT COUNT(*) as fortune_count FROM fortunes WHERE user_id = $1 AND created_at >= $2 AND created_at <= $3
             `, userId, t.weekStart, t.weekEnd).catch(() => [])) as any[]
             if (myFortune[0]?.fortune_count) myEntry = { userId, score: Number(myFortune[0].fortune_count), rank: null }
+          } else {
+            const dbEntry = await prisma.weeklyTournamentEntry.findUnique({
+              where: { tournamentId_userId: { tournamentId: t.id, userId } },
+            })
+            if (dbEntry) myEntry = { userId, score: dbEntry.score, rank: dbEntry.rank }
           }
         }
       }
 
       const rewards = t.rewards ? JSON.parse(t.rewards) : []
+
+      // Round / bracket bilgisi (varsa)
+      const rounds = await prisma.tournamentRound.findMany({
+        where: { tournamentId: t.id },
+        orderBy: { roundNumber: 'asc' },
+        include: { matches: { orderBy: { matchOrder: 'asc' } } },
+      })
 
       return {
         id: t.id,
@@ -118,9 +179,15 @@ export async function GET(request: NextRequest) {
         weekStart: t.weekStart.toISOString(),
         weekEnd: t.weekEnd.toISOString(),
         status: t.status,
+        category: t.category || 'general',
+        coverImage: t.coverImage,
+        visibility: t.visibility || 'public',
+        scoringType: t.scoringType || 'cumulative',
+        eliminationType: t.eliminationType || 'none',
         rewards,
-        leaderboard: entries.map((e, i) => ({ ...e, rank: i + 1 })),
-        myEntry: myEntry ? { ...myEntry, rank: entries.findIndex(e => e.userId === userId) + 1 || null } : null,
+        leaderboard: entries.map((e: any, i: number) => ({ ...e, rank: i + 1 })),
+        myEntry: myEntry ? { ...myEntry, rank: entries.findIndex((e: any) => e.userId === userId) + 1 || null } : null,
+        rounds: rounds.length > 0 ? rounds : undefined,
       }
     }))
 

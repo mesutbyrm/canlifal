@@ -2966,17 +2966,34 @@ model WeeklyTournament {
   id          String   @id @default(cuid())
   weekStart   DateTime
   weekEnd     DateTime
-  type        String   @default("jeton_spend") // jeton_spend, session_count, gift_sent, fortune_count
+  type        String   @default("jeton_spend") // jeton_spend, session_count, gift_sent, fortune_count, pk_score, viewer_count, interaction
   title       String
   description String?
-  status      String   @default("active") // active, completed
-  rewards     String? // JSON: [{ rank: 1, prize: 500 }, ...]
+  status      String   @default("active") // draft, registration, active, completed, rewarded, cancelled
+  rewards     String? // JSON: [{ rank: 1, prize: 500, currency: 'cfc' }, ...]
   createdAt   DateTime @default(now())
 
+  // F3 eklemeli alanlar (mevcut satırlar etkilenmez)
+  category          String?   // stream, voice, general
+  coverImage        String?
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  minParticipants   Int?
+  maxParticipants   Int?
+  visibility        String?   @default("public") // public, private, invite_only
+  scoringType       String?   // cumulative, per_round, bracket
+  eliminationType   String?   // none, single_elimination, double_elimination, round_robin
+  roundCount        Int?      @default(1)
+  createdBy         String?   // admin userId
+  updatedAt         DateTime? @updatedAt
+  rewardedAt        DateTime? // ödüller ne zaman dağıtıldı
+
   entries WeeklyTournamentEntry[]
+  rounds  TournamentRound[]
 
   @@unique([weekStart, type])
   @@index([status])
+  @@index([category, status])
   @@map("weekly_tournaments")
 }
 
@@ -2996,6 +3013,54 @@ model WeeklyTournamentEntry {
   @@index([tournamentId])
   @@index([userId])
   @@map("weekly_tournament_entries")
+}
+
+// Turnuva round'ları (bracket / eleme sistemi)
+model TournamentRound {
+  id           String   @id @default(cuid())
+  tournamentId String
+  roundNumber  Int      @default(1)
+  name         String?  // "Çeyrek Final", "Yarı Final", "Final"
+  stage        String?  // qualifier, group, semifinal, final
+  status       String   @default("pending") // pending, active, completed
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime @default(now())
+
+  tournament WeeklyTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matches    TournamentMatch[]
+
+  @@unique([tournamentId, roundNumber])
+  @@index([tournamentId])
+  @@map("tournament_rounds")
+}
+
+// Turnuva maçları (A vs B)
+model TournamentMatch {
+  id         String   @id @default(cuid())
+  roundId    String
+  matchOrder Int      @default(1)
+  status     String   @default("pending") // pending, active, completed, cancelled
+  side1Id    String?  // userId veya roomId/streamId
+  side1Name  String?
+  side1Score Int      @default(0)
+  side2Id    String?
+  side2Name  String?
+  side2Score Int      @default(0)
+  winnerId   String?
+  startedAt  DateTime?
+  endedAt    DateTime?
+  pkBattleId String?  // ilişkili PKBattle (opsiyonel)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  round TournamentRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@index([roundId])
+  @@index([side1Id])
+  @@index([side2Id])
+  @@map("tournament_matches")
 }
 
 // Favori Falcılar
