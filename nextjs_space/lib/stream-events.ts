@@ -4,9 +4,22 @@
  */
 
 interface StreamEvent {
+  /**
+   * Benzersiz olay kimliği (F6 — spec 28). İstemciler SSE yeniden bağlanması /
+   * tekrar oynatma yüzünden aynı olayı iki kez işlememek için bu değeri kullanır.
+   */
+  eventId: string
   timestamp: number
   type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift' | 'pk' | 'guest'
   data: any
+}
+
+let streamEventSeq = 0
+
+/** Aynı milisaniyede bile benzersiz olay kimliği üretir. */
+function nextStreamEventId(streamId: string): string {
+  streamEventSeq = (streamEventSeq + 1) % 1_000_000
+  return `${streamId}:${Date.now()}:${streamEventSeq}:${Math.random().toString(36).slice(2, 8)}`
 }
 
 // Per-stream event buffer: stores last N events per stream
@@ -20,7 +33,12 @@ const EVENT_TTL_MS = 5 * 60 * 1000 // 5 minutes
  */
 export function emitStreamEvent(streamId: string, type: StreamEvent['type'], data: any) {
   const events = streamEventStore.get(streamId) || []
-  events.push({ timestamp: Date.now(), type, data })
+  const eventId = nextStreamEventId(streamId)
+  // eventId'yi payload içine de enjekte et (mevcut istemciler için).
+  if (data && typeof data === 'object' && !Array.isArray(data) && (data as any).eventId === undefined) {
+    try { (data as any).eventId = eventId } catch { /* frozen — yoksay */ }
+  }
+  events.push({ eventId, timestamp: Date.now(), type, data })
   // Trim to max
   if (events.length > MAX_EVENTS_PER_STREAM) {
     events.splice(0, events.length - MAX_EVENTS_PER_STREAM)

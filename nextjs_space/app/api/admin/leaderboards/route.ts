@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { recordAudit } from '@/lib/audit-log'
 import { invalidateCache } from '@/lib/cache'
 import {
   ensureDefaultConfigs,
@@ -131,6 +132,7 @@ export async function POST(request: NextRequest) {
       data,
     })
     invalidateCache('lb:active_configs')
+    recordAudit({ actorId: adminId, action: 'leaderboard.update_config', targetType: 'leaderboard_config', targetId: configId, after: data }).catch(() => {})
     return NextResponse.json({ ok: true, config: updated })
   }
 
@@ -146,6 +148,7 @@ export async function POST(request: NextRequest) {
     if (!periodId) return NextResponse.json({ error: 'periodId gerekli' }, { status: 400 })
 
     const result = await distributeRewards(periodId)
+    recordAudit({ actorId: adminId, action: 'leaderboard.distribute_rewards', targetType: 'leaderboard_period', targetId: periodId, after: result }).catch(() => {})
     return NextResponse.json({ ok: true, ...result })
   }
 

@@ -5,15 +5,23 @@
  */
 
 interface RoomEvent {
+  eventId: string
   timestamp: number
   type: 'message' | 'timer_started' | 'time_extended' | 'session_ended' | 'ping' | 'system'
   data: any
 }
 
 interface TellerEvent {
+  eventId: string
   timestamp: number
   type: 'session_request' | 'session_cancelled'
   data: any
+}
+
+let roomEventSeq = 0
+function nextRoomEventId(scope: string): string {
+  roomEventSeq = (roomEventSeq + 1) % 1_000_000
+  return `${scope}:${Date.now()}:${roomEventSeq}:${Math.random().toString(36).slice(2, 8)}`
 }
 
 // Per-session event buffer for room messages
@@ -30,7 +38,11 @@ const EVENT_TTL_MS = 5 * 60 * 1000 // 5 minutes
  */
 export function emitRoomEvent(sessionId: string, type: RoomEvent['type'], data: any) {
   const events = sessionEvents.get(sessionId) || []
-  events.push({ timestamp: Date.now(), type, data })
+  const eventId = nextRoomEventId(sessionId)
+  if (data && typeof data === 'object' && !Array.isArray(data) && (data as any).eventId === undefined) {
+    try { (data as any).eventId = eventId } catch { /* frozen */ }
+  }
+  events.push({ eventId, timestamp: Date.now(), type, data })
   if (events.length > MAX_EVENTS) {
     events.splice(0, events.length - MAX_EVENTS)
   }
@@ -50,7 +62,11 @@ export function getRoomEventsSince(sessionId: string, sinceTimestamp: number): R
  */
 export function emitTellerEvent(tellerId: string, type: TellerEvent['type'], data: any) {
   const events = tellerEvents.get(tellerId) || []
-  events.push({ timestamp: Date.now(), type, data })
+  const eventId = nextRoomEventId(tellerId)
+  if (data && typeof data === 'object' && !Array.isArray(data) && (data as any).eventId === undefined) {
+    try { (data as any).eventId = eventId } catch { /* frozen */ }
+  }
+  events.push({ eventId, timestamp: Date.now(), type, data })
   if (events.length > MAX_EVENTS) {
     events.splice(0, events.length - MAX_EVENTS)
   }

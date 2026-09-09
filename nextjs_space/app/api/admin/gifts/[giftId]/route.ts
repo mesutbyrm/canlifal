@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { invalidateCache } from '@/lib/cache';
+import { recordAudit, getAuditIp } from '@/lib/audit-log';
 import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
@@ -160,6 +161,15 @@ export async function PATCH(
 
     await invalidateCache('gifts:active');
 
+    recordAudit({
+      action: 'gift_update',
+      targetType: 'GiftType',
+      targetId: params.giftId,
+      actorId: (session.user as any).id || session.user.email || 'unknown',
+      metadata: { updatedFields: Object.keys(data).filter(k => k !== 'contentVersion') },
+      ip: getAuditIp(request),
+    }).catch(() => {});
+
     return NextResponse.json(serializeGiftMedia(gift));
   } catch (error: any) {
     console.error('Admin gift PATCH error:', error);
@@ -184,6 +194,15 @@ export async function DELETE(
     });
 
     await invalidateCache('gifts:active');
+
+    recordAudit({
+      action: 'gift_delete',
+      targetType: 'GiftType',
+      targetId: params.giftId,
+      actorId: (session.user as any).id || session.user.email || 'unknown',
+      metadata: { softDelete: true },
+      ip: getAuditIp(request),
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error) {

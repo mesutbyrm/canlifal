@@ -6,6 +6,7 @@ import { invalidateCache } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
+import { recordAudit } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -214,6 +215,7 @@ export async function POST(request: NextRequest) {
 
     await invalidateCache('gifts:active');
 
+    recordAudit({ actorId: (session.user as any).id, action: 'gift.create', targetType: 'gift_type', targetId: gift.id, after: { name: gift.name, price: gift.price } }).catch(() => {});
     return NextResponse.json(serializeGiftMedia(gift), { status: 201 });
   } catch (error: any) {
     console.error('Admin gift create error:', error);

@@ -8,6 +8,7 @@ import {
   snapshotRanks,
   type TournamentStatus,
 } from '@/lib/tournament-state'
+import { recordAudit } from '@/lib/audit-log'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
             createdBy: adminId,
           },
         })
+        recordAudit({ actorId: adminId, action: `tournament.create`, targetType: 'tournament', targetId: tournament.id, after: { title: tournament.title, status: tournament.status } }).catch(() => {})
         return NextResponse.json({ success: true, tournament })
       }
 
@@ -140,6 +142,7 @@ export async function POST(req: NextRequest) {
         }
 
         const updated = await prisma.weeklyTournament.update({ where: { id: body.id }, data })
+        recordAudit({ actorId: adminId, action: `tournament.update`, targetType: 'tournament', targetId: body.id, before: { status: existing.status }, after: data }).catch(() => {})
         return NextResponse.json({ success: true, tournament: updated })
       }
 
@@ -157,6 +160,7 @@ export async function POST(req: NextRequest) {
         }
         const t = await transitionTournament(body.id, body.newStatus as TournamentStatus)
         if (!t) return NextResponse.json({ error: 'Geçiş başarısız' }, { status: 409 })
+        recordAudit({ actorId: adminId, action: `tournament.transition`, targetType: 'tournament', targetId: body.id, after: { newStatus: body.newStatus } }).catch(() => {})
         return NextResponse.json({ success: true, tournament: t })
       }
 
@@ -169,6 +173,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Yalnız draft veya cancelled durumundaki turnuvalar silinebilir' }, { status: 400 })
         }
         await prisma.weeklyTournament.delete({ where: { id: body.id } })
+        recordAudit({ actorId: adminId, action: `tournament.delete`, targetType: 'tournament', targetId: body.id, before: { title: t.title, status: t.status } }).catch(() => {})
         return NextResponse.json({ success: true })
       }
 
@@ -293,6 +298,7 @@ export async function POST(req: NextRequest) {
         // Durumu rewarded yap
         await transitionTournament(body.id, 'rewarded' as TournamentStatus)
 
+        recordAudit({ actorId: adminId, action: `tournament.reward`, targetType: 'tournament', targetId: body.id, after: { count: distributed.length } }).catch(() => {})
         return NextResponse.json({ success: true, distributed, count: distributed.length })
       }
 
