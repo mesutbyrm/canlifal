@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { endPksForSide } from '@/lib/pk-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -118,6 +119,8 @@ export async function PATCH(
         where: { streamId: params.streamId, leftAt: null },
         data: { leftAt: new Date() }
       })
+      // Yayın bittiğinde bu yayına bağlı bekleyen/aktif PK'ları da kapat
+      await endPksForSide([params.streamId], 'LIVE_ENDED')
     }
 
     return NextResponse.json(updated)

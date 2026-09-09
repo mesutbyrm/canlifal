@@ -11,6 +11,19 @@ import { emitUserJoined, emitUserLeft, emitSeatChanged, emitHostChanged } from '
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { seatStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
+import { endPksForSide } from '@/lib/pk-state'
+
+/** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
+async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
+  try {
+    const room = await prisma.chatRoom.findUnique({ where: { id: roomId }, select: { ownerId: true } })
+    if (room?.ownerId && room.ownerId === leavingUserId) {
+      await endPksForSide([roomId], 'HOST_LEFT')
+    }
+  } catch (e) {
+    console.error('endPksIfOwnerLeft error:', e)
+  }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -224,6 +237,7 @@ export async function POST(
             where: { roomId, userId, isActive: true },
             data: { isActive: false }
           }).catch(() => {})
+          await endPksIfOwnerLeft(roomId, userId)
           // Delete all previous leave messages, keep only the latest
           await prisma.chatMessage.deleteMany({
             where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
@@ -674,6 +688,7 @@ export async function DELETE(
         where: { roomId, userId: delUserId, isActive: true },
         data: { isActive: false }
       }).catch(() => {})
+      await endPksIfOwnerLeft(roomId, delUserId)
       // Delete all previous leave messages, keep only the latest
       await prisma.chatMessage.deleteMany({
         where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }

@@ -11,6 +11,13 @@ import { emitStreamEvent } from '@/lib/stream-events'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import {
+  checkPkTransition,
+  finishPkBattle,
+  finalizeExpiredActivePKs,
+  ensurePkSidesAlive,
+  emitPkToBothSides,
+} from '@/lib/pk-state'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -19,8 +26,9 @@ export async function GET(req: NextRequest) {
     const streamId = searchParams.get('streamId')
     if (!streamId) return NextResponse.json({ error: 'streamId gerekli' }, { status: 400 })
 
-    // First, expire any stale pending PKs
+    // First, expire any stale pending PKs and finalize timed-out active PKs (backend canonical timer)
     await expireAllStalePKs()
+    await finalizeExpiredActivePKs()
 
     // Include recently completed/expired battles (last 5 min) so PK result screen stays visible
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
@@ -43,6 +51,12 @@ export async function GET(req: NextRequest) {
     const checkedBattle = await expirePendingPK(battle)
     if (!checkedBattle) return NextResponse.json(null)
 
+    // Taraflardan biri yayından/odadan çıktıysa PK'yı otomatik kapat
+    if (checkedBattle.status === 'pending' || checkedBattle.status === 'active') {
+      const alive = await ensurePkSidesAlive(checkedBattle as any)
+      if (!alive) return NextResponse.json(null)
+    }
+
     // Fetch user info for both sides
     const [user1, user2, stream1, stream2] = await Promise.all([
       prisma.user.findUnique({ where: { id: battle.user1Id }, select: { id: true, name: true, image: true } }),
@@ -52,11 +66,14 @@ export async function GET(req: NextRequest) {
     ])
 
     return NextResponse.json({
-      ...battle,
+      ...checkedBattle,
       user1,
       user2,
       stream1,
-      stream2
+      stream2,
+      // Sayaç sunucu saatiyle kanonik: istemci endsAt - serverNow ile hesaplar
+      endTime: (checkedBattle as any).endsAt ? new Date((checkedBattle as any).endsAt).toISOString() : null,
+      serverNow: new Date().toISOString(),
     })
   } catch (e) {
     console.error('PK GET error:', e)
@@ -182,24 +199,25 @@ export async function POST(req: NextRequest) {
       
       // Authorization: user2 (opponent) can accept.
       // Also allow opponent's voice room owner/moderator to accept on their behalf.
-      let canAccept = battle.user2Id === session?.user?.id
+      let canAccept = battle.user2Id === currentUserId
       if (!canAccept && body.opponentVoiceRoomId) {
         // Check if the current user is the owner or moderator of the opponent's voice room
         const opponentRoom = await prisma.chatRoom.findUnique({
           where: { id: body.opponentVoiceRoomId },
           select: { ownerId: true }
         })
-        if (opponentRoom?.ownerId === session?.user?.id) canAccept = true
+        if (opponentRoom?.ownerId === currentUserId) canAccept = true
         if (!canAccept) {
           const modRole = await prisma.chatUserRole.findUnique({
-            where: { roomId_userId: { roomId: body.opponentVoiceRoomId, userId: session?.user?.id } }
+            where: { roomId_userId: { roomId: body.opponentVoiceRoomId, userId: currentUserId } }
           })
           if (modRole && (modRole.role === 'moderator' || modRole.role === 'admin')) canAccept = true
         }
       }
       
       if (!canAccept) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
-      if (battle.status !== 'pending') return NextResponse.json({ error: 'Bu PK zaten kabul edilmiş' }, { status: 400 })
+      const acceptErr = checkPkTransition(battle.status, 'active')
+      if (acceptErr) return NextResponse.json({ error: acceptErr }, { status: 400 })
 
       // Check if PK has expired (60s timeout)
       const acceptElapsed = Date.now() - new Date(battle.createdAt).getTime()
@@ -208,17 +226,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'PK isteği zaman aşımına uğradı (60 saniye)' }, { status: 400 })
       }
 
-      const endTime = new Date(Date.now() + (battle.duration || 180) * 1000)
-      const updated = await prisma.pKBattle.update({
-        where: { id: battleId },
-        data: { status: 'active', startedAt: new Date() }
-      })
+      const acceptedAt = new Date()
+      const endTime = new Date(acceptedAt.getTime() + (battle.duration || 180) * 1000)
+      let updated
+      try {
+        // Optimistic lock: yalnızca hâlâ pending ise kabul edilir (çift kabul yarışı engellenir)
+        updated = await prisma.pKBattle.update({
+          where: { id: battleId, status: 'pending' },
+          data: { status: 'active', startedAt: acceptedAt, acceptedAt, endsAt: endTime }
+        })
+      } catch {
+        return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
+      }
 
-      const pkStartData = { type: 'pk', battleId: battle.id, action: 'started', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: 0, score2: 0, duration: battle.duration, status: 'active', startedAt: updated.startedAt?.toISOString(), endTime: endTime.toISOString() }
-      emitStreamEvent(battle.stream1Id, 'pk', pkStartData)
-      emitStreamEvent(battle.stream2Id, 'pk', pkStartData)
+      const pkStartData = { type: 'pk', battleId: battle.id, action: 'started', eventType: 'PK_STARTED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: updated.score1, score2: updated.score2, duration: battle.duration, status: 'active', startedAt: acceptedAt.toISOString(), acceptedAt: acceptedAt.toISOString(), endsAt: endTime.toISOString(), endTime: endTime.toISOString(), serverNow: new Date().toISOString() }
+      emitPkToBothSides(battle, pkStartData)
 
-      return NextResponse.json({ ...updated, endTime })
+      return NextResponse.json({ ...updated, endTime, serverNow: new Date().toISOString() })
     }
 
     if (action === 'reject' || action === 'cancel') {
@@ -227,20 +251,28 @@ export async function POST(req: NextRequest) {
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
       
-      // Either party can cancel/reject
-      if (battle.user1Id !== currentUserId && battle.user2Id !== currentUserId) {
+      // reject → yalnızca davet edilen (user2); cancel → yalnızca daveti gönderen (user1)
+      const newStatus: 'rejected' | 'cancelled' = action === 'reject' ? 'rejected' : 'cancelled'
+      const allowedUserId = newStatus === 'rejected' ? battle.user2Id : battle.user1Id
+      if (allowedUserId !== currentUserId) {
         return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       }
 
-      const newStatus = action === 'reject' ? 'rejected' : 'cancelled'
-      const updated = await prisma.pKBattle.update({
-        where: { id: battleId },
-        data: { status: newStatus, endedAt: new Date() }
-      })
+      const transErr = checkPkTransition(battle.status, newStatus)
+      if (transErr) return NextResponse.json({ error: transErr }, { status: 400 })
 
-      const cancelData = { type: 'pk', battleId: battle.id, action: newStatus, room1Id: battle.stream1Id, room2Id: battle.stream2Id, status: newStatus }
-      emitStreamEvent(battle.stream1Id, 'pk', cancelData)
-      emitStreamEvent(battle.stream2Id, 'pk', cancelData)
+      let updated
+      try {
+        updated = await prisma.pKBattle.update({
+          where: { id: battleId, status: 'pending' },
+          data: { status: newStatus, endedAt: new Date() }
+        })
+      } catch {
+        return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
+      }
+
+      const cancelData = { type: 'pk', battleId: battle.id, action: newStatus, eventType: newStatus === 'rejected' ? 'PK_REQUEST_REJECTED' : 'PK_REQUEST_CANCELLED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, status: newStatus }
+      emitPkToBothSides(battle, cancelData)
 
       return NextResponse.json(updated)
     }
@@ -250,19 +282,14 @@ export async function POST(req: NextRequest) {
       
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
-      if (battle.status !== 'active') return NextResponse.json({ error: 'PK aktif değil' }, { status: 400 })
+      if (battle.user1Id !== currentUserId && battle.user2Id !== currentUserId) {
+        return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      }
+      const endErr = checkPkTransition(battle.status, 'completed')
+      if (endErr) return NextResponse.json({ error: endErr }, { status: 400 })
 
-      const winnerId = battle.score1 > battle.score2 ? battle.user1Id : 
-                       battle.score2 > battle.score1 ? battle.user2Id : null
-
-      const updated = await prisma.pKBattle.update({
-        where: { id: battleId },
-        data: { status: 'completed', endedAt: new Date(), winnerId }
-      })
-
-      const endData = { type: 'pk', battleId: battle.id, action: 'completed', room1Id: battle.stream1Id, room2Id: battle.stream2Id, score1: battle.score1, score2: battle.score2, winnerId, status: 'completed' }
-      emitStreamEvent(battle.stream1Id, 'pk', endData)
-      emitStreamEvent(battle.stream2Id, 'pk', endData)
+      const updated = await finishPkBattle(battle as any, 'MANUAL')
+      if (!updated) return NextResponse.json({ error: 'PK zaten bitmiş' }, { status: 409 })
 
       return NextResponse.json(updated)
     }

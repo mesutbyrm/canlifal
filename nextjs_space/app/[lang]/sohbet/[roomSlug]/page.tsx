@@ -213,6 +213,8 @@ export default function ChatRoomPage() {
   const [activePKBattle, setActivePKBattle] = useState<any>(null)
   const [incomingPKRequest, setIncomingPKRequest] = useState<any>(null)
   const [pkSendingAction, setPkSendingAction] = useState(false)
+  const [pkCandidates, setPkCandidates] = useState<any[]>([])
+  const [pkCandidatesLoading, setPkCandidatesLoading] = useState(false)
   const pkDismissedRef = useRef<Set<string>>(new Set())
   
   // User balance
@@ -2211,6 +2213,28 @@ export default function ChatRoomPage() {
       return () => clearInterval(interval)
     }
   }, [room, fetchPKStatus])
+
+  // PK rakip listesi backend'den gelir (aktif + sahibi çevrimiçi + PK'da olmayan odalar)
+  const fetchPkCandidates = useCallback(async () => {
+    if (!room?.id) return
+    setPkCandidatesLoading(true)
+    try {
+      const res = await fetch(`/api/chat/rooms/pk/candidates?roomId=${room.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setPkCandidates(Array.isArray(data?.candidates) ? data.candidates : [])
+      } else {
+        setPkCandidates([])
+      }
+    } catch { setPkCandidates([]) }
+    finally { setPkCandidatesLoading(false) }
+  }, [room?.id])
+
+  useEffect(() => {
+    if (commandSubPanel === 'pk') {
+      fetchPkCandidates()
+    }
+  }, [commandSubPanel, fetchPkCandidates])
 
   const handlePKCreate = useCallback(async (targetRoomId: string) => {
     if (!room || pkSendingAction) return
@@ -5064,22 +5088,22 @@ export default function ChatRoomPage() {
                       </div>
                     ) : (
                       <div className="space-y-1 max-h-[50vh] overflow-y-auto">
-                        {allRooms.filter(r => r.id !== room?.id).length === 0 ? (
-                          <p className="text-purple-400/50 text-sm text-center py-8">Başka aktif oda bulunamadı</p>
+                        {pkCandidates.length === 0 ? (
+                          <p className="text-purple-400/50 text-sm text-center py-8">{pkCandidatesLoading ? 'Odalar yükleniyor...' : 'Başka aktif oda bulunamadı'}</p>
                         ) : (
-                          allRooms.filter(r => r.id !== room?.id).map(targetRoom => (
+                          pkCandidates.map((targetRoom: any) => (
                             <button
-                              key={targetRoom.id}
-                              onClick={() => handlePKCreate(targetRoom.id)}
+                              key={targetRoom.roomId}
+                              onClick={() => handlePKCreate(targetRoom.roomId)}
                               disabled={pkSendingAction}
                               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-red-500/20 bg-red-900/20 hover:bg-red-900/40 transition-all text-left disabled:opacity-50"
                             >
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-white text-sm flex-shrink-0">
-                                {targetRoom.icon || targetRoom.nameTr?.charAt(0) || '🏠'}
+                                {targetRoom.icon || targetRoom.name?.charAt(0) || '🏠'}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-red-200 text-xs font-medium truncate">{targetRoom.nameTr || targetRoom.nameEn}</p>
-                                <p className="text-red-400/50 text-[10px]">{(targetRoom as any).userCount || 0} kişi online</p>
+                                <p className="text-red-200 text-xs font-medium truncate">{targetRoom.name}</p>
+                                <p className="text-red-400/50 text-[10px]">{targetRoom.ownerName || 'Oda sahibi'}</p>
                               </div>
                               <Swords className="w-4 h-4 text-red-400 flex-shrink-0" />
                             </button>

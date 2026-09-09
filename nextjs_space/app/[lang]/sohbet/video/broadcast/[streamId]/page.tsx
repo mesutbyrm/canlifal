@@ -560,17 +560,8 @@ export default function BroadcastPage() {
           if (data.status === 'pending' && data.user2Id === session?.user?.id) {
             setPendingPKRequest(data)
           }
-          // Auto-end PK if time is up
-          if (data.status === 'active' && data.startedAt) {
-            const elapsed = (Date.now() - new Date(data.startedAt).getTime()) / 1000
-            if (elapsed >= data.duration) {
-              fetch('/api/video-streams/pk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'end', battleId: data.id })
-              }).catch(() => {})
-            }
-          }
+          // Süre bitişi artık sunucu tarafında (endsAt) kanonik olarak yönetiliyor.
+          // İstemci yalnızca sunucu saatine göre kalan süreyi gösterir.
         } else {
           setPkBattle(null)
           setPendingPKRequest(null)
@@ -649,12 +640,20 @@ export default function BroadcastPage() {
 
   const fetchLiveBroadcasters = async () => {
     try {
-      const res = await fetch('/api/video-streams')
+      // Backend kanonik aday listesi: kendi yayını, PK'da olan yayıncılar ve
+      // mükerrer kullanıcılar sunucu tarafında zaten elenmiştir.
+      const res = await fetch(`/api/video-streams/pk/candidates?streamId=${streamId}`)
       if (res.ok) {
-        const streams = await res.json()
-        // Filter out current stream and current user's streams
-        const otherStreams = streams.filter((s: any) => s.id !== streamId && s.userId !== session?.user?.id)
-        setLiveBroadcasters(otherStreams)
+        const data = await res.json()
+        const list = (data?.candidates || []).map((c: any) => ({
+          id: c.streamId,
+          userId: c.userId,
+          title: c.title,
+          category: null,
+          user: { id: c.userId, name: c.name, image: c.image },
+          viewerCount: c.viewers ?? 0,
+        }))
+        setLiveBroadcasters(list)
       }
     } catch (e) {}
   }
