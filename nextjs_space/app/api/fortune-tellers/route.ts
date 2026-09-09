@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCached } from '@/lib/cache';
+import { computeTellerStatus, PRESENCE_LABELS } from '@/lib/presence-engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       specialties: true, rating: true, totalSessions: true, totalReviews: true,
       pricePerSession: true, isOnline: true, isVerified: true, isActive: true,
       isBanned: true, applicationStatus: true, approvedAt: true, createdAt: true,
-      user: { select: { name: true, image: true } },
+      user: { select: { name: true, image: true, lastActiveAt: true } },
       sessions: {
         where: { status: { in: ['active', 'pending'] } },
         select: { id: true, status: true, userId: true },
@@ -63,6 +64,14 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
     if (!tellerData.avatar && user?.image) {
       tellerData.avatar = user.image;
     }
+    // F5: backend-canonical presence status (frontend must not guess)
+    const presenceStatus = computeTellerStatus({
+      isOnline: teller.isOnline,
+      lastActiveAt: user?.lastActiveAt ?? null,
+      isStreaming,
+      isInSession: activeSessions.length > 0,
+    });
+    const presenceLabel = PRESENCE_LABELS[presenceStatus];
     const isNewTeller = tellerData.approvedAt
       ? (Date.now() - new Date(tellerData.approvedAt).getTime()) < 7 * 24 * 60 * 60 * 1000
       : (Date.now() - new Date(tellerData.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000;
@@ -75,6 +84,8 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       ...tellerData,
       isStreaming,
       isInSession: activeSessions.length > 0,
+      presenceStatus,
+      presenceLabel,
       pendingCount: pendingSessions.length,
       pendingUserIds: pendingSessions.map((s: { userId: string }) => s.userId),
       isNewTeller,

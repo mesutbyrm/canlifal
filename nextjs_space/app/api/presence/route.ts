@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { authenticateRequest } from '@/lib/mobile-auth';
 import crypto from 'crypto';
 import { parseUserAgent } from '@/lib/ua-parser';
+import { maybeEmitOnlineEntrance } from '@/lib/presence-engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,11 +78,20 @@ export async function POST(request: NextRequest) {
     if (authUser?.id) {
       const userId = authUser?.id;
       const now = new Date();
-      
+
+      // F5: read previous lastActiveAt BEFORE update to detect offline->online transition
+      const prev = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { lastActiveAt: true },
+      });
+
       await prisma.user.update({
         where: { id: userId },
         data: { lastActiveAt: now },
       });
+
+      // F5: emit Gold online-entrance (USER_ONLINE) once per online session (deduped)
+      maybeEmitOnlineEntrance(userId, prev?.lastActiveAt ?? null).catch(() => {});
       
       // Activity Tracking: Track login sessions, daily/hourly activity
       try {

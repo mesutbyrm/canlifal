@@ -57,6 +57,13 @@ model User {
   // Cosmetic selections (Part 13 premium cosmetics) - plain id/key references, no relation
   nameEffect                String? // Selected name-text effect key (gold, silver, neon, rainbow, ...)
   entranceEffectId          String? // Selected entrance (room-join) effect id
+  // F5: Gold online-entrance (site-level premium entrance card) - admin controlled
+  premiumEntranceEnabled    Boolean                 @default(false) // admin toggle for site-entrance card
+  premiumEntranceRequireGold Boolean                @default(true) // only play while Gold membership active
+  premiumEntranceEffectId   String? // optional EntranceEffect id used for the online card
+  premiumEntranceDurationMs Int? // override display duration (ms)
+  premiumEntranceAnimationType String? // slide_lr | fade | zoom (client hint)
+  lastOnlineEventAt         DateTime? // dedup: last time a USER_ONLINE entrance event was emitted
   chatBubbleId              String? // Selected chat bubble skin id
   micFrameId                String? // Selected microphone frame id
   avatarAccessoryIds        String? // JSON array of selected avatar accessory ids
@@ -158,6 +165,7 @@ model User {
   commissionsGenerated      ReferralCommission[]    @relation("CommissionSource")
   leaderboardEntries        LeaderboardEntry[]
   leaderboardRewards        LeaderboardReward[]
+  onlineEvents              UserOnlineEvent[]
 
   @@index([referralCode])
   @@index([isBot])
@@ -4850,4 +4858,26 @@ model LeaderboardReward {
   @@unique([periodId, rank])
   @@index([userId])
   @@map("leaderboard_rewards")
+}
+
+// F5: Global Gold online-entrance event feed (USER_ONLINE).
+// Emitted once per online session (deduped) when a premium/Gold user comes online.
+// Site clients poll /api/presence/online-events and dedup by id to play the card once.
+model UserOnlineEvent {
+  id            String   @id @default(cuid())
+  userId        String
+  username      String
+  avatarUrl     String?
+  effectId      String? // EntranceEffect id used (optional)
+  effectUrl     String? // resolved asset url (lottie/svga/gif/video/image)
+  effectType    String? // lottie | svga | gif | video | image
+  durationMs    Int      @default(4000)
+  animationType String   @default("slide_lr") // slide_lr | fade | zoom
+  tier          String   @default("gold")
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("user_online_events")
 }
