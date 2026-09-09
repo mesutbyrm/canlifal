@@ -19,6 +19,7 @@ import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { applyGiftPkScore } from '@/lib/gift-pk-score'
+import { incrementLeaderboardScore } from '@/lib/leaderboard-engine'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -303,6 +304,9 @@ export async function POST(
       sideIds: [params.streamId, (stream as any)?.id, (stream as any)?.roomId],
       amount: totalPrice,
     })
+
+    // Leaderboard skor: hediye alıcısına puan (canlı yayın)
+    incrementLeaderboardScore('live_stream', stream.userId, totalPrice, 'gift_received', params.streamId).catch(() => {})
 
     // Trigger gift sent event announcement
     const giftSenderName = user?.name || 'Bir kullanıcı'

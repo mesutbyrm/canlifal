@@ -156,6 +156,8 @@ model User {
   animationPlaybackLogs     AnimationPlaybackLog[]
   commissionsEarned         ReferralCommission[]    @relation("CommissionEarner")
   commissionsGenerated      ReferralCommission[]    @relation("CommissionSource")
+  leaderboardEntries        LeaderboardEntry[]
+  leaderboardRewards        LeaderboardReward[]
 
   @@index([referralCode])
   @@index([isBot])
@@ -4758,4 +4760,94 @@ model TopupBonusTier {
   @@index([isActive, minAmount])
   @@index([currency])
   @@map("topup_bonus_tiers")
+}
+
+// ─────────────────────────────────────────────────────────────
+// F4: Saatlik / Günlük Top-100 Leaderboard Sistemi
+// ─────────────────────────────────────────────────────────────
+
+// Admin tarafından yapılandırılabilir leaderboard tanımları.
+// Her bir (scope, periodType) çifti için ayrı konfigürasyon.
+model LeaderboardConfig {
+  id             String   @id @default(cuid())
+  scope          String   // voice_room | live_stream
+  periodType     String   // hourly | daily | weekly | monthly | event
+  isEnabled      Boolean  @default(true)
+  topN           Int      @default(100)  // gösterilecek max sıralama
+
+  // Ödül ayarları (JSON: [{rank:1, rewardType:'gold', rewardValue:'30', label:'1 Aylık Gold'}, ...])
+  rewardConfig   Json?
+
+  // Hangi skorlama kaynakları aktif (JSON: {gift_received:true, gift_sent:false, pk_score:true, viewer_count:false, ...})
+  scoringRules   Json?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  periods        LeaderboardPeriod[]
+
+  @@unique([scope, periodType])
+  @@map("leaderboard_configs")
+}
+
+// Her dönem periyodu için bir kayıt (saatlik / günlük vs.)
+model LeaderboardPeriod {
+  id           String   @id @default(cuid())
+  configId     String
+  config       LeaderboardConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  scope        String   // denormalized for fast query
+  periodType   String   // denormalized
+  periodKey    String   // "2026-09-09T14" (hourly), "2026-09-09" (daily), "2026-W37" (weekly), "2026-09" (monthly)
+  startTime    DateTime
+  endTime      DateTime
+  status       String   @default("active") // active | finalized | rewarded
+  finalizedAt  DateTime?
+  rewardedAt   DateTime?
+
+  entries      LeaderboardEntry[]
+  rewards      LeaderboardReward[]
+
+  @@unique([configId, periodKey])
+  @@index([scope, periodType, status])
+  @@index([endTime, status])
+  @@map("leaderboard_periods")
+}
+
+// Bir kullanıcının bir periyottaki skoru ve sırası
+model LeaderboardEntry {
+  id          String   @id @default(cuid())
+  periodId    String
+  period      LeaderboardPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contextId   String?  // roomId veya streamId (hangi oda/yayında kazanıldı)
+  score       Int      @default(0)
+  rank        Int?     // finalize sırasında hesaplanır
+  updatedAt   DateTime @updatedAt
+
+  @@unique([periodId, userId])
+  @@index([periodId, score])
+  @@index([userId])
+  @@map("leaderboard_entries")
+}
+
+// Dağıtılan ödüller (idempotent — her (periodId, rank) çifti tek kayıt)
+model LeaderboardReward {
+  id            String   @id @default(cuid())
+  periodId      String
+  period        LeaderboardPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank          Int
+  rewardType    String   // gold | cfc | jeton | badge | entrance_effect | custom
+  rewardValue   String   // "30" (gün), "500" (CFC miktarı), badge ID, vs.
+  rewardLabel   String?  // "1 Aylık Gold"
+  status        String   @default("pending") // pending | distributed | failed
+  distributedAt DateTime?
+  transactionId String?  // CreditTransaction ID (varsa)
+  createdAt     DateTime @default(now())
+
+  @@unique([periodId, rank])
+  @@index([userId])
+  @@map("leaderboard_rewards")
 }

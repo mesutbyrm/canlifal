@@ -17,6 +17,7 @@ import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { applyGiftPkScore } from '@/lib/gift-pk-score'
+import { incrementLeaderboardScore } from '@/lib/leaderboard-engine'
 
 export const dynamic = 'force-dynamic'
 
@@ -226,6 +227,9 @@ export async function POST(request: NextRequest) {
         amount: totalPrice,
       })
 
+      // Leaderboard skor: hediye alıcısına (yayıncı) puan (canlı yayın)
+      incrementLeaderboardScore('live_stream', stream.userId, totalPrice, 'gift_received', stream.id).catch(() => {})
+
       // Emit SSE
       emitStreamEvent(stream.id, 'gift', {
         type: 'gift',
@@ -385,6 +389,9 @@ export async function POST(request: NextRequest) {
         sideIds: [room.id, roomId],
         amount: totalPrice,
       })
+
+      // Leaderboard skor: hediye alıcısına puan (sesli oda)
+      incrementLeaderboardScore('voice_room', recipientId, totalPrice, 'gift_received', room.id).catch(() => {})
 
       // Emit chat event
       emitChatEvent(room.id, 'gift', {

@@ -18,6 +18,7 @@ import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { applyGiftPkScore } from '@/lib/gift-pk-score'
+import { incrementLeaderboardScore } from '@/lib/leaderboard-engine'
 
 export const dynamic = 'force-dynamic'
 
@@ -326,6 +327,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       amount: price,
       battleId: (body as any)?.battleId || null,
     })
+
+    // Leaderboard skor: hediye alıcısına puan (sesli oda)
+    incrementLeaderboardScore('voice_room', recipientId, price, 'gift_received', roomId).catch(() => {})
 
     // Render metadata so ALL clients (web + Flutter) display the gift the same
     // way and it is visible to everyone in the room.
