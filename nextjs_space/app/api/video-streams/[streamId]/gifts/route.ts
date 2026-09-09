@@ -18,6 +18,7 @@ import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import { applyGiftPkScore } from '@/lib/gift-pk-score'
 
 async function createStreamGiftAnnouncement(
   senderName: string, senderUsername: string | null,
@@ -297,27 +298,11 @@ export async function POST(
       giftType.icon, giftType.name, totalPrice, giftType.id
     ).catch(err => console.error('Stream gift announcement error:', err))
 
-    // PK Battle: update scores if stream is in an active PK
-    let pkUpdate = null
-    try {
-      const activePK = await prisma.pKBattle.findFirst({
-        where: {
-          OR: [
-            { stream1Id: params.streamId },
-            { stream2Id: params.streamId }
-          ],
-          status: 'active'
-        }
-      })
-      if (activePK) {
-        const isStream1 = activePK.stream1Id === params.streamId
-        const updated = await prisma.pKBattle.update({
-          where: { id: activePK.id },
-          data: isStream1 ? { score1: { increment: totalPrice } } : { score2: { increment: totalPrice } }
-        })
-        pkUpdate = { battleId: activePK.id, score1: updated.score1, score2: updated.score2 }
-      }
-    } catch (pkErr) { console.error('PK score update error:', pkErr) }
+    // PK Battle: skor atfı tek kanonik yoldan (oda izolasyonu + süre kontrolü)
+    const pkUpdate = await applyGiftPkScore({
+      sideIds: [params.streamId, (stream as any)?.id, (stream as any)?.roomId],
+      amount: totalPrice,
+    })
 
     // Trigger gift sent event announcement
     const giftSenderName = user?.name || 'Bir kullanıcı'
@@ -353,6 +338,7 @@ export async function POST(
     if (!enginePayload) {
       emitStreamEvent(params.streamId, 'gift', {
         type: 'gift',
+        eventType: 'GIFT_SENT',
         streamId: params.streamId,
         gift: {
           id: gift.id,

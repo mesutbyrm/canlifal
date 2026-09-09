@@ -17,6 +17,7 @@ import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import { applyGiftPkScore } from '@/lib/gift-pk-score'
 
 export const dynamic = 'force-dynamic'
 
@@ -316,34 +317,15 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     triggerEventAnnouncement('gift_sent', { user: sender.name || 'Bir kullanıcı', gift: giftType.name }, sender.id, sender.name, sender.role || 'free').catch(() => {})
 
     // PK Battle: if a PK is active and side/battleId is provided, update PK score
-    let pkUpdate = null
-    const { battleId: pkBattleId, side: pkSide, streamId: pkStreamId } = body
-    if (pkBattleId || pkStreamId) {
-      try {
-        const whereClause: any = { status: 'active' }
-        if (pkBattleId) whereClause.id = pkBattleId
-        else if (pkStreamId) {
-          whereClause.OR = [
-            { stream1Id: pkStreamId },
-            { stream2Id: pkStreamId }
-          ]
-        }
-        const activePK = await prisma.pKBattle.findFirst({ where: whereClause })
-        if (activePK) {
-          // Determine side: explicit side param, or streamId match, or default to challenger
-          let isStream1 = true
-          if (pkSide === 'opponent') isStream1 = false
-          else if (pkSide === 'challenger') isStream1 = true
-          else if (pkStreamId) isStream1 = activePK.stream1Id === pkStreamId
-          
-          const updated = await prisma.pKBattle.update({
-            where: { id: activePK.id },
-            data: isStream1 ? { score1: { increment: price } } : { score2: { increment: price } }
-          })
-          pkUpdate = { battleId: activePK.id, score1: updated.score1, score2: updated.score2 }
-        }
-      } catch (pkErr) { console.error('Chat gift PK score error:', pkErr) }
-    }
+    // Taraf ARTIK istemcinin `side`/`streamId` parametresinden değil, hediyenin
+    // gerçekten gönderildiği odadan türetilir (oda izolasyonu). İstemci
+    // `battleId` gönderse bile bu oda o PK'nın tarafı değilse skor yazılmaz.
+    // Oda aktif bir PK'daysa parametre gönderilmese de skor işlenir.
+    const pkUpdate = await applyGiftPkScore({
+      sideIds: [roomId, (room as any)?.id, (room as any)?.slug],
+      amount: price,
+      battleId: (body as any)?.battleId || null,
+    })
 
     // Render metadata so ALL clients (web + Flutter) display the gift the same
     // way and it is visible to everyone in the room.
@@ -370,6 +352,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // Fallback: motor çalışmadıysa legacy `gift` SSE olayını yayınla
     if (!enginePayload) {
       emitChatEvent(roomId, 'gift', {
+        type: 'gift',
+        eventType: 'GIFT_SENT',
         giftId: gift.id,
         roomId,
         senderId: sender.id,

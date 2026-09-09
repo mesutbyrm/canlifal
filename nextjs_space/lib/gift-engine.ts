@@ -370,7 +370,15 @@ export async function emitGiftEngineEvent(
   event: 'gift_received' | 'gift_queue_updated' | 'gift_finished',
   payload: any,
 ) {
-  const wrapped = { engine: true, event, context, contextId, ...payload }
+  // Kanonik olay adı (BÖLÜM: gerçek zamanlı olay sözleşmesi). Zarf tipi
+  // `gift` olarak KALIR — mevcut istemciler bozulmaz; yeni istemciler
+  // `eventType` alanına bakar.
+  const CANONICAL: Record<string, string> = {
+    gift_received: 'GIFT_SENT',
+    gift_queue_updated: 'GIFT_QUEUE_UPDATED',
+    gift_finished: 'GIFT_FINISHED',
+  }
+  const wrapped = { engine: true, event, eventType: CANONICAL[event] || event, context, contextId, ...payload }
   try {
     if (context === 'live_stream') {
       emitStreamEvent(contextId, 'gift', wrapped)
