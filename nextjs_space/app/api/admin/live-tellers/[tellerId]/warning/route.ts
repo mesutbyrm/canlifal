@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { recordAudit, getAuditIp } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,8 @@ export async function POST(
       where: { tellerId },
     });
 
+    recordAudit({ actorId: session.user.id, action: 'teller_warning_add', targetType: 'live_fortune_teller', targetId: tellerId, ip: getAuditIp(request), metadata: { reason, warningCount } }).catch(() => {});
+
     return NextResponse.json({ warning, warningCount });
   } catch (error) {
     console.error('Error adding warning:', error);
@@ -66,6 +69,8 @@ export async function DELETE(
     await prisma.tellerWarning.delete({
       where: { id: warningId },
     });
+
+    recordAudit({ actorId: session.user.id, action: 'teller_warning_remove', targetType: 'teller_warning', targetId: warningId, ip: getAuditIp(request) }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error) {

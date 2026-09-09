@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,6 +105,8 @@ export async function POST(request: NextRequest) {
         break
       }
     }
+
+    recordAudit({ actorId: session.user.id, action: `moderation_${action}`, targetType: action === 'warn_user' ? 'user' : 'social_content', targetId: targetId, ip: getAuditIp(request), metadata: { reason } }).catch(() => {})
 
     return NextResponse.json({ success: true })
   } catch (error) {

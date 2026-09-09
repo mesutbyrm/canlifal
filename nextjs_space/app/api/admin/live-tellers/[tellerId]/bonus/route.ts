@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
+import { recordAudit, getAuditIp } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,8 @@ export async function POST(
         },
       }),
     ]);
+
+    recordAudit({ actorId: session.user.id, action: 'teller_bonus', targetType: 'live_fortune_teller', targetId: tellerId, ip: getAuditIp(request), metadata: { amount, reason, userId: teller.userId } }).catch(() => {});
 
     return NextResponse.json({ 
       teller: updatedTeller,
