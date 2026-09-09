@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { resolveUser } from '@/lib/rbac'
+import { isAdminRole } from '@/lib/admin-utils'
+import { hasPermission } from '@/lib/permissions'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { createNotificationWithPush } from '@/lib/notify'
 import { awardTopupCommissions } from '@/lib/referral-commission'
 import { applyTopupBonus } from '@/lib/currency-branding'
 
 export const dynamic = 'force-dynamic'
 
-const ALLOWED_ROLES = ['admin', 'yonetici', 'moderator', 'destek', 'yardim']
-
 // GET - List all CFC payment requests (admin)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+    const actor = await resolveUser(request)
+    if (!actor) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    if (!isAdminRole(actor.role)) return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
+    if (!(await hasPermission(actor.role, 'payment.view', actor.id)))
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
-    }
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'all'
@@ -58,10 +59,9 @@ export async function GET(request: NextRequest) {
 // PATCH - Approve or reject a CFC payment request
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
-      return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
-    }
+    const actor = await resolveUser(request)
+    if (!actor) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    if (!isAdminRole(actor.role)) return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
 
     const body = await request.json()
     const { requestId, action, reviewNote } = body
@@ -69,6 +69,11 @@ export async function PATCH(request: NextRequest) {
     if (!requestId || !['approve', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
     }
+
+    // Permission check
+    const permKey = action === 'approve' ? 'payment.approve' : 'payment.reject'
+    if (!(await hasPermission(actor.role, permKey, actor.id)))
+      return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
 
     const paymentRequest = await prisma.cfcPaymentRequest.findUnique({
       where: { id: requestId },
@@ -83,14 +88,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Bu talep zaten işlenmiş' }, { status: 400 })
     }
 
+    const ip = getAuditIp(request)
+
     if (action === 'approve') {
-      // Update request status and add CFC balance in a transaction
       const [updatedRequest] = await prisma.$transaction([
         prisma.cfcPaymentRequest.update({
           where: { id: requestId },
           data: {
             status: 'approved',
-            reviewedBy: session.user.id,
+            reviewedBy: actor.id,
             reviewNote: reviewNote || null,
           },
         }),
@@ -102,7 +108,6 @@ export async function PATCH(request: NextRequest) {
         }),
       ])
 
-      // Notify the user with push
       createNotificationWithPush({
         userId: paymentRequest.userId,
         type: 'cfc_payment_approved',
@@ -114,7 +119,6 @@ export async function PATCH(request: NextRequest) {
         urgent: true,
       }).catch(err => console.error('CFC approve push error:', err))
 
-      // Kademeli yükleme bonusu
       if (paymentRequest.amount > 0) {
         applyTopupBonus({
           userId: paymentRequest.userId,
@@ -125,7 +129,6 @@ export async function PATCH(request: NextRequest) {
         }).catch(err => console.error('[TopupBonus] cfc approve error:', err))
       }
 
-      // Referans / ajans komisyonu
       if (paymentRequest.amount > 0) {
         awardTopupCommissions({
           userId: paymentRequest.userId,
@@ -136,19 +139,19 @@ export async function PATCH(request: NextRequest) {
         }).catch(err => console.error('[Commission] cfc approve error:', err))
       }
 
+      recordAudit({ actorId: actor.id, action: 'cfc_payment_approve', targetType: 'cfc_payment_request', targetId: requestId, ip, metadata: { amount: paymentRequest.amount, userId: paymentRequest.userId } }).catch(() => {})
+
       return NextResponse.json(updatedRequest)
     } else {
-      // Reject
       const updatedRequest = await prisma.cfcPaymentRequest.update({
         where: { id: requestId },
         data: {
           status: 'rejected',
-          reviewedBy: session.user.id,
+          reviewedBy: actor.id,
           reviewNote: reviewNote || null,
         },
       })
 
-      // Notify the user with push
       createNotificationWithPush({
         userId: paymentRequest.userId,
         type: 'cfc_payment_rejected',
@@ -159,6 +162,8 @@ export async function PATCH(request: NextRequest) {
         targetId: requestId,
         urgent: true,
       }).catch(err => console.error('CFC reject push error:', err))
+
+      recordAudit({ actorId: actor.id, action: 'cfc_payment_reject', targetType: 'cfc_payment_request', targetId: requestId, ip, metadata: { amount: paymentRequest.amount, userId: paymentRequest.userId, reason: reviewNote } }).catch(() => {})
 
       return NextResponse.json(updatedRequest)
     }

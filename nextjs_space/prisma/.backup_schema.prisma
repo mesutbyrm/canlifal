@@ -1809,23 +1809,46 @@ model MembershipPurchase {
 
 // Payment Notifications (user notifies admin about payment)
 model PaymentNotification {
-  id            String    @id @default(cuid())
-  userId        String
-  username      String // User's username at time of submission
-  paymentMethod String // papara, bank_transfer, etc.
-  amount        Float // Amount paid in TRY
-  transactionId String? // Transaction/Reference ID
-  senderName    String? // Name of sender (for bank transfers)
-  notes         String?   @db.Text // Additional notes
-  status        String    @default("pending") // pending, approved, rejected
-  jetonLoaded   Int? // Jeton amount loaded by admin
-  processedBy   String? // Admin who processed
-  processedAt   DateTime?
-  createdAt     DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  userId              String
+  username            String // User's username at time of submission
+  paymentMethod       String // papara, bank_transfer, etc.
+  amount              Float // Amount paid in TRY
+  transactionId       String? // Transaction/Reference ID
+  senderName          String? // Name of sender (for bank transfers)
+  notes               String?   @db.Text // Additional notes
+  status              String    @default("pending") // pending, approved, rejected, corrected, cancelled
+  // Product info
+  productType         String    @default("jeton") // jeton, cfc, gold
+  requestedAmount     Int?      // User's requested product amount
+  requestedGoldDays   Int?      // If gold: requested days
+  requestedGoldType   String?   // If gold: gold tier
+  // Admin processing
+  jetonLoaded         Int? // Jeton amount loaded by admin
+  cfcLoaded           Int? // CFC amount loaded by admin
+  goldDaysLoaded      Int? // Gold days loaded by admin
+  goldTypeLoaded      String? // Gold type loaded by admin
+  processedBy         String? // Admin userId who processed
+  processedByName     String? // Admin display name snapshot
+  processedAt         DateTime?
+  adminNote           String?   @db.Text // Admin's note/reason for decision
+  // Correction fields
+  originalRequestedAmount Int?  // Before admin correction
+  correctedAmount     Int?      // Admin-corrected amount
+  correctedBy         String?   // Admin who corrected
+  correctedAt         DateTime?
+  correctionReason    String?   @db.Text
+  // Idempotency: track if credit already applied
+  creditApplied       Boolean   @default(false) // true after balance actually changed
+  creditAppliedAt     DateTime?
+  // Proof file
+  proofUrl            String? // payment proof image/file URL
+  createdAt           DateTime  @default(now())
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([productType])
   @@map("payment_notifications")
 }
 
