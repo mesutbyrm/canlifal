@@ -166,6 +166,20 @@ model User {
   leaderboardEntries        LeaderboardEntry[]
   leaderboardRewards        LeaderboardReward[]
   onlineEvents              UserOnlineEvent[]
+  // F7: User management fields
+  isBanned                  Boolean                 @default(false)
+  banReason                 String?
+  bannedAt                  DateTime?
+  bannedUntil               DateTime? // null = permanent
+  bannedBy                  String? // admin userId
+  canBroadcast              Boolean                 @default(true) // live stream permission
+  canCreateRoom             Boolean                 @default(true) // voice room permission
+  canChat                   Boolean                 @default(true)
+  canSendGift               Boolean                 @default(true)
+  canPK                     Boolean                 @default(true)
+  isVerifiedUser            Boolean                 @default(false) // identity verification
+  permissionOverrides       UserPermissionOverride[]
+  adminActions              AdminUserAction[]       @relation("AdminActionTarget")
 
   @@index([referralCode])
   @@index([isBot])
@@ -4351,6 +4365,44 @@ model RolePermission {
 // ===== PHASE 7: Support, Verification, Team, Supporter, Effect Rules =====
 // All additive. Following project convention: user links are plain String ids
 // (no Prisma relation to the large User model) to keep changes isolated.
+
+// F7: Per-user permission overrides — granular admin permissions per user
+model UserPermissionOverride {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionKey  String   // e.g. 'finance.balance.adjust'
+  granted        Boolean  @default(true) // true=grant, false=deny
+  grantedBy      String   // admin userId
+  reason         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, permissionKey])
+  @@index([userId])
+  @@map("user_permission_overrides")
+}
+
+// F7: Admin action log for user management operations
+model AdminUserAction {
+  id           String   @id @default(cuid())
+  targetUserId String
+  targetUser   User     @relation("AdminActionTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  adminId      String   // admin who performed the action
+  adminName    String?  // admin display name snapshot
+  action       String   // jeton_adjust, cfc_adjust, gold_grant, gold_revoke, ban, unban, role_change, permission_change, broadcast_toggle, room_toggle, etc.
+  oldValue     String?  // JSON serialized old state
+  newValue     String?  // JSON serialized new state
+  reason       String?
+  metadata     String?  @db.Text // JSON extra data
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId])
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_user_actions")
+}
 
 model SupportTicket {
   id            String   @id @default(cuid())

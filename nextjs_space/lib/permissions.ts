@@ -33,16 +33,35 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: 'finance.payment.manage', name: 'Ödeme taleplerini yönetme', group: 'finance' },
   { key: 'finance.ledger.view', name: 'Finansal defteri görme', group: 'finance' },
   { key: 'finance.report.view', name: 'Finansal raporları görme', group: 'finance' },
+  { key: 'finance.jeton.adjust', name: 'Jeton bakiye düzenleme', group: 'finance' },
+  { key: 'finance.cfc.adjust', name: 'CFC bakiye düzenleme', group: 'finance' },
   // content
   { key: 'content.gift.manage', name: 'Hediyeleri yönetme', group: 'content' },
   { key: 'content.teller.manage', name: 'Falcıları yönetme', group: 'content' },
   { key: 'content.announcement.manage', name: 'Duyuruları yönetme', group: 'content' },
   { key: 'content.media.upload', name: 'Medya yükleme', group: 'content' },
+  { key: 'content.tournament.manage', name: 'Turnuvaları yönetme', group: 'content' },
   // moderation
+  { key: 'moderation.user.view', name: 'Kullanıcı görüntüleme', group: 'moderation' },
+  { key: 'moderation.user.edit', name: 'Kullanıcı düzenleme', group: 'moderation' },
   { key: 'moderation.user.ban', name: 'Kullanıcı yasaklama', group: 'moderation' },
+  { key: 'moderation.user.unban', name: 'Kullanıcı yasak kaldırma', group: 'moderation' },
   { key: 'moderation.user.mute', name: 'Kullanıcı susturma', group: 'moderation' },
+  { key: 'moderation.user.gold', name: 'Gold üyelik yönetimi', group: 'moderation' },
+  { key: 'moderation.user.broadcast', name: 'Yayın yetkisi yönetimi', group: 'moderation' },
+  { key: 'moderation.user.room', name: 'Oda yetkisi yönetimi', group: 'moderation' },
+  { key: 'moderation.user.role', name: 'Kullanıcı rolü değiştirme', group: 'moderation' },
   { key: 'moderation.room.manage', name: 'Odaları yönetme', group: 'moderation' },
   { key: 'moderation.report.handle', name: 'Şikayetleri işleme', group: 'moderation' },
+  // payment
+  { key: 'payment.view', name: 'Ödeme bildirimlerini görme', group: 'finance' },
+  { key: 'payment.approve', name: 'Ödeme onaylama', group: 'finance' },
+  { key: 'payment.reject', name: 'Ödeme reddetme', group: 'finance' },
+  { key: 'payment.correct', name: 'Ödeme düzeltme', group: 'finance' },
+  { key: 'payment.refund', name: 'İade işlemi', group: 'finance' },
+  // agency
+  { key: 'agency.manage', name: 'Ajans yönetimi', group: 'content' },
+  { key: 'agency.member.manage', name: 'Ajans üye yönetimi', group: 'content' },
   // system
   { key: 'system.feature.toggle', name: 'Özellik bayraklarını değiştirme', group: 'system' },
   { key: 'system.config.manage', name: 'Uzak yapılandırma yönetimi', group: 'system' },
@@ -86,6 +105,13 @@ export const SYSTEM_ROLES: Array<{
       'finance.payment.manage',
       'finance.ledger.view',
       'finance.report.view',
+      'finance.jeton.adjust',
+      'finance.cfc.adjust',
+      'payment.view',
+      'payment.approve',
+      'payment.reject',
+      'payment.correct',
+      'moderation.user.view',
       'system.audit.view',
     ],
   },
@@ -95,11 +121,17 @@ export const SYSTEM_ROLES: Array<{
     description: 'İçerik ve kullanıcı moderasyonu',
     level: 40,
     permissions: [
+      'moderation.user.view',
+      'moderation.user.edit',
       'moderation.user.ban',
+      'moderation.user.unban',
       'moderation.user.mute',
+      'moderation.user.broadcast',
+      'moderation.user.room',
       'moderation.room.manage',
       'moderation.report.handle',
       'content.announcement.manage',
+      'payment.view',
     ],
   },
 ]
@@ -137,15 +169,45 @@ async function getDbRolePermissions(roleKey: string): Promise<string[] | null> {
  * Does the given role key grant the given permission?
  * DB first, legacy hardcoded matrix as fallback.
  */
-export async function hasPermission(roleKey: string | null | undefined, permissionKey: string): Promise<boolean> {
+export async function hasPermission(roleKey: string | null | undefined, permissionKey: string, userId?: string): Promise<boolean> {
   if (!roleKey) return false
   // 'admin' and 'yonetici' always keep full access, regardless of DB state.
   if (roleKey === 'admin' || roleKey === 'yonetici') return true
+
+  // Check per-user permission overrides first (if userId provided)
+  if (userId) {
+    const override = await getUserPermissionOverride(userId, permissionKey)
+    if (override !== null) return override // explicit grant or deny
+  }
 
   const dbPerms = await getDbRolePermissions(roleKey)
   if (dbPerms === null) return legacyHasPermission(roleKey, permissionKey)
   if (dbPerms.includes('system.admin.full')) return true
   return dbPerms.includes(permissionKey)
+}
+
+/**
+ * Check per-user permission override (60s cache).
+ * Returns true/false for explicit grant/deny, null for no override.
+ */
+async function getUserPermissionOverride(userId: string, permissionKey: string): Promise<boolean | null> {
+  try {
+    const overrides = await getCached(`rbac:user:${userId}`, 60, async () => {
+      const rows = await prisma.userPermissionOverride.findMany({
+        where: { userId },
+        select: { permissionKey: true, granted: true },
+      })
+      return rows.reduce((acc: Record<string, boolean>, r: any) => {
+        acc[r.permissionKey] = r.granted
+        return acc
+      }, {})
+    })
+    if (overrides && permissionKey in overrides) return overrides[permissionKey]
+    return null
+  } catch (e) {
+    console.error('[RBAC] getUserPermissionOverride failed:', e)
+    return null
+  }
 }
 
 /** Full permission key list for a role (DB, else legacy). */
