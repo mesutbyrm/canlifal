@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitDjUpdate } from '@/lib/chat-dj-events'
-import { canControlMusic } from '../route'
+import { canControlMusic } from '@/lib/music-permissions'
 
 export const dynamic = 'force-dynamic'
 

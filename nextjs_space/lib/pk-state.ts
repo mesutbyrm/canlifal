@@ -183,12 +183,27 @@ export async function finalizeExpiredActivePKs(): Promise<number> {
   try {
     const now = new Date()
     const stale = await prisma.pKBattle.findMany({
-      where: { status: 'active', endsAt: { not: null, lte: now } },
-      select: BATTLE_SELECT,
+      where: {
+        status: 'active',
+        OR: [
+          { endsAt: { not: null, lte: now } },
+          // Eski kayıtlar: endsAt yazılmadan kabul edilmiş PK'lar sonsuza dek
+          // "aktif" kalıp yeni PK'ları engelliyordu. startedAt/createdAt + duration ile kapatılır.
+          { endsAt: null },
+        ],
+      },
+      select: { ...BATTLE_SELECT, endsAt: true, startedAt: true, createdAt: true, duration: true },
       take: 50,
     })
     let count = 0
     for (const b of stale) {
+      const row = b as any
+      if (!row.endsAt) {
+        const base = row.startedAt || row.createdAt
+        const dur = (row.duration && row.duration > 0 ? row.duration : 180) * 1000
+        // Eski kayıtlarda ek 30 sn tolerans bırakılır
+        if (!base || new Date(base).getTime() + dur + 30_000 > now.getTime()) continue
+      }
       const done = await finishPkBattle(b as BattleRow, 'TIME_UP')
       if (done) count++
     }
