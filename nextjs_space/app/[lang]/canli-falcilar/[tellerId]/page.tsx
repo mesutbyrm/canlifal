@@ -23,7 +23,9 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  X
+  X,
+  Heart,
+  Crown
 } from 'lucide-react'
 
 interface Teller {
@@ -40,6 +42,9 @@ interface Teller {
   isVerified: boolean
   isActive: boolean
   createdAt: string
+  favoriteCount?: number
+  isFavorited?: boolean
+  isGoldUser?: boolean
   user: {
     name: string | null
     image: string | null
@@ -87,6 +92,11 @@ export default function TellerDetailPage() {
   const [showCfcPopup, setShowCfcPopup] = useState(false)
   const [userJetons, setUserJetons] = useState(0)
   
+  // Favorite state
+  const [isFav, setIsFav] = useState(false)
+  const [favCount, setFavCount] = useState(0)
+  const [togglingFav, setTogglingFav] = useState(false)
+
   // Waiting state
   const [isWaiting, setIsWaiting] = useState(false)
   const [waitingSessionId, setWaitingSessionId] = useState<string | null>(null)
@@ -191,6 +201,8 @@ export default function TellerDetailPage() {
       }
       const data = await res.json()
       setTeller(data)
+      setIsFav(!!data.isFavorited)
+      setFavCount(data.favoriteCount || 0)
     } catch (err) {
       console.error('Fetch teller error:', err)
       setError('Bir hata oluştu')
@@ -307,6 +319,23 @@ export default function TellerDetailPage() {
     )
   }
 
+  const toggleFavorite = async () => {
+    if (!session?.user || togglingFav) return
+    setTogglingFav(true)
+    try {
+      const res = await fetch('/api/favorite-tellers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tellerId: teller.id })
+      })
+      if (res.ok) {
+        setIsFav(prev => !prev)
+        setFavCount(prev => isFav ? Math.max(0, prev - 1) : prev + 1)
+      }
+    } catch (e) { console.error(e) }
+    finally { setTogglingFav(false) }
+  }
+
   const filteredFortuneTypes = FORTUNE_TYPES.filter(
     ft => teller.specialties.includes(ft.id) || ft.id === 'general'
   )
@@ -363,9 +392,24 @@ export default function TellerDetailPage() {
                   {teller.isVerified && (
                     <BadgeCheck className="w-6 h-6 text-blue-400" />
                   )}
+                  {teller.isGoldUser && (
+                    <span className="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-500 to-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                      <Crown className="w-3.5 h-3.5" /> Gold
+                    </span>
+                  )}
+                  {session?.user && (
+                    <button
+                      onClick={toggleFavorite}
+                      disabled={togglingFav}
+                      className="p-1.5 rounded-full hover:bg-purple-800/50 transition-colors disabled:opacity-50 ml-auto"
+                      title={isFav ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                    >
+                      <Heart className={`w-6 h-6 transition-colors ${isFav ? 'text-pink-500 fill-pink-500' : 'text-purple-400 hover:text-pink-400'}`} />
+                    </button>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-purple-300 mb-4">
+                <div className="flex items-center gap-4 text-sm text-purple-300 mb-4 flex-wrap">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     teller.isOnline
                       ? 'bg-green-500/20 text-green-400'
@@ -382,6 +426,10 @@ export default function TellerDetailPage() {
                   <span className="flex items-center gap-1">
                     <Video className="w-4 h-4" />
                     {teller.totalSessions} {'seans'}
+                  </span>
+                  <span className="flex items-center gap-1 text-pink-400">
+                    <Heart className="w-4 h-4 fill-pink-400" />
+                    {favCount} {'favori'}
                   </span>
                 </div>
 

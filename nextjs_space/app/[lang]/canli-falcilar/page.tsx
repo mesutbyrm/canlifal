@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
 import { useSession } from 'next-auth/react'
-import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle, LayoutDashboard, Zap } from 'lucide-react'
+import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle, LayoutDashboard, Zap, Heart, Crown } from 'lucide-react'
 import LoadingSpinner from '@/components/loading-spinner'
 import Link from 'next/link'
 
@@ -27,6 +27,10 @@ interface FortuneTeller {
   isNewTeller?: boolean
   trendingScore?: number
   tellerLevel?: string
+  favoriteCount?: number
+  isGoldUser?: boolean
+  presenceStatus?: string
+  presenceLabel?: { tr: string; en: string }
   user: {
     name: string
     image: string | null
@@ -62,6 +66,8 @@ export default function LiveTellersPage() {
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
   const [tellerStatus, setTellerStatus] = useState<TellerStatus | null>(null)
   const [togglingOnline, setTogglingOnline] = useState(false)
+  const [togglingFav, setTogglingFav] = useState<string | null>(null)
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchTellers()
@@ -118,6 +124,27 @@ export default function LiveTellersPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const toggleFavorite = async (tellerId: string) => {
+    if (!session?.user) return
+    setTogglingFav(tellerId)
+    try {
+      const res = await fetch('/api/favorite-tellers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tellerId })
+      })
+      if (res.ok) {
+        setFavoritedIds(prev => {
+          const next = new Set(prev)
+          if (next.has(tellerId)) next.delete(tellerId)
+          else next.add(tellerId)
+          return next
+        })
+      }
+    } catch (e) { console.error(e) }
+    finally { setTogglingFav(null) }
   }
 
   const onlineTellers = tellers.filter(t => t.isOnline)
@@ -315,6 +342,21 @@ export default function LiveTellersPage() {
           transition={{ delay: 0.15 }}
           className="flex flex-wrap gap-3 mb-6"
         >
+          <div className="flex rounded-lg overflow-hidden border border-purple-700/50">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${filter === 'all' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-800/40'}`}
+            >
+              Tümü
+            </button>
+            <button
+              onClick={() => setFilter('online')}
+              className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${filter === 'online' ? 'bg-green-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-800/40'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              Çevrimiçi
+            </button>
+          </div>
           <select
             value={specialtyFilter}
             onChange={(e) => setSpecialtyFilter(e.target.value)}
@@ -403,15 +445,19 @@ export default function LiveTellersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-serif text-lg text-gold-400 truncate">{teller.displayName}</h3>
-                        {teller.isStreaming && (
-                          <span className="inline-flex items-center gap-1 bg-red-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            {'Canlı Yayında'}
+                        {teller.isGoldUser && (
+                          <span className="inline-flex items-center gap-0.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            <Crown className="w-3 h-3" /> Gold
                           </span>
                         )}
-                        {teller.isInSession && !teller.isStreaming && (
-                          <span className="inline-flex items-center gap-1 bg-amber-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                            {'Seansta'}
+                        {teller.presenceStatus && teller.presenceStatus !== 'offline' && (
+                          <span className={`inline-flex items-center gap-1 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            teller.presenceStatus === 'live' ? 'bg-red-500/90' :
+                            teller.presenceStatus === 'busy' ? 'bg-amber-500/90' :
+                            'bg-green-500/90'
+                          }`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            {teller.presenceLabel?.[language] || teller.presenceStatus}
                           </span>
                         )}
                         {teller.isVerified && (
@@ -441,6 +487,14 @@ export default function LiveTellersPage() {
                         <span className="text-deep-purple-400 text-sm">
                           {teller.totalSessions} {'seans'}
                         </span>
+                        {(teller.favoriteCount ?? 0) > 0 && (
+                          <>
+                            <span className="text-deep-purple-500">|</span>
+                            <span className="text-pink-400 text-sm flex items-center gap-0.5">
+                              <Heart className="w-3 h-3 fill-pink-400" />{teller.favoriteCount}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -465,9 +519,21 @@ export default function LiveTellersPage() {
 
                 {/* Footer */}
                 <div className="px-6 py-4 bg-deep-purple-950/50 border-t border-purple-500/20 flex items-center justify-between">
-                  <div>
-                    <span className="text-gold-400 font-bold text-lg">{teller.pricePerSession}</span>
-                    <span className="text-deep-purple-400 text-sm"> {'jeton'}</span>
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <span className="text-gold-400 font-bold text-lg">{teller.pricePerSession}</span>
+                      <span className="text-deep-purple-400 text-sm"> {'jeton'}</span>
+                    </div>
+                    {session?.user && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); toggleFavorite(teller.id) }}
+                        disabled={togglingFav === teller.id}
+                        className="p-1.5 rounded-full hover:bg-purple-800/50 transition-colors disabled:opacity-50"
+                        title={favoritedIds.has(teller.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                      >
+                        <Heart className={`w-5 h-5 transition-colors ${favoritedIds.has(teller.id) ? 'text-pink-500 fill-pink-500' : 'text-purple-400 hover:text-pink-400'}`} />
+                      </button>
+                    )}
                   </div>
                   <Link
                     href={session?.user ? `/canli-falcilar/${teller.id}` : `/giris`}

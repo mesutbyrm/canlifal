@@ -34,7 +34,7 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       specialties: true, rating: true, totalSessions: true, totalReviews: true,
       pricePerSession: true, isOnline: true, isVerified: true, isActive: true,
       isBanned: true, applicationStatus: true, approvedAt: true, createdAt: true,
-      user: { select: { name: true, image: true, lastActiveAt: true } },
+      user: { select: { name: true, image: true, lastActiveAt: true, membership: true, membershipExpiresAt: true } },
       sessions: {
         where: { status: { in: ['active', 'pending'] } },
         select: { id: true, status: true, userId: true },
@@ -54,6 +54,13 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       })
     : [];
   const streamingUserIds = new Set(activeStreams.map((s: { userId: string }) => s.userId));
+
+  // Batch favorite counts
+  const tellerIds = tellers.map((t: { id: string }) => t.id);
+  const favCounts = tellerIds.length > 0
+    ? await prisma.favoriteTeller.groupBy({ by: ['tellerId'], where: { tellerId: { in: tellerIds } }, _count: true })
+    : [];
+  const favCountMap = new Map(favCounts.map((f: any) => [f.tellerId, f._count]));
 
   return tellers.map((teller: typeof tellers[number]) => {
     const isStreaming = streamingUserIds.has(teller.userId);
@@ -80,6 +87,7 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       (teller.isOnline ? 10 : 0) +
       (isStreaming ? 8 : 0) +
       (teller.rating >= 4.5 ? 5 : 0);
+    const isGold = user?.membership === 'gold' && (!user?.membershipExpiresAt || new Date(user.membershipExpiresAt) > new Date());
     return {
       ...tellerData,
       isStreaming,
@@ -90,6 +98,8 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       pendingUserIds: pendingSessions.map((s: { userId: string }) => s.userId),
       isNewTeller,
       trendingScore,
+      favoriteCount: favCountMap.get(teller.id) || 0,
+      isGoldUser: isGold,
     };
   });
 }

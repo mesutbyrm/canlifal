@@ -16,7 +16,7 @@ export async function GET(
       where: { id: params.tellerId },
       include: {
         user: {
-          select: { name: true, image: true }
+          select: { name: true, image: true, membership: true, membershipExpiresAt: true }
         },
         reviews: {
           take: 10,
@@ -36,7 +36,24 @@ export async function GET(
       return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
     }
 
-    return NextResponse.json(teller);
+    // Favorite count
+    const favoriteCount = await prisma.favoriteTeller.count({ where: { tellerId: params.tellerId } });
+
+    // Is favorited by current user?
+    let isFavorited = false;
+    const authUser = await authenticateRequest(request).catch(() => null);
+    const webSession = !authUser ? await getServerSession(authOptions) : null;
+    const currentUserId = authUser?.id || webSession?.user?.id;
+    if (currentUserId) {
+      const fav = await prisma.favoriteTeller.findUnique({
+        where: { userId_tellerId: { userId: currentUserId, tellerId: params.tellerId } }
+      });
+      isFavorited = !!fav;
+    }
+
+    const isGoldUser = teller.user?.membership === 'gold' && (!teller.user?.membershipExpiresAt || new Date(teller.user.membershipExpiresAt) > new Date());
+
+    return NextResponse.json({ ...teller, favoriteCount, isFavorited, isGoldUser });
   } catch (error) {
     console.error('Fortune teller error:', error);
     return NextResponse.json({ error: 'Veriler alınamadı' }, { status: 500 });
