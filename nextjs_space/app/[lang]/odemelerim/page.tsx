@@ -97,6 +97,10 @@ export default function PaymentHistoryPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/payments/notify?limit=50&status=${filter}`)
+      if (res.status === 401) {
+        router.push('/giris')
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setRows(Array.isArray(data) ? data : [])
@@ -106,15 +110,11 @@ export default function PaymentHistoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [filter, router])
 
   useEffect(() => {
-    if (authStatus === 'unauthenticated') {
-      router.push('/giris')
-      return
-    }
-    if (authStatus === 'authenticated') load()
-  }, [authStatus, load, router])
+    load()
+  }, [load])
 
   const statusStyle = (color: string) => {
     switch (color) {
@@ -177,7 +177,7 @@ export default function PaymentHistoryPage() {
     }
   }
 
-  if (authStatus === 'loading') {
+  if (authStatus === 'loading' && loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className={`w-8 h-8 animate-spin ${accentColor}`} />
