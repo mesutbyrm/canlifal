@@ -31,10 +31,6 @@ interface FortuneTeller {
   isGoldUser?: boolean
   presenceStatus?: string
   presenceLabel?: { tr: string; en: string }
-  user: {
-    name: string
-    image: string | null
-  }
 }
 
 interface TellerStatus {
@@ -296,8 +292,8 @@ export default function LiveTellersPage() {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="relative">
                       <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center overflow-hidden ring-2 ring-green-400">
-                        {teller.avatar || teller.user.image ? (
-                          <img loading="lazy" src={teller.avatar || teller.user.image || ''} alt={teller.displayName} className="w-full h-full object-cover" />
+                        {teller.avatar ? (
+                          <img loading="lazy" src={teller.avatar} alt={teller.displayName} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-xl font-bold text-white">{teller.displayName.charAt(0)}</span>
                         )}
@@ -424,9 +420,9 @@ export default function LiveTellersPage() {
                     {/* Avatar */}
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-gold-500 flex items-center justify-center">
-                        {teller.avatar || teller.user.image ? (
+                        {teller.avatar ? (
                           <img
-                            src={teller.avatar || teller.user.image || ''}
+                            src={teller.avatar}
                             alt={teller.displayName}
                             className="w-full h-full rounded-full object-cover"
                           />
