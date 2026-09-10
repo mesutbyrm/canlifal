@@ -536,6 +536,12 @@ export default function CreditsPage() {
           <p className={`text-center text-xs mt-2 ${textSecondary}`}>
             Ödemenizi yaptıktan sonra buradan bildirim gönderin
           </p>
+          <button
+            onClick={() => router.push(session?.user ? '/odemelerim' : '/giris')}
+            className={`mt-3 w-full py-2.5 px-4 rounded-xl text-sm font-semibold underline-offset-2 hover:underline ${accentColor}`}
+          >
+            Ödeme geçmişim ve itirazlarım
+          </button>
         </motion.div>
       </div>
 
@@ -1049,6 +1055,7 @@ export default function CreditsPage() {
         isFacebook={isFacebook}
         isCosmic={isCosmic}
         contextLabel="Jeton yükleme ödemesi bildirin"
+        productType="jeton"
       />
     </div>
   )

@@ -23,6 +23,12 @@ interface PaymentNotifyFormProps {
   isCosmic: boolean
   // Optional: pre-filled amount context
   contextLabel?: string
+  /** Hangi ürün için ödeme bildiriliyor (spec §80-81) */
+  productType?: 'jeton' | 'cfc' | 'gold'
+  /** Gold için varsayılan gün sayısı */
+  defaultGoldDays?: number
+  /** Gold paket adı (ör. "1 Aylık Gold") */
+  defaultGoldType?: string
 }
 
 export default function PaymentNotifyForm({
@@ -38,6 +44,9 @@ export default function PaymentNotifyForm({
   isFacebook,
   isCosmic,
   contextLabel,
+  productType = 'jeton',
+  defaultGoldDays,
+  defaultGoldType,
 }: PaymentNotifyFormProps) {
   const { data: session } = useSession() || {}
 
@@ -46,6 +55,8 @@ export default function PaymentNotifyForm({
   const [transactionId, setTransactionId] = useState('')
   const [senderName, setSenderName] = useState('')
   const [notes, setNotes] = useState('')
+  const [requestedAmount, setRequestedAmount] = useState('')
+  const [goldDays, setGoldDays] = useState(defaultGoldDays ? String(defaultGoldDays) : '')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -63,9 +74,14 @@ export default function PaymentNotifyForm({
     setTransactionId('')
     setSenderName('')
     setNotes('')
+    setRequestedAmount('')
+    setGoldDays(defaultGoldDays ? String(defaultGoldDays) : '')
     setError('')
     setSuccess(false)
   }
+
+  const isGold = productType === 'gold'
+  const productLabel = productType === 'cfc' ? 'CFC' : productType === 'gold' ? 'Gold Üyelik' : 'Jeton'
 
   const handleClose = () => {
     resetForm()
@@ -95,6 +111,10 @@ export default function PaymentNotifyForm({
           transactionId: transactionId || undefined,
           senderName: senderName || undefined,
           notes: notes || undefined,
+          productType,
+          requestedAmount: !isGold && requestedAmount ? parseInt(requestedAmount, 10) : undefined,
+          requestedGoldDays: isGold && goldDays ? parseInt(goldDays, 10) : undefined,
+          requestedGoldType: isGold ? defaultGoldType || undefined : undefined,
         }),
       })
 
@@ -156,7 +176,7 @@ export default function PaymentNotifyForm({
                       Ödeme Bildir
                     </h2>
                     <p className={`text-xs sm:text-sm ${textSecondary}`}>
-                      {contextLabel || 'Ödemenizi bildirin, hızlıca onaylayalım'}
+                      {contextLabel || `${productLabel} ödemenizi bildirin, hızlıca onaylayalım`}
                     </p>
                   </div>
                 </div>
@@ -181,9 +201,15 @@ export default function PaymentNotifyForm({
                     <Check className="w-8 h-8 text-green-400" />
                   </div>
                   <h3 className={`${textPrimary} text-lg font-bold mb-2`}>Bildirim Gönderildi!</h3>
-                  <p className={`${textSecondary} text-sm`}>
+                  <p className={`${textSecondary} text-sm mb-4`}>
                     Ödemeniz en kısa sürede kontrol edilip onaylanacaktır.
                   </p>
+                  <a
+                    href="/odemelerim"
+                    className={`inline-block text-sm font-semibold underline ${accentColor}`}
+                  >
+                    Ödeme geçmişimi görüntüle
+                  </a>
                 </motion.div>
               ) : (
                 <div className="space-y-4">
@@ -229,6 +255,40 @@ export default function PaymentNotifyForm({
                       className={`w-full px-4 py-3 rounded-xl text-lg font-bold focus:outline-none transition-all ${inputClass}`}
                     />
                   </div>
+
+                  {/* Talep edilen ürün miktarı (spec §80-81) */}
+                  {isGold ? (
+                    <div>
+                      <label className={`${textSecondary} text-sm font-medium mb-2 block`}>
+                        Kaç Günlük Gold? <span className="opacity-50">(opsiyonel)</span>
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={3650}
+                        placeholder="Örn. 30"
+                        value={goldDays}
+                        onChange={(e) => setGoldDays(e.target.value)}
+                        className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all ${inputClass}`}
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className={`${textSecondary} text-sm font-medium mb-2 block`}>
+                        Talep Edilen {productLabel} <span className="opacity-50">(opsiyonel)</span>
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        placeholder={`Yüklenmesini istediğiniz ${productLabel} miktarı`}
+                        value={requestedAmount}
+                        onChange={(e) => setRequestedAmount(e.target.value)}
+                        className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all ${inputClass}`}
+                      />
+                    </div>
+                  )}
 
                   {/* Transaction ID */}
                   <div>

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useCriticalConfirm } from '@/components/admin/critical-confirm-dialog'
 import { 
   Loader2, Search, Check, X, Clock, Coins, CreditCard, 
   User, ChevronDown, AlertCircle, Plus, TrendingUp,
@@ -21,6 +22,7 @@ interface PaymentNotification {
   senderName: string | null
   notes: string | null
   status: string
+  productType?: string | null
   jetonLoaded: number | null
   processedBy: string | null
   processedAt: string | null
@@ -47,7 +49,8 @@ export default function AdminCreditsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { language } = useLanguage()
-  
+  const { postJson, confirmDialog } = useCriticalConfirm()
+
   const [loading, setLoading] = useState(true)
   const [notifications, setNotifications] = useState<PaymentNotification[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -78,11 +81,28 @@ export default function AdminCreditsPage() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`/api/admin/payments?status=${statusFilter}`)
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(data.notifications)
-        setStats(data.stats)
+      const params = new URLSearchParams({ limit: '50' })
+      if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter)
+
+      const [listRes, statsRes] = await Promise.all([
+        fetch(`/api/admin/payments?${params.toString()}`),
+        fetch('/api/admin/payments?view=stats'),
+      ])
+
+      if (listRes.ok) {
+        const data = await listRes.json()
+        setNotifications(data.notifications || [])
+      }
+
+      if (statsRes.ok) {
+        const s = await statsRes.json()
+        setStats({
+          pending: s?.counts?.pending || 0,
+          approved: s?.counts?.approved || 0,
+          rejected: s?.counts?.rejected || 0,
+          totalJetonLoaded: s?.totals?.jetonLoaded || 0,
+          totalAmountReceived: s?.totals?.amountTRY || 0,
+        })
       }
     } catch (err) {
       console.error('Fetch error:', err)
@@ -121,23 +141,19 @@ export default function AdminCreditsPage() {
 
     setProcessing(true)
     try {
-      const res = await fetch('/api/admin/payments', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          notificationId: processModal.id,
-          action,
-          jetonAmount: action === 'approve' ? parseInt(jetonAmount) : undefined
-        })
+      const res = await postJson('/api/admin/payments', {
+        action,
+        notificationId: processModal.id,
+        ...(action === 'approve' ? { loadAmount: parseInt(jetonAmount) } : {}),
       })
 
       if (res.ok) {
         setProcessModal(null)
         setJetonAmount('')
         fetchNotifications()
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Bir hata oluştu')
+      } else if (res.status !== 499) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error?.message || data.error || 'Bir hata oluştu')
       }
     } catch (err) {
       console.error('Process error:', err)
@@ -153,20 +169,16 @@ export default function AdminCreditsPage() {
     
     setProcessing(true)
     try {
-      const res = await fetch('/api/admin/payments', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          notificationId: notif.id,
-          action: 'reject'
-        })
+      const res = await postJson('/api/admin/payments', {
+        action: 'reject',
+        notificationId: notif.id,
       })
 
       if (res.ok) {
         fetchNotifications()
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Bir hata oluştu')
+      } else if (res.status !== 499) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error?.message || data.error || 'Bir hata oluştu')
       }
     } catch (err) {
       console.error('Reject error:', err)
@@ -184,28 +196,26 @@ export default function AdminCreditsPage() {
 
     setManualLoading(true)
     try {
-      const res = await fetch('/api/admin/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: selectedUser.id,
-          jetonAmount: parseInt(manualJetonAmount),
-          reason: manualReason
-        })
+      const res = await postJson('/api/admin/payments', {
+        action: 'manual_load',
+        userId: selectedUser.id,
+        productType: 'jeton',
+        amount: parseInt(manualJetonAmount),
+        reason: manualReason,
       })
 
       if (res.ok) {
-        const data = await res.json()
-        alert(data.message)
+        const data = await res.json().catch(() => ({}))
+        alert(data.message || 'Yükleme tamamlandı')
         setShowManualLoad(false)
         setSelectedUser(null)
         setManualJetonAmount('')
         setManualReason('')
         setUserSearch('')
         fetchNotifications()
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Bir hata oluştu')
+      } else if (res.status !== 499) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error?.message || data.error || 'Bir hata oluştu')
       }
     } catch (err) {
       console.error('Manual load error:', err)
@@ -385,6 +395,12 @@ export default function AdminCreditsPage() {
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
+                      <div>
+                        <p className="text-purple-400 mb-1">Ürün</p>
+                        <p className="text-white font-medium">
+                          {notif.productType === 'cfc' ? 'CFC' : notif.productType === 'gold' ? 'Gold Üyelik' : 'Jeton'}
+                        </p>
+                      </div>
                       <div>
                         <p className="text-purple-400 mb-1">Ödeme Yöntemi</p>
                         <p className="text-white font-medium">{getPaymentMethodLabel(notif.paymentMethod)}</p>
@@ -653,6 +669,9 @@ export default function AdminCreditsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Kritik işlem onay diyaloğu (spec §88) */}
+      {confirmDialog}
     </div>
   )
 }

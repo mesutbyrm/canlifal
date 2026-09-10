@@ -552,6 +552,9 @@ export default function MembershipsPage() {
           isFacebook={isFacebook}
           isCosmic={isCosmic}
           contextLabel="Üyelik ödemesi bildirin"
+          productType="gold"
+          defaultGoldDays={selectedPlan?.durationDays}
+          defaultGoldType={selectedPlan?.name}
         />
       </div>
     </div>

@@ -18,6 +18,7 @@ const DeviceGuard = dynamic(() => import('@/components/device-guard'), { ssr: fa
 const OneSignalInitializer = dynamic(() => import('@/components/onesignal-initializer'), { ssr: false })
 const DailyLoginReward = dynamic(() => import('@/components/daily-login-reward'), { ssr: false })
 const TellerIncomingRequest = dynamic(() => import('@/components/teller-incoming-request'), { ssr: false })
+const OnlineEntranceCards = dynamic(() => import('@/components/online-entrance-cards'), { ssr: false })
 
 export default function LangLayout({
   children,
@@ -38,6 +39,7 @@ export default function LangLayout({
           {children}
         </ThemeAwareMainPadding>
         <ThemeAwareMobileFooter />
+        <OnlineEntranceCards />
         <CoBroadcastInviteModal />
         <TellerIncomingRequest />
         <DeviceGuard />
