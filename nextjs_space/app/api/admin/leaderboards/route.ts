@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { recordAudit } from '@/lib/audit-log'
+import { requireConfirmation } from '@/lib/critical-confirm'
 import { invalidateCache } from '@/lib/cache'
 import {
   ensureDefaultConfigs,
@@ -146,6 +147,10 @@ export async function POST(request: NextRequest) {
   if (action === 'distribute_rewards') {
     const { periodId } = body
     if (!periodId) return NextResponse.json({ error: 'periodId gerekli' }, { status: 400 })
+
+    // Kritik işlem onayı (spec §88)
+    const guard = requireConfirmation('distribute_rewards', body.confirm)
+    if (guard) return guard
 
     const result = await distributeRewards(periodId)
     recordAudit({ actorId: adminId, action: 'leaderboard.distribute_rewards', targetType: 'leaderboard_period', targetId: periodId, after: result }).catch(() => {})

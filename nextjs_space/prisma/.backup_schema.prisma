@@ -4436,6 +4436,8 @@ model SupportTicket {
   priority      String   @default("normal") // low | normal | high | urgent
   assignedTo    String? // admin userId handling the ticket
   lastMessageAt DateTime @default(now())
+  relatedType   String? // PaymentNotification | CfcPaymentRequest | Withdrawal ...
+  relatedId     String? // id of the related record (e.g. payment notification id)
   metadata      Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -4447,6 +4449,7 @@ model SupportTicket {
   @@index([assignedTo])
   @@index([category])
   @@index([lastMessageAt])
+  @@index([relatedType, relatedId])
   @@map("support_tickets")
 }
 

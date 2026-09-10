@@ -11,6 +11,7 @@ import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { recordLedger } from '@/lib/ledger'
 import { invalidateCache } from '@/lib/cache'
 import { createNotificationWithPush } from '@/lib/notify'
+import { requireConfirmation } from '@/lib/critical-confirm'
 
 export const dynamic = 'force-dynamic'
 
@@ -169,6 +170,20 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       { success: false, error: { code: 'FORBIDDEN', message: 'Üst düzey yöneticiyi yönetemezsiniz' } },
       { status: 403 }
     )
+  }
+
+  // ── KRİTİK İŞLEM ONAYI (spec §88) ─────────────────────────
+  // Frontend onay göstermese bile backend `confirm: true` olmadan uygulamaz.
+  {
+    const targetName = target.username || target.name || target.id
+    const confirmGuard = requireConfirmation(action, data.confirm, {
+      targetName,
+      amount: data.amount != null ? Number(data.amount) : 0,
+      days: data.days,
+      bannedUntil: data.bannedUntil || data.until,
+      role: data.role,
+    })
+    if (confirmGuard) return confirmGuard
   }
 
   // ── JETON ADJUST ──────────────────────────────────────────

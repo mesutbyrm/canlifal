@@ -32,12 +32,35 @@ export async function GET(req: NextRequest) {
         select: {
           id: true, userId: true, subject: true, category: true, status: true,
           priority: true, assignedTo: true, lastMessageAt: true, createdAt: true,
+          relatedType: true, relatedId: true,
           _count: { select: { messages: true } },
         },
       }),
     ])
 
-    return apiPaginated(tickets, {
+    // Spec §84 — ödeme itirazlarında ilgili ödeme bildirimini de göster
+    const paymentIds = tickets
+      .filter((t) => t.relatedType === 'PaymentNotification' && t.relatedId)
+      .map((t) => t.relatedId as string)
+    const payments = paymentIds.length
+      ? await prisma.paymentNotification.findMany({
+          where: { id: { in: paymentIds } },
+          select: {
+            id: true, amount: true, productType: true, status: true,
+            paymentMethod: true, adminNote: true, createdAt: true,
+          },
+        })
+      : []
+    const paymentById = new Map(payments.map((p) => [p.id, p]))
+    const enriched = tickets.map((t) => ({
+      ...t,
+      relatedPayment:
+        t.relatedType === 'PaymentNotification' && t.relatedId
+          ? paymentById.get(t.relatedId) || null
+          : null,
+    }))
+
+    return apiPaginated(enriched, {
       page, limit: pageSize, total, hasMore: page * pageSize < total,
     })
   } catch (err) {

@@ -4,6 +4,7 @@ import { resolveUser } from '@/lib/rbac'
 import { isAdminRole } from '@/lib/admin-utils'
 import { hasPermission } from '@/lib/permissions'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
+import { requireConfirmation } from '@/lib/critical-confirm'
 import { recordLedger } from '@/lib/ledger'
 import { createNotificationWithPush } from '@/lib/notify'
 import { awardTopupCommissions } from '@/lib/referral-commission'
@@ -128,6 +129,23 @@ export async function POST(req: NextRequest) {
     const { action } = body
     if (!action) return err('action gerekli')
     const ip = getAuditIp(req)
+
+    // Kritik işlem onayı (spec §88) — backend zorunluluğu
+    const CONFIRM_MAP: Record<string, string> = {
+      approve: 'payment_approve',
+      correct: 'payment_correct',
+      refund: 'payment_refund',
+      manual_load: 'payment_approve',
+    }
+    if (CONFIRM_MAP[action]) {
+      const guard = requireConfirmation(CONFIRM_MAP[action], body.confirm, {
+        summary:
+          body.loadAmount || body.correctedAmount
+            ? `${body.loadAmount || body.correctedAmount}`
+            : undefined,
+      })
+      if (guard) return guard
+    }
 
     switch (action) {
       /* ============================================================ */

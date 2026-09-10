@@ -9,6 +9,7 @@ import {
   type TournamentStatus,
 } from '@/lib/tournament-state'
 import { recordAudit } from '@/lib/audit-log'
+import { requireConfirmation } from '@/lib/critical-confirm'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,6 +85,12 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const action = body.action || 'create'
+
+  // Kritik işlem onayı (spec §88)
+  if (action === 'reward') {
+    const guard = requireConfirmation('tournament_reward', body.confirm)
+    if (guard) return guard
+  }
 
   try {
     switch (action) {
