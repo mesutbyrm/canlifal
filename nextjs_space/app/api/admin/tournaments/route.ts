@@ -294,6 +294,12 @@ export async function POST(req: NextRequest) {
             })
           })
 
+          // §90: recordLedger for financial trail
+          const { recordLedger } = await import('@/lib/ledger')
+          const acctType = currency === 'jeton' ? 'user_jeton' : 'user_cfc'
+          const platAcct = currency === 'jeton' ? 'platform_jeton' : 'platform_cfc'
+          recordLedger({ debit: { accountType: platAcct as any, accountId: 'PLATFORM' }, credit: { accountType: acctType as any, accountId: entry.userId }, amount: rewardDef.prize, category: 'tournament_reward', currency: currency as 'jeton' | 'cfc', description: `Turnuva ödülü: ${t.title} (#${entry.rank})`, referenceType: 'tournament', referenceId: body.id }).catch(() => {})
+
           distributed.push({
             userId: entry.userId,
             rank: entry.rank,

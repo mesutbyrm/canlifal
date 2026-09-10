@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitChatEvent } from '@/lib/chat-events'
+import { resolveUser } from '@/lib/rbac'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/live/pk/score
- * Update PK battle score. Usually called automatically by gift API,
- * but can also be called directly.
+ * Update PK battle score. Called internally by gift API (applyGiftPkScore).
+ * Direct access restricted to admin/superadmin only (§90 güvenlik düzeltmesi).
  *
  * Body: { battleId?, roomId?, amount, side?: 'room1' | 'room2' }
  */
@@ -19,6 +20,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: { code: 'UNAUTHORIZED', message: 'Oturum açmanız gerekiyor' } },
         { status: 401 }
+      )
+    }
+
+    // §90 Fix: Only admin/superadmin can call this directly
+    const resolved = await resolveUser(request)
+    if (!resolved || !['admin', 'superadmin'].includes(resolved.role)) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'Bu işlem için admin yetkisi gerekiyor' } },
+        { status: 403 }
       )
     }
 

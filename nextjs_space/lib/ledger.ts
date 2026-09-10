@@ -49,6 +49,8 @@ export type LedgerCategory =
   | 'referral'
   | 'lucky_gift'
   | 'pk_reward'
+  | 'tournament_reward'
+  | 'leaderboard_reward'
 
 export type Currency = 'jeton' | 'cfc' | 'tl'
 

@@ -24,6 +24,12 @@ export async function POST(
     const userId = mobileUser?.id || session?.user?.id
     if (!userId) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
+    // §90 Fix: Only admin/superadmin can call PK score directly
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Bu işlem için admin yetkisi gerekiyor' }, { status: 403 })
+    }
+
     const { roomId } = params
     const body = await req.json()
     const { battleId, amount, side } = body

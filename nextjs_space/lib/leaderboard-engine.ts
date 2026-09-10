@@ -9,6 +9,7 @@
  */
 
 import prisma from '@/lib/db'
+import { recordLedger } from '@/lib/ledger'
 import { getCached, invalidateCache } from '@/lib/cache'
 
 // ─── Tipler ──────────────────────────────────────────────
@@ -318,6 +319,7 @@ async function applyReward(periodId: string, userId: string, rc: RewardConfigEnt
         },
       })
     })
+    recordLedger({ debit: { accountType: 'platform_cfc' as any, accountId: 'PLATFORM' }, credit: { accountType: 'user_cfc' as any, accountId: userId }, amount: rewardAmount, category: 'leaderboard_reward', currency: 'cfc', description: `Leaderboard ödülü: ${rc.label || `${rc.rank}. sıra`}`, referenceType: 'leaderboard_period', referenceId: periodId }).catch(() => {})
   } else if (rc.rewardType === 'jeton' && rewardAmount > 0) {
     // Jeton ödülü
     await prisma.$transaction(async (tx) => {
@@ -344,6 +346,7 @@ async function applyReward(periodId: string, userId: string, rc: RewardConfigEnt
         },
       })
     })
+    recordLedger({ debit: { accountType: 'platform_jeton' as any, accountId: 'PLATFORM' }, credit: { accountType: 'user_jeton' as any, accountId: userId }, amount: rewardAmount, category: 'leaderboard_reward', currency: 'jeton', description: `Leaderboard jeton ödülü: ${rc.label || `${rc.rank}. sıra`}`, referenceType: 'leaderboard_period', referenceId: periodId }).catch(() => {})
   } else if (rc.rewardType === 'gold' && rewardAmount > 0) {
     // Gold üyelik ödülü (gün bazında uzatma) — membership alanını 'gold' yap
     await prisma.$transaction(async (tx) => {
