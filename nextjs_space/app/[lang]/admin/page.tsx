@@ -11,7 +11,7 @@ import {
   CreditCard, Radio, Palette, LayoutDashboard, ChevronRight, Menu,
   DollarSign, BarChart3, Globe, Gift, Zap, Bell, Home, Lock, Layers, Coins, MessageSquare, Wallet, Search, Trash2, Gamepad2, BookOpen, MessagesSquare,
   Image as ImageIcon, Smartphone, Tablet, Monitor, Bot, Activity, FileText, Trophy, ShieldAlert, Award, HardDrive, MonitorCheck,
-  Smile, Wand2, Frame
+  Smile, Wand2, Frame, Swords
 } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/loading-spinner'
@@ -168,7 +168,8 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/tiktok-videos`, icon: TrendingUp, trLabel: 'TikTok Videoları', enLabel: 'TikTok Videos', emoji: '🎵', desc: 'TikTok videolarını yönet' },
       { href: `/admin/trendler`, icon: TrendingUp, trLabel: 'Trend Yönetimi', enLabel: 'Trend Management', emoji: '🔥', desc: 'Platform trendlerini yönet' },
       { href: `/admin/games`, icon: Gamepad2, trLabel: 'Oyun Merkezi', enLabel: 'Game Center', emoji: '🎮', desc: 'Oyunları düzenle' },
-      { href: `/admin/contests`, icon: Trophy, trLabel: 'Yarışma Yönetimi', enLabel: 'Contest Management', emoji: '🏆', desc: 'Yarışma oluştur & yönet' },
+      { href: `/admin/contests`, icon: Trophy, trLabel: 'Rüya Yarışmaları', enLabel: 'Dream Contests', emoji: '🏆', desc: 'Rüya yorumu yarışmaları' },
+      { href: `/admin/cfc-arena`, icon: Swords, trLabel: 'CFC ARENA', enLabel: 'CFC Arena', emoji: '⚔️', desc: 'Yarışma & etkinlik sistemi' },
     ],
   },
   {

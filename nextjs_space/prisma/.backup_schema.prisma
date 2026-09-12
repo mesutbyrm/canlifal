@@ -5542,3 +5542,128 @@ model AgencyBonusRule {
 
   @@map("agency_bonus_rules")
 }
+
+// ─── CFC ARENA: Yarışma / Contest Sistemi (BÖLÜM 21/A5) ───
+
+model CfcContest {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  description       String?
+  type              String   // individual, broadcaster, agency, room, team, duel, league, elimination, top100
+  scope             String   @default("general") // general, weekly, daily, monthly, seasonal
+  status            String   @default("draft")   // draft, scheduled, active, paused, frozen, completed, cancelled
+  seasonId          String?
+  season            CfcSeason? @relation(fields: [seasonId], references: [id])
+
+  // Scoring
+  scoringMetrics    String   // JSON: [{metric, weight, label}]  e.g. stream_minutes, gifts_received, viewer_count...
+  commissionRate    Float?   // override platform commission during contest (null = no change)
+  
+  // Rules
+  rules             String?  // JSON: freeform rules text
+  minParticipants   Int      @default(2)
+  maxParticipants   Int?
+  entryRequirements String?  // JSON: {minLevel, minAge, mustBeStreamer, mustBeInAgency, ...}
+  
+  // Dates
+  startsAt          DateTime?
+  endsAt            DateTime?
+  registrationEndsAt DateTime?
+  
+  // Rewards (non-monetary)
+  rewards           String?  // JSON: [{rank, rewardType, rewardValue, label}] rewardType: badge|title|frame|effect|visibility
+  
+  // Admin
+  createdBy         String?
+  isPublic          Boolean  @default(true)
+  isFeatured        Boolean  @default(false)
+  bannerImage       String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  participants      CfcParticipant[]
+  teams             CfcTeam[]
+  scoreLogs         CfcScoreLog[]
+
+  @@index([status])
+  @@index([type, status])
+  @@index([startsAt])
+  @@map("cfc_contests")
+}
+
+model CfcSeason {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contests    CfcContest[]
+
+  @@map("cfc_seasons")
+}
+
+model CfcTeam {
+  id          String   @id @default(cuid())
+  contestId   String
+  contest     CfcContest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  name        String
+  color       String?  // hex
+  badgeEmoji  String?
+  captainId   String?
+  totalScore  Float    @default(0)
+  rank        Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     CfcParticipant[]
+
+  @@index([contestId])
+  @@map("cfc_teams")
+}
+
+model CfcParticipant {
+  id          String   @id @default(cuid())
+  contestId   String
+  contest     CfcContest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  userId      String?
+  agencyId    String?  // for agency contests
+  roomId      String?  // for room contests
+  teamId      String?
+  team        CfcTeam? @relation(fields: [teamId], references: [id])
+  
+  displayName String?
+  score       Float    @default(0)
+  rank        Int?
+  status      String   @default("active") // active, disqualified, withdrawn
+  joinedAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([contestId, userId])
+  @@index([contestId, score])
+  @@index([contestId, rank])
+  @@map("cfc_participants")
+}
+
+model CfcScoreLog {
+  id          String   @id @default(cuid())
+  contestId   String
+  contest     CfcContest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  userId      String?
+  agencyId    String?
+  roomId      String?
+  metric      String   // stream_minutes, gifts_received, viewer_count, activity_points, room_engagement...
+  delta       Float
+  reason      String?
+  calculatedAt DateTime @default(now())
+
+  @@index([contestId, userId])
+  @@index([contestId, calculatedAt])
+  @@map("cfc_score_logs")
+}
