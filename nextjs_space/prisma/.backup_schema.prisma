@@ -188,6 +188,14 @@ model User {
   vipXp                        Int                      @default(0) // VIP sezon puanı (jeton ekonomisinden BAĞIMSIZ)
   customUserId                 String? // Diamond/SVIP özel kullanıcı ID'si (uygulama seviyesinde tekil)
   vipTitle                     String? // Diamond+ ünvan (§19)
+  // ── BÖLÜM 21: kullanıcı yönetim merkezi ──
+  isFrozen                     Boolean                  @default(false) // hesap dondurma (ban'dan ayrı)
+  frozenAt                     DateTime?
+  frozenReason                 String?
+  hiddenFromDiscovery          Boolean                  @default(false) // keşfetten gizle
+  warningCount                 Int                      @default(0)
+  warningsReceived             UserWarning[]            @relation("UserWarningTarget")
+  timelineEvents               UserTimelineEvent[]
   vipPreference                UserVipPreference?
   membershipGrantsReceived     MembershipGrant[]        @relation("MembershipGrantReceiver")
   membershipGrantsGiven        MembershipGrant[]        @relation("MembershipGrantGiver")
@@ -5399,4 +5407,39 @@ model MembershipEvent {
   @@index([isActive, startsAt])
   @@index([endsAt])
   @@map("membership_events")
+}
+
+
+// ─── BÖLÜM 21: kullanıcı uyarıları (§8) ───────────────────
+model UserWarning {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation("UserWarningTarget", fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String
+  adminName String?
+  reason    String    @db.Text
+  severity  String    @default("info") // info | warning | severe
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("user_warnings")
+}
+
+// ─── BÖLÜM 21 §52: kullanıcı zaman çizelgesi ──────────────
+model UserTimelineEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String // signup | vip | agency_join | first_stream | first_room | fortune_teller | contest | admin_action | ...
+  title       String
+  description String?  @db.Text
+  metadata    String?  @db.Text // JSON
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([type])
+  @@map("user_timeline_events")
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useUserAdminModal } from '@/components/admin/user-admin-modal-provider'
 import AdminBackButton from '@/components/admin-back-button'
 
 import { useEffect, useState, useCallback } from 'react'
@@ -112,6 +113,7 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1)
   
   // Selected user modal
+  const { openUserAdmin } = useUserAdminModal()
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null)
   const [loadingUser, setLoadingUser] = useState(false)
   const [showUserModal, setShowUserModal] = useState(false)
@@ -682,6 +684,13 @@ export default function AdminUsersPage() {
                   <Dialog.Title className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-white">Kullanıcı Detayları</h2>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openUserAdmin(selectedUser.id)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-black hover:bg-amber-400"
+                        title="360° Kullanıcı Yönetim Merkezi"
+                      >
+                        360°
+                      </button>
                       {!editMode && (
                         <button 
                           onClick={() => setEditMode(true)}

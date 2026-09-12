@@ -12,6 +12,7 @@ import { recordLedger } from '@/lib/ledger'
 import { invalidateCache } from '@/lib/cache'
 import { createNotificationWithPush } from '@/lib/notify'
 import { requireConfirmation } from '@/lib/critical-confirm'
+import { recordTimelineEventSafe } from '@/lib/user-timeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -632,6 +633,254 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     })
 
     return NextResponse.json({ success: true, message: `Çekim limiti güncellendi: ${limit}` })
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BÖLÜM 21 / A2 — Gelişmiş kullanıcı yönetim işlemleri
+  // ══════════════════════════════════════════════════════════
+
+  // ── HESAP DONDUR ──────────────────────────────────────────
+  if (action === 'freeze') {
+    const denied = await guardPermission(admin, 'moderation.user.freeze')
+    if (denied) return denied
+
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { isFrozen: true, frozenAt: new Date(), frozenReason: data.reason || 'Yönetici tarafından donduruldu' } as any,
+    })
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action: 'freeze',
+      oldValue: { isFrozen: (target as any).isFrozen ?? false },
+      newValue: { isFrozen: true, frozenReason: data.reason },
+      reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: 'user_manage_freeze', targetType: 'user', targetId: target.id, metadata: { reason: data.reason }, ip }).catch(() => {})
+    recordTimelineEventSafe({ userId: target.id, type: 'moderation', title: 'Hesap donduruldu', description: data.reason || null, metadata: { adminId: admin.id } })
+
+    return NextResponse.json({ success: true, message: 'Hesap donduruldu' })
+  }
+
+  // ── HESAP DONDURMAYI KALDIR ───────────────────────────────
+  if (action === 'unfreeze') {
+    const denied = await guardPermission(admin, 'moderation.user.freeze')
+    if (denied) return denied
+
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { isFrozen: false, frozenAt: null, frozenReason: null } as any,
+    })
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action: 'unfreeze',
+      oldValue: { isFrozen: true }, newValue: { isFrozen: false }, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: 'user_manage_unfreeze', targetType: 'user', targetId: target.id, metadata: { reason: data.reason }, ip }).catch(() => {})
+    recordTimelineEventSafe({ userId: target.id, type: 'moderation', title: 'Hesap dondurması kaldırıldı', description: data.reason || null })
+
+    return NextResponse.json({ success: true, message: 'Hesap dondurması kaldırıldı' })
+  }
+
+  // ── UYARI GÖNDER ──────────────────────────────────────────
+  if (action === 'warn') {
+    const denied = await guardPermission(admin, 'moderation.user.mute')
+    if (denied) return denied
+
+    const reason = (data.reason || '').trim()
+    if (!reason) {
+      return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Uyarı sebebi zorunlu' } }, { status: 400 })
+    }
+    const severity = ['info', 'warning', 'severe'].includes(data.severity) ? data.severity : 'warning'
+    const expiresAt = data.expiresInDays ? new Date(Date.now() + parseInt(data.expiresInDays) * 86400000) : null
+
+    const [warning, updated] = await prisma.$transaction([
+      prisma.userWarning.create({
+        data: { userId: target.id, adminId: admin.id, adminName: adminName || null, reason, severity, expiresAt },
+      }),
+      prisma.user.update({ where: { id: target.id }, data: { warningCount: { increment: 1 } } as any }),
+    ])
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action: 'warn',
+      newValue: { warningId: warning.id, severity, warningCount: (updated as any).warningCount }, reason,
+    })
+    recordAudit({ actorId: admin.id, action: 'user_manage_warn', targetType: 'user', targetId: target.id, metadata: { severity, reason }, ip }).catch(() => {})
+    recordTimelineEventSafe({ userId: target.id, type: 'moderation', title: 'Uyarı verildi', description: reason, metadata: { severity } })
+
+    createNotificationWithPush({
+      userId: target.id, type: 'moderation_warning',
+      title: 'Uyarı Aldınız ⚠️', message: reason,
+    }).catch(() => {})
+
+    return NextResponse.json({ success: true, message: 'Uyarı kaydedildi', data: { warningId: warning.id, warningCount: (updated as any).warningCount } })
+  }
+
+  // ── UYARI SİL ─────────────────────────────────────────────
+  if (action === 'warning_clear') {
+    const denied = await guardPermission(admin, 'moderation.user.mute')
+    if (denied) return denied
+
+    const warningId = data.warningId
+    if (!warningId) {
+      return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'warningId gerekli' } }, { status: 400 })
+    }
+    const w = await prisma.userWarning.findUnique({ where: { id: warningId } })
+    if (!w || w.userId !== target.id) {
+      return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Uyarı bulunamadı' } }, { status: 404 })
+    }
+    await prisma.$transaction([
+      prisma.userWarning.delete({ where: { id: warningId } }),
+      prisma.user.update({ where: { id: target.id }, data: { warningCount: { decrement: 1 } } as any }),
+    ])
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action: 'warning_clear',
+      oldValue: { warningId, reason: w.reason }, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: 'user_manage_warning_clear', targetType: 'user', targetId: target.id, metadata: { warningId }, ip }).catch(() => {})
+
+    return NextResponse.json({ success: true, message: 'Uyarı silindi' })
+  }
+
+  // ── KEŞFETTEN GİZLE / GÖSTER ──────────────────────────────
+  if (action === 'discovery_hide' || action === 'discovery_show') {
+    const denied = await guardPermission(admin, 'social.discovery.manage')
+    if (denied) return denied
+
+    const hidden = action === 'discovery_hide'
+    await prisma.user.update({ where: { id: target.id }, data: { hiddenFromDiscovery: hidden } as any })
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action,
+      oldValue: { hiddenFromDiscovery: (target as any).hiddenFromDiscovery ?? false },
+      newValue: { hiddenFromDiscovery: hidden }, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: `user_manage_${action}`, targetType: 'user', targetId: target.id, metadata: { reason: data.reason }, ip }).catch(() => {})
+
+    return NextResponse.json({ success: true, message: hidden ? 'Kullanıcı keşfetten gizlendi' : 'Kullanıcı keşfette tekrar görünür' })
+  }
+
+  // ── FALCI YETKİSİ ─────────────────────────────────────────
+  if (action.startsWith('teller_')) {
+    const denied = await guardPermission(admin, 'moderation.user.fortuneteller')
+    if (denied) return denied
+
+    const teller = await prisma.liveFortuneTeller.findUnique({ where: { userId: target.id } })
+    if (!teller) {
+      return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Kullanıcının falcı kaydı yok' } }, { status: 404 })
+    }
+
+    let patch: any = {}
+    let message = ''
+    switch (action) {
+      case 'teller_approve':
+        patch = { applicationStatus: 'approved', approvedAt: new Date(), rejectedAt: null, isActive: true }
+        message = 'Falcı başvurusu onaylandı'
+        break
+      case 'teller_reject':
+        patch = { applicationStatus: 'rejected', rejectedAt: new Date(), isActive: false, isOnline: false }
+        message = 'Falcı başvurusu reddedildi'
+        break
+      case 'teller_freeze':
+        patch = { isFrozen: true, frozenAt: new Date(), freezeReason: data.reason || 'Yönetici kararı', isOnline: false }
+        message = 'Falcı hesabı donduruldu'
+        break
+      case 'teller_unfreeze':
+        patch = { isFrozen: false, frozenAt: null, freezeReason: null }
+        message = 'Falcı dondurması kaldırıldı'
+        break
+      case 'teller_ban':
+        patch = { isBanned: true, bannedAt: new Date(), banReason: data.reason || 'Yönetici kararı', isOnline: false, isActive: false }
+        message = 'Falcı yasaklandı'
+        break
+      case 'teller_unban':
+        patch = { isBanned: false, bannedAt: null, banReason: null, isActive: true }
+        message = 'Falcı yasağı kaldırıldı'
+        break
+      case 'teller_flags': {
+        const allowed = ['canGoOnline', 'canChat', 'canStartSession', 'canSetPrice', 'canEditProfile', 'canViewEarnings', 'canWithdraw']
+        const flags = data.flags || {}
+        for (const k of allowed) if (typeof flags[k] === 'boolean') patch[k] = flags[k]
+        if (Object.keys(patch).length === 0) {
+          return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Geçerli bayrak gönderilmedi' } }, { status: 400 })
+        }
+        message = 'Falcı yetkileri güncellendi'
+        break
+      }
+      default:
+        return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: `Geçersiz falcı işlemi: ${action}` } }, { status: 400 })
+    }
+
+    await prisma.liveFortuneTeller.update({ where: { userId: target.id }, data: patch })
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action,
+      oldValue: { applicationStatus: teller.applicationStatus, isBanned: teller.isBanned, isFrozen: teller.isFrozen },
+      newValue: patch, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: `user_manage_${action}`, targetType: 'live_fortune_teller', targetId: teller.id, metadata: { patch, reason: data.reason }, ip }).catch(() => {})
+    recordTimelineEventSafe({ userId: target.id, type: 'fortune_teller', title: message, description: data.reason || null })
+
+    return NextResponse.json({ success: true, message })
+  }
+
+  // ── AJANS BAĞLANTISI ──────────────────────────────────────
+  if (action === 'agency_add' || action === 'agency_change') {
+    const denied = await guardPermission(admin, 'moderation.user.agency')
+    if (denied) return denied
+
+    const agencyId = data.agencyId
+    if (!agencyId) {
+      return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'agencyId gerekli' } }, { status: 400 })
+    }
+    const agency = await prisma.agency.findUnique({ where: { id: agencyId }, select: { id: true, name: true, status: true } })
+    if (!agency) {
+      return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Ajans bulunamadı' } }, { status: 404 })
+    }
+
+    const existing = await prisma.agencyUser.findUnique({ where: { userId: target.id } })
+    const role = ['owner', 'manager', 'member'].includes(data.agencyRole) ? data.agencyRole : 'member'
+
+    if (existing) {
+      await prisma.agencyUser.update({
+        where: { userId: target.id },
+        data: { agencyId, role, isActive: true, leftAt: null, joinedVia: 'admin' },
+      })
+    } else {
+      await prisma.agencyUser.create({
+        data: { agencyId, userId: target.id, role, joinedVia: 'admin', isActive: true },
+      })
+    }
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action,
+      oldValue: existing ? { agencyId: existing.agencyId, role: existing.role } : null,
+      newValue: { agencyId, agencyName: agency.name, role }, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: `user_manage_${action}`, targetType: 'agency', targetId: agencyId, metadata: { userId: target.id, role }, ip }).catch(() => {})
+    recordTimelineEventSafe({ userId: target.id, type: 'agency', title: `Ajansa eklendi: ${agency.name}`, metadata: { agencyId, role } })
+
+    return NextResponse.json({ success: true, message: `Kullanıcı ${agency.name} ajansına bağlandı` })
+  }
+
+  if (action === 'agency_remove') {
+    const denied = await guardPermission(admin, 'moderation.user.agency')
+    if (denied) return denied
+
+    const existing = await prisma.agencyUser.findUnique({ where: { userId: target.id } })
+    if (!existing) {
+      return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Kullanıcı bir ajansa bağlı değil' } }, { status: 404 })
+    }
+    await prisma.agencyUser.update({ where: { userId: target.id }, data: { isActive: false, leftAt: new Date() } })
+
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action: 'agency_remove',
+      oldValue: { agencyId: existing.agencyId, role: existing.role }, newValue: { isActive: false }, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: 'user_manage_agency_remove', targetType: 'agency', targetId: existing.agencyId, metadata: { userId: target.id }, ip }).catch(() => {})
+    recordTimelineEventSafe({ userId: target.id, type: 'agency', title: 'Ajans bağlantısı kaldırıldı', description: data.reason || null })
+
+    return NextResponse.json({ success: true, message: 'Kullanıcının ajans bağlantısı kaldırıldı' })
   }
 
   return NextResponse.json(

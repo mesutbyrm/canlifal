@@ -7,6 +7,7 @@ import { LanguageProvider } from '@/lib/language-context'
 import { CurrencyBrandingProvider } from '@/lib/currency-branding-context'
 import SiteThemeWrapper from '@/components/site-theme-wrapper'
 import PWAInstallPrompt from '@/components/pwa-install-prompt'
+import UserAdminModalProvider from '@/components/admin/user-admin-modal-provider'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const cinzel = Cinzel({ subsets: ['latin'], variable: '--font-cinzel' })
@@ -273,7 +274,9 @@ export default function RootLayout({
             <LanguageProvider>
               <CurrencyBrandingProvider>
                 <OneSignalProvider />
-                {children}
+                <UserAdminModalProvider>
+                  {children}
+                </UserAdminModalProvider>
               </CurrencyBrandingProvider>
             </LanguageProvider>
           </SiteThemeWrapper>
