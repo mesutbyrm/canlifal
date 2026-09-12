@@ -1989,10 +1989,22 @@ export default function ChatRoomPage() {
     if (user.chatRole === 'superadmin') return 'effect-glitch'
     if (user.chatRole === 'founder') return 'effect-glitch-flash'
     if (user.chatRole === 'sop' || user.chatRole === 'admin' || user.chatRole === 'op') return 'effect-glitch-flash'
-    if (user.membership === 'diamond') return 'effect-neon-glow'
-    if (user.membership === 'gold') return 'effect-neon-flicker'
-    if (user.membership === 'premium') return 'effect-blink'
-    return ''
+    // BÖLÜM 20B — kademe eşlemesi (svip dahil, eski adlar geriye dönük desteklenir)
+    switch (user.membership) {
+      case 'svip':
+        return 'effect-glitch-flash'
+      case 'diamond':
+      case 'platinum':
+      case 'vip':
+        return 'effect-neon-glow'
+      case 'premium':
+        return 'effect-blink'
+      case 'gold':
+      case 'silver':
+        return 'effect-neon-flicker'
+      default:
+        return ''
+    }
   }
 
   // Check if user is room owner

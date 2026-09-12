@@ -86,6 +86,63 @@ export async function GET(req: NextRequest) {
 
   const totalGrants30 = grants30.length || 1
 
+  // ── §24 Günlük VIP raporu (son 30 gün) ──
+  const dailyMap = new Map<string, { total: number; upgrades: number; gifts: number }>()
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * day)
+    dailyMap.set(d.toISOString().slice(0, 10), { total: 0, upgrades: 0, gifts: 0 })
+  }
+  for (const g of grants30) {
+    const key = new Date(g.createdAt).toISOString().slice(0, 10)
+    const row = dailyMap.get(key)
+    if (!row) continue
+    row.total++
+    if (g.source === 'gift') row.gifts++
+    const prev = rankOf.get((g.previousTier || 'basic').toLowerCase()) ?? 0
+    const next = rankOf.get(g.tierKey) ?? 0
+    if (next > prev) row.upgrades++
+  }
+  const daily = Array.from(dailyMap.entries()).map(([date, v]) => ({ date, ...v }))
+
+  // ── §24 Aylık VIP raporu (son 12 ay) ──
+  const since12m = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+  const grants12m = await prisma.membershipGrant.findMany({
+    where: { createdAt: { gte: since12m } },
+    select: { tierKey: true, previousTier: true, source: true, createdAt: true, receiverId: true },
+    take: 20000,
+  })
+  const monthlyMap = new Map<string, { total: number; upgrades: number; downgrades: number; gifts: number; users: Set<string> }>()
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    monthlyMap.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, { total: 0, upgrades: 0, downgrades: 0, gifts: 0, users: new Set() })
+  }
+  for (const g of grants12m) {
+    const d = new Date(g.createdAt)
+    const row = monthlyMap.get(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    if (!row) continue
+    row.total++
+    row.users.add(g.receiverId)
+    if (g.source === 'gift') row.gifts++
+    const prev = rankOf.get((g.previousTier || 'basic').toLowerCase()) ?? 0
+    const next = rankOf.get(g.tierKey) ?? 0
+    if (next > prev) row.upgrades++
+    else if (next < prev) row.downgrades++
+  }
+  const monthly = Array.from(monthlyMap.entries()).map(([month, v]) => ({
+    month, total: v.total, upgrades: v.upgrades, downgrades: v.downgrades, gifts: v.gifts, uniqueUsers: v.users.size,
+  }))
+
+  // ── §18/§19 VIP sezon puanı özeti ──
+  const [xpAgg, topXp] = await Promise.all([
+    prisma.user.aggregate({ _sum: { vipXp: true }, _count: { _all: true }, where: { vipXp: { gt: 0 } } }),
+    prisma.user.findMany({
+      where: { vipXp: { gt: 0 } },
+      orderBy: { vipXp: 'desc' },
+      take: 10,
+      select: { id: true, name: true, membership: true, vipXp: true },
+    }),
+  ])
+
   return apiSuccess({
     generatedAt: now.toISOString(),
     summary: {
@@ -114,5 +171,12 @@ export async function GET(req: NextRequest) {
       list: exp7.slice(0, 50),
     },
     featureUsage: prefUsage,
+    daily,
+    monthly,
+    vipXp: {
+      totalXp: xpAgg._sum.vipXp ?? 0,
+      usersWithXp: xpAgg._count._all ?? 0,
+      top: topXp,
+    },
   })
 }

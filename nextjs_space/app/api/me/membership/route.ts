@@ -8,6 +8,7 @@ import { apiSuccess, apiUnauthorized, apiInternalError } from '@/lib/api-respons
 import { resolveUserId } from '@/lib/vip-guard'
 import { getUserEntitlements, getTiers } from '@/lib/vip-entitlements'
 import prisma from '@/lib/db'
+import { vipLevelFor } from '@/lib/vip-xp'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
         select: {
           profileFrameId: true, adminAssignedFrameId: true, nameEffect: true,
           entranceEffectId: true, chatBubbleId: true, micFrameId: true,
-          avatarAccessoryIds: true, profileEffect: true, customUserId: true, vipXp: true,
+          avatarAccessoryIds: true, profileEffect: true, customUserId: true, vipXp: true, vipTitle: true,
         },
       }),
     ])
@@ -42,7 +43,10 @@ export async function GET(req: NextRequest) {
       days_remaining: ent.daysRemaining,
       tier: ent.tierInfo,
       vip_xp: cosmetics?.vipXp ?? 0,
+      vip_level: vipLevelFor(cosmetics?.vipXp ?? 0).level,
+      vip_next_level_at: vipLevelFor(cosmetics?.vipXp ?? 0).nextAt,
       custom_user_id: cosmetics?.customUserId ?? null,
+      vip_title: on('vip.title') ? (cosmetics?.vipTitle ?? null) : null,
       features: f,
       badges: {
         show: on('vip.badge') && !ent.preferences.hideVipBadge,

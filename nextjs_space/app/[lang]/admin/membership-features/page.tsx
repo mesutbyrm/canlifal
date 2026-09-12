@@ -668,6 +668,92 @@ export default function AdminMembershipFeaturesPage() {
               </div>
             </div>
 
+            {/* §24 Günlük VIP raporu (30 gün) */}
+            {!!report.daily?.length && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+                <h3 className="font-semibold mb-3">Günlük VIP hareketi (30 gün)</h3>
+                <div className="flex items-end gap-1 h-28">
+                  {report.daily.map((d: any) => {
+                    const max = Math.max(1, ...report.daily.map((x: any) => x.total))
+                    return (
+                      <div key={d.date} className="flex-1 flex flex-col justify-end items-center group relative" title={`${d.date}: ${d.total} işlem, ${d.upgrades} yükseltme, ${d.gifts} hediye`}>
+                        <div className="w-full rounded-t bg-purple-500/70" style={{ height: `${(d.total / max) * 100}%`, minHeight: d.total ? 3 : 1 }} />
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="mt-2 flex justify-between text-[11px] text-gray-500">
+                  <span>{report.daily[0]?.date}</span>
+                  <span>{report.daily[report.daily.length - 1]?.date}</span>
+                </div>
+                <div className="mt-2 text-xs text-gray-400">
+                  Toplam: <b>{report.daily.reduce((s: number, d: any) => s + d.total, 0)}</b> · Yükseltme:{' '}
+                  <b>{report.daily.reduce((s: number, d: any) => s + d.upgrades, 0)}</b> · Hediye:{' '}
+                  <b>{report.daily.reduce((s: number, d: any) => s + d.gifts, 0)}</b>
+                </div>
+              </div>
+            )}
+
+            {/* §24 Aylık VIP raporu (12 ay) */}
+            {!!report.monthly?.length && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4 overflow-x-auto">
+                <h3 className="font-semibold mb-3">Aylık VIP raporu (12 ay)</h3>
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-400 text-xs">
+                      <th className="py-1.5">Ay</th>
+                      <th className="py-1.5 text-right">İşlem</th>
+                      <th className="py-1.5 text-right">Yükseltme</th>
+                      <th className="py-1.5 text-right">Düşürme</th>
+                      <th className="py-1.5 text-right">Hediye</th>
+                      <th className="py-1.5 text-right">Tekil kullanıcı</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.monthly.map((m: any) => (
+                      <tr key={m.month} className="border-t border-gray-800">
+                        <td className="py-1.5">{m.month}</td>
+                        <td className="py-1.5 text-right">{m.total}</td>
+                        <td className="py-1.5 text-right text-emerald-300">{m.upgrades}</td>
+                        <td className="py-1.5 text-right text-red-300">{m.downgrades}</td>
+                        <td className="py-1.5 text-right text-pink-300">{m.gifts}</td>
+                        <td className="py-1.5 text-right text-gray-300">{m.uniqueUsers}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* §18/§19 VIP sezon puanı */}
+            {report.vipXp && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+                <h3 className="font-semibold mb-3">VIP sezon puanı</h3>
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 mb-3">
+                  <div className="rounded-lg bg-gray-800/60 px-3 py-2">
+                    <div className="text-[11px] text-gray-400">Toplam XP</div>
+                    <div className="font-semibold">{Number(report.vipXp.totalXp || 0).toLocaleString('tr-TR')}</div>
+                  </div>
+                  <div className="rounded-lg bg-gray-800/60 px-3 py-2">
+                    <div className="text-[11px] text-gray-400">XP kazanan kullanıcı</div>
+                    <div className="font-semibold">{report.vipXp.usersWithXp || 0}</div>
+                  </div>
+                </div>
+                {!!report.vipXp.top?.length && (
+                  <ol className="space-y-1.5 text-sm">
+                    {report.vipXp.top.map((u: any, i: number) => (
+                      <li key={u.id} className="flex items-center gap-3">
+                        <span className="w-5 text-center text-xs text-gray-400">{i + 1}</span>
+                        <span className="flex-1 truncate">{u.name}</span>
+                        <span className="text-[11px] text-gray-500">{u.membership}</span>
+                        <span className="text-cyan-300 font-semibold">{Number(u.vipXp).toLocaleString('tr-TR')}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            )}
+
             <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
               <h3 className="font-semibold mb-3">VIP özellik kullanımı</h3>
               <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 text-sm">

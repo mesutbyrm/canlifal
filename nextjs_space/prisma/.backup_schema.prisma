@@ -187,6 +187,7 @@ model User {
   // ── BÖLÜM 20: VIP / üyelik yetenek sistemi ──
   vipXp                        Int                      @default(0) // VIP sezon puanı (jeton ekonomisinden BAĞIMSIZ)
   customUserId                 String? // Diamond/SVIP özel kullanıcı ID'si (uygulama seviyesinde tekil)
+  vipTitle                     String? // Diamond+ ünvan (§19)
   vipPreference                UserVipPreference?
   membershipGrantsReceived     MembershipGrant[]        @relation("MembershipGrantReceiver")
   membershipGrantsGiven        MembershipGrant[]        @relation("MembershipGrantGiver")

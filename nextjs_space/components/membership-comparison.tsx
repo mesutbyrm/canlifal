@@ -122,6 +122,13 @@ export default function MembershipComparison({
   const myTier = mine?.membership_level as string | undefined
   const myRank = tiers.find((t) => t.key === myTier)?.rank ?? -1
 
+  // §27 önizleme yardımcıları — seçili kademenin matris hücrelerinden okunur (hardcode yok)
+  const accent = active.gradient || active.color || '#6366f1'
+  const has = (featureKey: string) => {
+    const cell = features.find((f) => f.key === featureKey)?.cells?.[active.key]
+    return !!cell && cell.status !== 'locked' && cell.enabled
+  }
+
   const renderCell = (cell?: Cell) => {
     if (!cell || cell.status === 'locked') {
       return <Lock className="w-4 h-4 mx-auto text-gray-500" aria-label="Kilitli" />
@@ -203,6 +210,97 @@ export default function MembershipComparison({
             </button>
           )}
         </div>
+      </div>
+
+      {/* §27 Görsel önizleme — seçili kademenin ayrıcalıkları canlı örnekle */}
+      <div className={`rounded-2xl border p-5 ${cardBg}`}>
+        <h4 className={`text-sm font-bold uppercase tracking-wide mb-4 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+          Görsel önizleme — {active.name}
+        </h4>
+        <div className="grid gap-5 md:grid-cols-3">
+          {/* Profil / çerçeve / rozet / isim */}
+          <div className="flex flex-col items-center gap-3">
+            <div
+              className={`relative w-24 h-24 rounded-full p-[3px] ${has('vip.animated_frame') ? 'animate-pulse' : ''}`}
+              style={{ background: has('vip.profile_frame') ? accent : isDark ? '#334155' : '#e5e7eb' }}
+            >
+              <div
+                className={`w-full h-full rounded-full flex items-center justify-center text-3xl ${
+                  isDark ? 'bg-slate-900' : 'bg-white'
+                }`}
+              >
+                {active.icon || '👤'}
+              </div>
+              {has('vip.badge') && (
+                <span
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow"
+                  style={{ background: accent }}
+                >
+                  {active.name}
+                </span>
+              )}
+            </div>
+            <span
+              className={`mt-2 text-base font-bold ${has('vip.name_effect') ? 'bg-clip-text text-transparent' : textPrimary} ${
+                has('vip.name_animation') ? 'animate-pulse' : ''
+              }`}
+              style={has('vip.name_effect') || has('vip.name_color') ? { backgroundImage: accent, color: has('vip.name_effect') ? undefined : active.color || undefined } : undefined}
+            >
+              Kullanıcı Adı
+            </span>
+            <span className={`text-[11px] ${textMuted}`}>
+              {has('vip.profile_frame') ? 'Çerçeve + ' : ''}
+              {has('vip.badge') ? 'Rozet + ' : ''}
+              {has('vip.name_effect') ? 'İsim efekti' : 'Standart görünüm'}
+            </span>
+          </div>
+
+          {/* Mesaj balonu */}
+          <div className="flex flex-col justify-center gap-2">
+            <span className={`text-[11px] font-semibold ${textMuted}`}>Sohbet balonu</span>
+            <div
+              className="self-start max-w-full px-4 py-2.5 rounded-2xl rounded-bl-sm text-sm text-white shadow-lg"
+              style={{ background: has('vip.message_bubble') ? accent : isDark ? '#1f2937' : '#4b5563' }}
+            >
+              Merhaba, odaya hoş geldiniz! ✨
+            </div>
+            <span className={`text-[11px] ${textMuted}`}>
+              {has('vip.message_bubble') ? 'Kademeye özel balon' : 'Standart balon'}
+              {has('vip.emoji_pack') ? ' • özel emoji paketi' : ''}
+            </span>
+          </div>
+
+          {/* Giriş efekti / koltuk */}
+          <div className="flex flex-col justify-center gap-2">
+            <span className={`text-[11px] font-semibold ${textMuted}`}>Odaya giriş</span>
+            <div
+              className={`px-4 py-3 rounded-xl text-sm font-semibold text-white shadow-lg ${
+                has('vip.entrance_animation') ? 'animate-pulse' : ''
+              }`}
+              style={{ background: has('vip.entrance_effect') ? accent : isDark ? '#1f2937' : '#4b5563' }}
+            >
+              {active.icon} Kullanıcı Adı odaya katıldı
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                style={{
+                  background: has('vip.seat_effect') ? accent : isDark ? '#1f2937' : '#e5e7eb',
+                  color: has('vip.seat_effect') ? '#fff' : undefined,
+                }}
+              >
+                🎤
+              </span>
+              <span className={`text-[11px] ${textMuted}`}>
+                {has('vip.seat_effect') ? 'Özel koltuk efekti' : 'Standart koltuk'}
+                {has('vip.entrance_sound') ? ' • giriş sesi' : ''}
+              </span>
+            </div>
+          </div>
+        </div>
+        <p className={`mt-4 text-[11px] ${textMuted}`}>
+          Önizleme temsilidir; gerçek görseller yönetim panelindeki kademe ayarlarından gelir.
+        </p>
       </div>
 
       {/* Karşılaştırma tablosu */}

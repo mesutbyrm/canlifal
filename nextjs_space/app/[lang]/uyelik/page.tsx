@@ -13,6 +13,7 @@ import {
 import Link from 'next/link'
 import PaymentNotifyForm from '@/components/payment-notify-form'
 import MembershipComparison from '@/components/membership-comparison'
+import VipStatusPanel from '@/components/vip-status-panel'
 
 interface MembershipPlan {
   id: string
@@ -295,6 +296,12 @@ export default function MembershipsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* BÖLÜM 20B — §18/§19 VIP sezon puanı, sıralama, üyelik geçmişi ve özel kimlik */}
+        <div className="mb-8">
+          <h2 className={`text-lg font-bold mb-3 ${textPrimary}`}>VIP Durumunuz</h2>
+          <VipStatusPanel isDark={!isFacebook} />
+        </div>
 
         {/* BÖLÜM 20 — §27/§28 Kademe karşılaştırma ekranı (admin panelinden yönetilir) */}
         <div className="mb-8">

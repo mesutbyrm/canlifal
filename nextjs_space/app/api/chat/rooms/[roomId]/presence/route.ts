@@ -13,6 +13,7 @@ import { seatStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
 import { endPksForSide } from '@/lib/pk-state'
 import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
+import { awardVipXpSafe } from '@/lib/vip-xp'
 
 /** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
 async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
@@ -510,6 +511,17 @@ export async function POST(
           emitHostChanged(roomId, userId, true, nickname || userName || 'Kullanıcı')
         }
       }
+    }
+
+    // BÖLÜM 20 §18 — Sesli odaya katılım VIP sezon puanı (jeton ekonomisinden BAĞIMSIZ).
+    // Ateşle-unut: hata durumunda oda girişini asla etkilemez.
+    if (isNewJoin) {
+      awardVipXpSafe({
+        userId,
+        source: 'voice_room',
+        refId: `room:${roomId}:${new Date().toISOString().slice(0, 10)}`,
+        note: 'Sesli odaya katılım',
+      })
     }
 
     // Log chat join activity (only on new joins)
