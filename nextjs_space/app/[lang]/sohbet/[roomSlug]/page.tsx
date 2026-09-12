@@ -3097,7 +3097,7 @@ export default function ChatRoomPage() {
                         <div 
                           className={`relative overflow-hidden cursor-pointer transition-all
                             ${isThrone ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-yellow-400/80 shadow-lg shadow-yellow-500/30' : 'w-12 h-12 sm:w-14 sm:h-14 rounded-full'}
-                            ${!isThrone && (isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : isCanlidark ? 'ring-2 ring-purple-500/50' : 'ring-1 ring-white/20')}
+                            ${!isThrone ? (isSpeakingSeat ? 'ring-2 ring-green-400 animate-pulse' : isOwner ? 'ring-2 ring-yellow-400' : badge ? `ring-2 ${badge.border}` : isCanlidark ? 'ring-2 ring-purple-500/50' : 'ring-1 ring-white/20') : ''}
                           `}
                           onClick={() => {
                             if (isMe) {
@@ -3137,7 +3137,7 @@ export default function ChatRoomPage() {
                             </div>
                           )}
                         </div>
-                        <p className={`text-[9px] font-bold truncate text-center drop-shadow-lg ${isThrone ? 'max-w-[64px] text-yellow-300' : 'max-w-[56px]'} ${getNameEffectClass(seatUser)} ${!isThrone && (isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/80')}`}
+                        <p className={`text-[9px] font-bold truncate text-center drop-shadow-lg ${isThrone ? 'max-w-[64px] text-yellow-300' : 'max-w-[56px]'} ${getNameEffectClass(seatUser)} ${!isThrone ? (isOwner ? 'text-yellow-300' : badge ? badge.text : 'text-white/80') : ''}`}
                           {...(getNameEffectClass(seatUser) === 'effect-glitch' ? { 'data-text': getDisplayName(seatUser) } : {})}
                         >
                           {getDisplayName(seatUser)}
