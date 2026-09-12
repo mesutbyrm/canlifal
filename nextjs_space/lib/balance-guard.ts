@@ -12,6 +12,12 @@
  * Hata fırlatma yöntemi: 0 satır güncellendiğinde 'INSUFFICIENT_BALANCE' metni
  * integer'a cast edilir → Postgres 22P02 hatası; mesaj içinde kod görünür.
  *
+ * DİKKAT: cast ifadesi SABİT olmamalıdır. `CAST('INSUFFICIENT_BALANCE' AS int)`
+ * şeklinde yazılırsa Postgres planlayıcısı sabit katlama (constant folding) yapar ve
+ * CASE koşulu ne olursa olsun sorgu HER ZAMAN hata verir. Bu yüzden ifade,
+ * çalışma zamanında hesaplanan bir toplama fonksiyonuna (max("id")) bağlanmıştır:
+ * satır güncellendiyse ELSE dalı hiç değerlendirilmez.
+ *
  * GERİYE DÖNÜK UYUMLU: başarılı yolda davranış birebir aynıdır (aynı alan,
  * aynı miktar, aynı transaction). Yalnızca yetersiz bakiye durumunda, daha önce
  * sessizce negatife düşen işlem artık tamamen iptal edilir.
@@ -25,9 +31,10 @@ function buildSql(field: BalanceField) {
     WHERE "id" = $2 AND "${field}" >= $1::int
     RETURNING "id"
   )
-  SELECT CASE WHEN (SELECT count(*) FROM upd) = 1
+  SELECT CASE WHEN count(*) = 1
               THEN 1
-              ELSE CAST('INSUFFICIENT_BALANCE' AS int) END`
+              ELSE CAST(coalesce(max("id"), 'INSUFFICIENT_BALANCE') AS int) END
+  FROM upd`
 }
 
 /**
