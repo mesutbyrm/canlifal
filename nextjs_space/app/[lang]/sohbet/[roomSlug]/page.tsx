@@ -3448,7 +3448,7 @@ export default function ChatRoomPage() {
 
               {/* Room ID badge */}
               <div className="flex items-center justify-center mt-1.5">
-                <span className="text-[10px] text-white/30 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                <span className="text-[10px] text-white/80 bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-sm">
                   Oda ID: {room.id.slice(-10)}
                 </span>
               </div>
@@ -3722,7 +3722,7 @@ export default function ChatRoomPage() {
           {/* ── Chat Messages — floating over wallpaper/video ── */}
           <div ref={messagesContainerRef} className="relative z-10 flex-1 min-h-0 overflow-y-auto px-3 pb-1" style={{ overscrollBehavior: 'contain' }}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-white/30">
+            <div className="flex flex-col items-center justify-center h-full text-white/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
               <Sparkles className="w-8 h-8 mb-2" />
               <p className="text-xs">{t('chat.no_messages')}</p>
             </div>

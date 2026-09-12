@@ -14,6 +14,7 @@ import Link from 'next/link'
 import PaymentNotifyForm from '@/components/payment-notify-form'
 import MembershipComparison from '@/components/membership-comparison'
 import VipStatusPanel from '@/components/vip-status-panel'
+import VipPrivacySettings from '@/components/vip-privacy-settings'
 
 interface MembershipPlan {
   id: string
@@ -301,6 +302,12 @@ export default function MembershipsPage() {
         <div className="mb-8">
           <h2 className={`text-lg font-bold mb-3 ${textPrimary}`}>VIP Durumunuz</h2>
           <VipStatusPanel isDark={!isFacebook} />
+        </div>
+
+        {/* BÖLÜM 20 — §11 Gizlilik sistemi (yetki kontrolü sunucu tarafında) */}
+        <div className="mb-8">
+          <h2 className={`text-lg font-bold mb-3 ${textPrimary}`}>Gizlilik Ayarları</h2>
+          <VipPrivacySettings isDark={!isFacebook} />
         </div>
 
         {/* BÖLÜM 20 — §27/§28 Kademe karşılaştırma ekranı (admin panelinden yönetilir) */}
