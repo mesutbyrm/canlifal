@@ -51,6 +51,9 @@ export type LedgerCategory =
   | 'pk_reward'
   | 'tournament_reward'
   | 'leaderboard_reward'
+  | 'agency_wallet_topup'
+  | 'agency_wallet_transfer'
+  | 'agency_wallet_adjust'
 
 export type Currency = 'jeton' | 'cfc' | 'tl'
 

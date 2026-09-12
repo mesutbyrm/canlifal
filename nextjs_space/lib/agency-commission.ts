@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { resolveCommissionRule } from '@/lib/agency-wallet'
 
 /**
  * Check if a user is in an active agency and record agency commission.
@@ -36,7 +37,14 @@ export async function processAgencyCommission({
     if (!membership || !membership.isActive) return 0
     if (!membership.agency || membership.agency.status !== 'approved') return 0
 
-    let commissionRate = membership.agency.commissionRate
+    // BÖLÜM 21 / A3 §18 — gelir kaynağı bazlı komisyon kuralı.
+    // Kayıt yoksa katalog varsayılanı geçerlidir; falcı geliri varsayılan KAPALI.
+    const rule = await resolveCommissionRule(membership.agencyId, sourceType)
+    if (!rule.enabled) return 0
+
+    let commissionRate = rule.rate !== null && rule.rate !== undefined
+      ? rule.rate
+      : membership.agency.commissionRate
     // If penalty level 3 (commission_reduced), halve the rate
     if (membership.agency.penaltyLevel >= 3) {
       commissionRate = commissionRate / 2

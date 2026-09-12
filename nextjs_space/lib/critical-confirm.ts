@@ -113,6 +113,28 @@ export function checkCritical(action: string, params: Record<string, any> = {}):
         message: `Turnuva ödüllerini dağıtmak istediğinize emin misiniz? Bu işlem geri alınamaz.`,
       }
 
+    // BÖLÜM 21 / A3 — ajans cüzdanı kritik işlemleri
+    case 'agency_wallet_topup':
+      return {
+        required: true,
+        message: `Ajansa${target} ${fmt(Math.abs(amount))} tutarında bakiye yüklemek istediğinize emin misiniz?`,
+      }
+
+    case 'agency_wallet_adjust':
+      return {
+        required: true,
+        message: `Ajans${target} cüzdanında ${fmt(Math.abs(amount))} jetonluk düzeltme yapmak istediğinize emin misiniz? Bu işlem yeni bir muhasebe kaydı oluşturur.`,
+      }
+
+    case 'agency_wallet_transfer':
+      if (Math.abs(amount) >= CRITICAL_THRESHOLDS.jeton) {
+        return {
+          required: true,
+          message: `${fmt(Math.abs(amount))} jetonu${target} göndermek istediğinize emin misiniz?`,
+        }
+      }
+      return { required: false }
+
     default:
       return { required: false }
   }

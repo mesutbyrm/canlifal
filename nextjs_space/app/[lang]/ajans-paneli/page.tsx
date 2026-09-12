@@ -116,7 +116,7 @@ export default function AgencyPanelPage() {
   const [wdActionLoading, setWdActionLoading] = useState<string | null>(null)
   const [wdNoteMap, setWdNoteMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'invites' | 'earnings' | 'withdrawals'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'invites' | 'earnings' | 'withdrawals' | 'wallet'>('overview')
   const [creating, setCreating] = useState(false)
   const [newCodeMaxUses, setNewCodeMaxUses] = useState(0)
   const [newCodeDays, setNewCodeDays] = useState(7)
@@ -131,6 +131,14 @@ export default function AgencyPanelPage() {
   const [addingMember, setAddingMember] = useState(false)
   const [removingMember, setRemovingMember] = useState<string | null>(null)
   // Leave requests
+  // §13/§15 — Ajans cüzdanı
+  const [wallet, setWallet] = useState<any>(null)
+  const [walletLoading, setWalletLoading] = useState(false)
+  const [trTarget, setTrTarget] = useState('')
+  const [trAmount, setTrAmount] = useState('')
+  const [trReason, setTrReason] = useState('')
+  const [trSending, setTrSending] = useState(false)
+
   const [leaveRequests, setLeaveRequests] = useState<any[]>([])
   const [leaveActionLoading, setLeaveActionLoading] = useState<string | null>(null)
   // User leave request
@@ -189,6 +197,43 @@ export default function AgencyPanelPage() {
     } catch (e) { console.error(e) }
   }
 
+  const fetchWallet = async () => {
+    try {
+      setWalletLoading(true)
+      const res = await fetch('/api/agency/wallet')
+      const d = await res.json()
+      if (res.ok && d.success) setWallet(d.data)
+    } catch (e) { console.error(e) } finally { setWalletLoading(false) }
+  }
+
+  const handleTransfer = async (confirmed = false) => {
+    const amt = Math.floor(Number(trAmount || 0))
+    if (!trTarget || !amt || amt <= 0) { alert('Üye ve geçerli bir miktar seçin'); return }
+    setTrSending(true)
+    try {
+      const res = await fetch('/api/agency/wallet/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: trTarget, amount: amt, reason: trReason, confirm: confirmed }),
+      })
+      const d = await res.json()
+      if (res.status === 409 && d?.requiresConfirmation) {
+        if (confirm(d.confirmationMessage || 'Bu işlemi onaylıyor musunuz?')) {
+          setTrSending(false)
+          return handleTransfer(true)
+        }
+        return
+      }
+      if (res.ok && d.success) {
+        alert(d.message || 'Jeton gönderildi')
+        setTrAmount(''); setTrReason('')
+        fetchWallet()
+      } else {
+        alert(d?.error?.message || 'İşlem başarısız')
+      }
+    } catch { alert('Hata oluştu') } finally { setTrSending(false) }
+  }
+
   const fetchWithdrawals = async () => {
     try {
       const res = await fetch('/api/agency/withdrawals')
@@ -220,6 +265,7 @@ export default function AgencyPanelPage() {
       fetchCodes()
       fetchEarnings()
       fetchWithdrawals()
+      fetchWallet()
     }
   }, [info])
 
@@ -536,8 +582,8 @@ export default function AgencyPanelPage() {
       {/* Tabs */}
       {isManager && (
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
-          {(['overview', 'members', 'invites', 'earnings', 'withdrawals'] as const).map(tab => {
-            const labels: Record<string, string> = { overview: 'Genel', members: 'Üyeler', invites: 'Davet Kodları', earnings: 'Kazançlar', withdrawals: 'Çekim Talepleri' }
+          {(['overview', 'members', 'invites', 'earnings', 'wallet', 'withdrawals'] as const).map(tab => {
+            const labels: Record<string, string> = { overview: 'Genel', members: 'Üyeler', invites: 'Davet Kodları', earnings: 'Kazançlar', wallet: 'Cüzdan', withdrawals: 'Çekim Talepleri' }
             const pendingWd = withdrawals.filter(w => w.status === 'pending').length
             return (
               <button
@@ -1085,6 +1131,112 @@ export default function AgencyPanelPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* §13/§15 — Ajans Cüzdanı */}
+      {activeTab === 'wallet' && isManager && (
+        <div className="space-y-4">
+          {walletLoading && !wallet ? (
+            <div className="flex justify-center py-10"><Loader2 className={`w-6 h-6 animate-spin ${accentColor}`} /></div>
+          ) : !wallet ? (
+            <div className={`${cardBg} rounded-xl p-6 text-center text-sm ${textSecondary}`}>Cüzdan bilgisi alınamadı.</div>
+          ) : (
+            <>
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                  <Wallet className={`w-4 h-4 ${accentColor}`} /> Ajans Bakiyesi
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Mevcut Bakiye', value: `${wallet.wallet?.jetonBalance ?? 0} J`, color: 'text-green-400' },
+                    { label: 'Toplam Yüklenen', value: `${wallet.wallet?.totalTopUp ?? 0} J`, color: accentColor },
+                    { label: 'Toplam Bonus', value: `${wallet.wallet?.totalBonus ?? 0} J`, color: 'text-yellow-400' },
+                    { label: 'Üyelere Gönderilen', value: `${wallet.wallet?.totalTransferred ?? 0} J`, color: 'text-blue-400' },
+                  ].map((x, i) => (
+                    <div key={i} className="rounded-lg bg-black/20 p-3 text-center">
+                      <div className={`text-base font-bold ${x.color}`}>{x.value}</div>
+                      <div className={`text-[10px] ${textSecondary}`}>{x.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className={`mt-3 text-[11px] ${textSecondary} space-y-1`}>
+                  <div>Ajans seviyesi: <span className={textPrimary}>{String(wallet.agency?.level || 'bronze').toUpperCase()}</span> • Yükleme bonusu: <span className={textPrimary}>%{wallet.bonus_rate ?? 0}</span> • Kur: <span className={textPrimary}>1 TL = {wallet.tl_to_jeton_rate ?? 0} jeton</span></div>
+                  {wallet.wallet?.isLocked && (
+                    <div className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Cüzdan kilitli{wallet.wallet?.lockReason ? `: ${wallet.wallet.lockReason}` : ''}</div>
+                  )}
+                  <div className="flex items-start gap-1 text-orange-400">
+                    <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                    Bu bakiye yalnızca üyelere jeton göndermek için kullanılabilir; nakde çevrilemez ve geri iade edilmez.
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                  <Share2 className={`w-4 h-4 ${accentColor}`} /> Üyeye Jeton Gönder
+                </h3>
+                <div className="space-y-2">
+                  <select value={trTarget} onChange={e => setTrTarget(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
+                    <option value="">Üye seçin...</option>
+                    {members.filter(m => m.isActive).map(m => (
+                      <option key={m.id} value={m.user.id}>{m.user.name}{m.user.username ? ` (@${m.user.username})` : ''}</option>
+                    ))}
+                  </select>
+                  <input type="number" min={1} value={trAmount} onChange={e => setTrAmount(e.target.value)} placeholder="Jeton miktarı" className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+                  <input type="text" value={trReason} onChange={e => setTrReason(e.target.value)} placeholder="Açıklama (opsiyonel)" className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+                  {trTarget && Number(trAmount) > 0 && (
+                    <div className="rounded-lg bg-black/20 p-3 text-[11px] space-y-1">
+                      <div className={textSecondary}>Kullanıcı: <span className={textPrimary}>{members.find(m => m.user.id === trTarget)?.user?.name || '-'}</span></div>
+                      <div className={textSecondary}>Ajans bakiyesi: <span className={textPrimary}>{wallet.wallet?.jetonBalance ?? 0} J</span></div>
+                      <div className={textSecondary}>Gönderilecek: <span className={textPrimary}>{Math.floor(Number(trAmount))} J</span></div>
+                      <div className={textSecondary}>Kalan bakiye: <span className={(wallet.wallet?.jetonBalance ?? 0) - Math.floor(Number(trAmount)) < 0 ? 'text-red-400' : textPrimary}>{(wallet.wallet?.jetonBalance ?? 0) - Math.floor(Number(trAmount))} J</span></div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleTransfer(false)}
+                    disabled={trSending || !trTarget || !(Number(trAmount) > 0)}
+                    className={`w-full px-4 py-2 rounded-lg ${btnPrimary} text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-50`}
+                  >
+                    {trSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                    Jeton Gönder
+                  </button>
+                </div>
+              </div>
+
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                  <Clock className={`w-4 h-4 ${accentColor}`} /> Cüzdan Hareketleri
+                </h3>
+                {(wallet.transactions || []).length === 0 ? (
+                  <div className={`text-xs ${textSecondary} text-center py-4`}>Henüz hareket yok.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {(wallet.transactions || []).map((t: any) => {
+                      const labels: Record<string, string> = { topup: 'Bakiye Yükleme', bonus: 'Yükleme Bonusu', transfer: 'Üyeye Gönderim', adjust_credit: 'Düzeltme (Ekleme)', adjust_debit: 'Düzeltme (Düşüm)' }
+                      const plus = t.direction === 'credit'
+                      return (
+                        <div key={t.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-black/20">
+                          <div className="min-w-0">
+                            <div className={`text-xs font-medium ${textPrimary}`}>{labels[t.type] || t.type}</div>
+                            <div className={`text-[10px] ${textSecondary} overflow-hidden text-ellipsis whitespace-nowrap`}>
+                              {new Date(t.createdAt).toLocaleString('tr-TR')}
+                              {t.targetUserName ? ` • ${t.targetUserName}` : ''}
+                              {t.reason ? ` • ${t.reason}` : ''}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className={`text-xs font-bold ${plus ? 'text-green-400' : 'text-red-400'}`}>{plus ? '+' : '-'}{t.amount} J</div>
+                            <div className={`text-[10px] ${textSecondary}`}>Bakiye: {t.balanceAfter}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

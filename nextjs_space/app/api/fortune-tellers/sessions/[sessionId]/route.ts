@@ -7,6 +7,7 @@ import { createNotificationWithPush } from '@/lib/notify';
 import { triggerEventAnnouncement } from '@/lib/event-announcement';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { emitTellerEvent } from '@/lib/room-events';
+import { processAgencyCommission } from '@/lib/agency-commission';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,15 @@ export async function PATCH(
           }
         });
         
+        // BÖLÜM 21 / A3 §18 — falcı geliri ajans komisyonu.
+        // Kural varsayılan olarak KAPALI; admin açmadıkça hiçbir kesinti olmaz.
+        processAgencyCommission({
+          userId: liveSession.teller.userId,
+          earnedAmount: tellerEarnings,
+          sourceType: 'fortune',
+          sourceId: liveSession.id,
+        }).catch(() => {})
+
         // Close chat session
         await prisma.tellerChatSession.updateMany({
           where: { liveSessionId: liveSession.id },

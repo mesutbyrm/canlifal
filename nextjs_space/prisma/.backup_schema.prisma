@@ -2887,6 +2887,8 @@ model Agency {
   penaltyLevel     Int                  @default(0) // 0=clean, 1=warning, 2=invites_disabled, 3=commission_reduced, 4=suspended
   penaltyNote      String?
   invitesDisabled  Boolean              @default(false)
+  // BÖLÜM 21 / A3 — seviye (bonus oranı bu seviyeden okunur)
+  level            String               @default("bronze") // bronze, silver, gold, diamond
   // Metadata
   approvedAt       DateTime?
   rejectedAt       DateTime?
@@ -2901,6 +2903,9 @@ model Agency {
   tasks            AgencyTask[]
   penalties        AgencyPenalty[]
   leaveRequests    AgencyLeaveRequest[]
+  wallet           AgencyWallet?
+  walletTxns       AgencyWalletTransaction[]
+  commissionRules  AgencyCommissionRule[]
 
   @@index([ownerId])
   @@index([status])
@@ -5442,4 +5447,98 @@ model UserTimelineEvent {
   @@index([userId, occurredAt])
   @@index([type])
   @@map("user_timeline_events")
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// BÖLÜM 21 / A3 — AJANS CÜZDANI VE KOMİSYON YAPILANDIRMASI
+// ═══════════════════════════════════════════════════════════
+
+/// Ajans jeton kredisi cüzdanı. Bakiye yalnızca ledger (AgencyWalletTransaction)
+/// üzerinden değişir; nakit olarak çekilemez (§14).
+model AgencyWallet {
+  id               String   @id @default(cuid())
+  agencyId         String   @unique
+  jetonBalance     Float    @default(0)
+  totalTopUp       Float    @default(0) // temel jeton toplamı
+  totalBonus       Float    @default(0) // bonus jeton toplamı
+  totalTransferred Float    @default(0) // üyelere aktarılan
+  totalAdjusted    Float    @default(0) // admin düzeltmeleri (net)
+  isLocked         Boolean  @default(false)
+  lockReason       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  agency           Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@map("agency_wallets")
+}
+
+/// Değiştirilemez ajans muhasebe kaydı (§17). Satırlar asla güncellenmez;
+/// düzeltme her zaman yeni bir satır olarak eklenir.
+model AgencyWalletTransaction {
+  id             String   @id @default(cuid())
+  agencyId       String
+  type           String // topup, bonus, transfer, adjust_credit, adjust_debit
+  direction      String // credit | debit
+  amount         Float
+  balanceBefore  Float
+  balanceAfter   Float
+  tlAmount       Float? // yükleme işlemlerinde ödenen TL
+  rateUsed       Float? // TL → jeton kuru
+  bonusRate      Float? // uygulanan bonus yüzdesi
+  targetUserId   String?
+  targetUserName String?
+  actorId        String?
+  actorName      String?
+  actorRole      String?
+  reason         String?
+  referenceType  String?
+  referenceId    String?
+  idempotencyKey String?
+  metadata       String? // JSON
+  createdAt      DateTime @default(now())
+  agency         Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId, createdAt])
+  @@index([type])
+  @@index([targetUserId])
+  @@index([idempotencyKey])
+  @@map("agency_wallet_transactions")
+}
+
+/// Gelir kaynağı bazlı ajans komisyon kuralı (§18).
+/// agencyId null ⇒ global varsayılan kural.
+model AgencyCommissionRule {
+  id            String   @id @default(cuid())
+  agencyId      String?
+  sourceType    String // stream_gift, chat_gift, direct_gift, tip, fortune, voice_room
+  enabled       Boolean  @default(true)
+  rate          Float? // null ⇒ ajansın kendi commissionRate değeri kullanılır
+  note          String?
+  updatedById   String?
+  updatedByName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  agency        Agency?  @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId, sourceType])
+  @@index([sourceType])
+  @@map("agency_commission_rules")
+}
+
+/// Ajans seviyesine göre bonus oranı (§16). Admin panelinden düzenlenir.
+model AgencyBonusRule {
+  id                    String   @id @default(cuid())
+  level                 String   @unique // bronze, silver, gold, diamond
+  label                 String
+  bonusRate             Float    @default(0) // yüzde
+  minMonthlyEarning     Float    @default(0)
+  minActiveBroadcasters Int      @default(0)
+  minStreamMinutes      Int      @default(0)
+  isActive              Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("agency_bonus_rules")
 }

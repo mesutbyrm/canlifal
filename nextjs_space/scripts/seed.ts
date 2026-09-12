@@ -1930,6 +1930,45 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
     console.log(`RBAC seed: ${permCount} yetki, ${SYSTEM_ROLES.length} rol, ${linkCount} eslesme`)
   }
 
+  // ═══════════════════════════════════════════════════════
+  // BÖLÜM 21 / A3 — Ajans bonus ve komisyon varsayılanları
+  // (idempotent; mevcut kayıtlar korunur, silme yok)
+  // ═══════════════════════════════════════════════════════
+  const agencyBonusDefaults = [
+    { level: 'bronze', label: 'Bronz', bonusRate: 2, sortOrder: 1 },
+    { level: 'silver', label: 'Silver', bonusRate: 3, sortOrder: 2 },
+    { level: 'gold', label: 'Gold', bonusRate: 5, sortOrder: 3 },
+    { level: 'diamond', label: 'Diamond', bonusRate: 7, sortOrder: 4 },
+  ]
+  for (const b of agencyBonusDefaults) {
+    await prisma.agencyBonusRule.upsert({
+      where: { level: b.level },
+      update: {},
+      create: { ...b, isActive: true },
+    })
+  }
+
+  const agencyCommissionDefaults = [
+    { sourceType: 'stream_gift', enabled: true },
+    { sourceType: 'chat_gift', enabled: true },
+    { sourceType: 'direct_gift', enabled: true },
+    { sourceType: 'tip', enabled: true },
+    { sourceType: 'voice_room', enabled: true },
+    // §18 — canlı falcı geliri VARSAYILAN OLARAK KAPALI
+    { sourceType: 'fortune', enabled: false },
+  ]
+  for (const c of agencyCommissionDefaults) {
+    const existing = await prisma.agencyCommissionRule.findFirst({
+      where: { agencyId: null, sourceType: c.sourceType },
+    })
+    if (!existing) {
+      await prisma.agencyCommissionRule.create({
+        data: { agencyId: null, sourceType: c.sourceType, enabled: c.enabled, rate: null },
+      })
+    }
+  }
+  console.log('BÖLÜM 21/A3: ajans bonus + komisyon varsayılanları hazır')
+
   console.log('Seed completed successfully!')
 }
 

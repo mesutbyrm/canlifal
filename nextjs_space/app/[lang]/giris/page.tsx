@@ -110,7 +110,7 @@ export default function LoginPage() {
             <div className="flex justify-end">
               <Link
                 href={`/sifremi-unuttum`}
-                className="text-deep-purple-400 hover:text-gold-400 text-sm transition-colors"
+                className="text-gold-300 hover:text-gold-400 text-sm font-medium transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
               >
                 {'Şifremi unuttum'}
               </Link>
