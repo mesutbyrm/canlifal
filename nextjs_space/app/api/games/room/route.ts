@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { isInsufficientBalanceError } from '@/lib/balance-guard'
+import { atomicDebitOp, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getInitialState } from '@/lib/game-logic'
 
@@ -33,10 +33,7 @@ export async function POST(req: NextRequest) {
       if (!gameStaff) {
         if (currency === 'CFC' && user.credits < amount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         if (currency === 'JETON' && user.jetonBalance < amount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
-        await prisma.user.update({
-          where: { id: authUser.id },
-          data: currency === 'CFC' ? { credits: { decrement: amount } } : { jetonBalance: { decrement: amount } },
-        })
+        await atomicDebitOp(prisma, currency === 'CFC' ? 'credits' : 'jetonBalance', authUser.id, amount)
       }
     }
 

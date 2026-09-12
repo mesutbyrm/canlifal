@@ -1,4 +1,5 @@
 import prisma from './db'
+import { atomicDebitCredits, isInsufficientBalanceError } from './balance-guard'
 import { FORTUNE_COSTS, FortuneType } from './credit-checker'
 
 export type FortuneAccessResult = {
@@ -80,12 +81,14 @@ export async function checkRegisteredFortuneAccess(
 
     // If user has enough CFC, deduct
     if (user.credits >= cost) {
-      const updatedUser = await prisma.user.update({
+      if (cost > 0) {
+        await atomicDebitCredits(prisma, userId, cost)
+      }
+      const updatedUser = await prisma.user.findUnique({
         where: { id: userId },
-        data: { credits: { decrement: cost } },
         select: { credits: true },
       })
-      return { allowed: true, reason: 'cfc_deducted', message: `${cost} CFC düşüldü`, newBalance: updatedUser.credits }
+      return { allowed: true, reason: 'cfc_deducted', message: `${cost} CFC düşüldü`, newBalance: updatedUser?.credits ?? (user.credits - cost) }
     }
 
     // User doesn't have enough CFC
@@ -102,6 +105,9 @@ export async function checkRegisteredFortuneAccess(
       newBalance: user.credits,
     }
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return { allowed: false, reason: 'needs_cfc', message: `Yetersiz CFC. Bu fal ${cost} CFC gerektiriyor.` }
+    }
     console.error('Registered fortune access error:', error)
     return { allowed: false, reason: 'error', message: 'Bir hata oluştu' }
   }

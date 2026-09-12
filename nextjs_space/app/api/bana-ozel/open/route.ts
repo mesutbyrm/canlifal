@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { atomicDebitOp, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import OpenAI from 'openai'
@@ -162,10 +163,7 @@ export async function POST(req: NextRequest) {
     const txOps: any[] = []
     if (payment === 'cfc') {
       txOps.push(
-        prisma.user.update({
-          where: { id: authUser.id },
-          data: { credits: { decrement: cost } },
-        }),
+        atomicDebitOp(prisma, 'credits', authUser.id, cost),
         prisma.creditTransaction.create({
           data: {
             userId: authUser.id,
@@ -178,10 +176,7 @@ export async function POST(req: NextRequest) {
       )
     } else if (payment === 'jeton') {
       txOps.push(
-        prisma.user.update({
-          where: { id: authUser.id },
-          data: { jetonBalance: { decrement: cost } },
-        }),
+        atomicDebitOp(prisma, 'jetonBalance', authUser.id, cost),
         prisma.jetonTransaction.create({
           data: {
             userId: authUser.id,
@@ -319,6 +314,9 @@ export async function POST(req: NextRequest) {
       item: { nameTr: item.nameTr, nameEn: item.nameEn, icon: item.icon },
     })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Bana Özel open error:', error)
     return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 })
   }

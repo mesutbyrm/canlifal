@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { processAgencyCommission } from '@/lib/agency-commission';
 import { getCachedPlatformSetting } from '@/lib/cache';
@@ -108,10 +109,7 @@ export async function POST(
     ];
     if (!tipperIsStaff) {
       tipTx.unshift(
-        prisma.user.update({
-          where: { id: liveSession.userId },
-          data: { jetonBalance: { decrement: amount } }
-        }),
+        atomicDebitJeton(prisma, liveSession.userId, amount),
         prisma.liveFortuneTeller.update({
           where: { id: liveSession.tellerId },
           data: { totalEarnings: { increment: tellerEarnings } }
@@ -172,6 +170,9 @@ export async function POST(
     completeIdempotent(idemRecord, 200, responseBody).catch(() => {});
     return NextResponse.json(responseBody);
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Tip error:', error);
     releaseIdempotent(idemRecord).catch(() => {});
     return NextResponse.json({ error: 'Bahşiş gönderilemedi' }, { status: 500 });

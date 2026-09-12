@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
 import { calculateMusicDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 
@@ -99,6 +100,9 @@ export async function GET(
       requestCosts: { audio: SONG_REQUEST_COST_AUDIO, video: SONG_REQUEST_COST_VIDEO },
     })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Get song queue error:', error)
     return NextResponse.json({ queue: [], playing: false, nowPlaying: null, musicUrl: null, musicQueue: [] })
   }
@@ -171,10 +175,7 @@ export async function POST(
         return NextResponse.json({ error: `Yetersiz jeton. ${SONG_REQUEST_COST} jeton gerekiyor.` }, { status: 400 })
       }
 
-      await prisma.user.update({
-        where: { id: userId },
-        data: { jetonBalance: { decrement: SONG_REQUEST_COST } }
-      })
+      await atomicDebitJeton(prisma, userId, SONG_REQUEST_COST)
       await prisma.jetonTransaction.create({
         data: {
           userId,
@@ -316,6 +317,9 @@ export async function POST(
       queueLength: updatedQueue.length,
     })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Song request error:', error)
     return NextResponse.json({ error: 'Şarkı isteği gönderilemedi' }, { status: 500 })
   }
@@ -375,6 +379,9 @@ export async function PATCH(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Mark played error:', error)
     return NextResponse.json({ error: 'İşlem başarısız' }, { status: 500 })
   }

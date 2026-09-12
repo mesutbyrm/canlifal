@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
-import { isInsufficientBalanceError } from '@/lib/balance-guard'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { logActivity } from '@/lib/activity-logger'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { isExcludedFromFinance } from '@/lib/admin-check'
@@ -183,10 +183,7 @@ export async function POST(
     // Staff kullanıcılardan jeton düşülmez (sınırsız bakiye)
     if (!senderExcluded) {
       txOps.push(
-        prisma.user.update({
-          where: { id: userId },
-          data: { jetonBalance: { decrement: totalPrice } }
-        })
+        atomicDebitJeton(prisma, userId, totalPrice)
       )
     }
 

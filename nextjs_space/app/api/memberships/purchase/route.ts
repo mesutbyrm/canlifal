@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { atomicDebitCredits, atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { recordLedger } from '@/lib/ledger'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -59,18 +60,12 @@ export async function POST(req: NextRequest) {
         if (user.credits < plan.price) {
           return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         }
-        await prisma.user.update({
-          where: { id: userId },
-          data: { credits: { decrement: plan.price } }
-        })
+        await atomicDebitCredits(prisma, userId, plan.price)
       } else {
         if (user.jetonBalance < plan.price) {
           return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
         }
-        await prisma.user.update({
-          where: { id: userId },
-          data: { jetonBalance: { decrement: plan.price } }
-        })
+        await atomicDebitJeton(prisma, userId, plan.price)
         await prisma.jetonTransaction.create({
           data: {
             userId: userId,
@@ -190,6 +185,9 @@ export async function POST(req: NextRequest) {
     completeIdempotent(idemRecord, 200, responseBody).catch(() => {})
     return NextResponse.json(responseBody)
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Membership purchase error:', error)
     releaseIdempotent(idemRecord).catch(() => {})
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })

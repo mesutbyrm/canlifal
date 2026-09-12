@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
@@ -76,10 +77,7 @@ export async function POST(
     ];
     if (!isStaff) {
       txOps.push(
-        prisma.user.update({
-          where: { id: authUser.id },
-          data: { jetonBalance: { decrement: totalCost } }
-        })
+        atomicDebitJeton(prisma, authUser.id, totalCost)
       );
     }
     const [liveSession] = await prisma.$transaction(txOps);
@@ -118,6 +116,9 @@ export async function POST(
       session: liveSession 
     }, { status: 201 });
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Create session error:', error);
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
@@ -154,6 +155,9 @@ export async function GET(
 
     return NextResponse.json(sessions);
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Get sessions error:', error);
     return NextResponse.json([]);
   }

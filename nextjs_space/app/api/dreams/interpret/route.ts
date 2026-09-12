@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import prisma from '@/lib/db'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
@@ -105,10 +106,7 @@ Kurallar:
 
     // Deduct jetons (staff skip)
     if (!isStaff) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { jetonBalance: { decrement: JETON_COST } },
-      })
+      await atomicDebitJeton(prisma, userId, JETON_COST)
       try {
         await prisma.jetonTransaction.create({
           data: {
@@ -156,6 +154,9 @@ Kurallar:
       isPersonalized: !!(user.zodiacSign || recentDiaries.length > 0),
     })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Dream interpret error:', error)
     return NextResponse.json({ error: 'Rüya yorumlanırken bir hata oluştu' }, { status: 500 })
   }

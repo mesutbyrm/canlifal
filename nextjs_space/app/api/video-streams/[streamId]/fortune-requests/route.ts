@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 
 // ── Fal isteği oluşturma: gövde ayrıştırma ve hata eşleme yardımcıları ──
@@ -167,6 +168,9 @@ export async function GET(
     
     return NextResponse.json(result)
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Error fetching fortune requests:', error)
     return NextResponse.json({ error: 'Failed to fetch fortune requests' }, { status: 500 })
   }
@@ -261,10 +265,7 @@ export async function POST(
     const txOps: any[] = []
     if (!isStaff) {
       txOps.push(
-        prisma.user.update({
-          where: { id: authUser.id },
-          data: { jetonBalance: { decrement: fortuneType.jetonCost } }
-        })
+        atomicDebitJeton(prisma, authUser.id, fortuneType.jetonCost)
       )
     }
     txOps.push(
@@ -304,6 +305,9 @@ export async function POST(
       newBalance: isStaff ? (user.jetonBalance ?? 0) : (user.jetonBalance ?? 0) - fortuneType.jetonCost
     }, { status: 200 })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Error creating fortune request:', error)
     const mapped = mapFortuneCreateException(error)
     return NextResponse.json(mapped.body, { status: mapped.status })
@@ -392,6 +396,9 @@ export async function PATCH(
     
     return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Error updating fortune request:', error)
     return NextResponse.json({ error: 'Failed to update fortune request' }, { status: 500 })
   }
@@ -495,6 +502,9 @@ export async function DELETE(
       amount: fortuneRequest.jetonAmount
     })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Error refunding fortune request:', error)
     return NextResponse.json({ error: 'Failed to refund' }, { status: 500 })
   }

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
-import { isInsufficientBalanceError } from '@/lib/balance-guard'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { createNotificationWithPush } from '@/lib/notify'
@@ -129,10 +129,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     await prisma.$transaction(async (tx: any) => {
       // Deduct jetons from sender (staff skip - unlimited balance)
       if (!isStaff) {
-        await tx.user.update({
-          where: { id: sender.id },
-          data: { jetonBalance: { decrement: price } }
-        })
+        await atomicDebitJeton(tx, sender.id, price)
         await tx.jetonTransaction.create({
           data: {
             userId: sender.id,

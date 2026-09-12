@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { atomicDebitOp, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { processMove } from '@/lib/game-logic'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
@@ -154,6 +155,9 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     const { _count, ...data } = room
     return NextResponse.json({ ...data, viewerCount: _count.viewers })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Game room get error:', error)
     return NextResponse.json({ error: 'Oda yüklenemedi' }, { status: 500 })
   }
@@ -186,10 +190,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       if (!joinStaff) {
         if (room.betCurrency === 'CFC' && user.credits < room.betAmount) return NextResponse.json({ error: 'Yetersiz CFC bakiyesi' }, { status: 400 })
         if (room.betCurrency === 'JETON' && user.jetonBalance < room.betAmount) return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
-        await prisma.user.update({
-          where: { id: authUser.id },
-          data: room.betCurrency === 'CFC' ? { credits: { decrement: room.betAmount } } : { jetonBalance: { decrement: room.betAmount } },
-        })
+        await atomicDebitOp(prisma, room.betCurrency === 'CFC' ? 'credits' : 'jetonBalance', authUser.id, room.betAmount)
       }
     }
 
@@ -223,6 +224,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     })
     return NextResponse.json({ success: true, room: updated })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Game room join error:', error)
     return NextResponse.json({ error: 'Odaya katılınamadı' }, { status: 500 })
   }
@@ -352,6 +356,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     const updated = await prisma.gameRoom.update({ where: { id: params.roomId }, data: updateData })
     return NextResponse.json({ success: true, room: updated })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Game room move error:', error)
     return NextResponse.json({ error: 'Hamle yapılamadı' }, { status: 500 })
   }
@@ -378,6 +385,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { roomId: s
     await prisma.gameRoom.update({ where: { id: params.roomId }, data: { status: 'cancelled' } })
     return NextResponse.json({ success: true })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Game room cancel error:', error)
     return NextResponse.json({ error: 'İptal edilemedi' }, { status: 500 })
   }

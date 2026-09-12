@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { isInsufficientBalanceError } from '@/lib/balance-guard'
+import { atomicDebitOp, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
@@ -39,12 +39,7 @@ export async function POST(req: NextRequest) {
         if (currency === 'JETON' && user.jetonBalance < amount) {
           return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
         }
-        await prisma.user.update({
-          where: { id: authUser.id },
-          data: currency === 'CFC'
-            ? { credits: { decrement: amount } }
-            : { jetonBalance: { decrement: amount } }
-        })
+        await atomicDebitOp(prisma, currency === 'CFC' ? 'credits' : 'jetonBalance', authUser.id, amount)
       }
     }
 
@@ -76,6 +71,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, gameId: game.id })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     if (isInsufficientBalanceError(error)) {
       return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
     }
@@ -166,6 +164,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(games)
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('SOS list error:', error)
     return NextResponse.json({ error: 'Oyunlar yüklenemedi' }, { status: 500 })
   }

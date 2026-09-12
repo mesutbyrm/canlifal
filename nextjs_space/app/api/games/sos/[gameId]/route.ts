@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { atomicDebitOp, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 
@@ -121,6 +122,9 @@ export async function GET(req: NextRequest, { params }: { params: { gameId: stri
     const { _count, ...gameData } = game
     return NextResponse.json({ ...gameData, viewerCount: _count.viewers })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('SOS get error:', error)
     return NextResponse.json({ error: 'Oyun yüklenemedi' }, { status: 500 })
   }
@@ -163,12 +167,7 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
         if (game.betCurrency === 'JETON' && user.jetonBalance < game.betAmount) {
           return NextResponse.json({ error: 'Yetersiz Jeton bakiyesi' }, { status: 400 })
         }
-        await prisma.user.update({
-          where: { id: authUser.id },
-          data: game.betCurrency === 'CFC'
-            ? { credits: { decrement: game.betAmount } }
-            : { jetonBalance: { decrement: game.betAmount } }
-        })
+        await atomicDebitOp(prisma, game.betCurrency === 'CFC' ? 'credits' : 'jetonBalance', authUser.id, game.betAmount)
       }
     }
 
@@ -203,6 +202,9 @@ export async function POST(req: NextRequest, { params }: { params: { gameId: str
 
     return NextResponse.json({ success: true, game: updated })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('SOS join error:', error)
     return NextResponse.json({ error: 'Oyuna katılınamadı' }, { status: 500 })
   }
@@ -403,6 +405,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { gameId: st
 
     return NextResponse.json({ success: true, game: updated, newLines, scoredPoints })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('SOS move error:', error)
     return NextResponse.json({ error: 'Hamle yapılamadı' }, { status: 500 })
   }
@@ -438,6 +443,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { gameId: s
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('SOS cancel error:', error)
     return NextResponse.json({ error: 'İptal edilemedi' }, { status: 500 })
   }

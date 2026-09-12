@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { createNotificationWithPush } from '@/lib/notify'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitTellerEvent } from '@/lib/room-events'
@@ -75,10 +76,7 @@ export async function POST(request: NextRequest) {
     ]
     if (!isStaff) {
       txOps.push(
-        prisma.user.update({
-          where: { id: userId },
-          data: { jetonBalance: { decrement: totalCost } }
-        })
+        atomicDebitJeton(prisma, userId, totalCost)
       )
     }
     const [liveSession] = await prisma.$transaction(txOps)
@@ -126,6 +124,9 @@ export async function POST(request: NextRequest) {
       session: liveSession
     }, { status: 201 })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Fortune-tellers session POST error:', error)
     return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 })
   }
@@ -169,6 +170,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(sessions)
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Fortune-tellers session GET error:', error)
     return NextResponse.json([])
   }

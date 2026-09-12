@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { atomicDebitCredits, atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { requireFeature } from '@/lib/check-feature'
@@ -83,10 +84,7 @@ export async function POST(req: NextRequest) {
     // Deduct balance and create room (staff skip payment)
     if (!isStaff) {
       if (paymentType === 'jeton') {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { jetonBalance: { decrement: cost } }
-        })
+        await atomicDebitJeton(prisma, user.id, cost)
         await prisma.jetonTransaction.create({
           data: {
             userId: user.id,
@@ -98,10 +96,7 @@ export async function POST(req: NextRequest) {
           }
         })
       } else {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { credits: { decrement: cost } }
-        })
+        await atomicDebitCredits(prisma, user.id, cost)
       }
     }
 
@@ -131,6 +126,9 @@ export async function POST(req: NextRequest) {
       paymentType
     })
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Room creation error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { authenticateRequest } from '@/lib/mobile-auth';
 import prisma from '@/lib/db';
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { emitRoomEvent, clearRoomEvents } from '@/lib/room-events';
@@ -77,6 +78,9 @@ export async function GET(
       timerStartedAt: liveSession.timerStartedAt
     });
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Get room error:', error);
     return NextResponse.json({ error: 'Oda bilgisi alınamadı' }, { status: 500 });
   }
@@ -204,10 +208,7 @@ export async function PATCH(
         ];
         if (!addUserIsStaff) {
           addTimeTx.unshift(
-            prisma.user.update({
-              where: { id: liveSession.userId },
-              data: { jetonBalance: { decrement: jetonsNeeded } }
-            })
+            atomicDebitJeton(prisma, liveSession.userId, jetonsNeeded)
           );
         }
         await prisma.$transaction(addTimeTx);
@@ -262,10 +263,7 @@ export async function PATCH(
         ];
         if (!extUserIsStaff) {
           extTx.unshift(
-            prisma.user.update({
-              where: { id: liveSession.userId },
-              data: { jetonBalance: { decrement: jetonsNeeded } }
-            })
+            atomicDebitJeton(prisma, liveSession.userId, jetonsNeeded)
           );
         }
         await prisma.$transaction(extTx);
@@ -450,6 +448,9 @@ export async function PATCH(
         return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 });
     }
   } catch (error) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Room action error:', error);
     return NextResponse.json({ error: 'Oda güncellenemedi' }, { status: 500 });
   }
