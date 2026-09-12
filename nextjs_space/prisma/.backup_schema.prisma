@@ -1440,6 +1440,8 @@ model LiveGuestSession {
   userId      String
   status      String    @default("active") // active, left, removed
   slot        Int // 1..8 seat index
+  source      String    @default("invite") // invite | request | host
+  approvedBy  String? // host/moderator user id who approved the join
   isMuted     Boolean   @default(false) // audio muted (self or by host)
   isVideoOff  Boolean   @default(false) // camera off
   mutedByHost Boolean   @default(false) // true when host force-muted
@@ -1460,7 +1462,11 @@ model LiveGuestInvite {
   streamId    String
   hostId      String // stream owner who invited
   guestId     String // invited user
-  status      String    @default("pending") // pending, accepted, rejected, expired, cancelled
+  status      String    @default("pending") // pending, accepted, rejected, expired, cancelled, removed
+  kind        String    @default("invite") // invite (host -> guest) | request (viewer -> host)
+  message     String? // optional note from the requester
+  respondedBy String? // who resolved it (host / moderator / guest)
+  cancelledAt DateTime?
   createdAt   DateTime  @default(now())
   respondedAt DateTime?
   expiresAt   DateTime // invite auto-expires
@@ -1468,6 +1474,7 @@ model LiveGuestInvite {
   @@index([streamId])
   @@index([guestId, status])
   @@index([status, expiresAt])
+  @@index([streamId, kind, status])
   @@map("live_guest_invites")
 }
 

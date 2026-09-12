@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { endPksForSide } from '@/lib/pk-state'
+import { closeGuestStateForStream } from '@/lib/live-guest'
 
 export const dynamic = 'force-dynamic'
 
@@ -121,6 +122,8 @@ export async function PATCH(
       })
       // Yayın bittiğinde bu yayına bağlı bekleyen/aktif PK'ları da kapat
       await endPksForSide([params.streamId], 'LIVE_ENDED')
+      // Misafirlik durumunu da güvenle kapat (aktif misafirler + bekleyen talepler)
+      await closeGuestStateForStream(params.streamId, 'LIVE_ENDED')
     }
 
     return NextResponse.json(updated)
