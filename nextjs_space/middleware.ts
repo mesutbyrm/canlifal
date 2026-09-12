@@ -94,8 +94,8 @@ export default withAuth(
     // URL stays clean (e.g., /fallar) but internally serves /tr/fallar
     const rewriteUrl = new URL(`/tr${pathname === '/' ? '' : pathname}${req.nextUrl.search}`, req.url)
 
-    // Admin routes
-    if (pathname.includes('/admin')) {
+    // Admin page routes (not API — API routes handle their own auth for Bearer token support)
+    if (pathname.includes('/admin') && !pathname.startsWith('/api/')) {
       const adminRoles = ['admin', 'yonetici', 'kurucu', 'moderator', 'finans', 'ajans_admin', 'destek', 'icerik_moderator']
       if (!isAuth || !adminRoles.includes(token?.role as string)) {
         return NextResponse.redirect(new URL('/giris', req.url))
@@ -134,6 +134,7 @@ export const config = {
   matcher: [
     // Versioned API prefix — rewritten to the legacy /api/* handlers.
     '/api/v1/:path*',
+
     '/((?!api|_next/static|_next/image|favicon.ico|favicon.png|og-image.png|manifest.json|sw.js|OneSignalSDKWorker\.js|sitemap\.xml|sitemap-blog|sitemap-dreams|sitemap-social|robots\.txt|ads\.txt|.*\.txt|.*\.zip|icons/.*|.*\.jpg|.*\.png|.*\.svg|.*\.mp3|.*\.webp).*)',
   ],
 }
