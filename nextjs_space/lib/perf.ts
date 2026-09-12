@@ -111,6 +111,18 @@ export function setCachedAuth(token: string, user: any): void {
   }
 }
 
+/** Tek bir token'ın auth önbelleğini anında düşürür (logout / revoke). */
+export function invalidateCachedAuth(token: string): void {
+  authCache.delete(token)
+}
+
+/** Bir kullanıcıya ait tüm auth önbellek girdilerini düşürür (logout-all). */
+export function clearAuthCacheForUser(userId: string): void {
+  for (const [k, v] of authCache) {
+    if (v?.user?.id === userId) authCache.delete(k)
+  }
+}
+
 // Cleanup expired auth cache entries every 5 minutes
 setInterval(() => {
   const now = Date.now()

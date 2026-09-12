@@ -3,17 +3,20 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { getCommissionSummary, getCommissionConfig } from '@/lib/referral-commission'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
 /** Giriş yapmış kullanıcının referans/ajans komisyon kazançları */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Çift kimlik doğrulama: mobil JWT veya web oturumu (geriye dönük uyumlu)
+    const mobileUser = await authenticateRequest(request)
+    const session = mobileUser ? null : await getServerSession(authOptions)
+    if (!mobileUser && !session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
-    const userId = session.user.id
+    const userId = mobileUser?.id || session!.user.id
     const { searchParams } = new URL(request.url)
     const limit = Math.min(parseInt(searchParams.get('limit') || '25', 10) || 25, 100)
     const offset = parseInt(searchParams.get('offset') || '0', 10) || 0

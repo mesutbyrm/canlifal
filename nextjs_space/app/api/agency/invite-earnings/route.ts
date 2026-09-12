@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { getCommissionConfig } from '@/lib/referral-commission'
+import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,13 +15,15 @@ function startOfMonth() {
 /** Ajans sahibinin davet komisyonu kazançları */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    // Çift kimlik doğrulama: mobil JWT veya web oturumu (geriye dönük uyumlu)
+    const mobileUser = await authenticateRequest(request)
+    const session = mobileUser ? null : await getServerSession(authOptions)
+    if (!mobileUser && !session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
     const agency = await prisma.agency.findFirst({
-      where: { ownerId: session.user.id },
+      where: { ownerId: mobileUser?.id || session!.user.id },
       select: { id: true, name: true, status: true, totalEarnings: true, commissionRate: true },
     })
     if (!agency) {

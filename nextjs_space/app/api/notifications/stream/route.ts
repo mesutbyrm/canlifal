@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { parseLastEventId, sseIdLine } from '@/lib/sse-resume'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -17,7 +18,15 @@ export async function GET(request: NextRequest) {
   }
 
   const userId = authUser.id
-  let lastCheck = new Date()
+  // Last-Event-ID / ?lastEventId= → GERÇEK tekrar oynatma: bildirimler DB'de
+  // saklandığı için imleci geçmişe alıp kaçırılan kayıtları yeniden yollarız.
+  // (En fazla 24 saat geriye; daha eskisi için /api/notifications listesi kullanılmalı.)
+  const resumeFrom = parseLastEventId(request)
+  const MAX_REPLAY_MS = 24 * 60 * 60 * 1000
+  let lastCheck =
+    resumeFrom && Date.now() - resumeFrom <= MAX_REPLAY_MS
+      ? new Date(resumeFrom)
+      : new Date()
   let isActive = true
 
   const encoder = new TextEncoder()
@@ -47,11 +56,13 @@ export async function GET(request: NextRequest) {
               createdAt: { gt: lastCheck }
             },
             orderBy: { createdAt: 'asc' },
-            take: 10
+            take: 50
           })
 
           if (newNotifications.length > 0) {
-            lastCheck = new Date()
+            // İmleci en yeni kaydın createdAt'ine taşı (Date.now() değil) —
+            // aksi halde sorgu ile yazma arasındaki kayıtlar kaybolur.
+            lastCheck = newNotifications[newNotifications.length - 1].createdAt
             for (const notif of newNotifications) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                 type: 'notification',
@@ -66,6 +77,8 @@ export async function GET(request: NextRequest) {
                 }
               })}\n\n`))
             }
+            // SSE olay kimliği = son bildirimin zaman damgası (ms).
+            controller.enqueue(encoder.encode(sseIdLine(lastCheck.getTime())))
           }
         } catch (error) {
           console.error('[Notifications SSE] Update error:', error)

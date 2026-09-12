@@ -13,6 +13,9 @@ export interface MobileTokenPayload {
   email: string
   role: string
   type: 'access' | 'refresh'
+  /** jsonwebtoken tarafından otomatik eklenir (saniye). Revocation için gerekli. */
+  iat?: number
+  exp?: number
 }
 
 export interface AuthenticatedUser {
@@ -73,6 +76,10 @@ export async function authenticateRequest(req: NextRequest): Promise<Authenticat
     
     const payload = verifyMobileToken(token)
     if (payload && payload.type === 'access') {
+      // Revocation kontrolü (geriye dönük uyumlu: kayıt yoksa eski davranış)
+      const { isTokenStillValid } = await import('@/lib/token-revocation')
+      if (!(await isTokenStillValid(token, payload))) return null
+
       const user = await prisma.user.findUnique({
         where: { id: payload.userId },
         select: { id: true, email: true, name: true, role: true, image: true },

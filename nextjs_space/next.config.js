@@ -16,10 +16,15 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { dev, isServer }) => {
     if (!isServer) {
-      config.output.filename = 'static/chunks/[name]-[contenthash:8].js';
-      config.output.chunkFilename = 'static/chunks/[contenthash:16].js';
+      // Content hashes only exist in a production compilation. `next dev` builds chunks on
+      // demand, so [contenthash] resolves to undefined and the browser requests
+      // static/chunks/undefined.js, which 404s and breaks navigation in the dev preview.
+      if (!dev) {
+        config.output.filename = 'static/chunks/[name]-[contenthash:8].js';
+        config.output.chunkFilename = 'static/chunks/[contenthash:16].js';
+      }
       if (process.env.NEXT_OUTPUT_MODE === 'standalone') {
         try {
           const _fs = require('fs'), _p = require('path');

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { isInsufficientBalanceError } from '@/lib/balance-guard'
 import { logActivity } from '@/lib/activity-logger'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { isExcludedFromFinance } from '@/lib/admin-check'
@@ -370,6 +371,9 @@ export async function POST(
     return NextResponse.json(streamGiftResult)
   } catch (error) {
     await releaseIdempotent(_idempotencyRecord)
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Error sending gift:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

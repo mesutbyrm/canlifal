@@ -49,6 +49,12 @@ export async function GET(
             lastSignature = signature
             const users = await loadPkUsers([battle])
             send({ type: 'pk', event: 'match_update', match: serializePkMatch(battle, users) })
+            // SSE olay kimliği. PK akışı her seferinde TAM durum anlık görüntüsü
+            // yolladığı için tekrar oynatmaya gerek yoktur; id yalnızca ortak
+            // SSE sözleşmesini (Last-Event-ID) korumak için yayınlanır.
+            try {
+              controller.enqueue(encoder.encode(`id: ${Date.now()}\n\n`))
+            } catch { isActive = false }
           }
 
           if (['completed', 'cancelled', 'rejected', 'expired'].includes(battle.status)) {

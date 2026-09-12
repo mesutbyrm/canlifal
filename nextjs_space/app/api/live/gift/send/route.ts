@@ -17,6 +17,7 @@ import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { applyGiftPkScore } from '@/lib/gift-pk-score'
+import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { incrementLeaderboardScore } from '@/lib/leaderboard-engine'
 
 export const dynamic = 'force-dynamic'
@@ -150,14 +151,10 @@ export async function POST(request: NextRequest) {
         })
       ]
 
-      // Deduct jetons
+      // Deduct jetons — ATOMİK: bakiye yetersizse transaction tamamen geri alınır
+      // (eski "oku-kontrol et-düşür" deseni eşzamanlı isteklerde negatif bakiyeye yol açıyordu)
       if (!senderExcluded) {
-        txOps.push(
-          prisma.user.update({
-            where: { id: sender.id },
-            data: { jetonBalance: { decrement: totalPrice } }
-          })
-        )
+        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice))
 
         // Credit broadcaster
         if (recipientAmount > 0) {
@@ -313,14 +310,9 @@ export async function POST(request: NextRequest) {
         })
       ]
 
-      // Deduct sender jetons
+      // Deduct sender jetons — ATOMİK (negatif bakiye / yarış koruma)
       if (!isStaff) {
-        txOps.push(
-          prisma.user.update({
-            where: { id: sender.id },
-            data: { jetonBalance: { decrement: totalPrice } }
-          })
-        )
+        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice))
       }
 
       // Credit recipient
@@ -452,6 +444,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     await releaseIdempotent(_idempotencyRecord)
+    // Atomik düşüm yetersiz bakiye nedeniyle transaction'ı geri aldıysa 400 dön
+    // (ağ kopması / eşzamanlı ödeme senaryolarında 500 yerine anlaşılır hata)
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json(
+        { success: false, error: { code: 'INSUFFICIENT_BALANCE', message: 'Yetersiz jeton bakiyesi' } },
+        { status: 400 }
+      )
+    }
     console.error('[LIVE/gift/send] Error:', error)
     return NextResponse.json(
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'Hediye gönderilemedi' } },

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getTellerEventsSince } from '@/lib/room-events'
+import { resumeCursor, newestTimestamp, sseIdLine } from '@/lib/sse-resume'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -36,7 +37,8 @@ export async function GET(request: NextRequest) {
   }
 
   const tellerId = teller.id
-  let lastEventCheck = Date.now()
+  // Last-Event-ID / ?lastEventId= ile yeniden bağlanmada kaldığı yerden devam
+  let lastEventCheck = resumeCursor(request)
   let isActive = true
   let pendingCheckCount = 0
 
@@ -91,7 +93,8 @@ export async function GET(request: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(event.data)}\n\n`))
           }
           if (newEvents.length > 0) {
-            lastEventCheck = Date.now()
+            lastEventCheck = newestTimestamp(newEvents as any[], lastEventCheck)
+            controller.enqueue(encoder.encode(sseIdLine(lastEventCheck)))
           }
 
           // 2. DB fallback: check pending sessions every 15 seconds

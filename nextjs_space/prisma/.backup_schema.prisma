@@ -4959,3 +4959,74 @@ model UserOnlineEvent {
   @@index([userId, createdAt])
   @@map("user_online_events")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BÖLÜM 14 — Mobil (Flutter) entegrasyonu için eklenen modeller.
+// Hepsi ADDITIVE'dir; mevcut tablolara dokunmaz, mevcut davranışı değiştirmez.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Tekil olarak iptal edilmiş (revoke) mobil JWT'ler. tokenHash = sha256(token).
+model RevokedToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  tokenType String   @default("access") // access | refresh
+  reason    String?
+  expiresAt DateTime // token'ın kendi exp'i — bu tarihten sonra kayıt temizlenebilir
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("revoked_tokens")
+}
+
+/// "Tüm cihazlardan çıkış": bu tarihten ÖNCE üretilmiş tüm token'lar geçersiz.
+model UserTokenRevocation {
+  userId    String   @id
+  revokedAt DateTime @default(now())
+  reason    String?
+  updatedAt DateTime @updatedAt
+
+  @@map("user_token_revocations")
+}
+
+/// Google Play / App Store satın alma doğrulama kayıtları (idempotent).
+model StorePurchase {
+  id            String    @id @default(cuid())
+  userId        String
+  provider      String    @default("google_play") // google_play | app_store
+  productId     String
+  purchaseToken String
+  orderId       String?
+  status        String    @default("pending") // pending | verified | granted | failed | duplicate | refunded
+  failureReason String?
+  rawResponse   Json?
+  grantedType   String? // jeton | cfc | membership
+  grantedAmount Int       @default(0)
+  ledgerTxId    String?
+  verifiedAt    DateTime?
+  grantedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([provider, purchaseToken])
+  @@index([userId])
+  @@index([status])
+  @@map("store_purchases")
+}
+
+/// Hesap silme (KVKK / Google Play zorunluluğu) denetim kaydı.
+model AccountDeletion {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  originalEmail    String?
+  originalUsername String?
+  reason           String?
+  source           String    @default("mobile") // mobile | web | admin
+  status           String    @default("completed") // completed | failed
+  requestedAt      DateTime  @default(now())
+  completedAt      DateTime?
+
+  @@index([status])
+  @@map("account_deletions")
+}

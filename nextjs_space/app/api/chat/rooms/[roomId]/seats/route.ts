@@ -185,6 +185,15 @@ export async function PATCH(
       const presenceTimeout = seatStaleThreshold()
 
       if (seatIndex >= 0) {
+        // PostgreSQL varsayılan izolasyonu READ COMMITTED olduğu için tek başına
+        // "önce kontrol et sonra yaz" iki eşzamanlı isteği ayıramaz. Oda+koltuk
+        // bazında işlem süresince süren advisory lock ile aynı koltuğa iki
+        // kullanıcının aynı anda oturması kesin olarak engellenir.
+        await tx.$executeRawUnsafe(
+          'SELECT pg_advisory_xact_lock(hashtext($1))',
+          `seat:${roomId}:${seatIndex}`
+        )
+
         const seatTaken = await tx.chatPresence.findFirst({
           where: {
             roomId,

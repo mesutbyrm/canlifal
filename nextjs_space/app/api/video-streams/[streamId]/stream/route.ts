@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getStreamEventsSince } from '@/lib/stream-events'
+import { resumeCursor, newestTimestamp, sseIdLine } from '@/lib/sse-resume'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -30,7 +31,8 @@ export async function GET(
     return new Response('Stream not found', { status: 404 })
   }
 
-  let lastEventCheck = Date.now()
+  // Last-Event-ID / ?lastEventId= ile yeniden bağlanmada kaldığı yerden devam
+  let lastEventCheck = resumeCursor(request)
   let isActive = true
 
   const encoder = new TextEncoder()
@@ -64,7 +66,8 @@ export async function GET(
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(event.data)}\n\n`))
           }
           if (newEvents.length > 0) {
-            lastEventCheck = Date.now()
+            lastEventCheck = newestTimestamp(newEvents as any[], lastEventCheck)
+            controller.enqueue(encoder.encode(sseIdLine(lastEventCheck)))
           }
         } catch (error) {
           console.error('[Stream SSE] Update error:', error)

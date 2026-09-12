@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getInitialState } from '@/lib/game-logic'
 
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, roomId: room.id })
   } catch (error: any) {
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz bakiye', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Game room create error:', error)
     return NextResponse.json({ error: 'Oda oluşturulamadı' }, { status: 500 })
   }

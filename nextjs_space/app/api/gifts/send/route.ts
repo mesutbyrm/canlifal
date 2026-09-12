@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 import { isExcludedFromFinance } from '@/lib/admin-check'
@@ -368,6 +369,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request type' }, { status: 400 })
   } catch (error) {
     await releaseIdempotent(_idempotencyRecord)
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Gift send error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }

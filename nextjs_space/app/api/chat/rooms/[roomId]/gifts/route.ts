@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { isInsufficientBalanceError } from '@/lib/balance-guard'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { createNotificationWithPush } from '@/lib/notify'
@@ -399,6 +400,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     return NextResponse.json(giftResult)
   } catch (error) {
     await releaseIdempotent(_idempotencyRecord)
+    if (isInsufficientBalanceError(error)) {
+      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
+    }
     console.error('Chat room gift error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
