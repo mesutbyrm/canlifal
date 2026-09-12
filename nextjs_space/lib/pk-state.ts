@@ -18,6 +18,7 @@
 import prisma from '@/lib/db'
 import { emitChatEvent } from '@/lib/chat-events'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { getCachedPlatformSetting } from '@/lib/cache'
 
 export type PkStatus =
   | 'pending'
@@ -494,4 +495,38 @@ export async function startPkBattle(battle: BattleRow & { duration?: number | nu
     serverNow: now.toISOString(),
   })
   return updated
+}
+
+/* ───── §19 PK Admin Ayarları ───── */
+
+export async function getPkLimits() {
+  const [
+    defaultDuration,
+    minDuration,
+    maxDuration,
+    cooldownSec,
+    maxManualPoints,
+    maxParticipantsPerSide,
+    streamPkEnabled,
+    roomPkEnabled,
+  ] = await Promise.all([
+    getCachedPlatformSetting('pk_default_duration', '180'),
+    getCachedPlatformSetting('pk_min_duration', '60'),
+    getCachedPlatformSetting('pk_max_duration', '600'),
+    getCachedPlatformSetting('pk_cooldown_sec', '0'),
+    getCachedPlatformSetting('pk_max_manual_points', '10'),
+    getCachedPlatformSetting('pk_max_participants_per_side', '4'),
+    getCachedPlatformSetting('pk_stream_enabled', 'true'),
+    getCachedPlatformSetting('pk_room_enabled', 'true'),
+  ])
+  return {
+    defaultDuration: Math.max(10, Math.min(3600, parseInt(defaultDuration) || 180)),
+    minDuration: Math.max(10, parseInt(minDuration) || 60),
+    maxDuration: Math.max(60, parseInt(maxDuration) || 600),
+    cooldownSec: Math.max(0, parseInt(cooldownSec) || 0),
+    maxManualPoints: Math.max(1, parseInt(maxManualPoints) || 10),
+    maxParticipantsPerSide: Math.max(1, Math.min(8, parseInt(maxParticipantsPerSide) || 4)),
+    streamPkEnabled: streamPkEnabled !== 'false',
+    roomPkEnabled: roomPkEnabled !== 'false',
+  }
 }

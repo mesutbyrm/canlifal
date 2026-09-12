@@ -25,8 +25,10 @@ import {
   addPkParticipants,
   listPkParticipants,
   derivePkMode,
+  getPkLimits,
 } from '@/lib/pk-state'
 import { staffCan } from '@/lib/permissions'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 /**
  * PK Battle endpoints for Chat Rooms.
@@ -138,6 +140,8 @@ export async function POST(
     // Flutter sends { guestUserId, durationSec } with no explicit action → treat as create
     const action: string = body?.action
       ?? ((body?.targetRoomId || guestUserId) ? 'create' : '')
+    const pkLimits = await getPkLimits()
+    const clampedDuration = Math.max(pkLimits.minDuration, Math.min(pkLimits.maxDuration, Math.floor(duration || pkLimits.defaultDuration)))
 
     // ──────────── CREATE ────────────
     if (action === 'create') {
@@ -219,7 +223,7 @@ export async function POST(
           stream2Id: targetRoomId,
           user1Id: currentUserId,
           user2Id: targetOwnerId,
-          duration: duration || 180,
+          duration: clampedDuration,
           status: 'pending',
           mode: '1v1',
           scope: 'room',
@@ -286,6 +290,7 @@ export async function POST(
         })
       } catch (e) { console.error('PK invite room_event emit error:', e) }
 
+      recordAudit({ actorId: currentUserId, action: 'pk.create', targetType: 'pk_battle', targetId: battle.id, metadata: { roomId: params.roomId, targetRoomId: battle.stream2Id, duration: battle.duration }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json(battle)
     }
 
@@ -373,7 +378,7 @@ export async function POST(
           stream2Id: roomId,
           user1Id: side1[0],
           user2Id: side2[0],
-          duration: duration || 180,
+          duration: clampedDuration,
           status: 'starting',
           mode: derivePkMode(side1.length, side2.length),
           scope: 'room_user',
@@ -410,6 +415,7 @@ export async function POST(
         startPkBattle(battle as any, 'COUNTDOWN').catch(() => {})
       }, Math.max(1, countdownSec) * 1000)
 
+      recordAudit({ actorId: currentUserId, action: 'pk.create_user', targetType: 'pk_battle', targetId: battle.id, metadata: { roomId: params.roomId, mode: battle.mode, duration: battle.duration, countdownSec }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json({ ...battle, participants, countdownSec })
     }
 
@@ -450,7 +456,7 @@ export async function POST(
       }
 
       const acceptedAt = new Date()
-      const endTime = new Date(acceptedAt.getTime() + (battle.duration || 180) * 1000)
+      const endTime = new Date(acceptedAt.getTime() + (battle.duration || pkLimits.defaultDuration) * 1000)
       let updated
       try {
         // Optimistic lock: yalnızca hâlâ pending ise kabul edilir
@@ -493,6 +499,7 @@ export async function POST(
         data: JSON.stringify({ type: 'pk:accepted', battleId: battle.id })
       }).catch(() => {})
 
+      recordAudit({ actorId: currentUserId, action: 'pk.accept', targetType: 'pk_battle', targetId: battleId, metadata: { endTime: endTime.toISOString() }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json({ ...updated, endTime, serverNow: new Date().toISOString() })
     }
 
@@ -536,6 +543,7 @@ export async function POST(
       }
       emitPkToBothSides(battle, pkCancelData)
 
+      recordAudit({ actorId: currentUserId, action: 'pk.' + newStatus, targetType: 'pk_battle', targetId: battleId, metadata: { status: newStatus }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json(updated)
     }
 
@@ -559,6 +567,7 @@ export async function POST(
       if (endErr) return NextResponse.json({ error: endErr }, { status: 400 })
 
       const updated = await finishPkBattle(battle as any, 'MANUAL')
+      recordAudit({ actorId: currentUserId, action: 'pk.end', targetType: 'pk_battle', targetId: battleId, metadata: { winner: (updated as any).winner, reason: 'MANUAL' }, ip: getAuditIp(req) }).catch(() => {})
       if (!updated) return NextResponse.json({ error: 'PK zaten bitmiş' }, { status: 409 })
 
       return NextResponse.json(updated)
@@ -598,6 +607,7 @@ export async function POST(
             ? await startPkBattle(battle as any, 'MANUAL')
             : await resumePkBattle(battle as any, 'MANUAL')
       if (!updated) return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
+      recordAudit({ actorId: currentUserId, action: 'pk.' + action, targetType: 'pk_battle', targetId: battleId, metadata: { status: (updated as any).status }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json({ ...updated, serverNow: new Date().toISOString() })
     }
 

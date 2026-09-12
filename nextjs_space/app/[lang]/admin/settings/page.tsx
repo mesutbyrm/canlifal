@@ -68,6 +68,31 @@ interface PlatformSettings {
   vr_vip_room_max_users: string
   vr_seat_count: string
   bana_ozel_ad_daily_limit: string
+
+  // Multi-Guest
+  live_guest_max_slots: string
+  live_guest_request_ttl_sec: string
+  live_guest_invite_ttl_sec: string
+  live_guest_removed_cooldown_sec: string
+
+  // PK
+  pk_default_duration: string
+  pk_min_duration: string
+  pk_max_duration: string
+  pk_cooldown_sec: string
+  pk_max_manual_points: string
+  pk_max_participants_per_side: string
+  pk_stream_enabled: string
+  pk_room_enabled: string
+
+  // Gift Box
+  gift_box_min_amount: string
+  gift_box_max_amount: string
+  gift_box_min_duration_sec: string
+  gift_box_max_duration_sec: string
+  gift_box_max_winners: string
+  gift_box_allowed_durations: string
+  gift_box_extra_task_types: string
 }
 
 export default function AdminSettingsPage() {
@@ -116,7 +141,29 @@ export default function AdminSettingsPage() {
     vr_normal_room_max_users: '100',
     vr_vip_room_max_users: '500',
     vr_seat_count: '15',
-    bana_ozel_ad_daily_limit: '0'
+    bana_ozel_ad_daily_limit: '0',
+
+    live_guest_max_slots: '8',
+    live_guest_request_ttl_sec: '90',
+    live_guest_invite_ttl_sec: '60',
+    live_guest_removed_cooldown_sec: '300',
+
+    pk_default_duration: '180',
+    pk_min_duration: '60',
+    pk_max_duration: '600',
+    pk_cooldown_sec: '0',
+    pk_max_manual_points: '10',
+    pk_max_participants_per_side: '4',
+    pk_stream_enabled: 'true',
+    pk_room_enabled: 'true',
+
+    gift_box_min_amount: '10',
+    gift_box_max_amount: '100000',
+    gift_box_min_duration_sec: '5',
+    gift_box_max_duration_sec: '300',
+    gift_box_max_winners: '100',
+    gift_box_allowed_durations: '5,10,15,30,60,120',
+    gift_box_extra_task_types: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -154,7 +201,7 @@ export default function AdminSettingsPage() {
       ])
       if (res.ok) {
         const data = await res.json()
-        setSettings({ ...data, vr_seat_count: data.vr_seat_count ?? '15', bana_ozel_ad_daily_limit: data.bana_ozel_ad_daily_limit ?? '0' })
+        setSettings(prev => ({ ...prev, ...data, vr_seat_count: data.vr_seat_count ?? '15', bana_ozel_ad_daily_limit: data.bana_ozel_ad_daily_limit ?? '0' }))
         if (data.onesignal_enabled !== undefined) {
           setOnesignalEnabled(data.onesignal_enabled === 'true' || data.onesignal_enabled === '1')
         }
@@ -1025,6 +1072,100 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </motion.div>
+
+          {/* §19 Multi-Guest Ayarları */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="bg-deep-purple-800/40 rounded-xl p-6 border border-purple-500/20">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">👥 Multi-Guest Ayarları</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'live_guest_max_slots', label: 'Maks. Misafir Sayısı', hint: '2-8 arası' },
+                { key: 'live_guest_request_ttl_sec', label: 'İstek Zaman Aşımı (sn)', hint: 'Varsayılan: 90' },
+                { key: 'live_guest_invite_ttl_sec', label: 'Davet Zaman Aşımı (sn)', hint: 'Varsayılan: 60' },
+                { key: 'live_guest_removed_cooldown_sec', label: 'Çıkarılma Bekleme Süresi (sn)', hint: '0 = bekleme yok' },
+              ].map(item => (
+                <div key={item.key} className="flex flex-col gap-1">
+                  <label className="text-sm text-purple-300">{item.label}</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="0" value={settings[item.key as keyof PlatformSettings]} onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))} className="w-24 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm text-center" />
+                    <button onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])} disabled={saving === item.key} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm disabled:opacity-50">{saving === item.key ? '...' : saved === item.key ? '✓' : 'Kaydet'}</button>
+                  </div>
+                  <span className="text-xs text-purple-400">{item.hint}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* §19 PK Ayarları */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} className="bg-deep-purple-800/40 rounded-xl p-6 border border-purple-500/20">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">⚔️ PK Ayarları</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'pk_default_duration', label: 'Varsayılan Süre (sn)', hint: 'Varsayılan: 180' },
+                { key: 'pk_min_duration', label: 'Min. Süre (sn)', hint: 'Varsayılan: 60' },
+                { key: 'pk_max_duration', label: 'Maks. Süre (sn)', hint: 'Varsayılan: 600' },
+                { key: 'pk_cooldown_sec', label: 'Cooldown (sn)', hint: '0 = cooldown yok' },
+                { key: 'pk_max_manual_points', label: 'Maks. Manuel Puan', hint: 'Varsayılan: 10' },
+                { key: 'pk_max_participants_per_side', label: 'Taraf Başına Maks. Katılımcı', hint: '1-8' },
+              ].map(item => (
+                <div key={item.key} className="flex flex-col gap-1">
+                  <label className="text-sm text-purple-300">{item.label}</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="0" value={settings[item.key as keyof PlatformSettings]} onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))} className="w-24 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm text-center" />
+                    <button onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])} disabled={saving === item.key} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm disabled:opacity-50">{saving === item.key ? '...' : saved === item.key ? '✓' : 'Kaydet'}</button>
+                  </div>
+                  <span className="text-xs text-purple-400">{item.hint}</span>
+                </div>
+              ))}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-purple-300">Canlı Yayın PK</label>
+                <button onClick={() => { const v = settings.pk_stream_enabled === 'true' ? 'false' : 'true'; setSettings(prev => ({ ...prev, pk_stream_enabled: v })); saveSetting('pk_stream_enabled', v) }} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${settings.pk_stream_enabled === 'true' ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-red-600/50 hover:bg-red-500 text-red-200'}`}>{settings.pk_stream_enabled === 'true' ? '✅ Açık' : '❌ Kapalı'}</button>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-purple-300">Sesli Oda PK</label>
+                <button onClick={() => { const v = settings.pk_room_enabled === 'true' ? 'false' : 'true'; setSettings(prev => ({ ...prev, pk_room_enabled: v })); saveSetting('pk_room_enabled', v) }} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${settings.pk_room_enabled === 'true' ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-red-600/50 hover:bg-red-500 text-red-200'}`}>{settings.pk_room_enabled === 'true' ? '✅ Açık' : '❌ Kapalı'}</button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* §19 Hediye Kutusu Ayarları */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-deep-purple-800/40 rounded-xl p-6 border border-purple-500/20">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">🎁 Hediye Kutusu Ayarları</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'gift_box_min_amount', label: 'Min. Jeton', hint: 'Varsayılan: 10' },
+                { key: 'gift_box_max_amount', label: 'Maks. Jeton', hint: 'Varsayılan: 100000' },
+                { key: 'gift_box_min_duration_sec', label: 'Min. Süre (sn)', hint: 'Varsayılan: 5' },
+                { key: 'gift_box_max_duration_sec', label: 'Maks. Süre (sn)', hint: 'Varsayılan: 300' },
+                { key: 'gift_box_max_winners', label: 'Maks. Kazanan Sayısı', hint: 'Varsayılan: 100' },
+              ].map(item => (
+                <div key={item.key} className="flex flex-col gap-1">
+                  <label className="text-sm text-purple-300">{item.label}</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="0" value={settings[item.key as keyof PlatformSettings]} onChange={(e) => setSettings(prev => ({ ...prev, [item.key]: e.target.value }))} className="w-24 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm text-center" />
+                    <button onClick={() => saveSetting(item.key, settings[item.key as keyof PlatformSettings])} disabled={saving === item.key} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm disabled:opacity-50">{saving === item.key ? '...' : saved === item.key ? '✓' : 'Kaydet'}</button>
+                  </div>
+                  <span className="text-xs text-purple-400">{item.hint}</span>
+                </div>
+              ))}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-purple-300">İzin Verilen Süreler (virgülle ayrılmış saniye)</label>
+                <div className="flex items-center gap-2">
+                  <input type="text" value={settings.gift_box_allowed_durations} onChange={(e) => setSettings(prev => ({ ...prev, gift_box_allowed_durations: e.target.value }))} className="flex-1 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm" placeholder="5,10,15,30,60,120" />
+                  <button onClick={() => saveSetting('gift_box_allowed_durations', settings.gift_box_allowed_durations)} disabled={saving === 'gift_box_allowed_durations'} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm disabled:opacity-50">{saving === 'gift_box_allowed_durations' ? '...' : saved === 'gift_box_allowed_durations' ? '✓' : 'Kaydet'}</button>
+                </div>
+                <span className="text-xs text-purple-400">Örnek: 5,10,15,30,60,120</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-purple-300">Ek Görev Türleri (virgülle ayrılmış)</label>
+                <div className="flex items-center gap-2">
+                  <input type="text" value={settings.gift_box_extra_task_types} onChange={(e) => setSettings(prev => ({ ...prev, gift_box_extra_task_types: e.target.value }))} className="flex-1 px-3 py-2 bg-deep-purple-900/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 text-sm" placeholder="custom_task1,custom_task2" />
+                  <button onClick={() => saveSetting('gift_box_extra_task_types', settings.gift_box_extra_task_types)} disabled={saving === 'gift_box_extra_task_types'} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm disabled:opacity-50">{saving === 'gift_box_extra_task_types' ? '...' : saved === 'gift_box_extra_task_types' ? '✓' : 'Kaydet'}</button>
+                </div>
+                <span className="text-xs text-purple-400">Boş bırakırsan yalnız yerleşik görevler (none, follow_creator, follow_broadcaster, follow_user, share)</span>
+              </div>
+            </div>
+          </motion.div>
+
         </div>
       </div>
     </div>

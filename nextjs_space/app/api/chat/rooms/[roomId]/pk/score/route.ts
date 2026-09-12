@@ -8,9 +8,10 @@ import prisma from '@/lib/db'
 import { emitChatEvent } from '@/lib/chat-events'
 import { staffCan } from '@/lib/permissions'
 import { PK_RUNNING_STATUSES } from '@/lib/pk-state'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 /** §7: manuel skor müdahalesi üst sınırı */
-const MAX_MANUAL_POINTS = 10
+import { getPkLimits } from '@/lib/pk-state'
 
 /**
  * PK Score endpoint for Chat Rooms.
@@ -44,7 +45,7 @@ export async function POST(
       return NextResponse.json({ error: 'amount gerekli ve pozitif olmalı' }, { status: 400 })
     }
     // §7: istemciden gelen puan asla sınırsız olamaz
-    const points = Math.min(Math.floor(rawAmount), MAX_MANUAL_POINTS)
+    const points = Math.min(Math.floor(rawAmount), (await getPkLimits()).maxManualPoints)
 
     // Find the active PK for this room
     let battle
@@ -112,6 +113,7 @@ export async function POST(
     emitChatEvent(battle.stream1Id, 'pk', scoreData)
     emitChatEvent(battle.stream2Id, 'pk', scoreData)
 
+    recordAudit({ actorId: userId, action: 'pk.score', targetType: 'pk_battle', targetId: updated.id, metadata: { side: isRoom1 ? 1 : 2, points, source: 'manual', score1: updated.score1, score2: updated.score2 }, ip: getAuditIp(req) }).catch(() => {})
     return NextResponse.json({
       battleId: updated.id,
       score1: updated.score1,

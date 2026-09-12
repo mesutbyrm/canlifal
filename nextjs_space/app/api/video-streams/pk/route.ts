@@ -24,8 +24,10 @@ import {
   addPkParticipants,
   listPkParticipants,
   derivePkMode,
+  getPkLimits,
 } from '@/lib/pk-state'
 import { staffCan } from '@/lib/permissions'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -112,6 +114,8 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const { action, streamId, targetStreamId, battleId, duration } = body
+    const pkLimits = await getPkLimits()
+    const clampedDuration = Math.max(pkLimits.minDuration, Math.min(pkLimits.maxDuration, Math.floor(duration || pkLimits.defaultDuration)))
 
     if (action === 'create') {
       // Create a new PK battle request
@@ -158,7 +162,7 @@ export async function POST(req: NextRequest) {
           stream2Id: targetStreamId,
           user1Id: currentUserId,
           user2Id: targetStream.userId,
-          duration: duration || 180,
+          duration: clampedDuration,
           status: 'pending',
           mode: '1v1',
           scope: 'stream',
@@ -224,6 +228,7 @@ export async function POST(req: NextRequest) {
       emitStreamEvent(streamId, 'pk', pkData)
       emitStreamEvent(targetStreamId, 'pk', pkData)
 
+      recordAudit({ actorId: currentUserId, action: 'pk.create', targetType: 'pk_battle', targetId: battle.id, metadata: { streamId, targetStreamId, duration: battle.duration }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json(battle)
     }
 
@@ -263,7 +268,8 @@ export async function POST(req: NextRequest) {
       }
 
       const acceptedAt = new Date()
-      const endTime = new Date(acceptedAt.getTime() + (battle.duration || 180) * 1000)
+      const pkL = await getPkLimits()
+      const endTime = new Date(acceptedAt.getTime() + (battle.duration || pkL.defaultDuration) * 1000)
       let updated
       try {
         // Optimistic lock: yalnızca hâlâ pending ise kabul edilir (çift kabul yarışı engellenir)
@@ -278,6 +284,7 @@ export async function POST(req: NextRequest) {
       const pkStartData = { type: 'pk', battleId: battle.id, action: 'started', eventType: 'PK_STARTED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: updated.score1, score2: updated.score2, duration: battle.duration, status: 'active', startedAt: acceptedAt.toISOString(), acceptedAt: acceptedAt.toISOString(), endsAt: endTime.toISOString(), endTime: endTime.toISOString(), serverNow: new Date().toISOString() }
       emitPkToBothSides(battle, pkStartData)
 
+      recordAudit({ actorId: currentUserId, action: 'pk.accept', targetType: 'pk_battle', targetId: battleId, metadata: { endTime: endTime.toISOString() }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json({ ...updated, endTime, serverNow: new Date().toISOString() })
     }
 
@@ -309,6 +316,7 @@ export async function POST(req: NextRequest) {
 
       const cancelData = { type: 'pk', battleId: battle.id, action: newStatus, eventType: newStatus === 'rejected' ? 'PK_REQUEST_REJECTED' : 'PK_REQUEST_CANCELLED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, status: newStatus }
       emitPkToBothSides(battle, cancelData)
+      recordAudit({ actorId: currentUserId, action: 'pk.' + newStatus, targetType: 'pk_battle', targetId: battleId, metadata: { status: newStatus }, ip: getAuditIp(req) }).catch(() => {})
 
       return NextResponse.json(updated)
     }
@@ -326,6 +334,7 @@ export async function POST(req: NextRequest) {
 
       const updated = await finishPkBattle(battle as any, 'MANUAL')
       if (!updated) return NextResponse.json({ error: 'PK zaten bitmiş' }, { status: 409 })
+      recordAudit({ actorId: currentUserId, action: 'pk.end', targetType: 'pk_battle', targetId: battleId, metadata: { winner: (updated as any).winner, reason: 'MANUAL' }, ip: getAuditIp(req) }).catch(() => {})
 
       return NextResponse.json(updated)
     }
@@ -354,6 +363,7 @@ export async function POST(req: NextRequest) {
             ? await startPkBattle(battle as any, 'MANUAL')
             : await resumePkBattle(battle as any, 'MANUAL')
       if (!updated) return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
+      recordAudit({ actorId: currentUserId, action: 'pk.' + action, targetType: 'pk_battle', targetId: battleId, metadata: { status: (updated as any).status }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json({ ...updated, serverNow: new Date().toISOString() })
     }
 

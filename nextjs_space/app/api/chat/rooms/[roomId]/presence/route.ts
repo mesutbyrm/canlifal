@@ -12,6 +12,7 @@ import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { seatStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
 import { endPksForSide } from '@/lib/pk-state'
+import { closeGiftBoxesFor } from '@/lib/gift-box'
 import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
 import { awardVipXpSafe } from '@/lib/vip-xp'
 
@@ -240,6 +241,7 @@ export async function POST(
             data: { isActive: false }
           }).catch(() => {})
           await endPksIfOwnerLeft(roomId, userId)
+          await closeGiftBoxesFor({ roomId }).catch(() => {})
           // Delete all previous leave messages, keep only the latest
           await prisma.chatMessage.deleteMany({
             where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
@@ -731,6 +733,7 @@ export async function DELETE(
         data: { isActive: false }
       }).catch(() => {})
       await endPksIfOwnerLeft(roomId, delUserId)
+      await closeGiftBoxesFor({ roomId }).catch(() => {})
       // Delete all previous leave messages, keep only the latest
       await prisma.chatMessage.deleteMany({
         where: { roomId, content: { startsWith: '[SYSTEM_LEAVE]' } }
