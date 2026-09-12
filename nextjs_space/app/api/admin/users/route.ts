@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 
 // GET - List all users with pagination and filtering
 export async function GET(request: NextRequest) {
+  // Dual auth: session cookie or Bearer token
+  let userRole: string | undefined
   const session = await getServerSession(authOptions)
-  if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
-    return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  if (session?.user) {
+    userRole = (session.user as any).role
+  } else {
+    const auth = await authenticateRequest(request)
+    if (!auth) return NextResponse.json({ error: 'Oturum gerekli' }, { status: 401 })
+    userRole = auth.role
+  }
+  if (!userRole || !['admin','yonetici','moderator','finans'].includes(userRole)) {
+    return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 403 })
   }
 
   try {
@@ -21,64 +33,88 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortDir = searchParams.get('sortDir') || 'desc'
 
-    const where: any = {}
-    
+    // §53 Gelişmiş filtreler
+    const advFilter = searchParams.get('adv') || '' // online,offline,broadcasting,inRoom,fortuneTeller,hasAgency,noAgency
+    const advFilters = advFilter ? advFilter.split(',').filter(Boolean) : []
+
+    const now = new Date()
+    const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000)
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+    // Build AND conditions array for composable filters
+    const andConditions: any[] = []
+
+    // Text search
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { username: { contains: search, mode: 'insensitive' } },
-      ]
-    }
-    
-    if (role && role !== 'all') {
-      where.role = role
-    }
-    
-    if (membership && membership !== 'all') {
-      where.membership = membership
+      andConditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { username: { contains: search, mode: 'insensitive' } },
+        ]
+      })
     }
 
-    // Segment filtreleri
-    const now = new Date()
-    if (segment === 'active') {
-      // Son 7 günde aktif
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      where.lastActiveAt = { gte: weekAgo }
-    } else if (segment === 'passive') {
-      // 30 günden fazla aktif olmayan veya hiç aktif olmamış
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      where.OR = [
-        ...(where.OR || []),
-        { lastActiveAt: { lt: monthAgo } },
-        { lastActiveAt: null },
-      ]
-      if (!search) delete where.OR // merge issue fix
-      if (segment === 'passive') {
-        where.AND = [
-          ...(where.AND || []),
-          { OR: [{ lastActiveAt: { lt: monthAgo } }, { lastActiveAt: null }] },
-        ]
-        if (search) {
-          where.AND.push({ OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { username: { contains: search, mode: 'insensitive' } },
-          ]})
-          delete where.OR
-        }
-      }
-    } else if (segment === 'vip') {
-      // VIP veya premium üyelik
-      where.membership = { in: ['vip', 'premium', 'elite'] }
-    } else if (segment === 'new') {
-      // Son 7 günde kayıt
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      where.createdAt = { gte: weekAgo }
-    } else if (segment === 'spender') {
-      // Yüksek harcama yapanlar (10000+ jeton toplam harcama)
-      where.jetonBalance = { gte: 1000 }
+    // Role filter
+    if (role && role !== 'all') {
+      andConditions.push({ role })
     }
+
+    // Membership filter
+    if (membership && membership !== 'all') {
+      andConditions.push({ membership })
+    }
+
+    // Segment filters
+    if (segment === 'active') {
+      andConditions.push({ lastActiveAt: { gte: weekAgo } })
+    } else if (segment === 'passive') {
+      andConditions.push({ OR: [{ lastActiveAt: { lt: monthAgo } }, { lastActiveAt: null }] })
+    } else if (segment === 'vip') {
+      andConditions.push({ membership: { in: ['gold', 'premium', 'diamond', 'svip'] } })
+    } else if (segment === 'new') {
+      andConditions.push({ createdAt: { gte: weekAgo } })
+    } else if (segment === 'spender') {
+      andConditions.push({ jetonBalance: { gte: 1000 } })
+    }
+
+    // §53 Advanced filters — resolve user IDs for relational filters
+    if (advFilters.includes('online')) {
+      andConditions.push({ lastActiveAt: { gte: fiveMinAgo } })
+    }
+    if (advFilters.includes('offline')) {
+      andConditions.push({ OR: [{ lastActiveAt: { lt: fiveMinAgo } }, { lastActiveAt: null }] })
+    }
+    if (advFilters.includes('broadcasting')) {
+      const liveStreamers = await prisma.videoStream.findMany({
+        where: { status: 'live', endedAt: null },
+        select: { userId: true },
+        distinct: ['userId'],
+      })
+      const ids = liveStreamers.map(s => s.userId)
+      andConditions.push({ id: { in: ids.length > 0 ? ids : ['__none__'] } })
+    }
+    if (advFilters.includes('inRoom')) {
+      const inRoom = await prisma.chatPresence.findMany({
+        where: { lastSeen: { gte: fiveMinAgo } },
+        select: { userId: true },
+        distinct: ['userId'],
+      })
+      const ids = inRoom.map(p => p.userId)
+      andConditions.push({ id: { in: ids.length > 0 ? ids : ['__none__'] } })
+    }
+    if (advFilters.includes('fortuneTeller')) {
+      andConditions.push({ fortuneTellerProfile: { isNot: null } })
+    }
+    if (advFilters.includes('hasAgency')) {
+      andConditions.push({ agencyMembership: { isNot: null } })
+    }
+    if (advFilters.includes('noAgency')) {
+      andConditions.push({ agencyMembership: null })
+    }
+
+    const where: any = andConditions.length > 0 ? { AND: andConditions } : {}
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -96,6 +132,7 @@ export async function GET(request: NextRequest) {
           level: true,
           lastActiveAt: true,
           createdAt: true,
+          isFrozen: true,
           _count: {
             select: {
               fortunes: true,
@@ -109,14 +146,16 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where })
     ])
 
-    // Segment counts
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const [totalAll, activeCount, newCount, vipCount] = await Promise.all([
+    // Segment + advanced filter counts (cached per request)
+    const [totalAll, activeCount, newCount, vipCount, broadcastingCount, inRoomCount, fortuneTellerCount, hasAgencyCount] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { lastActiveAt: { gte: weekAgo } } }),
       prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-      prisma.user.count({ where: { membership: { in: ['vip', 'premium', 'elite'] } } }),
+      prisma.user.count({ where: { membership: { in: ['gold', 'premium', 'diamond', 'svip'] } } }),
+      prisma.videoStream.count({ where: { status: 'live', endedAt: null } }),
+      prisma.chatPresence.count({ where: { lastSeen: { gte: fiveMinAgo } } }),
+      prisma.liveFortuneTeller.count(),
+      prisma.agencyUser.count({ where: { isActive: true } }),
     ])
 
     return NextResponse.json({
@@ -124,7 +163,21 @@ export async function GET(request: NextRequest) {
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      segmentCounts: { all: totalAll, active: activeCount, new: newCount, vip: vipCount, passive: totalAll - activeCount },
+      segmentCounts: {
+        all: totalAll,
+        active: activeCount,
+        new: newCount,
+        vip: vipCount,
+        passive: totalAll - activeCount,
+      },
+      advancedCounts: {
+        online: activeCount, // approximation via lastActiveAt
+        broadcasting: broadcastingCount,
+        inRoom: inRoomCount,
+        fortuneTeller: fortuneTellerCount,
+        hasAgency: hasAgencyCount,
+        noAgency: totalAll - hasAgencyCount,
+      },
     })
   } catch (error) {
     console.error('Error fetching users:', error)

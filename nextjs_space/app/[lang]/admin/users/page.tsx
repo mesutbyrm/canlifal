@@ -31,6 +31,8 @@ interface UserListItem {
   role: string
   membership: string
   createdAt: string
+  lastActiveAt: string | null
+  isFrozen: boolean
   _count: { fortunes: number }
 }
 
@@ -109,6 +111,9 @@ export default function AdminUsersPage() {
   const [membershipFilter, setMembershipFilter] = useState<string>('all')
   const [segmentFilter, setSegmentFilter] = useState<string>('all')
   const [segmentCounts, setSegmentCounts] = useState<Record<string, number>>({})
+  const [advancedFilters, setAdvancedFilters] = useState<string[]>([])
+  const [advancedCounts, setAdvancedCounts] = useState<Record<string, number>>({})
+  const [showAdvFilters, setShowAdvFilters] = useState(false)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   
@@ -153,7 +158,7 @@ export default function AdminUsersPage() {
       return
     }
     fetchUsers()
-  }, [session, page, searchQuery, roleFilter, membershipFilter, segmentFilter])
+  }, [session, page, searchQuery, roleFilter, membershipFilter, segmentFilter, advancedFilters])
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -165,6 +170,7 @@ export default function AdminUsersPage() {
         ...(roleFilter !== 'all' && { role: roleFilter }),
         ...(membershipFilter !== 'all' && { membership: membershipFilter }),
         ...(segmentFilter !== 'all' && { segment: segmentFilter }),
+        ...(advancedFilters.length > 0 && { adv: advancedFilters.join(',') }),
       })
       const res = await fetch(`/api/admin/users?${params}`)
       if (res.ok) {
@@ -172,6 +178,7 @@ export default function AdminUsersPage() {
         setUsers(data.users || data)
         setTotalPages(data.totalPages || 1)
         if (data.segmentCounts) setSegmentCounts(data.segmentCounts)
+        if (data.advancedCounts) setAdvancedCounts(data.advancedCounts)
       }
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -557,7 +564,89 @@ export default function AdminUsersPage() {
             <option value="vip">VIP</option>
             <option value="svip">SVIP</option>
           </select>
+          <button
+            onClick={() => setShowAdvFilters(!showAdvFilters)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+              advancedFilters.length > 0
+                ? 'bg-amber-500/20 border-amber-400/40 text-amber-300'
+                : 'bg-white/5 border-purple-500/30 text-gray-400 hover:text-white hover:border-purple-400'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            Gelişmiş
+            {advancedFilters.length > 0 && (
+              <span className="bg-amber-500/30 text-amber-200 text-[10px] px-1.5 py-0.5 rounded-full">{advancedFilters.length}</span>
+            )}
+          </button>
         </div>
+
+        {/* §53 Advanced Filters Panel */}
+        <AnimatePresence>
+          {showAdvFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="bg-[#1a0b2e] rounded-xl p-4 mb-6 border border-amber-500/20">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-amber-400 text-sm font-semibold flex items-center gap-2">
+                    <Filter className="w-4 h-4" /> Gelişmiş Filtreler
+                  </h3>
+                  {advancedFilters.length > 0 && (
+                    <button onClick={() => { setAdvancedFilters([]); setPage(1) }} className="text-xs text-gray-500 hover:text-red-400 transition">
+                      Temizle
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: 'online', label: 'Çevrimiçi', icon: '🟢', color: 'green' },
+                    { key: 'offline', label: 'Çevrimdışı', icon: '⚫', color: 'gray' },
+                    { key: 'broadcasting', label: 'Yayında', icon: '📡', color: 'red' },
+                    { key: 'inRoom', label: 'Odada', icon: '🏠', color: 'blue' },
+                    { key: 'fortuneTeller', label: 'Falcı', icon: '🔮', color: 'purple' },
+                    { key: 'hasAgency', label: 'Ajanslı', icon: '🏢', color: 'cyan' },
+                    { key: 'noAgency', label: 'Ajanssız', icon: '👤', color: 'orange' },
+                  ].map(f => {
+                    const active = advancedFilters.includes(f.key)
+                    // Mutual exclusion: online/offline, hasAgency/noAgency
+                    const toggle = () => {
+                      setPage(1)
+                      if (active) {
+                        setAdvancedFilters(prev => prev.filter(x => x !== f.key))
+                      } else {
+                        let next = [...advancedFilters.filter(x => {
+                          if (f.key === 'online' && x === 'offline') return false
+                          if (f.key === 'offline' && x === 'online') return false
+                          if (f.key === 'hasAgency' && x === 'noAgency') return false
+                          if (f.key === 'noAgency' && x === 'hasAgency') return false
+                          return true
+                        }), f.key]
+                        setAdvancedFilters(next)
+                      }
+                    }
+                    const count = advancedCounts[f.key]
+                    return (
+                      <button key={f.key} onClick={toggle}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                          active
+                            ? 'bg-amber-500/20 text-amber-200 border-amber-400/30'
+                            : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-gray-200'
+                        }`}
+                      >
+                        <span>{f.icon}</span> {f.label}
+                        {count !== undefined && <span className="text-[10px] opacity-60">({count})</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Users Table */}
         <div className="bg-[#1a0b2e] rounded-xl overflow-hidden">
@@ -589,15 +678,22 @@ export default function AdminUsersPage() {
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            {user.image ? (
-                              <Image src={user.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-white font-bold">{user.name?.[0]?.toUpperCase()}</span>
-                            )}
+                          <div className="relative">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              {user.image ? (
+                                <Image src={user.image} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-white font-bold">{user.name?.[0]?.toUpperCase()}</span>
+                              )}
+                            </div>
+                            {/* Online indicator */}
+                            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#1a0b2e] ${
+                              user.lastActiveAt && (Date.now() - new Date(user.lastActiveAt).getTime()) < 5 * 60 * 1000
+                                ? 'bg-emerald-400' : 'bg-gray-600'
+                            }`} />
                           </div>
                           <div>
-                            <p className="text-white font-medium">{user.name}</p>
+                            <p className={`font-medium ${user.isFrozen ? 'text-red-400 line-through' : 'text-white'}`}>{user.name}</p>
                             {user.username && <p className="text-purple-400 text-xs">@{user.username}</p>}
                           </div>
                         </div>
