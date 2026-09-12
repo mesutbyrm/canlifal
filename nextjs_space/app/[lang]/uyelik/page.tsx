@@ -306,7 +306,6 @@ export default function MembershipsPage() {
 
         {/* BÖLÜM 20 — §11 Gizlilik sistemi (yetki kontrolü sunucu tarafında) */}
         <div className="mb-8">
-          <h2 className={`text-lg font-bold mb-3 ${textPrimary}`}>Gizlilik Ayarları</h2>
           <VipPrivacySettings isDark={!isFacebook} />
         </div>
 
