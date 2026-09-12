@@ -31,6 +31,11 @@ export type PkMatch = {
   rightScore: number
   leftName: string | null
   rightName: string | null
+  scope: string
+  paused: boolean
+  pausedAt: string | null
+  pausedMs: number
+  scopeRoomId: string | null
   requestedAt: string | null
   respondedAt: string | null
   startedAt: string | null
@@ -43,6 +48,10 @@ export function mapPkStatus(status: string): string {
   switch (status) {
     case 'active':
       return 'live'
+    case 'starting':
+      return 'starting'
+    case 'paused':
+      return 'paused'
     case 'completed':
       return 'ended'
     default:
@@ -93,12 +102,17 @@ export function serializePkMatch(
     result,
     winnerUserId: battle.winnerId || null,
     finalSprint,
-    mode: '1v1',
-    seatCount: 2,
+    mode: battle.mode || '1v1',
+    seatCount: Array.isArray(battle.participants) && battle.participants.length > 0 ? battle.participants.length : 2,
     leftScore: battle.score1 || 0,
     rightScore: battle.score2 || 0,
     leftName: host?.name ?? null,
     rightName: guest?.name ?? null,
+    scope: battle.scope || 'stream',
+    paused: battle.status === 'paused',
+    pausedAt: battle.pausedAt ? new Date(battle.pausedAt).toISOString() : null,
+    pausedMs: battle.pausedMs || 0,
+    scopeRoomId: battle.scopeRoomId || null,
     requestedAt: battle.createdAt ? new Date(battle.createdAt).toISOString() : null,
     respondedAt: battle.acceptedAt ? new Date(battle.acceptedAt).toISOString() : (battle.startedAt ? new Date(battle.startedAt).toISOString() : null),
     startedAt: startedAt ? new Date(startedAt).toISOString() : null,

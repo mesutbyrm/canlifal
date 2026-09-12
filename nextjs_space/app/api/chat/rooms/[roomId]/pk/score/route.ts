@@ -6,6 +6,11 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitChatEvent } from '@/lib/chat-events'
+import { staffCan } from '@/lib/permissions'
+import { PK_RUNNING_STATUSES } from '@/lib/pk-state'
+
+/** §7: manuel skor müdahalesi üst sınırı */
+const MAX_MANUAL_POINTS = 10
 
 /**
  * PK Score endpoint for Chat Rooms.
@@ -26,7 +31,7 @@ export async function POST(
 
     // §90 Fix: Only admin/superadmin can call PK score directly
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
-    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+    if (!user || !(await staffCan(user.role, userId, 'moderation.room.manage', ['admin', 'superadmin']))) {
       return NextResponse.json({ error: 'Bu işlem için admin yetkisi gerekiyor' }, { status: 403 })
     }
 
@@ -34,21 +39,24 @@ export async function POST(
     const body = await req.json()
     const { battleId, amount, side } = body
 
-    if (!amount || amount <= 0) {
+    const rawAmount = Number(amount)
+    if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
       return NextResponse.json({ error: 'amount gerekli ve pozitif olmalı' }, { status: 400 })
     }
+    // §7: istemciden gelen puan asla sınırsız olamaz
+    const points = Math.min(Math.floor(rawAmount), MAX_MANUAL_POINTS)
 
     // Find the active PK for this room
     let battle
     if (battleId) {
       battle = await prisma.pKBattle.findFirst({
-        where: { id: battleId, status: 'active' }
+        where: { id: battleId, status: { in: PK_RUNNING_STATUSES } }
       })
     } else {
       battle = await prisma.pKBattle.findFirst({
         where: {
           OR: [{ stream1Id: roomId }, { stream2Id: roomId }],
-          status: 'active'
+          status: { in: PK_RUNNING_STATUSES }
         }
       })
     }
@@ -71,9 +79,24 @@ export async function POST(
     const updated = await prisma.pKBattle.update({
       where: { id: battle.id },
       data: isRoom1
-        ? { score1: { increment: amount } }
-        : { score2: { increment: amount } }
+        ? { score1: { increment: points } }
+        : { score2: { increment: points } }
     })
+
+    // §7 denetim izi: manuel müdahale defterde kalır
+    try {
+      await prisma.pkScore.create({
+        data: {
+          battleId: battle.id,
+          side: isRoom1 ? 1 : 2,
+          points,
+          source: 'manual',
+          contributorId: userId,
+        },
+      })
+    } catch (ledgerError) {
+      console.error('Chat PK manual score ledger error:', ledgerError)
+    }
 
     // Emit score update to both rooms
     const scoreData = {
@@ -83,7 +106,7 @@ export async function POST(
       score2: updated.score2,
       room1Id: battle.stream1Id,
       room2Id: battle.stream2Id,
-      addedAmount: amount,
+      addedAmount: points,
       addedSide: isRoom1 ? 'room1' : 'room2',
     }
     emitChatEvent(battle.stream1Id, 'pk', scoreData)

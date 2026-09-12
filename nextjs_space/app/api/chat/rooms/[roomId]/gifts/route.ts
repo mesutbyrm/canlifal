@@ -324,6 +324,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       sideIds: [roomId, (room as any)?.id, (room as any)?.slug],
       amount: price,
       battleId: (body as any)?.battleId || null,
+      contributorId: sender.id,
+      receiverId: recipientId,
+      giftTypeId: giftType.id,
+      quantity,
+      source: 'gift',
     })
 
     // Leaderboard skor: hediye alıcısına puan (sesli oda)

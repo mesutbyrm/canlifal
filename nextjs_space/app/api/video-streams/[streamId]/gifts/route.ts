@@ -301,6 +301,11 @@ export async function POST(
     const pkUpdate = await applyGiftPkScore({
       sideIds: [params.streamId, (stream as any)?.id, (stream as any)?.roomId],
       amount: totalPrice,
+      contributorId: userId,
+      receiverId: stream.userId,
+      giftTypeId: giftType.id,
+      quantity,
+      source: 'gift',
     })
 
     // Leaderboard skor: hediye alıcısına puan (canlı yayın)

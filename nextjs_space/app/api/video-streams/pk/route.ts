@@ -17,7 +17,15 @@ import {
   finalizeExpiredActivePKs,
   ensurePkSidesAlive,
   emitPkToBothSides,
+  PK_LIVE_STATUSES,
+  pausePkBattle,
+  resumePkBattle,
+  startPkBattle,
+  addPkParticipants,
+  listPkParticipants,
+  derivePkMode,
 } from '@/lib/pk-state'
+import { staffCan } from '@/lib/permissions'
 
 // GET - Get active PK battle for a stream
 export async function GET(req: NextRequest) {
@@ -37,7 +45,7 @@ export async function GET(req: NextRequest) {
         AND: [
           { OR: [{ stream1Id: streamId }, { stream2Id: streamId }] },
           { OR: [
-            { status: { in: ['pending', 'active'] } },
+            { status: { in: PK_LIVE_STATUSES } },
             { status: { in: ['completed', 'expired'] }, endedAt: { gte: fiveMinAgo } }
           ]}
         ]
@@ -127,7 +135,7 @@ export async function POST(req: NextRequest) {
             { stream1Id: { in: [streamId, targetStreamId] } },
             { stream2Id: { in: [streamId, targetStreamId] } }
           ],
-          status: { in: ['pending', 'active'] }
+          status: { in: PK_LIVE_STATUSES }
         }
       })
       if (existingPK) return NextResponse.json({ error: 'Zaten aktif bir PK mevcut' }, { status: 400 })
@@ -139,7 +147,7 @@ export async function POST(req: NextRequest) {
             { user1Id: { in: [currentUserId, targetStream.userId] } },
             { user2Id: { in: [currentUserId, targetStream.userId] } }
           ],
-          status: { in: ['pending', 'active'] }
+          status: { in: PK_LIVE_STATUSES }
         }
       })
       if (userPk) return NextResponse.json({ error: 'Taraflardan biri zaten bir PK\'da' }, { status: 400 })
@@ -151,9 +159,37 @@ export async function POST(req: NextRequest) {
           user1Id: currentUserId,
           user2Id: targetStream.userId,
           duration: duration || 180,
-          status: 'pending'
+          status: 'pending',
+          mode: '1v1',
+          scope: 'stream',
         }
       })
+
+      // §6 — Multi-Guest açıkken misafirler de PK taraflarına dahil edilir.
+      // Misafir oturumları (guest_session) DEĞİŞTİRİLMEZ; yalnız okunur.
+      const guestRows = await prisma.liveGuestSession.findMany({
+        where: { streamId: { in: [streamId, targetStreamId] }, status: 'active' },
+        select: { streamId: true, userId: true, slot: true },
+      })
+      await addPkParticipants(battle.id, [
+        { userId: currentUserId, side: 1 as const, isCaptain: true },
+        { userId: targetStream.userId, side: 2 as const, isCaptain: true },
+        ...guestRows
+          .filter((g) => g.userId !== currentUserId && g.userId !== targetStream.userId)
+          .map((g) => ({
+            userId: g.userId,
+            side: (g.streamId === streamId ? 1 : 2) as 1 | 2,
+            seatNumber: g.slot,
+            isCaptain: false,
+          })),
+      ])
+      const side1Count = 1 + guestRows.filter((g) => g.streamId === streamId && g.userId !== currentUserId).length
+      const side2Count = 1 + guestRows.filter((g) => g.streamId === targetStreamId && g.userId !== targetStream.userId).length
+      const derivedMode = derivePkMode(side1Count, side2Count)
+      if (derivedMode !== '1v1') {
+        await prisma.pKBattle.update({ where: { id: battle.id }, data: { mode: derivedMode } }).catch(() => {})
+        battle.mode = derivedMode
+      }
 
       // Schedule auto-expiry after 60 seconds (fire and forget)
       setTimeout(async () => {
@@ -292,6 +328,39 @@ export async function POST(req: NextRequest) {
       if (!updated) return NextResponse.json({ error: 'PK zaten bitmiş' }, { status: 409 })
 
       return NextResponse.json(updated)
+    }
+
+    // ──────────── START / PAUSE / RESUME (§4) ────────────
+    if (action === 'start' || action === 'pause' || action === 'resume') {
+      if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
+      const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
+      if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
+
+      let canControl = battle.user1Id === currentUserId || battle.user2Id === currentUserId
+      if (!canControl) {
+        const me = await prisma.user.findUnique({ where: { id: currentUserId }, select: { role: true } })
+        canControl = await staffCan(me?.role, currentUserId, 'moderation.room.manage', ['admin', 'yonetici', 'moderator'])
+      }
+      if (!canControl) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+
+      const target: 'active' | 'paused' = action === 'pause' ? 'paused' : 'active'
+      const transErr = checkPkTransition(battle.status, target)
+      if (transErr) return NextResponse.json({ error: transErr }, { status: 400 })
+
+      const updated =
+        action === 'pause'
+          ? await pausePkBattle(battle as any, 'MANUAL')
+          : action === 'start'
+            ? await startPkBattle(battle as any, 'MANUAL')
+            : await resumePkBattle(battle as any, 'MANUAL')
+      if (!updated) return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
+      return NextResponse.json({ ...updated, serverNow: new Date().toISOString() })
+    }
+
+    // ──────────── PARTICIPANTS (çok taraflı PK listesi) ────────────
+    if (action === 'participants') {
+      if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
+      return NextResponse.json({ battleId, participants: await listPkParticipants(battleId) })
     }
 
     return NextResponse.json({ error: 'Geçersiz action' }, { status: 400 })

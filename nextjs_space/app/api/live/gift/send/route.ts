@@ -222,6 +222,11 @@ export async function POST(request: NextRequest) {
       pkUpdate = await applyGiftPkScore({
         sideIds: [stream.id, stream.roomId],
         amount: totalPrice,
+        contributorId: sender.id,
+        receiverId: stream.userId,
+        giftTypeId,
+        quantity,
+        source: 'gift',
       })
 
       // Leaderboard skor: hediye alıcısına (yayıncı) puan (canlı yayın)
@@ -380,6 +385,11 @@ export async function POST(request: NextRequest) {
       pkUpdate = await applyGiftPkScore({
         sideIds: [room.id, roomId],
         amount: totalPrice,
+        contributorId: sender.id,
+        receiverId: recipientId,
+        giftTypeId,
+        quantity,
+        source: 'gift',
       })
 
       // Leaderboard skor: hediye alıcısına puan (sesli oda)

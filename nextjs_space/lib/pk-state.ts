@@ -21,19 +21,35 @@ import { emitStreamEvent } from '@/lib/stream-events'
 
 export type PkStatus =
   | 'pending'
+  | 'starting'
   | 'active'
+  | 'paused'
   | 'completed'
   | 'cancelled'
   | 'rejected'
   | 'expired'
+
+/**
+ * "Yaşayan" PK durumları — sorgu filtrelerinde ['pending','active'] yerine
+ * bu sabit kullanılmalıdır (starting/paused da hâlâ açık bir PK'dır).
+ */
+export const PK_LIVE_STATUSES: PkStatus[] = ['pending', 'starting', 'active', 'paused']
+/** Henüz kabul edilmemiş (davet aşamasındaki) durumlar. */
+export const PK_PENDING_STATUSES: PkStatus[] = ['pending', 'starting']
+/** Skor yazılabilen / sayaç işleyen durumlar. */
+export const PK_RUNNING_STATUSES: PkStatus[] = ['active', 'paused']
 
 /** Şartnamedeki mantıksal adların veritabanı karşılıkları. */
 export const PK_STATE_ALIASES: Record<string, PkStatus> = {
   REQUESTED: 'pending',
   PENDING: 'pending',
   ACCEPTED: 'active',
+  STARTING: 'starting',
   ACTIVE: 'active',
+  PAUSED: 'paused',
   ENDED: 'completed',
+  FINISHED: 'completed',
+  COMPLETED: 'completed',
   REJECTED: 'rejected',
   CANCELLED: 'cancelled',
   EXPIRED: 'expired',
@@ -43,8 +59,10 @@ export const PK_TERMINAL_STATUSES: PkStatus[] = ['completed', 'cancelled', 'reje
 
 /** İzinli geçişler. Burada olmayan her geçiş yasaktır. */
 const PK_TRANSITIONS: Record<PkStatus, PkStatus[]> = {
-  pending: ['active', 'rejected', 'cancelled', 'expired'],
-  active: ['completed'],
+  pending: ['starting', 'active', 'rejected', 'cancelled', 'expired'],
+  starting: ['active', 'cancelled', 'expired'],
+  active: ['paused', 'completed'],
+  paused: ['active', 'completed'],
   completed: [],
   cancelled: [],
   rejected: [],
@@ -53,7 +71,9 @@ const PK_TRANSITIONS: Record<PkStatus, PkStatus[]> = {
 
 const STATUS_LABEL_TR: Record<string, string> = {
   pending: 'beklemede',
+  starting: 'başlıyor',
   active: 'aktif',
+  paused: 'duraklatılmış',
   completed: 'bitmiş',
   cancelled: 'iptal edilmiş',
   rejected: 'reddedilmiş',
@@ -111,7 +131,7 @@ export async function finishPkBattle(battle: BattleRow, reason: string) {
   const outcome = computePkOutcome(battle)
   try {
     const updated = await prisma.pKBattle.update({
-      where: { id: battle.id, status: 'active' },
+      where: { id: battle.id, status: { in: ['active', 'paused'] } } as any,
       data: {
         status: 'completed',
         endedAt: new Date(),
@@ -149,7 +169,7 @@ export async function finishPkBattle(battle: BattleRow, reason: string) {
 export async function abortPendingPk(battle: BattleRow, status: 'cancelled' | 'expired', reason: string) {
   try {
     await prisma.pKBattle.update({
-      where: { id: battle.id, status: 'pending' },
+      where: { id: battle.id, status: { in: ['pending', 'starting'] } } as any,
       data: { status, endedAt: new Date() },
     })
     emitPkToBothSides(battle, {
@@ -224,14 +244,14 @@ export async function endPksForSide(sideIds: string[], reason: string): Promise<
   try {
     const battles = await prisma.pKBattle.findMany({
       where: {
-        status: { in: ['pending', 'active'] },
-        OR: [{ stream1Id: { in: ids } }, { stream2Id: { in: ids } }],
+        status: { in: PK_LIVE_STATUSES },
+        OR: [{ stream1Id: { in: ids } }, { stream2Id: { in: ids } }, { scopeRoomId: { in: ids } }],
       },
       select: BATTLE_SELECT,
     })
     let count = 0
     for (const b of battles) {
-      if (b.status === 'active') {
+      if (b.status === 'active' || b.status === 'paused') {
         if (await finishPkBattle(b as BattleRow, reason)) count++
       } else if (await abortPendingPk(b as BattleRow, 'cancelled', reason)) {
         count++
@@ -249,8 +269,9 @@ export async function endPksForSide(sideIds: string[], reason: string): Promise<
  * GET isteklerinde tembel (lazy) temizlik olarak kullanılır — ek zamanlayıcı gerekmez.
  */
 export async function ensurePkSidesAlive(battle: BattleRow): Promise<boolean> {
-  if (battle.status !== 'pending' && battle.status !== 'active') return true
-  const ids = [battle.stream1Id, battle.stream2Id]
+  if (!PK_LIVE_STATUSES.includes(battle.status as PkStatus)) return true
+  // Aynı oda içi (kullanıcı-vs-kullanıcı) PK'da iki taraf da aynı kimliktir.
+  const ids = Array.from(new Set([battle.stream1Id, battle.stream2Id]))
   try {
     const [streams, rooms] = await Promise.all([
       prisma.videoStream.findMany({ where: { id: { in: ids } }, select: { id: true, status: true } }),
@@ -266,7 +287,7 @@ export async function ensurePkSidesAlive(battle: BattleRow): Promise<boolean> {
       const alive = (s ? s.status === 'live' : false) || (r ? r.isActive : false)
       if (!alive) {
         const reason = s ? 'LIVE_ENDED' : r ? 'ROOM_CLOSED' : 'HOST_LEFT'
-        if (battle.status === 'active') await finishPkBattle(battle, reason)
+        if (battle.status === 'active' || battle.status === 'paused') await finishPkBattle(battle, reason)
         else await abortPendingPk(battle, 'cancelled', reason)
         return false
       }
@@ -282,7 +303,7 @@ export async function ensurePkSidesAlive(battle: BattleRow): Promise<boolean> {
 export async function findBlockingPk(userIds: string[], sideIds: string[]) {
   return prisma.pKBattle.findFirst({
     where: {
-      status: { in: ['pending', 'active'] },
+      status: { in: PK_LIVE_STATUSES },
       OR: [
         { user1Id: { in: userIds } },
         { user2Id: { in: userIds } },
@@ -292,4 +313,185 @@ export async function findBlockingPk(userIds: string[], sideIds: string[]) {
     },
     select: BATTLE_SELECT,
   })
+}
+
+/* ───────────────────────── Bölüm 22 / B3 ─────────────────────────
+ * STARTING / PAUSED durumları, çok taraflı katılımcılar ve
+ * aynı-oda-içi (kullanıcı vs kullanıcı) PK yardımcıları.
+ * ---------------------------------------------------------------- */
+
+export type PkMode = '1v1' | '1v2' | '1v3' | '2v2' | 'team'
+export type PkScope = 'stream' | 'room' | 'room_user' | 'guest'
+
+/** side1/side2 katılımcı sayılarından mod adını üretir. */
+export function derivePkMode(side1Count: number, side2Count: number): string {
+  if (side1Count <= 1 && side2Count <= 1) return '1v1'
+  if (side1Count === 1 && side2Count === 2) return '1v2'
+  if (side1Count === 1 && side2Count === 3) return '1v3'
+  if (side1Count === 2 && side2Count === 2) return '2v2'
+  return 'team'
+}
+
+/**
+ * Bir PK'ya katılımcı satırları yazar (kaptanlar dahil).
+ * Zaten var olan kullanıcılar sessizce atlanır.
+ */
+export async function addPkParticipants(
+  battleId: string,
+  entries: { userId: string; side: 1 | 2; seatNumber?: number | null; isCaptain?: boolean }[],
+) {
+  const seen = new Set<string>()
+  for (const e of entries) {
+    if (!e?.userId || seen.has(e.userId)) continue
+    seen.add(e.userId)
+    try {
+      await prisma.pkBattleParticipant.create({
+        data: {
+          battleId,
+          userId: e.userId,
+          side: e.side,
+          seatNumber: e.seatNumber ?? null,
+          isCaptain: !!e.isCaptain,
+        },
+      })
+    } catch { /* @@unique([battleId,userId]) — zaten ekli */ }
+  }
+}
+
+/** Bir PK'nın katılımcılarını kullanıcı bilgileriyle birlikte döner. */
+export async function listPkParticipants(battleId: string) {
+  const rows = await prisma.pkBattleParticipant.findMany({
+    where: { battleId },
+    orderBy: [{ side: 'asc' }, { createdAt: 'asc' }],
+  })
+  if (rows.length === 0) return []
+  const users = await prisma.user.findMany({
+    where: { id: { in: rows.map((r) => r.userId) } },
+    select: { id: true, name: true, username: true, image: true },
+  })
+  const map = new Map(users.map((u) => [u.id, u]))
+  return rows.map((r) => ({
+    userId: r.userId,
+    side: r.side,
+    seatNumber: r.seatNumber,
+    points: r.points,
+    isCaptain: r.isCaptain,
+    name: map.get(r.userId)?.name ?? null,
+    username: map.get(r.userId)?.username ?? null,
+    image: map.get(r.userId)?.image ?? null,
+  }))
+}
+
+type PausableBattle = BattleRow & { endsAt?: Date | null; pausedAt?: Date | null; pausedMs?: number | null }
+
+/** Aktif PK'yı duraklatır; kalan süre dondurulur. */
+export async function pausePkBattle(battle: PausableBattle, reason = 'MANUAL') {
+  const now = new Date()
+  let updated
+  try {
+    updated = await prisma.pKBattle.update({
+      where: { id: battle.id, status: 'active' } as any,
+      data: { status: 'paused', pausedAt: now } as any,
+    })
+  } catch {
+    return null
+  }
+  const remainingMs = updated.endsAt ? Math.max(0, new Date(updated.endsAt).getTime() - now.getTime()) : null
+  emitPkToBothSides(battle, {
+    type: 'pk',
+    battleId: battle.id,
+    action: 'paused',
+    eventType: 'PK_PAUSED',
+    reason,
+    room1Id: battle.stream1Id,
+    room2Id: battle.stream2Id,
+    score1: updated.score1,
+    score2: updated.score2,
+    status: 'paused',
+    pausedAt: now.toISOString(),
+    remainingMs,
+    serverNow: now.toISOString(),
+  })
+  return updated
+}
+
+/** Duraklatılmış PK'yı sürdürür; bitiş zamanı duraklatılan kadar ötelenir. */
+export async function resumePkBattle(battle: PausableBattle, reason = 'MANUAL') {
+  const fresh = await prisma.pKBattle.findUnique({ where: { id: battle.id } })
+  if (!fresh || fresh.status !== 'paused') return null
+  const now = new Date()
+  const pausedAt = (fresh as any).pausedAt as Date | null
+  const deltaMs = pausedAt ? Math.max(0, now.getTime() - new Date(pausedAt).getTime()) : 0
+  const newEndsAt = fresh.endsAt ? new Date(new Date(fresh.endsAt).getTime() + deltaMs) : null
+  let updated
+  try {
+    updated = await prisma.pKBattle.update({
+      where: { id: battle.id, status: 'paused' } as any,
+      data: {
+        status: 'active',
+        pausedAt: null,
+        pausedMs: { increment: deltaMs },
+        ...(newEndsAt ? { endsAt: newEndsAt } : {}),
+      } as any,
+    })
+  } catch {
+    return null
+  }
+  emitPkToBothSides(battle, {
+    type: 'pk',
+    battleId: battle.id,
+    action: 'resumed',
+    eventType: 'PK_RESUMED',
+    reason,
+    room1Id: battle.stream1Id,
+    room2Id: battle.stream2Id,
+    score1: updated.score1,
+    score2: updated.score2,
+    status: 'active',
+    endsAt: updated.endsAt ? new Date(updated.endsAt).toISOString() : null,
+    endTime: updated.endsAt ? new Date(updated.endsAt).toISOString() : null,
+    pausedMs: (updated as any).pausedMs ?? 0,
+    serverNow: now.toISOString(),
+  })
+  return updated
+}
+
+/**
+ * `starting` (geri sayım) aşamasındaki PK'yı gerçekten başlatır.
+ * Sayaç bu anda kurulur; kanonik bitiş zamanı sunucu saatiyle yazılır.
+ */
+export async function startPkBattle(battle: BattleRow & { duration?: number | null }, reason = 'MANUAL') {
+  const now = new Date()
+  const fresh = await prisma.pKBattle.findUnique({ where: { id: battle.id } })
+  if (!fresh || fresh.status !== 'starting') return null
+  const endsAt = new Date(now.getTime() + (fresh.duration && fresh.duration > 0 ? fresh.duration : 180) * 1000)
+  let updated
+  try {
+    updated = await prisma.pKBattle.update({
+      where: { id: battle.id, status: 'starting' } as any,
+      data: { status: 'active', startedAt: now, endsAt },
+    })
+  } catch {
+    return null
+  }
+  emitPkToBothSides(battle, {
+    type: 'pk',
+    battleId: battle.id,
+    action: 'started',
+    eventType: 'PK_STARTED',
+    reason,
+    room1Id: battle.stream1Id,
+    room2Id: battle.stream2Id,
+    user1Id: battle.user1Id,
+    user2Id: battle.user2Id,
+    score1: updated.score1,
+    score2: updated.score2,
+    duration: updated.duration,
+    status: 'active',
+    startedAt: now.toISOString(),
+    endsAt: endsAt.toISOString(),
+    endTime: endsAt.toISOString(),
+    serverNow: now.toISOString(),
+  })
+  return updated
 }

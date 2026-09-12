@@ -24,6 +24,8 @@ export type GiftPkScoreResult = {
   score2: number
   addedAmount: number
   addedSide: 'room1' | 'room2'
+  side: 1 | 2
+  scoreLogId: string | null
 } | null
 
 const SELECT = {
@@ -45,8 +47,24 @@ export async function applyGiftPkScore(params: {
   sideIds: (string | null | undefined)[]
   amount: number
   battleId?: string | null
+  /** Hediyeyi gönderen kullanıcı (PkScore/PkGift ledger'ı için). */
+  contributorId?: string | null
+  /** Puanın atfedildiği yayıncı/koltuk sahibi (çok taraflı PK'da katılımcı puanı). */
+  receiverId?: string | null
+  giftTypeId?: string | null
+  quantity?: number | null
+  /**
+   * Puan kaynağı. `gift_box` ve `bonus_reward` PK skoruna DAHİL EDİLMEZ
+   * (Bölüm 22 §17: hediye kutusu ödülü PK skoru üretmez).
+   */
+  source?: 'gift' | 'gift_box' | 'bonus_reward' | 'manual' | 'battle_bonus'
+  /** true ise skor hiç yazılmaz (çağıran taraf açıkça hariç tutar). */
+  excludeFromPkScore?: boolean
 }): Promise<GiftPkScoreResult> {
   try {
+    // ── §17: Hediye kutusu / bonus ödülleri PK skoru üretmez ──
+    if (params.excludeFromPkScore) return null
+    if (params.source === 'gift_box' || params.source === 'bonus_reward') return null
     const ids = Array.from(
       new Set((params.sideIds || []).filter((v): v is string => typeof v === 'string' && v.length > 0))
     )
@@ -64,9 +82,29 @@ export async function applyGiftPkScore(params: {
     if (!battle) return null
 
     // ── Oda izolasyonu: hediye gerçekten bu PK'nın bir tarafına mı gitti? ──
-    const isSide1 = ids.includes(battle.stream1Id)
-    const isSide2 = ids.includes(battle.stream2Id)
+    let isSide1 = ids.includes(battle.stream1Id)
+    let isSide2 = ids.includes(battle.stream2Id)
     if (!isSide1 && !isSide2) return null
+
+    // ── Aynı oda içi (kullanıcı-vs-kullanıcı) PK: iki taraf da aynı odadır.
+    // Taraf, hediyeyi ALAN katılımcıdan türetilir; alıcı PK'nın tarafı değilse
+    // skor yazılmaz (odadaki PK dışı kullanıcılara gönderilen hediye sayılmaz).
+    if (battle.stream1Id === battle.stream2Id) {
+      if (!params.receiverId) return null
+      if (params.receiverId === battle.user1Id) {
+        isSide1 = true; isSide2 = false
+      } else if (params.receiverId === battle.user2Id) {
+        isSide1 = false; isSide2 = true
+      } else {
+        const part = await prisma.pkBattleParticipant.findUnique({
+          where: { battleId_userId: { battleId: battle.id, userId: params.receiverId } },
+          select: { side: true },
+        })
+        if (!part) return null
+        isSide1 = part.side === 1
+        isSide2 = !isSide1
+      }
+    }
 
     // ── Süresi dolmuş PK'ya skor yazma; onun yerine kapat ──
     const endsAt = (battle as any).endsAt as Date | null
@@ -88,6 +126,42 @@ export async function applyGiftPkScore(params: {
       return null
     }
 
+    const side: 1 | 2 = isSide1 ? 1 : 2
+
+    // ── §7: Her skor değişikliği ledger'a yazılır (PkScore + PkGift) ──
+    let scoreLogId: string | null = null
+    try {
+      if (params.contributorId) {
+        const log = await prisma.pkScore.create({
+          data: { battleId: battle.id, side, contributorId: params.contributorId, points: amount, source: params.source ?? 'gift' },
+          select: { id: true },
+        })
+        scoreLogId = log.id
+        if (params.giftTypeId && params.receiverId) {
+          await prisma.pkGift.create({
+            data: {
+              battleId: battle.id,
+              side,
+              senderId: params.contributorId,
+              receiverId: params.receiverId,
+              giftTypeId: params.giftTypeId,
+              quantity: Math.max(1, Math.floor(params.quantity || 1)),
+              points: amount,
+            },
+          })
+        }
+      }
+      // Çok taraflı PK: puanı alan katılımcının kendi hanesine de yaz
+      if (params.receiverId) {
+        await prisma.pkBattleParticipant.updateMany({
+          where: { battleId: battle.id, userId: params.receiverId },
+          data: { points: { increment: amount } },
+        })
+      }
+    } catch (e) {
+      console.error('[gift-pk-score] ledger write error:', e)
+    }
+
     const payload = {
       type: 'pk',
       eventType: 'PK_SCORE',
@@ -99,6 +173,10 @@ export async function applyGiftPkScore(params: {
       score2: updated.score2,
       addedAmount: amount,
       addedSide: isSide1 ? 'room1' : 'room2',
+      side,
+      contributorId: params.contributorId ?? null,
+      receiverId: params.receiverId ?? null,
+      source: params.source ?? 'gift',
       timestamp: Date.now(),
     }
     emitPkToBothSides(battle, payload)
@@ -109,6 +187,8 @@ export async function applyGiftPkScore(params: {
       score2: updated.score2,
       addedAmount: amount,
       addedSide: isSide1 ? 'room1' : 'room2',
+      side,
+      scoreLogId,
     }
   } catch (e) {
     console.error('[gift-pk-score] applyGiftPkScore error:', e)

@@ -1387,6 +1387,13 @@ model PKBattle {
   winnerSide Int? // 1 or 2 (null on draw / not finished)
   scoreLogs  PkScore[]
   pkGifts    PkGift[]
+  // ── Bölüm 22 / B3: PK genişletme (yalnızca eklemeli) ──
+  mode         String    @default("1v1") // 1v1 | 1v2 | 1v3 | 2v2 | team
+  scope        String    @default("stream") // stream | room | room_user | guest
+  scopeRoomId  String? // aynı oda/yayın içi PK'da odanın kimliği
+  pausedAt     DateTime? // duraklatma anı (paused durumunda dolu)
+  pausedMs     Int       @default(0) // toplam duraklatılmış süre (ms)
+  participants PkBattleParticipant[]
 
   @@index([stream1Id])
   @@index([stream2Id])
@@ -1395,7 +1402,28 @@ model PKBattle {
   @@index([status])
   // Perf: quickly find a live battle for a given stream/user, and expired battles to finalize
   @@index([status, endsAt])
+  @@index([scopeRoomId])
   @@map("pk_battles")
+}
+
+// ── Bölüm 22 / B3: Çok taraflı PK katılımcıları (1v2, 1v3, takım) ──
+// PKBattle'a bağlı canlı katılımcı satırı. PkParticipant (pk_matches tabanlı,
+// eski faz) ile KARIŞTIRILMAMALIDIR.
+model PkBattleParticipant {
+  id         String   @id @default(cuid())
+  battleId   String
+  side       Int // 1 = sol taraf, 2 = sağ taraf
+  userId     String
+  seatNumber Int? // sesli odadaki koltuk numarası (varsa)
+  points     Int      @default(0) // bu katılımcıya atfedilen puan
+  isCaptain  Boolean  @default(false) // tarafın kaptanı (user1Id / user2Id)
+  createdAt  DateTime @default(now())
+  battle     PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
+
+  @@unique([battleId, userId])
+  @@index([battleId, side])
+  @@index([userId])
+  @@map("pk_battle_participants")
 }
 
 // Per-contributor score ledger inside a PK battle (for realtime aggregation & top-supporter).
@@ -1405,6 +1433,7 @@ model PkScore {
   side          Int // 1 = left/host, 2 = right/opponent
   contributorId String // the viewer who sent the gift that scored these points
   points        Int // gross jeton value added
+  source        String   @default("gift") // gift | manual | battle_bonus
   createdAt     DateTime @default(now())
   battle        PKBattle @relation(fields: [battleId], references: [id], onDelete: Cascade)
 
