@@ -309,6 +309,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, message: 'Üye transfer edildi' })
   }
 
+  // ── CHANGE OWNER (§44)
+  if (action === 'change_owner') {
+    const denied = await guardPerm(admin, 'agency.manage')
+    if (denied) return denied
+
+    const { agencyId: chAgencyId, newOwnerId } = data
+    if (!chAgencyId || !newOwnerId) {
+      return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'agencyId ve newOwnerId gerekli' } }, { status: 400 })
+    }
+    const ag = await prisma.agency.findUnique({ where: { id: chAgencyId }, select: { id: true, ownerId: true, name: true } })
+    if (!ag) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Ajans bulunamadı' } }, { status: 404 })
+    const newOwner = await prisma.user.findUnique({ where: { id: newOwnerId }, select: { id: true, name: true, username: true } })
+    if (!newOwner) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Yeni sahip bulunamadı' } }, { status: 404 })
+
+    const oldOwnerMembership = await prisma.agencyUser.findFirst({ where: { agencyId: chAgencyId, userId: ag.ownerId } })
+    if (oldOwnerMembership) await prisma.agencyUser.update({ where: { id: oldOwnerMembership.id }, data: { role: 'manager' } })
+    const newOwnerMembership = await prisma.agencyUser.findFirst({ where: { agencyId: chAgencyId, userId: newOwnerId } })
+    if (newOwnerMembership) {
+      await prisma.agencyUser.update({ where: { id: newOwnerMembership.id }, data: { role: 'owner' } })
+    } else {
+      await prisma.agencyUser.create({ data: { agencyId: chAgencyId, userId: newOwnerId, role: 'owner', joinedVia: 'admin' } })
+      await prisma.agency.update({ where: { id: chAgencyId }, data: { totalMembers: { increment: 1 }, activeMembers: { increment: 1 } } })
+    }
+    await prisma.agency.update({ where: { id: chAgencyId }, data: { ownerId: newOwnerId, ownerName: newOwner.username || newOwner.name || 'Bilinmeyen' } })
+
+    recordAudit({ actorId: admin.id, action: 'agency_change_owner', targetType: 'agency', targetId: chAgencyId, metadata: { oldOwnerId: ag.ownerId, newOwnerId }, ip }).catch(() => {})
+
+    return NextResponse.json({ success: true, message: `Ajans sahibi değiştirildi: ${newOwner.name || newOwner.username}` })
+  }
+
   return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: `Geçersiz işlem: ${action}` } }, { status: 400 })
 }
 

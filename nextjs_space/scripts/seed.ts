@@ -1969,6 +1969,26 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('BÖLÜM 21/A3: ajans bonus + komisyon varsayılanları hazır')
 
+  // ─── BÖLÜM 21/A4: ajans uygunluk skoru varsayılan ağırlıkları ───
+  await prisma.platformSettings.upsert({
+    where: { key: 'agency_applicant_score_weights' },
+    update: {},
+    create: {
+      key: 'agency_applicant_score_weights',
+      value: JSON.stringify({
+        accountAge: 15,
+        activityLevel: 20,
+        contentQuality: 15,
+        socialPresence: 15,
+        compliance: 15,
+        verification: 10,
+        vipStatus: 10,
+      }),
+      description: 'Ajansa uygunluk skoru boyut ağırlıkları (toplam 100)',
+    },
+  })
+  console.log('BÖLÜM 21/A4: ajans uygunluk skoru varsayılan ağırlıkları hazır')
+
   console.log('Seed completed successfully!')
 }
 

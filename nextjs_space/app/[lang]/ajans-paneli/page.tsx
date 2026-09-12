@@ -116,7 +116,7 @@ export default function AgencyPanelPage() {
   const [wdActionLoading, setWdActionLoading] = useState<string | null>(null)
   const [wdNoteMap, setWdNoteMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'invites' | 'earnings' | 'withdrawals' | 'wallet'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'invites' | 'earnings' | 'wallet' | 'live' | 'growth' | 'withdrawals'>('overview')
   const [creating, setCreating] = useState(false)
   const [newCodeMaxUses, setNewCodeMaxUses] = useState(0)
   const [newCodeDays, setNewCodeDays] = useState(7)
@@ -131,6 +131,17 @@ export default function AgencyPanelPage() {
   const [addingMember, setAddingMember] = useState(false)
   const [removingMember, setRemovingMember] = useState<string | null>(null)
   // Leave requests
+  // §19 — Canlı takip
+  const [liveData, setLiveData] = useState<any>(null)
+  const [liveLoading, setLiveLoading] = useState(false)
+  // §20 — Gelişim paneli
+  const [growthData, setGrowthData] = useState<any>(null)
+  const [growthLoading, setGrowthLoading] = useState(false)
+  // §12 — Aday değerlendirme
+  const [scoreUserId, setScoreUserId] = useState('')
+  const [scoreData, setScoreData] = useState<any>(null)
+  const [scoreLoading, setScoreLoading] = useState(false)
+
   // §13/§15 — Ajans cüzdanı
   const [wallet, setWallet] = useState<any>(null)
   const [walletLoading, setWalletLoading] = useState(false)
@@ -195,6 +206,17 @@ export default function AgencyPanelPage() {
         setMemberPerformance(d.memberPerformance || [])
       }
     } catch (e) { console.error(e) }
+  }
+
+  const fetchLiveStatus = async () => {
+    try { setLiveLoading(true); const res = await fetch('/api/agency/live-status'); const d = await res.json(); if (res.ok && d.success) setLiveData(d.data) } catch (e) { console.error(e) } finally { setLiveLoading(false) }
+  }
+  const fetchGrowth = async () => {
+    try { setGrowthLoading(true); const res = await fetch('/api/agency/growth'); const d = await res.json(); if (res.ok && d.success) setGrowthData(d.data) } catch (e) { console.error(e) } finally { setGrowthLoading(false) }
+  }
+  const fetchApplicantScore = async (uid: string) => {
+    if (!uid) return
+    try { setScoreLoading(true); setScoreData(null); const res = await fetch('/api/agency/applicant-score/' + uid); const d = await res.json(); if (res.ok && d.success) setScoreData(d.data); else alert(d?.error?.message || 'Skor alınamadı') } catch { alert('Hata oluştu') } finally { setScoreLoading(false) }
   }
 
   const fetchWallet = async () => {
@@ -266,6 +288,8 @@ export default function AgencyPanelPage() {
       fetchEarnings()
       fetchWithdrawals()
       fetchWallet()
+      fetchLiveStatus()
+      fetchGrowth()
     }
   }, [info])
 
@@ -582,8 +606,8 @@ export default function AgencyPanelPage() {
       {/* Tabs */}
       {isManager && (
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
-          {(['overview', 'members', 'invites', 'earnings', 'wallet', 'withdrawals'] as const).map(tab => {
-            const labels: Record<string, string> = { overview: 'Genel', members: 'Üyeler', invites: 'Davet Kodları', earnings: 'Kazançlar', wallet: 'Cüzdan', withdrawals: 'Çekim Talepleri' }
+          {(['overview', 'members', 'invites', 'earnings', 'wallet', 'live', 'growth', 'withdrawals'] as const).map(tab => {
+            const labels: Record<string, string> = { overview: 'Genel', members: 'Üyeler', invites: 'Davet Kodları', earnings: 'Kazançlar', wallet: 'Cüzdan', live: 'Canlı Takip', growth: 'Gelişim', withdrawals: 'Çekim Talepleri' }
             const pendingWd = withdrawals.filter(w => w.status === 'pending').length
             return (
               <button
@@ -1232,6 +1256,203 @@ export default function AgencyPanelPage() {
                         </div>
                       )
                     })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* §19 — Canlı Takip */}
+      {activeTab === 'live' && isManager && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className={`font-medium ${textPrimary} text-sm flex items-center gap-2`}>📡 Canlı Takip</h3>
+            <button onClick={fetchLiveStatus} className={`text-xs ${accentColor} flex items-center gap-1`}><RefreshCw className="w-3 h-3" /> Yenile</button>
+          </div>
+          {liveLoading && !liveData ? (
+            <div className="flex justify-center py-10"><Loader2 className={`w-6 h-6 animate-spin ${accentColor}`} /></div>
+          ) : !liveData ? (
+            <div className={`${cardBg} rounded-xl p-6 text-center text-sm ${textSecondary}`}>Veri alınamadı.</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-5 gap-1.5">
+                {[
+                  { label: 'Toplam', value: liveData.summary.total, color: textPrimary },
+                  { label: '🟢 Yayında', value: liveData.summary.live_streaming, color: 'text-green-400' },
+                  { label: '🔵 Sesli', value: liveData.summary.voice_room, color: 'text-blue-400' },
+                  { label: '🟡🟣 Odada', value: liveData.summary.room_active, color: 'text-yellow-400' },
+                  { label: '⚪ Çevrimdışı', value: liveData.summary.offline, color: 'text-gray-400' },
+                ].map((x, i) => (
+                  <div key={i} className="rounded-lg bg-black/20 p-2 text-center">
+                    <div className={`text-sm font-bold ${x.color}`}>{x.value}</div>
+                    <div className={`text-[9px] ${textSecondary}`}>{x.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                {(liveData.members || []).map((m: any) => (
+                  <div key={m.userId} className={`${cardBg} rounded-xl p-3 flex items-center gap-3`}>
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      {m.image ? <img src={m.image} className="w-9 h-9 rounded-full object-cover" alt="" /> : (m.name?.charAt(0) || '?')}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-medium ${textPrimary} flex items-center gap-1.5`}>
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap">{m.name}</span>
+                        <span className="text-[10px] opacity-60">@{m.username}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[11px]">{m.statusEmoji}</span>
+                        <span className={`text-[10px] ${textSecondary}`}>{m.statusLabel}</span>
+                        {m.detail?.durationMinutes !== undefined && <span className={`text-[10px] ${accentColor}`}>{m.detail.durationMinutes} dk</span>}
+                        {m.detail?.viewerCount !== undefined && <span className={`text-[10px] ${textSecondary}`}>👁 {m.detail.viewerCount}</span>}
+                        {m.detail?.lastSeenMinutes !== undefined && <span className={`text-[10px] ${textSecondary}`}>({m.detail.lastSeenMinutes < 60 ? `${m.detail.lastSeenMinutes} dk önce` : m.detail.lastSeenMinutes < 1440 ? `${Math.round(m.detail.lastSeenMinutes / 60)} saat önce` : `${Math.round(m.detail.lastSeenMinutes / 1440)} gün önce`})</span>}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${m.role === 'owner' ? 'bg-yellow-500/20 text-yellow-400' : m.role === 'manager' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>{m.role}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* §20 — Gelişim Merkezi */}
+      {activeTab === 'growth' && isManager && (
+        <div className="space-y-4">
+          {growthLoading && !growthData ? (
+            <div className="flex justify-center py-10"><Loader2 className={`w-6 h-6 animate-spin ${accentColor}`} /></div>
+          ) : !growthData ? (
+            <div className={`${cardBg} rounded-xl p-6 text-center text-sm ${textSecondary}`}>Veri alınamadı.</div>
+          ) : (
+            <>
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                  <TrendingUp className={`w-4 h-4 ${accentColor}`} /> Bu Ay Özeti
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Yayın Süresi', value: `${growthData.thisMonth.streamMinutes} dk`, change: growthData.thisMonth.streamMinutesChange },
+                    { label: 'Aktif Yayıncı', value: growthData.thisMonth.activeBroadcasters, sub: `Önceki ay: ${growthData.thisMonth.lastMonthBroadcasters}` },
+                    { label: 'Yeni Üye', value: growthData.thisMonth.newMembers, color: 'text-green-400' },
+                    { label: 'Ayrılan', value: growthData.thisMonth.leftMembers, color: 'text-red-400' },
+                    { label: 'Kazanç', value: `${Math.floor(growthData.thisMonth.earnings)} J`, change: growthData.thisMonth.earningsChange },
+                    { label: 'Performans', value: `${growthData.performance || 0}/100`, color: accentColor },
+                    { label: 'Büyüme', value: `${growthData.growthRate > 0 ? '+' : ''}${growthData.growthRate}%`, color: growthData.growthRate >= 0 ? 'text-green-400' : 'text-red-400' },
+                    { label: 'Seviye', value: String(growthData.data?.agency?.level || growthData.agency?.level || 'bronze').toUpperCase(), color: 'text-yellow-400' },
+                  ].map((x: any, i) => (
+                    <div key={i} className="rounded-lg bg-black/20 p-2.5 text-center">
+                      <div className={`text-sm font-bold ${x.color || textPrimary}`}>{x.value}</div>
+                      <div className={`text-[9px] ${textSecondary}`}>{x.label}</div>
+                      {x.change !== undefined && <div className={`text-[9px] ${x.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>{x.change > 0 ? '+' : ''}{x.change}%</div>}
+                      {x.sub && <div className={`text-[9px] ${textSecondary}`}>{x.sub}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {growthData.nextLevelCriteria && (
+                <div className={`${cardBg} rounded-xl p-4`}>
+                  <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                    <Award className={`w-4 h-4 text-yellow-400`} /> Sonraki Seviye: {growthData.nextLevelCriteria.label}
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(growthData.nextLevelCriteria.criteria).map(([key, c]: [string, any]) => {
+                      const labels: Record<string, string> = { minEarning: 'Toplam Kazanç (J)', minBroadcasters: 'Aktif Yayıncı', minStreamMinutes: 'Aylık Yayın (dk)' }
+                      const pct = c.required > 0 ? Math.min(100, Math.round((c.current / c.required) * 100)) : 100
+                      return (
+                        <div key={key}>
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className={textSecondary}>{labels[key] || key}</span>
+                            <span className={c.met ? 'text-green-400' : textPrimary}>{c.current} / {c.required} {c.met ? '✓' : ''}</span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full bg-black/30">
+                            <div className={`h-full rounded-full ${c.met ? 'bg-green-500' : 'bg-amber-500'}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {growthData.topPerformers?.length > 0 && (
+                <div className={`${cardBg} rounded-xl p-4`}>
+                  <h3 className={`font-medium ${textPrimary} text-sm mb-3`}>🏆 En Başarılı Yayıncılar</h3>
+                  <div className="space-y-1.5">
+                    {growthData.topPerformers.map((m: any, i: number) => (
+                      <div key={m.userId} className="flex items-center gap-2 p-2 rounded-lg bg-black/20">
+                        <span className={`text-xs font-bold w-5 text-center ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-400' : textSecondary}`}>{i + 1}</span>
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                          {m.image ? <img src={m.image} className="w-7 h-7 rounded-full object-cover" alt="" /> : (m.name?.charAt(0) || '?')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-[11px] font-medium ${textPrimary} overflow-hidden text-ellipsis whitespace-nowrap`}>{m.name}</div>
+                          <div className={`text-[10px] ${textSecondary}`}>{m.streamCount} yayın • {m.streamMinutes} dk</div>
+                        </div>
+                        <div className={`text-xs font-bold ${accentColor}`}>{Math.floor(m.totalEarnings)} J</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {growthData.needsImprovement?.length > 0 && (
+                <div className={`${cardBg} rounded-xl p-4`}>
+                  <h3 className={`font-medium ${textPrimary} text-sm mb-3`}>📈 Geliştirilmesi Gereken</h3>
+                  <div className="space-y-1">
+                    {growthData.needsImprovement.map((m: any) => (
+                      <div key={m.userId} className="flex items-center gap-2 p-2 rounded-lg bg-black/20">
+                        <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-white text-[10px] font-bold">{m.name?.charAt(0) || '?'}</div>
+                        <span className={`text-[11px] ${textPrimary} flex-1 overflow-hidden text-ellipsis whitespace-nowrap`}>{m.name}</span>
+                        <span className={`text-[10px] ${textSecondary}`}>Bu ay yayın yok</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* §12 — Aday Değerlendirme */}
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>🔍 Aday Değerlendirme (§12)</h3>
+                <div className="flex gap-2 mb-3">
+                  <input type="text" value={scoreUserId} onChange={e => setScoreUserId(e.target.value)} placeholder="Kullanıcı ID giriniz..." className={`flex-1 px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+                  <button onClick={() => fetchApplicantScore(scoreUserId)} disabled={scoreLoading || !scoreUserId.trim()} className={`px-4 py-2 rounded-lg ${btnPrimary} text-sm font-medium disabled:opacity-50`}>
+                    {scoreLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Değerlendir'}
+                  </button>
+                </div>
+                {scoreData && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm">{scoreData.user?.name?.charAt(0) || '?'}</div>
+                      <div>
+                        <div className={`text-sm font-medium ${textPrimary}`}>{scoreData.user?.name}</div>
+                        <div className={`text-[10px] ${textSecondary}`}>@{scoreData.user?.username} • {scoreData.user?.accountAgeDays} gün önce katıldı • {scoreData.user?.followers} takipçi</div>
+                      </div>
+                    </div>
+                    {scoreData.currentAgency && (
+                      <div className="rounded-lg bg-orange-500/10 p-2 text-[11px] text-orange-400">⚠ Mevcut ajans: {scoreData.currentAgency.agencyName} ({scoreData.currentAgency.role})</div>
+                    )}
+                    <div className="space-y-1.5">
+                      {(scoreData.dimensions || []).map((d: any) => (
+                        <div key={d.key}>
+                          <div className="flex items-center justify-between text-[11px] mb-0.5">
+                            <span className={textSecondary}>{d.label}</span>
+                            <span className={d.score >= 60 ? 'text-green-400' : d.score >= 30 ? 'text-yellow-400' : 'text-red-400'}>{d.score}/100 — {d.detail}</span>
+                          </div>
+                          <div className="w-full h-1 rounded-full bg-black/30">
+                            <div className={`h-full rounded-full ${d.score >= 60 ? 'bg-green-500' : d.score >= 30 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${d.score}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className={`rounded-xl p-3 text-center ${scoreData.verdictColor === 'green' ? 'bg-green-500/10' : scoreData.verdictColor === 'yellow' ? 'bg-yellow-500/10' : scoreData.verdictColor === 'orange' ? 'bg-orange-500/10' : 'bg-red-500/10'}`}>
+                      <div className={`text-lg font-bold ${scoreData.verdictColor === 'green' ? 'text-green-400' : scoreData.verdictColor === 'yellow' ? 'text-yellow-400' : scoreData.verdictColor === 'orange' ? 'text-orange-400' : 'text-red-400'}`}>{scoreData.overallScore}/100</div>
+                      <div className={`text-sm font-medium ${textPrimary}`}>{scoreData.verdict}</div>
+                      <div className={`text-[10px] ${textSecondary} mt-1`}>{scoreData.disclaimer}</div>
+                    </div>
                   </div>
                 )}
               </div>
