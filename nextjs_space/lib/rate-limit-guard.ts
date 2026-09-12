@@ -36,6 +36,8 @@ export const DEFAULT_RATE_LIMITS: Record<string, number> = {
   stream_create: 5,
   room_create: 5,
   pk_create: 10,
+  guest_request: 6,
+  guest_moderate: 60,
   agency_action: 5,
   tip: 10,
   membership: 5,

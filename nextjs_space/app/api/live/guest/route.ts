@@ -24,6 +24,8 @@ import {
   broadcastGuests,
   emitGuestRequestEvent,
   resolveGuestAuthority,
+  pendingRequestCount,
+  checkGuestEligibility,
 } from '@/lib/live-guest'
 
 function fail(code: string, status = 400, extra: Record<string, any> = {}) {
@@ -60,6 +62,8 @@ export async function GET(req: NextRequest) {
     if (view !== 'sync') {
       return NextResponse.json({ count, maxGuests, gridSlots, guests })
     }
+
+    const pendingCount = await pendingRequestCount(streamId)
 
     // ─── Tam durum resync ───
     const userId = await currentUserId(req)
@@ -99,6 +103,7 @@ export async function GET(req: NextRequest) {
       count,
       maxGuests,
       gridSlots,
+      pendingCount,
       guests,
       me: userId
         ? {
@@ -144,10 +149,11 @@ export async function POST(req: NextRequest) {
     const userId = await currentUserId(req)
     if (!userId) return NextResponse.json({ error: 'Giriş yapmalısınız', code: 'UNAUTHORIZED' }, { status: 401 })
 
-    const limited = await guardRateLimit(req, 'api_default', { userId })
+    const body = await req.json().catch(() => ({}))
+    const rlBucket = body?.action === 'request' ? 'guest_request' : 'api_default'
+    const limited = await guardRateLimit(req, rlBucket, { userId })
     if (limited) return limited
 
-    const body = await req.json().catch(() => ({}))
     const streamId: string | null = body?.streamId ?? body?.roomId ?? null
     const action: string = body?.action ?? ''
     if (!streamId) return fail(GuestErrors.VALIDATION_ERROR, 400, { error: 'streamId gerekli' })
@@ -158,7 +164,7 @@ export async function POST(req: NextRequest) {
     })
     if (!stream) return fail(GuestErrors.STREAM_NOT_FOUND, 404)
 
-    const { maxGuests, requestTtlSec, inviteTtlSec } = await getGuestLimits()
+    const { maxGuests, requestTtlSec, inviteTtlSec, removedCooldownSec } = await getGuestLimits()
     const authority = await resolveGuestAuthority(userId, stream.userId)
     const isHost = authority.isHost
     const canManage = authority.canManage
@@ -174,6 +180,11 @@ export async function POST(req: NextRequest) {
         return fail(GuestErrors.STREAM_ENDED, 409)
       }
       if (isHost) return fail(GuestErrors.VALIDATION_ERROR, 400, { error: 'Yayın sahibi talep gönderemez' })
+
+      const eligible = await checkGuestEligibility(streamId, userId, removedCooldownSec)
+      if (!eligible.ok) {
+        return fail(eligible.code || GuestErrors.GUEST_NOT_AUTHORIZED, eligible.status || 403, eligible.retryAfterSec ? { retryAfterSec: eligible.retryAfterSec } : {})
+      }
 
       const already = await prisma.liveGuestSession.findUnique({
         where: { streamId_userId: { streamId, userId } },
@@ -212,6 +223,7 @@ export async function POST(req: NextRequest) {
         guestImage: me?.image || null,
         message,
         expiresAt: request.expiresAt,
+        pendingCount: await pendingRequestCount(streamId),
       })
       return NextResponse.json({ request })
     }
@@ -233,7 +245,11 @@ export async function POST(req: NextRequest) {
         where: { id: record.id },
         data: { status: 'cancelled', cancelledAt: new Date(), respondedAt: new Date(), respondedBy: userId },
       })
-      emitGuestRequestEvent(streamId, 'guest_request_cancelled', { requestId: record.id, guestId: record.guestId })
+      emitGuestRequestEvent(streamId, 'guest_request_cancelled', {
+        requestId: record.id,
+        guestId: record.guestId,
+        pendingCount: await pendingRequestCount(streamId),
+      })
       return NextResponse.json({ ok: true, requestId: record.id })
     }
 
@@ -246,6 +262,10 @@ export async function POST(req: NextRequest) {
 
       const guestUser = await prisma.user.findUnique({ where: { id: guestId }, select: { id: true } })
       if (!guestUser) return fail(GuestErrors.GUEST_NOT_FOUND, 404)
+
+      // Davette cooldown uygulanmaz (host bilerek geri çağırıyor) ama ban kontrolü yapılır (§20)
+      const inviteEligible = await checkGuestEligibility(streamId, guestId, 0)
+      if (!inviteEligible.ok) return fail(inviteEligible.code || GuestErrors.GUEST_NOT_AUTHORIZED, inviteEligible.status || 403)
 
       const existing = await prisma.liveGuestSession.findUnique({
         where: { streamId_userId: { streamId, userId: guestId } },
@@ -273,6 +293,15 @@ export async function POST(req: NextRequest) {
         inviteId: invite.id,
         guestId,
         expiresAt: invite.expiresAt,
+      })
+      await recordAudit({
+        actorId: userId,
+        action: 'live_guest.invite',
+        targetType: 'live_guest_invite',
+        targetId: invite.id,
+        description: `Misafir davet edildi (stream ${streamId})`,
+        metadata: { streamId, guestId },
+        ip,
       })
       return NextResponse.json({ invite })
     }
@@ -327,7 +356,20 @@ export async function POST(req: NextRequest) {
           where: { id: requestId },
           data: { status: 'rejected', respondedAt: new Date(), respondedBy: userId },
         })
-        emitGuestRequestEvent(streamId, 'guest_request_rejected', { requestId, guestId: request.guestId })
+        emitGuestRequestEvent(streamId, 'guest_request_rejected', {
+          requestId,
+          guestId: request.guestId,
+          pendingCount: await pendingRequestCount(streamId),
+        })
+        await recordAudit({
+          actorId: userId,
+          action: 'live_guest.reject',
+          targetType: 'live_guest_invite',
+          targetId: requestId,
+          description: `Misafir talebi reddedildi (stream ${streamId})`,
+          metadata: { streamId, guestId: request.guestId },
+          ip,
+        })
         return NextResponse.json({ ok: true, status: 'rejected' })
       }
 
@@ -338,7 +380,11 @@ export async function POST(req: NextRequest) {
         where: { id: requestId },
         data: { status: 'accepted', respondedAt: new Date(), respondedBy: userId },
       })
-      emitGuestRequestEvent(streamId, 'guest_request_accepted', { requestId, guestId: request.guestId })
+      emitGuestRequestEvent(streamId, 'guest_request_accepted', {
+        requestId,
+        guestId: request.guestId,
+        pendingCount: await pendingRequestCount(streamId),
+      })
       const { guests } = await broadcastGuests(streamId, 'guest_joined', {
         guestId: request.guestId,
         slot: result.session.slot,
@@ -438,11 +484,11 @@ export async function POST(req: NextRequest) {
       })
       if (!target || target.status !== 'active') return fail(GuestErrors.GUEST_NOT_FOUND, 404)
 
-      // Host tarafından susturulan misafir kendi kendini açamaz (§2)
+      // Host tarafından kapatılan mikrofon/kamera kullanıcı tarafından açılamaz (§2)
+      const byHost = canManage && guestId !== userId
       const data: any = { lastSeenAt: new Date() }
       let event = 'guest_updated'
       if (typeof body?.muted === 'boolean') {
-        const byHost = canManage && guestId !== userId
         if (!byHost && target.mutedByHost && body.muted === false) {
           return fail(GuestErrors.GUEST_NOT_AUTHORIZED, 403)
         }
@@ -451,20 +497,53 @@ export async function POST(req: NextRequest) {
         event = 'guest_muted'
       }
       if (typeof body?.videoOff === 'boolean') {
+        if (!byHost && target.videoOffByHost && body.videoOff === false) {
+          return fail(GuestErrors.GUEST_NOT_AUTHORIZED, 403)
+        }
         data.isVideoOff = body.videoOff
+        if (byHost) data.videoOffByHost = body.videoOff
         event = 'guest_camera_off'
+      }
+      if (data.isMuted === undefined && data.isVideoOff === undefined) {
+        return fail(GuestErrors.VALIDATION_ERROR, 400, { error: 'muted veya videoOff gerekli' })
       }
 
       await prisma.liveGuestSession.update({ where: { id: target.id }, data })
       const { guests } = await broadcastGuests(streamId, event, { guestId })
+      if (byHost) {
+        await recordAudit({
+          actorId: userId,
+          action: action === 'mute' ? 'live_guest.mute' : 'live_guest.camera',
+          targetType: 'live_guest_session',
+          targetId: target.id,
+          description: `Misafir medya durumu değiştirildi (stream ${streamId})`,
+          metadata: { streamId, guestId, muted: data.isMuted, videoOff: data.isVideoOff },
+          ip,
+        })
+      }
       return NextResponse.json({ ok: true, guests })
     }
 
     // ──────────── MOVE (pozisyon değiştirme, örn. 2 → 8) ────────────
-    if (action === 'move' || action === 'position') {
+    // move_down / move_up: tek dokunuşla bir sıra aşağı/yukarı (§2 "hızlı aşağı indir")
+    if (action === 'move' || action === 'position' || action === 'move_down' || action === 'move_up') {
       if (!canManage) return fail(GuestErrors.GUEST_NOT_AUTHORIZED, 403)
       const guestId: string | null = body?.guestId ?? body?.userId ?? null
-      const slot = Number(body?.slot ?? body?.toSlot)
+      let slot = Number(body?.slot ?? body?.toSlot)
+
+      if (action === 'move_down' || action === 'move_up') {
+        if (!guestId) return fail(GuestErrors.VALIDATION_ERROR, 400, { error: 'guestId gerekli' })
+        const cur = await prisma.liveGuestSession.findUnique({
+          where: { streamId_userId: { streamId, userId: guestId } },
+          select: { slot: true, status: true },
+        })
+        if (!cur || cur.status !== 'active') return fail(GuestErrors.GUEST_NOT_FOUND, 404)
+        slot = action === 'move_down' ? cur.slot + 1 : cur.slot - 1
+        if (slot < 1 || slot > maxGuests) {
+          return fail(GuestErrors.VALIDATION_ERROR, 400, { error: 'Misafir zaten uç pozisyonda' })
+        }
+      }
+
       if (!guestId || !Number.isInteger(slot) || slot < 1 || slot > maxGuests) {
         return fail(GuestErrors.VALIDATION_ERROR, 400, { error: 'guestId ve geçerli slot gerekli' })
       }
@@ -496,6 +575,15 @@ export async function POST(req: NextRequest) {
         fromSlot: moved.from,
         toSlot: moved.to,
         swappedWith: (moved as any).swappedWith ?? null,
+      })
+      await recordAudit({
+        actorId: userId,
+        action: 'live_guest.move',
+        targetType: 'live_guest_session',
+        targetId: `${streamId}:${guestId}`,
+        description: `Misafir pozisyonu değiştirildi (${moved.from} → ${moved.to})`,
+        metadata: { streamId, guestId, from: moved.from, to: moved.to },
+        ip,
       })
       return NextResponse.json({ ok: true, guests, gridSlots, from: moved.from, to: moved.to })
     }

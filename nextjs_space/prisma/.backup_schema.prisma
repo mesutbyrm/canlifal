@@ -1445,6 +1445,7 @@ model LiveGuestSession {
   isMuted     Boolean   @default(false) // audio muted (self or by host)
   isVideoOff  Boolean   @default(false) // camera off
   mutedByHost Boolean   @default(false) // true when host force-muted
+  videoOffByHost Boolean @default(false) // true when host force-disabled camera
   joinedAt    DateTime  @default(now())
   lastSeenAt  DateTime  @default(now()) // heartbeat for reconnect detection
   leftAt      DateTime?

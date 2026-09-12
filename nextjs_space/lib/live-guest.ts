@@ -15,6 +15,7 @@
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 
 // ─── Hata kodları (§33) ───
 export const GuestErrors = {
@@ -29,6 +30,9 @@ export const GuestErrors = {
   GUEST_NOT_APPROVED: 'GUEST_NOT_APPROVED',
   GUEST_NOT_FOUND: 'GUEST_NOT_FOUND',
   GUEST_DISABLED: 'GUEST_DISABLED',
+  GUEST_REMOVED_COOLDOWN: 'GUEST_REMOVED_COOLDOWN',
+  GUEST_BANNED: 'GUEST_BANNED',
+  GUEST_ACCOUNT_INACTIVE: 'GUEST_ACCOUNT_INACTIVE',
   STREAM_NOT_FOUND: 'STREAM_NOT_FOUND',
   STREAM_ENDED: 'STREAM_ENDED',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
@@ -48,6 +52,9 @@ export const GUEST_ERROR_MESSAGES: Record<string, string> = {
   GUEST_NOT_APPROVED: 'Yayın sahibinin onayı olmadan katılamazsınız.',
   GUEST_NOT_FOUND: 'Misafir bulunamadı.',
   GUEST_DISABLED: 'Bu yayında misafirlik kapalı.',
+  GUEST_REMOVED_COOLDOWN: 'Bu yayından çıkarıldınız, bir süre tekrar talep gönderemezsiniz.',
+  GUEST_BANNED: 'Hesabınız kısıtlı olduğu için misafir olamazsınız.',
+  GUEST_ACCOUNT_INACTIVE: 'Hesabınız aktif değil.',
   STREAM_NOT_FOUND: 'Yayın bulunamadı.',
   STREAM_ENDED: 'Yayın sona ermiş.',
   VALIDATION_ERROR: 'Geçersiz istek.',
@@ -58,13 +65,15 @@ export interface GuestLimits {
   maxGuests: number
   requestTtlSec: number
   inviteTtlSec: number
+  removedCooldownSec: number
 }
 
 export async function getGuestLimits(): Promise<GuestLimits> {
-  const [maxGuests, requestTtl, inviteTtl] = await Promise.all([
+  const [maxGuests, requestTtl, inviteTtl, cooldown] = await Promise.all([
     getCachedPlatformSetting('live_guest_max_slots', '8'),
     getCachedPlatformSetting('live_guest_request_ttl_sec', '90'),
     getCachedPlatformSetting('live_guest_invite_ttl_sec', '60'),
+    getCachedPlatformSetting('live_guest_removed_cooldown_sec', '300'),
   ])
   const clamp = (v: string, def: number, min: number, max: number) => {
     const n = parseInt(v, 10)
@@ -75,6 +84,7 @@ export async function getGuestLimits(): Promise<GuestLimits> {
     maxGuests: clamp(maxGuests, 8, 2, 8),
     requestTtlSec: clamp(requestTtl, 90, 15, 600),
     inviteTtlSec: clamp(inviteTtl, 60, 15, 600),
+    removedCooldownSec: clamp(cooldown, 300, 0, 86400),
   }
 }
 
@@ -97,6 +107,7 @@ export interface GuestView {
   isMuted: boolean
   isVideoOff: boolean
   mutedByHost: boolean
+  videoOffByHost: boolean
   source: string
   joinedAt: Date
   lastSeenAt: Date
@@ -127,6 +138,7 @@ export async function listGuests(streamId: string): Promise<GuestView[]> {
       isMuted: s.isMuted,
       isVideoOff: s.isVideoOff,
       mutedByHost: s.mutedByHost,
+      videoOffByHost: s.videoOffByHost,
       source: s.source,
       joinedAt: s.joinedAt,
       lastSeenAt: s.lastSeenAt,
@@ -163,6 +175,8 @@ export async function expireStalePending(streamId?: string): Promise<number> {
  * event: guest_joined | guest_left | guest_removed | guest_muted |
  *        guest_camera_off | guest_position_changed | guest_grid_changed
  */
+const lastGridSlots = new Map<string, number>()
+
 export async function broadcastGuests(
   streamId: string,
   event: string,
@@ -181,7 +195,71 @@ export async function broadcastGuests(
     guests,
     ...extra,
   })
+  // Grid boyutu değiştiyse ayrıca duyur (§24 guest_grid_changed)
+  const prev = lastGridSlots.get(streamId)
+  if (prev !== gridSlots) {
+    lastGridSlots.set(streamId, gridSlots)
+    if (prev !== undefined) {
+      emitStreamEvent(streamId, 'guest', {
+        type: 'guest',
+        event: 'guest_grid_changed',
+        streamId,
+        count: guests.length,
+        maxGuests,
+        gridSlots,
+        previousGridSlots: prev,
+      })
+    }
+  }
   return { guests, gridSlots, maxGuests }
+}
+
+/** Yayın sahibine bekleyen talep sayısı (§2). */
+export async function pendingRequestCount(streamId: string): Promise<number> {
+  return prisma.liveGuestInvite.count({
+    where: { streamId, kind: 'request', status: 'pending', expiresAt: { gt: new Date() } },
+  })
+}
+
+/**
+ * Misafir olmaya uygunluk (§20 abuse/fraud).
+ * - banlı / dondurulmuş hesap katilamaz
+ * - yayından çıkarılan kullanıcı cooldown süresince tekrar talep gönderemez
+ * Aşırı agresif değildir: yalnızca kesin sinyallere bakar.
+ */
+export async function checkGuestEligibility(
+  streamId: string,
+  userId: string,
+  cooldownSec: number
+): Promise<{ ok: boolean; code?: string; status?: number; retryAfterSec?: number }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isBanned: true, bannedUntil: true, isFrozen: true },
+  })
+  if (!user) return { ok: false, code: GuestErrors.GUEST_NOT_FOUND, status: 404 }
+  if (user.isBanned && (!user.bannedUntil || user.bannedUntil.getTime() > Date.now())) {
+    return { ok: false, code: GuestErrors.GUEST_BANNED, status: 403 }
+  }
+  if (user.isFrozen) return { ok: false, code: GuestErrors.GUEST_ACCOUNT_INACTIVE, status: 403 }
+
+  if (cooldownSec > 0) {
+    const removed = await prisma.liveGuestSession.findUnique({
+      where: { streamId_userId: { streamId, userId } },
+      select: { status: true, leftAt: true },
+    })
+    if (removed?.status === 'removed' && removed.leftAt) {
+      const elapsed = (Date.now() - removed.leftAt.getTime()) / 1000
+      if (elapsed < cooldownSec) {
+        return {
+          ok: false,
+          code: GuestErrors.GUEST_REMOVED_COOLDOWN,
+          status: 429,
+          retryAfterSec: Math.ceil(cooldownSec - elapsed),
+        }
+      }
+    }
+  }
+  return { ok: true }
 }
 
 /** Talep/davet olayını duyurur (liste yükü olmadan, küçük payload — §30). */
@@ -204,7 +282,9 @@ export async function resolveGuestAuthority(
   }
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
   const role = user?.role || null
-  const isModerator = !!role && MODERATOR_ROLES.includes(role)
+  // Granüler RBAC: sabit rol listesi geri düşüş olarak korunur,
+  // ayrıca DB'den atanmış `moderation.room.manage` yetkisi de geçerlidir (§21).
+  const isModerator = await staffCan(role, userId, 'moderation.room.manage', MODERATOR_ROLES)
   return { isHost: false, isModerator, canManage: isModerator, role }
 }
 
