@@ -12,6 +12,7 @@ import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { seatStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
 import { endPksForSide } from '@/lib/pk-state'
+import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
 
 /** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
 async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
@@ -290,8 +291,37 @@ export async function POST(
     if (isNewJoinForGate) {
       const room = await prisma.chatRoom.findUnique({
         where: { id: roomId },
-        select: { roomType: true, password: true, ownerId: true }
+        select: { roomType: true, password: true, ownerId: true, minMembershipTier: true, isVipLounge: true }
       })
+
+      // ── BÖLÜM 20 §12/§13: VIP oda & SVIP Lounge kademe kapısı (BACKEND zorunlu) ──
+      // Oda sahibi ve global yöneticiler muaftır. İstemci tarafı gizleme YETERLİ DEĞİLDİR.
+      if (room?.minMembershipTier || room?.isVipLounge) {
+        let tierBypass = room?.ownerId === userId
+        if (!tierBypass) {
+          const cu = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+          tierBypass = ['admin', 'yonetici', 'moderator', 'site_manager'].includes(cu?.role || '')
+        }
+        if (!tierBypass) {
+          const ent = await getUserEntitlements(userId)
+          if (room.isVipLounge && !ent.features['vip.vip_lounge']?.enabled) {
+            return NextResponse.json(
+              { error: 'Bu alan yalnızca SVIP üyelere açıktır', code: 'VIP_LOUNGE_REQUIRED' },
+              { status: 403 }
+            )
+          }
+          if (room.minMembershipTier && !(await meetsMinTier(userId, room.minMembershipTier))) {
+            return NextResponse.json(
+              {
+                error: 'Bu odaya girmek için daha yüksek bir üyelik kademesi gerekiyor',
+                code: 'MEMBERSHIP_TIER_REQUIRED',
+                requiredTier: room.minMembershipTier,
+              },
+              { status: 403 }
+            )
+          }
+        }
+      }
 
       // ── Password gate for NORMAL / VIP rooms ──
       // Owner and staff (admin/moderator level) bypass. Everyone else must

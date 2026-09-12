@@ -12,6 +12,7 @@
  */
 
 import prisma from '@/lib/db'
+import { getUserEntitlements } from '@/lib/vip-entitlements'
 
 // Bir kullanicinin online sayilacagi pencere (son aktiflik bu sureden yeniyse online).
 export const ONLINE_WINDOW_MS = 90 * 1000 // 90 sn (grace period dahil)
@@ -71,10 +72,23 @@ export async function maybeEmitOnlineEntrance(
   // Premium giris kapaliysa cikis.
   if (!user.premiumEntranceEnabled) return { emitted: false }
 
-  // Gold zorunluysa ve Gold aktif degilse: otomatik olarak kart alamaz
-  // (Gold uyelik sona erdiginde bu kontrol devreye girer - ayrica cron gerekmez).
-  if (user.premiumEntranceRequireGold && !isGoldActive(user.membership, user.membershipExpiresAt)) {
+  // ── BÖLÜM 20 §8/§11: kademe bağımsız yetenek kontrolü ──
+  // Eski davranış (yalnızca Gold) yerine merkezi yetenek katmanı kullanılır.
+  // Süresi dolmuş üyelikte getUserEntitlements otomatik olarak 'basic' döner.
+  const ent = await getUserEntitlements(userId)
+  const entranceTier = ent?.tier || 'basic'
+
+  // Kullanıcı kendi giriş efektini kapattıysa kart üretilmez (§8).
+  if (ent?.preferences?.disableEntranceEffects || ent?.preferences?.hiddenRoomEntry) {
     return { emitted: false }
+  }
+
+  const hasEntranceCapability = !!ent?.features?.['vip.entrance_effect']?.enabled
+  if (user.premiumEntranceRequireGold && !hasEntranceCapability) {
+    // Geriye dönük güvence: yetenek katmanı boş dönerse eski Gold kuralına düş
+    if (!isGoldActive(user.membership, user.membershipExpiresAt)) {
+      return { emitted: false }
+    }
   }
 
   // Cooldown: son karttan bu yana yeterli sure gecmediyse tekrar uretme.
@@ -122,7 +136,7 @@ export async function maybeEmitOnlineEntrance(
       effectType,
       durationMs,
       animationType: user.premiumEntranceAnimationType || 'slide_lr',
-      tier: 'gold',
+      tier: entranceTier,
     },
     select: { id: true },
   })

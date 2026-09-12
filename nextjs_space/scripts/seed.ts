@@ -1828,6 +1828,65 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('SMS providers seeded!')
 
+  // ─────────────────────────────────────────────────────────────
+  // BÖLÜM 20 — VIP / üyelik kademeleri + yetenek matrisi (idempotent)
+  // Admin panelinden değiştirilen değerler EZİLMEZ; yalnız eksikler eklenir.
+  // ─────────────────────────────────────────────────────────────
+  {
+    const { DEFAULT_TIERS, FEATURE_CATALOG } = await import('../lib/vip-features')
+
+    for (const t of DEFAULT_TIERS) {
+      await prisma.membershipTierDef.upsert({
+        where: { key: t.key },
+        update: { name: t.name, nameEn: t.nameEn, rank: t.rank },
+        create: {
+          key: t.key, name: t.name, nameEn: t.nameEn, rank: t.rank,
+          color: t.color, gradient: t.gradient ?? null, icon: t.icon,
+          description: t.description, discoveryWeight: t.discoveryWeight,
+          isActive: true, sortOrder: t.sortOrder,
+        },
+      })
+    }
+
+    const rankOf = new Map(DEFAULT_TIERS.map((t) => [t.key, t.rank]))
+
+    for (const f of FEATURE_CATALOG) {
+      await prisma.membershipFeature.upsert({
+        where: { key: f.key },
+        update: { name: f.name, nameEn: f.nameEn, category: f.category, valueType: f.valueType },
+        create: {
+          key: f.key, name: f.name, nameEn: f.nameEn, category: f.category,
+          description: f.description, valueType: f.valueType, unit: f.unit ?? null,
+          isActive: true, sortOrder: f.sortOrder,
+        },
+      })
+
+      const minRank = rankOf.get(f.minTier) ?? 0
+      for (const t of DEFAULT_TIERS) {
+        const enabled = t.rank >= minRank
+        const per = f.perTier?.[t.key]
+        // Kalıtım sayesinde yalnız "değişimin olduğu" kademelere satır yazmak yeterli,
+        // ancak admin panelinde her hücre görünsün diye tüm kombinasyonlar yazılır.
+        const existing = await prisma.membershipTierFeature.findUnique({
+          where: { tierKey_featureKey: { tierKey: t.key, featureKey: f.key } },
+        })
+        if (existing) continue
+        await prisma.membershipTierFeature.create({
+          data: {
+            tierKey: t.key,
+            featureKey: f.key,
+            enabled,
+            limitValue: per?.limitValue ?? null,
+            dailyLimit: per?.dailyLimit ?? null,
+            priority: per?.priority ?? 0,
+            defaultValue: per?.defaultValue ?? undefined,
+          },
+        })
+      }
+    }
+  }
+  console.log('VIP membership tiers & feature matrix seeded!')
+
   console.log('Seed completed successfully!')
 }
 

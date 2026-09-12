@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { getCached } from '@/lib/cache';
 import { computeTellerStatus, PRESENCE_LABELS } from '@/lib/presence-engine';
+import { applyDiscoveryWeighting } from '@/lib/vip-entitlements';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,14 +131,34 @@ export async function GET(request: NextRequest) {
       return { ...rest, queuePosition };
     });
 
+    // ── BÖLÜM 20 §14: varsayılan sıralamada üyelik kademesi ağırlığı ──
+    // Ağırlıklar admin panelinden yönetilir; kimse listeden çıkarılmaz,
+    // yeni katılanlar en yüksek ağırlığı alır (pay-to-win koruma).
+    let orderedTellers = enrichedTellers
+    if (sort === 'default') {
+      try {
+        orderedTellers = await applyDiscoveryWeighting(
+          enrichedTellers.map((t: any) => ({
+            ...t,
+            membership: t.user?.membership ?? null,
+            membershipExpiresAt: t.user?.membershipExpiresAt ?? null,
+          })),
+          { groupBy: (t: any) => (t.isOnline ? 0 : 1) }
+        )
+      } catch (e) {
+        console.error('[Discovery weighting]', e)
+        orderedTellers = enrichedTellers
+      }
+    }
+
     if (sort === 'trending') {
-      enrichedTellers.sort((a: any, b: any) => {
+      orderedTellers.sort((a: any, b: any) => {
         if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
         return b.trendingScore - a.trendingScore;
       });
     }
 
-    return NextResponse.json({ tellers: enrichedTellers });
+    return NextResponse.json({ tellers: orderedTellers });
   } catch (error) {
     console.error('Fortune tellers error:', error);
     return NextResponse.json({ tellers: [] });

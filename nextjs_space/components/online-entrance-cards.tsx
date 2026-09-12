@@ -31,6 +31,26 @@ export default function OnlineEntranceCards() {
   const seenRef = useRef<Set<string>>(new Set())
   const sinceRef = useRef<string | null>(null)
   const playingRef = useRef(false)
+  // §8: kullanıcı başkalarının giriş efektlerini kapatabilir (sunucu tercihi)
+  const [muted, setMuted] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch('/api/me/vip-preferences')
+        if (!res.ok) return
+        const json = await res.json()
+        const prefs = json?.data?.preferences || json?.preferences
+        if (alive && prefs?.muteOthersEntrance) setMuted(true)
+      } catch {
+        /* oturum yoksa sessizce geç */
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const playNext = useCallback(() => {
     if (playingRef.current) return
@@ -98,7 +118,33 @@ export default function OnlineEntranceCards() {
       ? { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.9 } }
       : { initial: { x: '-110vw', opacity: 0 }, animate: { x: '110vw', opacity: 1 }, exit: { opacity: 0 } }
 
-  const isGold = (current?.tier || 'gold') === 'gold'
+  // ── BÖLÜM 20 §8/§9: 5 kademe için renk/rozet (sunucudan gelen tier'a göre) ──
+  const TIER_STYLE: Record<string, { label: string; border: string; bg: string; chip: string; chipText: string }> = {
+    gold: {
+      label: 'GOLD', border: 'rgba(250, 204, 21, 0.55)',
+      bg: 'linear-gradient(90deg, rgba(120,53,15,0.85), rgba(202,138,4,0.75), rgba(120,53,15,0.85))',
+      chip: 'rgba(250,204,21,0.9)', chipText: '#000',
+    },
+    premium: {
+      label: 'PREMIUM', border: 'rgba(168, 85, 247, 0.55)',
+      bg: 'linear-gradient(90deg, rgba(59,7,100,0.85), rgba(126,34,206,0.75), rgba(59,7,100,0.85))',
+      chip: 'rgba(192,132,252,0.95)', chipText: '#1a0033',
+    },
+    diamond: {
+      label: 'DIAMOND', border: 'rgba(34, 211, 238, 0.6)',
+      bg: 'linear-gradient(90deg, rgba(8,51,68,0.88), rgba(8,145,178,0.75), rgba(8,51,68,0.88))',
+      chip: 'rgba(103,232,249,0.95)', chipText: '#00303a',
+    },
+    svip: {
+      label: 'SVIP', border: 'rgba(244, 63, 94, 0.6)',
+      bg: 'linear-gradient(90deg, rgba(76,5,25,0.9), rgba(190,18,60,0.8), rgba(180,83,9,0.85))',
+      chip: 'rgba(251,113,133,0.95)', chipText: '#2b0010',
+    },
+  }
+  const tierKey = (current?.tier || 'gold').toLowerCase()
+  const tierStyle = TIER_STYLE[tierKey] || null
+
+  if (muted) return null
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-20 z-[95] flex justify-center overflow-hidden">
@@ -112,10 +158,10 @@ export default function OnlineEntranceCards() {
             transition={{ duration: anim === 'fade' ? 0.5 : duration, ease: 'linear' }}
             className="flex items-center gap-3 rounded-full border px-4 py-2 shadow-2xl backdrop-blur-md"
             style={{
-              borderColor: isGold ? 'rgba(250, 204, 21, 0.55)' : 'rgba(168, 85, 247, 0.5)',
-              background: isGold
-                ? 'linear-gradient(90deg, rgba(120,53,15,0.85), rgba(202,138,4,0.75), rgba(120,53,15,0.85))'
-                : 'linear-gradient(90deg, rgba(59,7,100,0.85), rgba(126,34,206,0.75), rgba(59,7,100,0.85))',
+              borderColor: tierStyle?.border || 'rgba(168, 85, 247, 0.5)',
+              background:
+                tierStyle?.bg ||
+                'linear-gradient(90deg, rgba(59,7,100,0.85), rgba(126,34,206,0.75), rgba(59,7,100,0.85))',
             }}
           >
             {current.effectUrl && current.effectType === 'image' && (
@@ -139,10 +185,13 @@ export default function OnlineEntranceCards() {
             </div>
 
             <div className="flex items-center gap-2 whitespace-nowrap">
-              {isGold && (
-                <span className="flex items-center gap-1 rounded-full bg-yellow-400/90 px-2 py-0.5 text-[10px] font-bold text-black">
+              {tierStyle && (
+                <span
+                  className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                  style={{ background: tierStyle.chip, color: tierStyle.chipText }}
+                >
                   <Crown className="h-3 w-3" />
-                  GOLD
+                  {tierStyle.label}
                 </span>
               )}
               <span className="text-sm font-semibold text-white drop-shadow">

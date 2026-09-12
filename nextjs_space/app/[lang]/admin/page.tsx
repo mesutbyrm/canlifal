@@ -124,6 +124,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     groupIcon: '👤',
     links: [
       { href: `/admin/users`, icon: Shield, trLabel: 'Kullanıcı Yönetimi', enLabel: 'User Management', emoji: '👤', desc: 'Üyeleri düzenle & yönet' },
+      { href: `/admin/membership-features`, icon: Crown, trLabel: 'Üyelik Yönetimi (VIP Yetenek Matrisi)', enLabel: 'Membership Management', emoji: '💎', desc: 'Kademe & özellik matrisi, atama, raporlar' },
       { href: `/admin/memberships`, icon: Crown, trLabel: 'Gold Üyelik Yönetimi', enLabel: 'Membership Mgmt', emoji: '👑', desc: 'VIP üyelik paketleri' },
       { href: `/admin/membership-badges`, icon: Award, trLabel: 'Üyelik Rozetleri', enLabel: 'Membership Badges', emoji: '🎖️', desc: 'Üyelik seviye rozetleri' },
       { href: `/admin/badges`, icon: Shield, trLabel: 'Rozet Yönetimi', enLabel: 'Badge Management', emoji: '🏅', desc: 'Rozetleri oluştur & ata' },

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import PaymentNotifyForm from '@/components/payment-notify-form'
+import MembershipComparison from '@/components/membership-comparison'
 
 interface MembershipPlan {
   id: string
@@ -295,8 +296,22 @@ export default function MembershipsPage() {
           )}
         </AnimatePresence>
 
+        {/* BÖLÜM 20 — §27/§28 Kademe karşılaştırma ekranı (admin panelinden yönetilir) */}
+        <div className="mb-8">
+          <h2 className={`text-lg font-bold mb-3 ${textPrimary}`}>Üyelik Kademeleri Karşılaştırması</h2>
+          <MembershipComparison
+            isDark={!isFacebook}
+            onSelectTier={(tierKey) => {
+              const el = document.getElementById('membership-plans')
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              const match = plans.find((p) => p.tier === tierKey)
+              if (match) setSelectedPlan(match)
+            }}
+          />
+        </div>
+
         {/* Membership Plans */}
-        <div className="space-y-4">
+        <div id="membership-plans" className="space-y-4">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}

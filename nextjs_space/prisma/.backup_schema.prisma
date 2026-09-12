@@ -12,179 +12,189 @@ datasource db {
 }
 
 model User {
-  id                        String                  @id @default(cuid())
-  email                     String                  @unique
-  emailVerified             DateTime?
-  password                  String?
-  name                      String
-  username                  String?                 @unique
-  phone                     String?
-  image                     String?
-  preferredLanguage         String                  @default("tr")
-  credits                   Int                     @default(50)
-  role                      String                  @default("user")
-  membership                String                  @default("basic") // basic, premium, gold
-  membershipExpiresAt       DateTime?
-  createdAt                 DateTime                @default(now())
-  referralCode              String?                 @unique
-  referralCreditsEarned     Int                     @default(0)
-  referredById              String?
+  id                           String                   @id @default(cuid())
+  email                        String                   @unique
+  emailVerified                DateTime?
+  password                     String?
+  name                         String
+  username                     String?                  @unique
+  phone                        String?
+  image                        String?
+  preferredLanguage            String                   @default("tr")
+  credits                      Int                      @default(50)
+  role                         String                   @default("user")
+  membership                   String                   @default("basic") // basic, premium, gold
+  membershipExpiresAt          DateTime?
+  createdAt                    DateTime                 @default(now())
+  referralCode                 String?                  @unique
+  referralCreditsEarned        Int                      @default(0)
+  referredById                 String?
   // Profile fields
-  bio                       String? // User bio/about text
-  birthDate                 DateTime?
-  birthTime                 String? // HH:mm format for rising sign calculation
-  zodiacSign                String?
-  risingSign                String?
-  favoriteTeam              String?
-  lastHoroscopeDate         DateTime? // Track when daily horoscope was last generated
+  bio                          String? // User bio/about text
+  birthDate                    DateTime?
+  birthTime                    String? // HH:mm format for rising sign calculation
+  zodiacSign                   String?
+  risingSign                   String?
+  favoriteTeam                 String?
+  lastHoroscopeDate            DateTime? // Track when daily horoscope was last generated
   // Privacy settings
-  messagePrivacy            String                  @default("everyone") // everyone, followers, nobody
-  hideProfileViews          Boolean                 @default(false) // hide from profile view tracking
+  messagePrivacy               String                   @default("everyone") // everyone, followers, nobody
+  hideProfileViews             Boolean                  @default(false) // hide from profile view tracking
   // Theme preference
-  theme                     String                  @default("mystical") // mystical, facebook
+  theme                        String                   @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
-  jetonBalance              Int                     @default(0)
+  jetonBalance                 Int                      @default(0)
   // Location for gift leaderboards / sender map (added, optional)
-  city                      String?
-  country                   String?                 @default("TR")
+  city                         String?
+  country                      String?                  @default("TR")
   // Profile customization
-  specialBadges             String? // JSON array of special badge types (vip, beta_tester, verified, etc.)
-  profileEffect             String? // Profile background effect (sparkles, fire, rainbow, etc.)
-  profileFrameId            String? // Selected profile frame ID
-  profileFrame              ProfileFrame?           @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
-  adminAssignedFrameId      String? // Admin-assigned profile frame (overrides user selection)
-  adminAssignedFrame        ProfileFrame?           @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
+  specialBadges                String? // JSON array of special badge types (vip, beta_tester, verified, etc.)
+  profileEffect                String? // Profile background effect (sparkles, fire, rainbow, etc.)
+  profileFrameId               String? // Selected profile frame ID
+  profileFrame                 ProfileFrame?            @relation("UserProfileFrame", fields: [profileFrameId], references: [id])
+  adminAssignedFrameId         String? // Admin-assigned profile frame (overrides user selection)
+  adminAssignedFrame           ProfileFrame?            @relation("UserAdminFrame", fields: [adminAssignedFrameId], references: [id])
   // Cosmetic selections (Part 13 premium cosmetics) - plain id/key references, no relation
-  nameEffect                String? // Selected name-text effect key (gold, silver, neon, rainbow, ...)
-  entranceEffectId          String? // Selected entrance (room-join) effect id
+  nameEffect                   String? // Selected name-text effect key (gold, silver, neon, rainbow, ...)
+  entranceEffectId             String? // Selected entrance (room-join) effect id
   // F5: Gold online-entrance (site-level premium entrance card) - admin controlled
-  premiumEntranceEnabled    Boolean                 @default(false) // admin toggle for site-entrance card
-  premiumEntranceRequireGold Boolean                @default(true) // only play while Gold membership active
-  premiumEntranceEffectId   String? // optional EntranceEffect id used for the online card
-  premiumEntranceDurationMs Int? // override display duration (ms)
+  premiumEntranceEnabled       Boolean                  @default(false) // admin toggle for site-entrance card
+  premiumEntranceRequireGold   Boolean                  @default(true) // only play while Gold membership active
+  premiumEntranceEffectId      String? // optional EntranceEffect id used for the online card
+  premiumEntranceDurationMs    Int? // override display duration (ms)
   premiumEntranceAnimationType String? // slide_lr | fade | zoom (client hint)
-  lastOnlineEventAt         DateTime? // dedup: last time a USER_ONLINE entrance event was emitted
-  chatBubbleId              String? // Selected chat bubble skin id
-  micFrameId                String? // Selected microphone frame id
-  avatarAccessoryIds        String? // JSON array of selected avatar accessory ids
+  lastOnlineEventAt            DateTime? // dedup: last time a USER_ONLINE entrance event was emitted
+  chatBubbleId                 String? // Selected chat bubble skin id
+  micFrameId                   String? // Selected microphone frame id
+  avatarAccessoryIds           String? // JSON array of selected avatar accessory ids
   // Withdrawal settings (admin-controlled)
-  withdrawalLimit           Int                     @default(0) // 0 means cannot withdraw
+  withdrawalLimit              Int                      @default(0) // 0 means cannot withdraw
   // Statistics
-  totalTimeSpentMinutes     Int                     @default(0)
-  lastActiveAt              DateTime?
-  activeDeviceToken         String?
-  accounts                  Account[]
-  bannedOthers              ChatBan[]               @relation("Banner")
-  bannedIn                  ChatBan[]               @relation("BannedUser")
-  chatMessages              ChatMessage[]
-  mutedOthers               ChatMute[]              @relation("Muter")
-  mutedIn                   ChatMute[]              @relation("MutedUser")
-  chatPresences             ChatPresence[]
-  chatRoles                 ChatUserRole[]
-  ownedChatRooms            ChatRoom[]              @relation("RoomOwner")
-  beneficiaryRooms          ChatRoom[]              @relation("RoomGiftBeneficiary")
-  fortunes                  Fortune[]
-  fortuneTellerProfile      LiveFortuneTeller?
-  liveSessions              LiveSession[]           @relation("SessionUser")
-  notifications             Notification[]
-  passwordResets            PasswordResetToken[]
-  emailVerifications        EmailVerificationToken[]
-  phoneOtps                 PhoneOtp[]
-  refundRequests            RefundRequest[]
-  referredHistory           Referral[]              @relation("Referred")
-  referralHistory           Referral[]              @relation("Referrer")
-  sessions                  Session[]
-  socialComments            SocialComment[]
-  socialLikes               SocialLike[]
-  socialPosts               SocialPost[]
-  payments                  Payment[]
-  referredBy                User?                   @relation("UserReferrals", fields: [referredById], references: [id])
-  referrals                 User[]                  @relation("UserReferrals")
-  videoStreams              VideoStream[]
-  videoStreamComments       VideoStreamComment[]
-  videoStreamLikes          VideoStreamLike[]
-  streamGifts               StreamGift[]
-  sentChatRoomGifts         ChatRoomGift[]          @relation("ChatGiftSender")
-  receivedChatRoomGifts     ChatRoomGift[]          @relation("ChatGiftRecipient")
-  followers                 Follow[]                @relation("Following")
-  following                 Follow[]                @relation("Follower")
-  sentMessages              DirectMessage[]         @relation("SentMessages")
-  receivedMessages          DirectMessage[]         @relation("ReceivedMessages")
-  conversationsAsUser1      Conversation[]          @relation("ConversationUser1")
-  conversationsAsUser2      Conversation[]          @relation("ConversationUser2")
-  sentRequests              MessageRequest[]        @relation("SentRequests")
-  receivedRequests          MessageRequest[]        @relation("ReceivedRequests")
-  dreamComments             DreamComment[]
-  dreamFavorites            DreamFavorite[]
-  dreamViews                DreamView[]
-  dreamDiaryEntries         DreamDiaryEntry[]
-  dailyLoginRewards         DailyLoginReward[]
-  dreamContestEntries       DreamContestEntry[]
-  dreamContestVotes         DreamContestVote[]
-  weeklyDreamReports        WeeklyDreamReport[]
-  liveActivities            LiveActivity[]          @relation("userActivities")
+  totalTimeSpentMinutes        Int                      @default(0)
+  lastActiveAt                 DateTime?
+  activeDeviceToken            String?
+  accounts                     Account[]
+  bannedOthers                 ChatBan[]                @relation("Banner")
+  bannedIn                     ChatBan[]                @relation("BannedUser")
+  chatMessages                 ChatMessage[]
+  mutedOthers                  ChatMute[]               @relation("Muter")
+  mutedIn                      ChatMute[]               @relation("MutedUser")
+  chatPresences                ChatPresence[]
+  chatRoles                    ChatUserRole[]
+  ownedChatRooms               ChatRoom[]               @relation("RoomOwner")
+  beneficiaryRooms             ChatRoom[]               @relation("RoomGiftBeneficiary")
+  fortunes                     Fortune[]
+  fortuneTellerProfile         LiveFortuneTeller?
+  liveSessions                 LiveSession[]            @relation("SessionUser")
+  notifications                Notification[]
+  passwordResets               PasswordResetToken[]
+  emailVerifications           EmailVerificationToken[]
+  phoneOtps                    PhoneOtp[]
+  refundRequests               RefundRequest[]
+  referredHistory              Referral[]               @relation("Referred")
+  referralHistory              Referral[]               @relation("Referrer")
+  sessions                     Session[]
+  socialComments               SocialComment[]
+  socialLikes                  SocialLike[]
+  socialPosts                  SocialPost[]
+  payments                     Payment[]
+  referredBy                   User?                    @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals                    User[]                   @relation("UserReferrals")
+  videoStreams                 VideoStream[]
+  videoStreamComments          VideoStreamComment[]
+  videoStreamLikes             VideoStreamLike[]
+  streamGifts                  StreamGift[]
+  sentChatRoomGifts            ChatRoomGift[]           @relation("ChatGiftSender")
+  receivedChatRoomGifts        ChatRoomGift[]           @relation("ChatGiftRecipient")
+  followers                    Follow[]                 @relation("Following")
+  following                    Follow[]                 @relation("Follower")
+  sentMessages                 DirectMessage[]          @relation("SentMessages")
+  receivedMessages             DirectMessage[]          @relation("ReceivedMessages")
+  conversationsAsUser1         Conversation[]           @relation("ConversationUser1")
+  conversationsAsUser2         Conversation[]           @relation("ConversationUser2")
+  sentRequests                 MessageRequest[]         @relation("SentRequests")
+  receivedRequests             MessageRequest[]         @relation("ReceivedRequests")
+  dreamComments                DreamComment[]
+  dreamFavorites               DreamFavorite[]
+  dreamViews                   DreamView[]
+  dreamDiaryEntries            DreamDiaryEntry[]
+  dailyLoginRewards            DailyLoginReward[]
+  dreamContestEntries          DreamContestEntry[]
+  dreamContestVotes            DreamContestVote[]
+  weeklyDreamReports           WeeklyDreamReport[]
+  liveActivities               LiveActivity[]           @relation("userActivities")
   // XP & Level system
-  xp                        Int                     @default(0)
-  level                     Int                     @default(1)
-  loginStreak               Int                     @default(0)
-  lastLoginRewardDate       DateTime?               @db.Date
+  xp                           Int                      @default(0)
+  level                        Int                      @default(1)
+  loginStreak                  Int                      @default(0)
+  lastLoginRewardDate          DateTime?                @db.Date
   // Agency system
-  agencyMembership          AgencyUser?
-  agencyLeaveRequests       AgencyLeaveRequest[]
+  agencyMembership             AgencyUser?
+  agencyLeaveRequests          AgencyLeaveRequest[]
   // Celebrity follows
-  celebrityFollows          CelebrityFollow[]
+  celebrityFollows             CelebrityFollow[]
   // Fan clubs
-  fanClubMemberships        FanClubMember[]
-  fanClubPosts              FanClubPost[]
-  fanClubPostLikes          FanClubPostLike[]
-  fanClubPolls              FanClubPoll[]
-  fanClubPollVotes          FanClubPollVote[]
+  fanClubMemberships           FanClubMember[]
+  fanClubPosts                 FanClubPost[]
+  fanClubPostLikes             FanClubPostLike[]
+  fanClubPolls                 FanClubPoll[]
+  fanClubPollVotes             FanClubPollVote[]
   // Celebrity posts
-  celebrityPostLikes        CelebrityPostLike[]
-  celebrityPostComments     CelebrityPostComment[]
-  stories                   UserStory[]
+  celebrityPostLikes           CelebrityPostLike[]
+  celebrityPostComments        CelebrityPostComment[]
+  stories                      UserStory[]
   // Bot system
-  isBot                     Boolean                 @default(false)
-  botProfile                BotProfile?
+  isBot                        Boolean                  @default(false)
+  botProfile                   BotProfile?
   // CFC (CanlıFal Coin) balance
-  cfcBalance                Int                     @default(0)
-  cfcPaymentRequests        CfcPaymentRequest[]
-  devices                   UserDevice[]
-  shortVideos               ShortVideo[]
-  shortVideoLikes           ShortVideoLike[]
-  shortVideoComments        ShortVideoComment[]
-  shortVideoViews           ShortVideoView[]
-  shortVideoSaves           ShortVideoSave[]
-  shortVideoCommentLikes    ShortVideoCommentLike[]
-  shortVideoMentions        ShortVideoMention[]     @relation("ShortVideoMentioned")
-  blockedUsers              UserBlock[]             @relation("Blocker")
-  blockedByUsers            UserBlock[]             @relation("Blocked")
-  reportsMade               UserReport[]            @relation("Reporter")
-  reportsReceived           UserReport[]            @relation("Reported")
-  animationAssignments      AnimationAssignment[]   @relation("AnimationAssignmentUser")
-  animationAssignmentsGiven AnimationAssignment[]   @relation("AnimationAssignmentAssigner")
-  animationPlaybackLogs     AnimationPlaybackLog[]
-  commissionsEarned         ReferralCommission[]    @relation("CommissionEarner")
-  commissionsGenerated      ReferralCommission[]    @relation("CommissionSource")
-  leaderboardEntries        LeaderboardEntry[]
-  leaderboardRewards        LeaderboardReward[]
-  onlineEvents              UserOnlineEvent[]
+  cfcBalance                   Int                      @default(0)
+  cfcPaymentRequests           CfcPaymentRequest[]
+  devices                      UserDevice[]
+  shortVideos                  ShortVideo[]
+  shortVideoLikes              ShortVideoLike[]
+  shortVideoComments           ShortVideoComment[]
+  shortVideoViews              ShortVideoView[]
+  shortVideoSaves              ShortVideoSave[]
+  shortVideoCommentLikes       ShortVideoCommentLike[]
+  shortVideoMentions           ShortVideoMention[]      @relation("ShortVideoMentioned")
+  blockedUsers                 UserBlock[]              @relation("Blocker")
+  blockedByUsers               UserBlock[]              @relation("Blocked")
+  reportsMade                  UserReport[]             @relation("Reporter")
+  reportsReceived              UserReport[]             @relation("Reported")
+  animationAssignments         AnimationAssignment[]    @relation("AnimationAssignmentUser")
+  animationAssignmentsGiven    AnimationAssignment[]    @relation("AnimationAssignmentAssigner")
+  animationPlaybackLogs        AnimationPlaybackLog[]
+  commissionsEarned            ReferralCommission[]     @relation("CommissionEarner")
+  commissionsGenerated         ReferralCommission[]     @relation("CommissionSource")
+  leaderboardEntries           LeaderboardEntry[]
+  leaderboardRewards           LeaderboardReward[]
+  onlineEvents                 UserOnlineEvent[]
   // F7: User management fields
-  isBanned                  Boolean                 @default(false)
-  banReason                 String?
-  bannedAt                  DateTime?
-  bannedUntil               DateTime? // null = permanent
-  bannedBy                  String? // admin userId
-  canBroadcast              Boolean                 @default(true) // live stream permission
-  canCreateRoom             Boolean                 @default(true) // voice room permission
-  canChat                   Boolean                 @default(true)
-  canSendGift               Boolean                 @default(true)
-  canPK                     Boolean                 @default(true)
-  isVerifiedUser            Boolean                 @default(false) // identity verification
-  phoneVerified             Boolean                 @default(false) // phone/SMS OTP verification
-  permissionOverrides       UserPermissionOverride[]
-  adminActions              AdminUserAction[]       @relation("AdminActionTarget")
+  isBanned                     Boolean                  @default(false)
+  banReason                    String?
+  bannedAt                     DateTime?
+  bannedUntil                  DateTime? // null = permanent
+  bannedBy                     String? // admin userId
+  canBroadcast                 Boolean                  @default(true) // live stream permission
+  canCreateRoom                Boolean                  @default(true) // voice room permission
+  canChat                      Boolean                  @default(true)
+  canSendGift                  Boolean                  @default(true)
+  canPK                        Boolean                  @default(true)
+  isVerifiedUser               Boolean                  @default(false) // identity verification
+  phoneVerified                Boolean                  @default(false) // phone/SMS OTP verification
+  permissionOverrides          UserPermissionOverride[]
+  adminActions                 AdminUserAction[]        @relation("AdminActionTarget")
+  // ── BÖLÜM 20: VIP / üyelik yetenek sistemi ──
+  vipXp                        Int                      @default(0) // VIP sezon puanı (jeton ekonomisinden BAĞIMSIZ)
+  customUserId                 String? // Diamond/SVIP özel kullanıcı ID'si (uygulama seviyesinde tekil)
+  vipPreference                UserVipPreference?
+  membershipGrantsReceived     MembershipGrant[]        @relation("MembershipGrantReceiver")
+  membershipGrantsGiven        MembershipGrant[]        @relation("MembershipGrantGiver")
+  vipXpEntries                 VipXpLedger[]
+  profileVisitsMade            ProfileVisit[]           @relation("ProfileVisitVisitor")
+  profileVisitsReceived        ProfileVisit[]           @relation("ProfileVisitTarget")
 
+  @@index([customUserId])
   @@index([referralCode])
   @@index([isBot])
   @@index([referredById])
@@ -512,6 +522,11 @@ model ChatRoom {
   tags                  String? // Comma-separated tags
   bannerImage           String? // Room banner image URL
   seatCount             Int? // null = use global default (vr_seat_count)
+  // ── BÖLÜM 20: VIP oda ayarları ──
+  minMembershipTier     String? // null = herkese açık; gold|premium|diamond|svip
+  showVipEntranceFx     Boolean          @default(true) // oda sahibi VIP giriş efektlerini kapatabilir
+  isVipLounge           Boolean          @default(false) // SVIP Lounge alanı
+  vipThemeId            String? // VIP odalara özel tema
   createdAt             DateTime         @default(now())
   bans                  ChatBan[]
   messages              ChatMessage[]
@@ -1813,41 +1828,41 @@ model MembershipPurchase {
 
 // Payment Notifications (user notifies admin about payment)
 model PaymentNotification {
-  id                  String    @id @default(cuid())
-  userId              String
-  username            String // User's username at time of submission
-  paymentMethod       String // papara, bank_transfer, etc.
-  amount              Float // Amount paid in TRY
-  transactionId       String? // Transaction/Reference ID
-  senderName          String? // Name of sender (for bank transfers)
-  notes               String?   @db.Text // Additional notes
-  status              String    @default("pending") // pending, approved, rejected, corrected, cancelled
+  id                      String    @id @default(cuid())
+  userId                  String
+  username                String // User's username at time of submission
+  paymentMethod           String // papara, bank_transfer, etc.
+  amount                  Float // Amount paid in TRY
+  transactionId           String? // Transaction/Reference ID
+  senderName              String? // Name of sender (for bank transfers)
+  notes                   String?   @db.Text // Additional notes
+  status                  String    @default("pending") // pending, approved, rejected, corrected, cancelled
   // Product info
-  productType         String    @default("jeton") // jeton, cfc, gold
-  requestedAmount     Int?      // User's requested product amount
-  requestedGoldDays   Int?      // If gold: requested days
-  requestedGoldType   String?   // If gold: gold tier
+  productType             String    @default("jeton") // jeton, cfc, gold
+  requestedAmount         Int? // User's requested product amount
+  requestedGoldDays       Int? // If gold: requested days
+  requestedGoldType       String? // If gold: gold tier
   // Admin processing
-  jetonLoaded         Int? // Jeton amount loaded by admin
-  cfcLoaded           Int? // CFC amount loaded by admin
-  goldDaysLoaded      Int? // Gold days loaded by admin
-  goldTypeLoaded      String? // Gold type loaded by admin
-  processedBy         String? // Admin userId who processed
-  processedByName     String? // Admin display name snapshot
-  processedAt         DateTime?
-  adminNote           String?   @db.Text // Admin's note/reason for decision
+  jetonLoaded             Int? // Jeton amount loaded by admin
+  cfcLoaded               Int? // CFC amount loaded by admin
+  goldDaysLoaded          Int? // Gold days loaded by admin
+  goldTypeLoaded          String? // Gold type loaded by admin
+  processedBy             String? // Admin userId who processed
+  processedByName         String? // Admin display name snapshot
+  processedAt             DateTime?
+  adminNote               String?   @db.Text // Admin's note/reason for decision
   // Correction fields
-  originalRequestedAmount Int?  // Before admin correction
-  correctedAmount     Int?      // Admin-corrected amount
-  correctedBy         String?   // Admin who corrected
-  correctedAt         DateTime?
-  correctionReason    String?   @db.Text
+  originalRequestedAmount Int? // Before admin correction
+  correctedAmount         Int? // Admin-corrected amount
+  correctedBy             String? // Admin who corrected
+  correctedAt             DateTime?
+  correctionReason        String?   @db.Text
   // Idempotency: track if credit already applied
-  creditApplied       Boolean   @default(false) // true after balance actually changed
-  creditAppliedAt     DateTime?
+  creditApplied           Boolean   @default(false) // true after balance actually changed
+  creditAppliedAt         DateTime?
   // Proof file
-  proofUrl            String? // payment proof image/file URL
-  createdAt           DateTime  @default(now())
+  proofUrl                String? // payment proof image/file URL
+  createdAt               DateTime  @default(now())
 
   @@index([userId])
   @@index([status])
@@ -3025,17 +3040,17 @@ model WeeklyTournament {
   createdAt   DateTime @default(now())
 
   // F3 eklemeli alanlar (mevcut satırlar etkilenmez)
-  category          String?   // stream, voice, general
+  category          String? // stream, voice, general
   coverImage        String?
   registrationStart DateTime?
   registrationEnd   DateTime?
   minParticipants   Int?
   maxParticipants   Int?
   visibility        String?   @default("public") // public, private, invite_only
-  scoringType       String?   // cumulative, per_round, bracket
-  eliminationType   String?   // none, single_elimination, double_elimination, round_robin
+  scoringType       String? // cumulative, per_round, bracket
+  eliminationType   String? // none, single_elimination, double_elimination, round_robin
   roundCount        Int?      @default(1)
-  createdBy         String?   // admin userId
+  createdBy         String? // admin userId
   updatedAt         DateTime? @updatedAt
   rewardedAt        DateTime? // ödüller ne zaman dağıtıldı
 
@@ -3068,17 +3083,17 @@ model WeeklyTournamentEntry {
 
 // Turnuva round'ları (bracket / eleme sistemi)
 model TournamentRound {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   tournamentId String
-  roundNumber  Int      @default(1)
-  name         String?  // "Çeyrek Final", "Yarı Final", "Final"
-  stage        String?  // qualifier, group, semifinal, final
-  status       String   @default("pending") // pending, active, completed
+  roundNumber  Int       @default(1)
+  name         String? // "Çeyrek Final", "Yarı Final", "Final"
+  stage        String? // qualifier, group, semifinal, final
+  status       String    @default("pending") // pending, active, completed
   startDate    DateTime?
   endDate      DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
-  tournament WeeklyTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournament WeeklyTournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   matches    TournamentMatch[]
 
   @@unique([tournamentId, roundNumber])
@@ -3088,22 +3103,22 @@ model TournamentRound {
 
 // Turnuva maçları (A vs B)
 model TournamentMatch {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   roundId    String
-  matchOrder Int      @default(1)
-  status     String   @default("pending") // pending, active, completed, cancelled
-  side1Id    String?  // userId veya roomId/streamId
+  matchOrder Int       @default(1)
+  status     String    @default("pending") // pending, active, completed, cancelled
+  side1Id    String? // userId veya roomId/streamId
   side1Name  String?
-  side1Score Int      @default(0)
+  side1Score Int       @default(0)
   side2Id    String?
   side2Name  String?
-  side2Score Int      @default(0)
+  side2Score Int       @default(0)
   winnerId   String?
   startedAt  DateTime?
   endedAt    DateTime?
-  pkBattleId String?  // ilişkili PKBattle (opsiyonel)
+  pkBattleId String? // ilişkili PKBattle (opsiyonel)
   notes      String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   updatedAt  DateTime? @updatedAt
 
   round TournamentRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
@@ -4395,15 +4410,15 @@ model RolePermission {
 
 // F7: Per-user permission overrides — granular admin permissions per user
 model UserPermissionOverride {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permissionKey  String   // e.g. 'finance.balance.adjust'
-  granted        Boolean  @default(true) // true=grant, false=deny
-  grantedBy      String   // admin userId
-  reason         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionKey String // e.g. 'finance.balance.adjust'
+  granted       Boolean  @default(true) // true=grant, false=deny
+  grantedBy     String // admin userId
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([userId, permissionKey])
   @@index([userId])
@@ -4415,11 +4430,11 @@ model AdminUserAction {
   id           String   @id @default(cuid())
   targetUserId String
   targetUser   User     @relation("AdminActionTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
-  adminId      String   // admin who performed the action
-  adminName    String?  // admin display name snapshot
-  action       String   // jeton_adjust, cfc_adjust, gold_grant, gold_revoke, ban, unban, role_change, permission_change, broadcast_toggle, room_toggle, etc.
-  oldValue     String?  // JSON serialized old state
-  newValue     String?  // JSON serialized new state
+  adminId      String // admin who performed the action
+  adminName    String? // admin display name snapshot
+  action       String // jeton_adjust, cfc_adjust, gold_grant, gold_revoke, ban, unban, role_change, permission_change, broadcast_toggle, room_toggle, etc.
+  oldValue     String? // JSON serialized old state
+  newValue     String? // JSON serialized new state
   reason       String?
   metadata     String?  @db.Text // JSON extra data
   createdAt    DateTime @default(now())
@@ -4805,14 +4820,14 @@ model AdPlacement {
 // ── BÖLÜM 6: Referans & Ajans komisyon defteri ──
 model ReferralCommission {
   id             String   @id @default(cuid())
-  earnerId       String   // komisyonu kazanan kullanıcı
-  sourceUserId   String   // jeton yükleyen kullanıcı
-  agencyId       String?  // ajans komisyonu ise ilgili ajans
+  earnerId       String // komisyonu kazanan kullanıcı
+  sourceUserId   String // jeton yükleyen kullanıcı
+  agencyId       String? // ajans komisyonu ise ilgili ajans
   commissionType String   @default("referral") // referral | agency_invite
-  topupAmount    Int      // yüklenen miktar
+  topupAmount    Int // yüklenen miktar
   topupCurrency  String   @default("credits") // credits | jeton | cfc
-  rate           Float    // uygulanan yüzde
-  amount         Int      // kazanılan miktar
+  rate           Float // uygulanan yüzde
+  amount         Int // kazanılan miktar
   currency       String   @default("credits")
   sourceType     String   @default("admin_credit") // admin_credit | cfc_payment
   sourceId       String?
@@ -4859,22 +4874,22 @@ model TopupBonusTier {
 // Admin tarafından yapılandırılabilir leaderboard tanımları.
 // Her bir (scope, periodType) çifti için ayrı konfigürasyon.
 model LeaderboardConfig {
-  id             String   @id @default(cuid())
-  scope          String   // voice_room | live_stream
-  periodType     String   // hourly | daily | weekly | monthly | event
-  isEnabled      Boolean  @default(true)
-  topN           Int      @default(100)  // gösterilecek max sıralama
+  id         String  @id @default(cuid())
+  scope      String // voice_room | live_stream
+  periodType String // hourly | daily | weekly | monthly | event
+  isEnabled  Boolean @default(true)
+  topN       Int     @default(100) // gösterilecek max sıralama
 
   // Ödül ayarları (JSON: [{rank:1, rewardType:'gold', rewardValue:'30', label:'1 Aylık Gold'}, ...])
-  rewardConfig   Json?
+  rewardConfig Json?
 
   // Hangi skorlama kaynakları aktif (JSON: {gift_received:true, gift_sent:false, pk_score:true, viewer_count:false, ...})
-  scoringRules   Json?
+  scoringRules Json?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  periods        LeaderboardPeriod[]
+  periods LeaderboardPeriod[]
 
   @@unique([scope, periodType])
   @@map("leaderboard_configs")
@@ -4882,20 +4897,20 @@ model LeaderboardConfig {
 
 // Her dönem periyodu için bir kayıt (saatlik / günlük vs.)
 model LeaderboardPeriod {
-  id           String   @id @default(cuid())
-  configId     String
-  config       LeaderboardConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
-  scope        String   // denormalized for fast query
-  periodType   String   // denormalized
-  periodKey    String   // "2026-09-09T14" (hourly), "2026-09-09" (daily), "2026-W37" (weekly), "2026-09" (monthly)
-  startTime    DateTime
-  endTime      DateTime
-  status       String   @default("active") // active | finalized | rewarded
-  finalizedAt  DateTime?
-  rewardedAt   DateTime?
+  id          String            @id @default(cuid())
+  configId    String
+  config      LeaderboardConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  scope       String // denormalized for fast query
+  periodType  String // denormalized
+  periodKey   String // "2026-09-09T14" (hourly), "2026-09-09" (daily), "2026-W37" (weekly), "2026-09" (monthly)
+  startTime   DateTime
+  endTime     DateTime
+  status      String            @default("active") // active | finalized | rewarded
+  finalizedAt DateTime?
+  rewardedAt  DateTime?
 
-  entries      LeaderboardEntry[]
-  rewards      LeaderboardReward[]
+  entries LeaderboardEntry[]
+  rewards LeaderboardReward[]
 
   @@unique([configId, periodKey])
   @@index([scope, periodType, status])
@@ -4905,15 +4920,15 @@ model LeaderboardPeriod {
 
 // Bir kullanıcının bir periyottaki skoru ve sırası
 model LeaderboardEntry {
-  id          String   @id @default(cuid())
-  periodId    String
-  period      LeaderboardPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contextId   String?  // roomId veya streamId (hangi oda/yayında kazanıldı)
-  score       Int      @default(0)
-  rank        Int?     // finalize sırasında hesaplanır
-  updatedAt   DateTime @updatedAt
+  id        String            @id @default(cuid())
+  periodId  String
+  period    LeaderboardPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contextId String? // roomId veya streamId (hangi oda/yayında kazanıldı)
+  score     Int               @default(0)
+  rank      Int? // finalize sırasında hesaplanır
+  updatedAt DateTime          @updatedAt
 
   @@unique([periodId, userId])
   @@index([periodId, score])
@@ -4923,19 +4938,19 @@ model LeaderboardEntry {
 
 // Dağıtılan ödüller (idempotent — her (periodId, rank) çifti tek kayıt)
 model LeaderboardReward {
-  id            String   @id @default(cuid())
+  id            String            @id @default(cuid())
   periodId      String
   period        LeaderboardPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   rank          Int
-  rewardType    String   // gold | cfc | jeton | badge | entrance_effect | custom
-  rewardValue   String   // "30" (gün), "500" (CFC miktarı), badge ID, vs.
-  rewardLabel   String?  // "1 Aylık Gold"
-  status        String   @default("pending") // pending | distributed | failed
+  rewardType    String // gold | cfc | jeton | badge | entrance_effect | custom
+  rewardValue   String // "30" (gün), "500" (CFC miktarı), badge ID, vs.
+  rewardLabel   String? // "1 Aylık Gold"
+  status        String            @default("pending") // pending | distributed | failed
   distributedAt DateTime?
-  transactionId String?  // CreditTransaction ID (varsa)
-  createdAt     DateTime @default(now())
+  transactionId String? // CreditTransaction ID (varsa)
+  createdAt     DateTime          @default(now())
 
   @@unique([periodId, rank])
   @@index([userId])
@@ -5037,22 +5052,22 @@ model EmailVerificationToken {
 
 /// Telefon/SMS tek-kullanımlık doğrulama kodu (OTP).
 model PhoneOtp {
-  id        String   @id @default(cuid())
-  userId    String
-  phone     String
+  id             String   @id @default(cuid())
+  userId         String
+  phone          String
   /// KULLANIM DIŞI: düz metin OTP artık yazılmaz. Geriye dönük uyumluluk için tutuluyor.
-  code      String?
+  code           String?
   /// HMAC-SHA256(kod) — doğrulama yalnızca bu alan üzerinden yapılır.
-  codeHash  String?
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  attempts  Int      @default(0)
-  ip        String?
-  deviceId  String?
+  codeHash       String?
+  expiresAt      DateTime
+  used           Boolean  @default(false)
+  attempts       Int      @default(0)
+  ip             String?
+  deviceId       String?
   providerKey    String?
   idempotencyKey String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([phone])
@@ -5099,7 +5114,6 @@ model AccountDeletion {
   @@map("account_deletions")
 }
 
-
 // ─────────────────────────────────────────────────────────────
 // Entegrasyon / Secret Management (BÖLÜM 18)
 // Tüm hassas değerler AES-256-GCM ile şifreli saklanır; şifreleme
@@ -5109,9 +5123,9 @@ model AccountDeletion {
 /// Şifrelenmiş entegrasyon secret'ları. Düz metin ASLA saklanmaz.
 model IntegrationSecret {
   id          String   @id @default(cuid())
-  scope       String   // 'sms' | 'apple' | 'google_play'
-  providerKey String   // 'netgsm' | 'apple_iap' | 'google_play' ...
-  fieldKey    String   // 'password' | 'api_key' | 'service_account_json' ...
+  scope       String // 'sms' | 'apple' | 'google_play'
+  providerKey String // 'netgsm' | 'apple_iap' | 'google_play' ...
+  fieldKey    String // 'password' | 'api_key' | 'service_account_json' ...
   ciphertext  String   @db.Text
   iv          String
   authTag     String
@@ -5199,4 +5213,189 @@ model IntegrationSetting {
   updatedAt DateTime @updatedAt
 
   @@map("integration_settings")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BÖLÜM 20 — ÜYELİK / VIP YETENEK (CAPABILITY) SİSTEMİ
+// Tamamen admin panelinden yönetilebilir. Jeton ekonomisine DOKUNMAZ.
+// ═══════════════════════════════════════════════════════════════
+
+/// Üyelik kademeleri kataloğu (basic, gold, premium, diamond, svip, ...)
+model MembershipTierDef {
+  id              String   @id @default(cuid())
+  key             String   @unique // basic | gold | premium | diamond | svip
+  name            String // Görünen ad (TR)
+  nameEn          String   @default("")
+  rank            Int      @default(0) // sıralama/karşılaştırma; büyük = üstün
+  color           String   @default("#9ca3af") // rozet/isim rengi
+  gradient        String? // CSS gradient (isim efekti)
+  icon            String   @default("⭐")
+  badgeUrl        String?
+  frameUrl        String?
+  description     String?  @db.Text
+  discoveryWeight Float    @default(1.0) // keşfet/sıralama ağırlığı (§14)
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tierFeatures MembershipTierFeature[]
+
+  @@index([isActive, sortOrder])
+  @@index([rank])
+  @@map("membership_tier_defs")
+}
+
+/// Yetenek (capability) kataloğu — vip.profile_frame, vip.hidden_online, ...
+model MembershipFeature {
+  id          String   @id @default(cuid())
+  key         String   @unique // vip.profile_frame
+  name        String
+  nameEn      String   @default("")
+  category    String   @default("general") // profile | privacy | room | message | discovery | event | support | cosmetic | access
+  description String?  @db.Text
+  valueType   String   @default("boolean") // boolean | number | string | asset | enum
+  unit        String? // adet/gün vb.
+  options     Json? // enum seçenekleri
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tierFeatures MembershipTierFeature[]
+
+  @@index([category, sortOrder])
+  @@index([isActive])
+  @@map("membership_features")
+}
+
+/// Kademe × Yetenek matrisi — admin panelinden düzenlenir
+model MembershipTierFeature {
+  id           String   @id @default(cuid())
+  tierKey      String
+  featureKey   String
+  enabled      Boolean  @default(false)
+  limitValue   Int? // genel limit (null = sınırsız)
+  dailyLimit   Int?
+  monthlyLimit Int?
+  durationDays Int? // özelliğin süresi (varsa)
+  priority     Int      @default(0) // öncelik seviyesi
+  assetRef     String? // görsel/animasyon referansı (id veya url)
+  defaultValue Json? // varsayılan değer
+  metadata     Json?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tier    MembershipTierDef @relation(fields: [tierKey], references: [key], onDelete: Cascade)
+  feature MembershipFeature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@unique([tierKey, featureKey])
+  @@index([featureKey])
+  @@index([tierKey, enabled])
+  @@map("membership_tier_features")
+}
+
+/// Kullanıcı VIP gizlilik/görünürlük tercihleri (§9, §11)
+model UserVipPreference {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hideVipBadge           Boolean  @default(false)
+  hideOnlineStatus       Boolean  @default(false)
+  hideLastSeen           Boolean  @default(false)
+  hideProfileVisit       Boolean  @default(false) // profilleri gizli gez
+  hiddenRoomEntry        Boolean  @default(false) // odaya gizli gir
+  hideVipStatus          Boolean  @default(false)
+  disableEntranceEffects Boolean  @default(false) // kendi giriş efektini kapat
+  muteOthersEntrance     Boolean  @default(false) // başkalarının efektlerini görme
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("user_vip_preferences")
+}
+
+/// Profil ziyaretçileri (§5 Premium+)
+model ProfileVisit {
+  id        String   @id @default(cuid())
+  visitorId String
+  profileId String
+  isHidden  Boolean  @default(false) // ziyaretçi gizli geziyorsa
+  visitedAt DateTime @default(now())
+
+  visitor User @relation("ProfileVisitVisitor", fields: [visitorId], references: [id], onDelete: Cascade)
+  profile User @relation("ProfileVisitTarget", fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([visitorId, profileId])
+  @@index([profileId, visitedAt])
+  @@index([visitorId, visitedAt])
+  @@map("profile_visits")
+}
+
+/// Üyelik geçmişi + hediye üyelik altyapısı (§19, §20)
+model MembershipGrant {
+  id            String    @id @default(cuid())
+  receiverId    String
+  giverId       String? // hediye eden (null = satın alma / admin)
+  tierKey       String
+  previousTier  String?
+  source        String    @default("purchase") // purchase | gift | admin | renewal | migration
+  startsAt      DateTime  @default(now())
+  expiresAt     DateTime?
+  transactionId String? // ödeme/mağaza işlem referansı
+  status        String    @default("active") // active | expired | cancelled | pending
+  autoRenew     Boolean   @default(false)
+  note          String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  receiver User  @relation("MembershipGrantReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  giver    User? @relation("MembershipGrantGiver", fields: [giverId], references: [id], onDelete: SetNull)
+
+  @@index([receiverId, status])
+  @@index([giverId])
+  @@index([status, expiresAt])
+  @@index([tierKey])
+  @@index([transactionId])
+  @@map("membership_grants")
+}
+
+/// VIP XP defteri (§18) — jeton/CFC ekonomisinden TAMAMEN ayrı
+model VipXpLedger {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Int
+  source       String // login | voice_room | event | social | stream | achievement | admin
+  refId        String?
+  note         String?
+  balanceAfter Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([source])
+  @@map("vip_xp_ledger")
+}
+
+/// Kademeye özel etkinlikler (§17, §19 etkinlik takvimi) — yönetici panelinden oluşturulur
+model MembershipEvent {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  bannerUrl    String?
+  ctaUrl       String?
+  startsAt     DateTime
+  endsAt       DateTime
+  minTierKey   String? // bu kademe ve üstü görebilir
+  allowedTiers String[] @default([]) // boşsa minTierKey kuralı geçerli
+  isActive     Boolean  @default(true)
+  priority     Int      @default(0)
+  createdBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, startsAt])
+  @@index([endsAt])
+  @@map("membership_events")
 }

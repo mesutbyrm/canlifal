@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getCached } from '@/lib/cache'
+import { getTiers, normalizeTierKey } from '@/lib/vip-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,10 +36,27 @@ export async function GET() {
           name: true,
           image: true,
           username: true,
+          membership: true,
+          membershipExpiresAt: true,
+          vipPreference: { select: { hideOnlineStatus: true } },
         }
       })
 
-      const userMap = new Map(users.map(u => [u.id, u]))
+      // ── BÖLÜM 20 §11: Premium+ "çevrimiçi durumunu gizle" (BACKEND zorunlu) ──
+      // Üyelik süresi dolduysa gizlilik otomatik kalkar (§23).
+      const tiers = await getTiers()
+      const rankOf = (key: string | null | undefined) =>
+        tiers.find(t => t.key === normalizeTierKey(key, tiers.map(x => x.key)))?.rank ?? 0
+      const premiumRank = tiers.find(t => t.key === 'premium')?.rank ?? 20
+      const now = Date.now()
+      const visible = users.filter(u => {
+        if (!u.vipPreference?.hideOnlineStatus) return true
+        const expired = u.membershipExpiresAt ? new Date(u.membershipExpiresAt).getTime() <= now : false
+        const effectiveTier = expired ? 'basic' : u.membership
+        return rankOf(effectiveTier) < premiumRank
+      })
+
+      const userMap = new Map(visible.map(u => [u.id, u]))
 
       return presences
         .filter(p => p.userId && userMap.has(p.userId))

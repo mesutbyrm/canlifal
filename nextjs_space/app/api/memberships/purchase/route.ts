@@ -5,6 +5,8 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { recordLedger } from '@/lib/ledger'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { applyMembership } from '@/lib/membership-lifecycle'
+import { invalidateUserEntitlements } from '@/lib/vip-entitlements'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,14 +107,25 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Update user membership
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        membership: plan.tier,
-        membershipExpiresAt: expiresAt
-      }
+    // Update user membership (BÖLÜM 20: merkezi yaşam döngüsü + yetenek cache invalidasyonu)
+    // expiresAt burada hesaplandığı için aynen geçiriliyor — mevcut süre uzatma davranışı korunur.
+    const applied = await applyMembership({
+      userId,
+      tierKey: plan.tier,
+      expiresAt,
+      source: 'purchase',
+      transactionId: plan.id,
+      actorId: userId,
+      note: `${plan.name} satın alma`,
     })
+    if (!applied.ok) {
+      // Geriye dönük güvenlik: merkezi katman başarısız olursa eski davranışa düş
+      await prisma.user.update({
+        where: { id: userId },
+        data: { membership: plan.tier, membershipExpiresAt: expiresAt },
+      })
+      try { await invalidateUserEntitlements(userId) } catch {}
+    }
 
     // ── Immutable ledger (fire-and-forget) ──
     if (!isStaff && plan.price > 0) {
