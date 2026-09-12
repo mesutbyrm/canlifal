@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { endPksForSide } from '@/lib/pk-state'
 import { closeGuestStateForStream } from '@/lib/live-guest'
+import { closeGiftBoxesFor } from '@/lib/gift-box'
 
 export const dynamic = 'force-dynamic'
 
@@ -124,6 +125,7 @@ export async function PATCH(
       await endPksForSide([params.streamId], 'LIVE_ENDED')
       // Misafirlik durumunu da güvenle kapat (aktif misafirler + bekleyen talepler)
       await closeGuestStateForStream(params.streamId, 'LIVE_ENDED')
+      await closeGiftBoxesFor({ streamId: params.streamId }).catch(() => {})
     }
 
     return NextResponse.json(updated)

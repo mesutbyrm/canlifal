@@ -38,6 +38,8 @@ export const DEFAULT_RATE_LIMITS: Record<string, number> = {
   pk_create: 10,
   guest_request: 6,
   guest_moderate: 60,
+  gift_box_create: 5,
+  gift_box_join: 20,
   agency_action: 5,
   tip: 10,
   membership: 5,

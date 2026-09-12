@@ -108,6 +108,14 @@ export async function GET(
                 ...pkEvt.data
               })}\n\n`))
             }
+            // Hediye Kutusu olayları (BÖLÜM 22/B4)
+            const giftBoxEvents = newEvents.filter(e => e.type === 'gift_box')
+            for (const gbEvt of giftBoxEvents) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'gift_box',
+                ...gbEvt.data
+              })}\n\n`))
+            }
             // Voice-room realtime events (user_joined/left, mic_changed, seat_changed,
             // room_closed, owner_changed). Forwarded as `room_event` so both web
             // (ignores unknown types) and Flutter (switches on .event) can consume them.

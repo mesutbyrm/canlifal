@@ -5740,3 +5740,76 @@ model SocialAction {
   @@map("social_actions")
 }
 
+
+// ─── BÖLÜM 22/B4: Hediye Kutusu (Gift Box) ───
+// Canlı yayın ve sesli sohbet odalarında çalışan ödül kutusu sistemi.
+// Kullanıcıya bağlar düz skaler FK olarak tutulur (paylaşımlı şema — additive).
+
+model GiftBox {
+  id        String  @id @default(cuid())
+  scope     String  @default("stream") // stream | room
+  streamId  String?
+  roomId    String?
+  creatorId String
+
+  totalAmount Int
+  winnerCount Int
+  durationSec Int
+  splits      String // JSON int[] — toplamı daima totalAmount
+
+  taskType         String  @default("none") // none | follow_creator | follow_broadcaster | follow_user | share
+  taskTargetUserId String?
+
+  status     String    @default("active") // active | finished | cancelled | expired
+  startsAt   DateTime  @default(now())
+  endsAt     DateTime
+  finishedAt DateTime?
+  settledAt  DateTime? // tek seferlik kapanış/iade kilidi
+  refundedAmount Int    @default(0)
+
+  paidCount  Int @default(0)
+  paidAmount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries GiftBoxEntry[]
+
+  @@index([streamId, status])
+  @@index([roomId, status])
+  @@index([creatorId])
+  @@index([status, endsAt])
+  @@map("gift_boxes")
+}
+
+model GiftBoxEntry {
+  id           String   @id @default(cuid())
+  boxId        String
+  userId       String
+  taskVerified Boolean  @default(false)
+  isWinner     Boolean  @default(false)
+  rewardAmount Int      @default(0)
+  rank         Int?
+  joinedAt     DateTime @default(now())
+
+  box GiftBox @relation(fields: [boxId], references: [id], onDelete: Cascade)
+
+  @@unique([boxId, userId])
+  @@index([boxId, isWinner])
+  @@index([userId])
+  @@map("gift_box_entries")
+}
+
+// Doğrulanabilir paylaşım olayı (§11-C "Yayını paylaş" görevi için).
+model ShareEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  scope     String // stream | room
+  targetId  String
+  channel   String   @default("link")
+  createdAt DateTime @default(now())
+
+  @@index([scope, targetId, userId, createdAt])
+  @@index([userId, createdAt])
+  @@map("share_events")
+}

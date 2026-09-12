@@ -14,7 +14,7 @@ interface ChatEvent {
    */
   eventId: string
   timestamp: number
-  type: 'message' | 'presence' | 'typing' | 'system' | 'gift' | 'pk' | 'room'
+  type: 'message' | 'presence' | 'typing' | 'system' | 'gift' | 'pk' | 'room' | 'gift_box'
   data: any
 }
 
