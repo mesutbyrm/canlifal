@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'receiptData zorunludur', code: 'VALIDATION_ERROR' }, { status: 422 })
     }
 
-    if (!isAppleBillingConfigured()) {
+    if (!(await isAppleBillingConfigured())) {
       return NextResponse.json(
         {
           error: 'Mağaza içi satın alma doğrulaması henüz yapılandırılmamış.',

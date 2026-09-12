@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { normalizePhone } from '@/lib/sms';
+import { hmacCode, timingSafeEqualHex } from '@/lib/crypto-vault';
+import { safeError } from '@/lib/log-redact';
 import { authLimiter } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +45,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Çok fazla hatalı deneme. Yeni kod isteyin.' }, { status: 400 });
     }
 
-    if (otp.code !== code) {
+    // Kod düz metin saklanmaz: HMAC karşılaştırması (sabit süreli).
+    const provided = hmacCode(code, phone);
+    const stored = otp.codeHash || (otp.code ? hmacCode(otp.code, phone) : '');
+    if (!stored || !timingSafeEqualHex(provided, stored)) {
       await prisma.phoneOtp.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
       return NextResponse.json({ error: 'Kod hatalı', remainingAttempts: MAX_ATTEMPTS - otp.attempts - 1 }, { status: 400 });
     }
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Telefon numaranız doğrulandı.' });
   } catch (error) {
-    console.error('verify-otp error:', error);
+    safeError('verify-otp', 'beklenmeyen hata', error);
     return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { getSecret, getProviderConfig } from '@/lib/integration-secrets'
 
 /**
  * ---------------------------------------------------------------------------
@@ -23,8 +24,19 @@ export type PlayVerifyResult =
   | { ok: true; raw: any; orderId?: string; purchaseState: number; acknowledged: boolean; isSubscription: boolean; expiryTimeMillis?: string }
   | { ok: false; reason: 'not_configured' | 'auth_failed' | 'invalid_token' | 'api_error'; detail?: string }
 
-export function isPlayBillingConfigured(): boolean {
-  return !!(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON && process.env.GOOGLE_PLAY_PACKAGE_NAME)
+/** Servis hesabı JSON'u: önce şifreli yapılandırma deposu, sonra ortam değişkeni. */
+export async function getPlayServiceAccountJson(): Promise<string | null> {
+  return getSecret('google_play', 'google_play', 'service_account_json', 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON')
+}
+
+/** Paket adı gizli bilgi değildir ancak aynı depodan yönetilir. */
+export async function getPlayPackageName(): Promise<string | null> {
+  return getProviderConfig('google_play', 'package_name', 'GOOGLE_PLAY_PACKAGE_NAME')
+}
+
+export async function isPlayBillingConfigured(): Promise<boolean> {
+  const [sa, pkg] = await Promise.all([getPlayServiceAccountJson(), getPlayPackageName()])
+  return !!(sa && pkg)
 }
 
 let cachedAccessToken: { token: string; expiresAt: number } | null = null
@@ -33,7 +45,7 @@ async function getAccessToken(): Promise<string | null> {
   if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
     return cachedAccessToken.token
   }
-  const rawJson = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+  const rawJson = await getPlayServiceAccountJson()
   if (!rawJson) return null
   let sa: any
   try {
@@ -85,12 +97,12 @@ export async function verifyGooglePlayPurchase(
   purchaseToken: string,
   type: 'product' | 'subscription' = 'product'
 ): Promise<PlayVerifyResult> {
-  if (!isPlayBillingConfigured()) return { ok: false, reason: 'not_configured' }
+  if (!(await isPlayBillingConfigured())) return { ok: false, reason: 'not_configured' }
 
   const accessToken = await getAccessToken()
   if (!accessToken) return { ok: false, reason: 'auth_failed' }
 
-  const pkg = encodeURIComponent(process.env.GOOGLE_PLAY_PACKAGE_NAME!)
+  const pkg = encodeURIComponent((await getPlayPackageName()) || '')
   const pid = encodeURIComponent(productId)
   const tok = encodeURIComponent(purchaseToken)
   const url =
@@ -137,10 +149,10 @@ export async function acknowledgeGooglePlayPurchase(
   purchaseToken: string,
   type: 'product' | 'subscription' = 'product'
 ): Promise<boolean> {
-  if (!isPlayBillingConfigured()) return false
+  if (!(await isPlayBillingConfigured())) return false
   const accessToken = await getAccessToken()
   if (!accessToken) return false
-  const pkg = encodeURIComponent(process.env.GOOGLE_PLAY_PACKAGE_NAME!)
+  const pkg = encodeURIComponent((await getPlayPackageName()) || '')
   const pid = encodeURIComponent(productId)
   const tok = encodeURIComponent(purchaseToken)
   const url =

@@ -1813,6 +1813,21 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('Currency branding & bonus tiers seeded!')
 
+  // ── SMS sağlayıcı kayıtları (yalnız ekleme; mevcut ayarlar korunur) ──
+  {
+    const { SMS_PROVIDERS } = await import('../lib/sms/catalog')
+    let smsPriority = 10
+    for (const meta of SMS_PROVIDERS) {
+      await prisma.smsProvider.upsert({
+        where: { providerKey: meta.key },
+        update: { displayName: meta.displayName },
+        create: { providerKey: meta.key, displayName: meta.displayName, enabled: false, priority: smsPriority },
+      })
+      smsPriority += 10
+    }
+  }
+  console.log('SMS providers seeded!')
+
   console.log('Seed completed successfully!')
 }
 

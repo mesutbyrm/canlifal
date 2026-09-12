@@ -5040,15 +5040,23 @@ model PhoneOtp {
   id        String   @id @default(cuid())
   userId    String
   phone     String
-  code      String
+  /// KULLANIM DIŞI: düz metin OTP artık yazılmaz. Geriye dönük uyumluluk için tutuluyor.
+  code      String?
+  /// HMAC-SHA256(kod) — doğrulama yalnızca bu alan üzerinden yapılır.
+  codeHash  String?
   expiresAt DateTime
   used      Boolean  @default(false)
   attempts  Int      @default(0)
+  ip        String?
+  deviceId  String?
+  providerKey    String?
+  idempotencyKey String?
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([phone])
+  @@index([idempotencyKey])
   @@map("phone_otps")
 }
 
@@ -5089,4 +5097,106 @@ model AccountDeletion {
 
   @@index([status])
   @@map("account_deletions")
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// Entegrasyon / Secret Management (BÖLÜM 18)
+// Tüm hassas değerler AES-256-GCM ile şifreli saklanır; şifreleme
+// anahtarı veritabanında DEĞİL, ortam değişkeninde tutulur.
+// ─────────────────────────────────────────────────────────────
+
+/// Şifrelenmiş entegrasyon secret'ları. Düz metin ASLA saklanmaz.
+model IntegrationSecret {
+  id          String   @id @default(cuid())
+  scope       String   // 'sms' | 'apple' | 'google_play'
+  providerKey String   // 'netgsm' | 'apple_iap' | 'google_play' ...
+  fieldKey    String   // 'password' | 'api_key' | 'service_account_json' ...
+  ciphertext  String   @db.Text
+  iv          String
+  authTag     String
+  keyVersion  Int      @default(1)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([scope, providerKey, fieldKey])
+  @@index([scope])
+  @@map("integration_secrets")
+}
+
+/// SMS sağlayıcı kaydı (aktif/pasif + öncelik).
+model SmsProvider {
+  id          String   @id @default(cuid())
+  providerKey String   @unique
+  displayName String
+  enabled     Boolean  @default(false)
+  priority    Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled, priority])
+  @@map("sms_providers")
+}
+
+/// SMS sağlayıcısının HASSAS OLMAYAN ayarları (başlık, bölge, base url vb.).
+model SmsProviderConfig {
+  id          String   @id @default(cuid())
+  providerKey String
+  fieldKey    String
+  value       String   @db.Text
+  updatedAt   DateTime @updatedAt
+
+  @@unique([providerKey, fieldKey])
+  @@map("sms_provider_configs")
+}
+
+/// SMS sağlayıcı sağlık/telemetri durumu.
+model SmsProviderHealth {
+  id               String    @id @default(cuid())
+  providerKey      String    @unique
+  status           String    @default("unknown") // healthy | degraded | disabled | unknown
+  lastSuccessAt    DateTime?
+  lastFailureAt    DateTime?
+  lastTestedAt     DateTime?
+  lastUsedAt       DateTime?
+  lastError        String?   @db.Text
+  successCount     Int       @default(0)
+  failureCount     Int       @default(0)
+  fallbackUseCount Int       @default(0)
+  avgLatencyMs     Int       @default(0)
+  cooldownUntil    DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  @@map("sms_provider_health")
+}
+
+/// SMS gönderim denemesi kaydı. OTP kodu ve mesaj içeriği ASLA yazılmaz.
+model SmsDeliveryLog {
+  id                String   @id @default(cuid())
+  providerKey       String
+  phoneMasked       String
+  purpose           String   @default("otp")
+  success           Boolean
+  errorCode         String?
+  latencyMs         Int?
+  isFallback        Boolean  @default(false)
+  isTest            Boolean  @default(false)
+  idempotencyKey    String?
+  providerMessageId String?
+  createdAt         DateTime @default(now())
+
+  @@index([providerKey, createdAt])
+  @@index([idempotencyKey])
+  @@map("sms_delivery_logs")
+}
+
+/// Entegrasyonlara ait HASSAS OLMAYAN genel ayarlar (seçim modu, eşikler vb.).
+model IntegrationSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("integration_settings")
 }

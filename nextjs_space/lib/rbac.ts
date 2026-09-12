@@ -126,3 +126,29 @@ export async function requireOwnerOrAdmin(
   }
   return null
 }
+
+// ─── SÜPER ADMİN (secret / entegrasyon yönetimi) ──────────────────
+/**
+ * Secret & entegrasyon ayarları yalnız SÜPER ADMİN rollerine açıktır.
+ * Bilerek FULL_ADMIN_ROLES'tan ayrı tutulur: ileride daraltılabilsin diye.
+ */
+export const SUPER_ADMIN_ROLES = ['admin', 'yonetici'] as const
+
+export function isSuperAdmin(role?: string | null): boolean {
+  return !!role && (SUPER_ADMIN_ROLES as readonly string[]).includes(role)
+}
+
+/** 401 yetkisiz / 403 süper admin değil → aksi halde { user } döner. */
+export async function requireSuperAdmin(
+  req: NextRequest
+): Promise<{ user: ResolvedUser } | NextResponse> {
+  const result = await requireAuth(req)
+  if (result instanceof NextResponse) return result
+  if (!isSuperAdmin(result.user.role)) {
+    return NextResponse.json(
+      { success: false, error: { code: 'FORBIDDEN', message: 'Bu işlem için süper yönetici yetkisi gerekiyor' } },
+      { status: 403 }
+    )
+  }
+  return result
+}

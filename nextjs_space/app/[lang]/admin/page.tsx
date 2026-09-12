@@ -237,6 +237,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
       { href: `/admin/system-monitor`, icon: MonitorCheck, trLabel: 'Sistem Durumu', enLabel: 'System Monitor', emoji: '🖥️', desc: 'Canlı üretim izleme metrikleri' },
       { href: `/admin/bots`, icon: Bot, trLabel: 'AI Bot Yönetimi', enLabel: 'AI Bot Management', emoji: '🤖', desc: 'Bot simülasyonu & kontrol' },
       { href: `/admin/backup`, icon: HardDrive, trLabel: 'Site Yedekleme', enLabel: 'Site Backup', emoji: '💾', desc: 'Veri yedekleme işlemleri' },
+      { href: `/admin/integrations`, icon: Settings, trLabel: 'Entegrasyonlar / Secret & API', enLabel: 'Integrations / Secrets & API', emoji: '🔌', desc: 'SMS/OTP, Apple IAP, Google Play anahtarları' },
     ],
   },
 ]

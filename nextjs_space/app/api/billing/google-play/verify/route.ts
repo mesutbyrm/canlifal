@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!isPlayBillingConfigured()) {
+    if (!(await isPlayBillingConfigured())) {
       return NextResponse.json(
         {
           error: 'Mağaza içi satın alma doğrulaması henüz yapılandırılmamış.',
