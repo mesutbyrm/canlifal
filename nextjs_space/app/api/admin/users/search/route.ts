@@ -4,12 +4,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 // GET: Search users by name, username, or email for admin autocomplete
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'moderation.user.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

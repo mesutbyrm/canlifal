@@ -3,6 +3,7 @@ import prisma from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { recordAudit } from '@/lib/audit-log';
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ const REFUND_ADMIN_ROLES = ['admin', 'yonetici', 'finans'];
 async function getAdmin() {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
-  if (!session?.user?.id || !REFUND_ADMIN_ROLES.includes(role || '')) return null;
+  if (!session?.user?.id || !(await staffCan(role || '', (session?.user as any)?.id, 'payment.refund', REFUND_ADMIN_ROLES))) return null;
   return { id: session.user.id, role: role as string };
 }
 

@@ -11,6 +11,7 @@ import prisma from '@/lib/db'
 import { recordAudit } from '@/lib/audit-log'
 import { requireConfirmation } from '@/lib/critical-confirm'
 import { invalidateCache } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 import {
   ensureDefaultConfigs,
   finalizeExpiredPeriods,
@@ -26,7 +27,7 @@ const ADMIN_ROLES = ['admin', 'yonetici']
 async function requireAdmin() {
   const session = await getServerSession(authOptions)
   const role = (session?.user as any)?.role
-  if (!role || !ADMIN_ROLES.includes(role)) return null
+  if (!role || !(await staffCan(role, (session?.user as any)?.id, 'analytics.dashboard.view', ADMIN_ROLES))) return null
   return (session?.user as any)?.id as string
 }
 

@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 
 const ADMIN_ROLES = ['admin', 'yonetici']
 
@@ -14,7 +15,7 @@ export async function PATCH(
   { params }: { params: { configId: string } }
 ) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || !ADMIN_ROLES.includes((session.user as any).role)) {
+  if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.config.manage', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 
@@ -42,7 +43,7 @@ export async function DELETE(
   { params }: { params: { configId: string } }
 ) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || !ADMIN_ROLES.includes((session.user as any).role)) {
+  if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.config.manage', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 

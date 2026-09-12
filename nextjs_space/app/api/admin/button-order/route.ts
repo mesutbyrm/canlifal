@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { invalidateCachePrefix } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 

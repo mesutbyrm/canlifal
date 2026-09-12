@@ -7,6 +7,7 @@ import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
 import { recordAudit } from '@/lib/audit-log';
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !['admin', 'yonetici'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
 
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !['admin', 'yonetici'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
 

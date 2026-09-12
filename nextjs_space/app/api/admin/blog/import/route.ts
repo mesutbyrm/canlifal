@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const userRole = ((session.user as any).role || '').toLowerCase()
-    if (userRole !== 'admin') {
+    if (!(await staffCan(userRole, (session.user as any).id, 'content.announcement.manage', ['admin']))) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
     

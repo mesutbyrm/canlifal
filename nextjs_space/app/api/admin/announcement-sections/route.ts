@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,7 +72,7 @@ export async function GET() {
       select: { role: true }
     })
 
-    if (!user || !['admin', 'yonetici', 'moderator', 'finans', 'site_manager'].includes(user.role)) {
+    if (!user || !(await staffCan(user.role, (session?.user as any)?.id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans', 'site_manager']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     })
 
-    if (!user || !['admin', 'yonetici', 'moderator', 'finans', 'site_manager'].includes(user.role)) {
+    if (!user || !(await staffCan(user.role, (session?.user as any)?.id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans', 'site_manager']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

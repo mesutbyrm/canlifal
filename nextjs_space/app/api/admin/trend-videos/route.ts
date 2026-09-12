@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ const ADMIN_ROLES = ['admin', 'yonetici', 'moderator']
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ADMIN_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 
@@ -35,7 +36,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ADMIN_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCachePrefix } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'system.config.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 
@@ -47,7 +48,7 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || !['admin','yonetici','moderator','finans'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'system.config.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

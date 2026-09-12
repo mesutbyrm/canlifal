@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (!auth) return NextResponse.json({ error: 'Oturum gerekli' }, { status: 401 })
     userRole = auth.role
   }
-  if (!userRole || !['admin','yonetici','moderator','finans'].includes(userRole)) {
+  if (!userRole || !(await staffCan(userRole, (session?.user as any)?.id, 'moderation.user.view', ['admin','yonetici','moderator','finans']))) {
     return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 403 })
   }
 

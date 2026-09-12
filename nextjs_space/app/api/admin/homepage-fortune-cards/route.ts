@@ -3,13 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCachePrefix } from '@/lib/cache'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
 async function isAdmin() {
   const session = await getServerSession(authOptions)
   const role = ((session?.user as any)?.role || '').toLowerCase()
-  return session?.user && ['admin', 'yonetici', 'moderator', 'finans'].includes(role)
+  return session?.user && (await staffCan(role, (session?.user as any)?.id, 'content.media.upload', ['admin', 'yonetici', 'moderator', 'finans']))
 }
 
 // GET - list all fortune cards

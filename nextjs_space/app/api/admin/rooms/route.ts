@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export async function GET() {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
-    if (!user || user.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
+    if (!user || !(await staffCan(user.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
 
     const rooms = await prisma.chatRoom.findMany({
       select: {
@@ -38,7 +39,7 @@ export async function PATCH(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
-    if (!user || user.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
+    if (!user || !(await staffCan(user.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
 
     const { roomId, giftCommissionPercent, giftBeneficiaryId } = await req.json()
     if (!roomId) return NextResponse.json({ error: 'roomId required' }, { status: 400 })

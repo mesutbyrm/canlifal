@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { generateBotMessage, type Personality } from '@/lib/bot-messages'
+import { staffCan } from '@/lib/permissions'
 
 // ── Configuration ──
 const MAX_CONCURRENT_BOTS_PER_ROOM = 8  // Max bots active in one room at a time
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     if (!isInternalCron) {
       const session = await getServerSession(authOptions)
-      if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
+      if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
         return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
       }
     }
@@ -238,7 +239,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
+    if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

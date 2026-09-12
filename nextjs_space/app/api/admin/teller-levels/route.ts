@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db';
 import { calculateLevelPoints, getLevelForPoints } from '@/lib/teller-levels';
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !['admin','yonetici'].includes((session.user as any).role)) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.teller.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetki yok' }, { status: 403 });
     }
 

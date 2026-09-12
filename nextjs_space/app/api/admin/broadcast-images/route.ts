@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 // GET - Fetch all broadcast images (admin)
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
       select: { role: true }
     })
     
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'content.media.upload', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
     
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     })
     
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'content.media.upload', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
     
@@ -84,7 +85,7 @@ export async function PATCH(request: NextRequest) {
       select: { role: true }
     })
     
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'content.media.upload', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
     
@@ -125,7 +126,7 @@ export async function DELETE(request: NextRequest) {
       select: { role: true }
     })
     
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'content.media.upload', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
     

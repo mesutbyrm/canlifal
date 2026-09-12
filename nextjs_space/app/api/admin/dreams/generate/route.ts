@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import OpenAI from 'openai'
 import { slugifyTurkish } from '@/lib/dream-utils'
 import { sendNotification } from '@/lib/onesignal-admin'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ const openai = new OpenAI({
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || ((session.user as any).role || '').toLowerCase() !== 'admin') {
+    if (!session?.user || !(await staffCan(((session.user as any).role || '').toLowerCase(), (session.user as any).id, 'content.announcement.manage', ['admin']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 

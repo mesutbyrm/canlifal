@@ -10,6 +10,7 @@ import {
 } from '@/lib/tournament-state'
 import { recordAudit } from '@/lib/audit-log'
 import { requireConfirmation } from '@/lib/critical-confirm'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ const ADMIN_ROLES = ['admin', 'yonetici']
 async function requireAdmin(req?: NextRequest) {
   const session = await getServerSession(authOptions)
   const role = (session?.user as any)?.role
-  if (!role || !ADMIN_ROLES.includes(role)) return null
+  if (!role || !(await staffCan(role, (session?.user as any)?.id, 'content.tournament.manage', ADMIN_ROLES))) return null
   return (session?.user as any)?.id as string
 }
 

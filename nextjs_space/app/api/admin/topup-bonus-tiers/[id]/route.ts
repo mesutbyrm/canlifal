@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   try {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role
-    if (!session?.user?.id || !WRITE_ROLES.includes(role)) {
+    if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', WRITE_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
@@ -54,7 +55,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   try {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role
-    if (!session?.user?.id || !FULL_ROLES.includes(role)) {
+    if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', FULL_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
     await prisma.topupBonusTier.delete({ where: { id: params.id } })

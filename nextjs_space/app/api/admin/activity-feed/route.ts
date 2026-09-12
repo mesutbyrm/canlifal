@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role
-    if (!role || !ADMIN_ROLES.includes(role)) {
+    if (!role || !(await staffCan(role, (session?.user as any)?.id, 'analytics.dashboard.view', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role
-    if (!role || !ADMIN_ROLES.includes(role)) {
+    if (!role || !(await staffCan(role, (session?.user as any)?.id, 'analytics.dashboard.view', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

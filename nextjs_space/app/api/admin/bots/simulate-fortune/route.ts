@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { DREAM_COMMENTS, FORTUNE_POST_TEMPLATES, FORTUNE_TYPES, FORTUNE_TYPE_LABELS } from '@/lib/bot-fortune-messages'
 import type { Personality } from '@/lib/bot-messages'
+import { staffCan } from '@/lib/permissions'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pick(arr: readonly any[]): any {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     if (!isInternalCron) {
       const session = await getServerSession(authOptions)
-      if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
+      if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
         return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
       }
     }
@@ -216,7 +217,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.role || !['admin', 'yonetici'].includes(session.user.role)) {
+    if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
 

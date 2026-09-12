@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 const ALLOWED_ROLES = ['admin', 'yonetici', 'moderator']
 
@@ -11,7 +12,7 @@ const ALLOWED_ROLES = ['admin', 'yonetici', 'moderator']
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
@@ -159,7 +160,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
@@ -193,7 +194,7 @@ export async function PATCH(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
@@ -266,7 +267,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !ALLOWED_ROLES.includes((session.user as any).role)) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 

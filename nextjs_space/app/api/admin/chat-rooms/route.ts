@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { emitRoomClosed } from '@/lib/voice-room-events'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -87,7 +88,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 
@@ -162,7 +163,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
-    if (user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!(await staffCan(user?.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
     }
 

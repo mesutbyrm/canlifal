@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
-import { listRoles, PERMISSIONS } from '@/lib/permissions'
+import { listRoles, PERMISSIONS, staffCan } from '@/lib/permissions'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 const ADMIN_ROLES = ['admin', 'yonetici']
@@ -12,7 +12,7 @@ const ADMIN_ROLES = ['admin', 'yonetici']
 // GET /api/admin/roles — roller + yetki kataloğu
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || !ADMIN_ROLES.includes((session.user as any).role)) {
+  if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.role.manage', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/roles — yeni rol oluştur
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  if (!session?.user || !ADMIN_ROLES.includes((session.user as any).role)) {
+  if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.role.manage', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 

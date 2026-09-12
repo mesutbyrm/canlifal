@@ -6,6 +6,7 @@ import { recordLedger } from '@/lib/ledger'
 import { recordAudit } from '@/lib/audit-log'
 import { awardTopupCommissions } from '@/lib/referral-commission'
 import { applyTopupBonus } from '@/lib/currency-branding'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id || session?.user?.role !== 'admin' && (session.user as any).role !== 'yonetici' && (session.user as any).role !== 'moderator' && (session.user as any).role !== 'finans') {
+    if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.jeton.adjust', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json(
         { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }

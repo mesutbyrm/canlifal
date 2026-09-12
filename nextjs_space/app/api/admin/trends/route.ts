@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import prisma from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,7 @@ async function checkAdmin() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return false
   const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
-  return user && ['admin', 'yonetici', 'moderator'].includes(user.role)
+  return user && (await staffCan(user.role, session.user.id, 'content.media.upload', ['admin', 'yonetici', 'moderator']))
 }
 
 export async function GET(req: NextRequest) {

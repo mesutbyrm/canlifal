@@ -264,6 +264,28 @@ async function getDbRolePermissions(roleKey: string): Promise<string[] | null> {
  * Does the given role key grant the given permission?
  * DB first, legacy hardcoded matrix as fallback.
  */
+/**
+ * §RBAC geçiş yardımcısı (geriye dönük uyumlu).
+ *
+ * Mevcut admin uçları sabit rol listeleriyle korunuyordu. Bu yardımcı, o
+ * listeleri KORUYARAK (hiçbir mevcut erişim kaldırılmaz) üzerine granüler,
+ * DB'den atanabilir yetki denetimi ekler:
+ *   - fallbackRoles içindeki rol her zaman geçer (eski davranış birebir korunur)
+ *   - ayrıca herhangi bir role/kullanıcıya `permissionKey` DB'den atanırsa da geçer
+ *
+ * Böylece admin/yonetici/kurucu her zaman, moderator/finans vb. eski listedeki
+ * roller aynen çalışır; ileride yeni roller yalnızca ilgili yetkiyle açılır.
+ */
+export async function staffCan(
+  roleKey: string | null | undefined,
+  userId: string | null | undefined,
+  permissionKey: string,
+  fallbackRoles: string[]
+): Promise<boolean> {
+  if (roleKey && fallbackRoles.includes(roleKey)) return true
+  return hasPermission(roleKey, permissionKey, userId ?? undefined)
+}
+
 export async function hasPermission(roleKey: string | null | undefined, permissionKey: string, userId?: string): Promise<boolean> {
   if (!roleKey) return false
   // 'admin', 'yonetici' and 'kurucu' always keep full access, regardless of DB state.
