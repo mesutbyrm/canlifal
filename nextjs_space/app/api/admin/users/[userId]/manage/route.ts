@@ -760,6 +760,21 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ success: true, message: hidden ? 'Kullanıcı keşfetten gizlendi' : 'Kullanıcı keşfette tekrar görünür' })
   }
 
+  // §37 keşfet önceliği
+  if (action === 'discovery_priority_set' || action === 'discovery_priority_unset') {
+    const denied = await guardPermission(admin, 'social.discovery.manage')
+    if (denied) return denied
+    const priority = action === 'discovery_priority_set' ? (parseInt(data.priority) || 10) : 0
+    await prisma.user.update({ where: { id: target.id }, data: { discoveryPriority: priority } as any })
+    await logAdminAction({
+      targetUserId: target.id, adminId: admin.id, adminName, action,
+      oldValue: { discoveryPriority: (target as any).discoveryPriority ?? 0 },
+      newValue: { discoveryPriority: priority }, reason: data.reason,
+    })
+    recordAudit({ actorId: admin.id, action: `user_manage_${action}`, targetType: 'user', targetId: target.id, metadata: { priority }, ip }).catch(() => {})
+    return NextResponse.json({ success: true, message: priority > 0 ? 'Keşfet önceliği verildi' : 'Keşfet önceliği kaldırıldı' })
+  }
+
   // ── FALCI YETKİSİ ─────────────────────────────────────────
   if (action.startsWith('teller_')) {
     const denied = await guardPermission(admin, 'moderation.user.fortuneteller')

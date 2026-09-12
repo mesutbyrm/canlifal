@@ -173,6 +173,13 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     ],
   },
   {
+    groupLabel: '🔍 Keşif & Tanış',
+    groupIcon: '🔍',
+    links: [
+      { href: `/admin/global-search`, icon: Search, trLabel: 'Global Arama', enLabel: 'Global Search', emoji: '🔎', desc: 'Kullanıcı, ajans, falcı ara' },
+    ],
+  },
+  {
     groupLabel: '🏢 Ajans & Falcı',
     groupIcon: '🏢',
     links: [

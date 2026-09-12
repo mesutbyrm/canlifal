@@ -194,6 +194,21 @@ model User {
   frozenReason                 String?
   hiddenFromDiscovery          Boolean                  @default(false) // keşfetten gizle
   warningCount                 Int                      @default(0)
+  // ── BÖLÜM 21/A6: Konum + Tanış & Kaynaş ──
+  latitude                     Float? // asla istemciye gönderilmez
+  longitude                    Float? // asla istemciye gönderilmez
+  locationEnabled              Boolean                  @default(false)
+  showDistance                 Boolean                  @default(true) // diğer kullanıcılara mesafemi göster
+  discoveryPriority            Int                      @default(0) // admin tarafından öncelik
+  socialLinks                  String?                  @db.Text // JSON: {instagram, tiktok, youtube, x, facebook, ...}
+  socialLinksPublic            Boolean                  @default(false)
+  hobbies                      String?                  @db.Text // JSON: string[]
+  showAge                      Boolean                  @default(true)
+  showCity                     Boolean                  @default(true)
+  showLastActive               Boolean                  @default(true)
+  socialActionsReceived        SocialAction[]           @relation("SocialActionTarget")
+  socialActionsPerformed       SocialAction[]           @relation("SocialActionActor")
+
   warningsReceived             UserWarning[]            @relation("UserWarningTarget")
   timelineEvents               UserTimelineEvent[]
   vipPreference                UserVipPreference?
@@ -5667,3 +5682,24 @@ model CfcScoreLog {
   @@index([contestId, calculatedAt])
   @@map("cfc_score_logs")
 }
+
+// ─── BÖLÜM 21/A6: Tanış & Kaynaş Sosyal Etkileşim ───
+
+model SocialAction {
+  id          String   @id @default(cuid())
+  actorId     String
+  actor       User     @relation("SocialActionActor", fields: [actorId], references: [id], onDelete: Cascade)
+  targetId    String
+  target      User     @relation("SocialActionTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  type        String   // like, favorite, friend_request, friend_accept, block, report
+  status      String   @default("active") // active, cancelled, accepted, rejected
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([actorId, targetId, type])
+  @@index([targetId, type])
+  @@index([actorId, type])
+  @@map("social_actions")
+}
+

@@ -1307,6 +1307,10 @@ export default function CanliDarkHome() {
             <Globe className="w-5 h-5" />
             <span>Sosyal</span>
           </Link>
+          <Link href="/tanis-kaynas" className="canlidark-nav-item">
+            <Users className="w-5 h-5" />
+            <span>Tanış</span>
+          </Link>
           <div className="relative">
             <button onClick={() => setFabMenuOpen(!fabMenuOpen)} className="canlidark-nav-fab" aria-label="İçerik Oluştur">
               <Plus className={`w-7 h-7 transition-transform ${fabMenuOpen ? 'rotate-45' : ''}`} />
