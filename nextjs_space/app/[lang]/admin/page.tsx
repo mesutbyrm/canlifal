@@ -173,10 +173,11 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     ],
   },
   {
-    groupLabel: '🔍 Keşif & Tanış',
+    groupLabel: '🔍 Keşif & Analitik',
     groupIcon: '🔍',
     links: [
       { href: `/admin/global-search`, icon: Search, trLabel: 'Global Arama', enLabel: 'Global Search', emoji: '🔎', desc: 'Kullanıcı, ajans, falcı ara' },
+      { href: `/admin/platform-analytics`, icon: BarChart3, trLabel: 'Platform Analitik', enLabel: 'Platform Analytics', emoji: '📊', desc: 'DAU/WAU/MAU, KPI dashboard' },
     ],
   },
   {
