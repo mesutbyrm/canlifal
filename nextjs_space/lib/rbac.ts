@@ -132,7 +132,7 @@ export async function requireOwnerOrAdmin(
  * Secret & entegrasyon ayarları yalnız SÜPER ADMİN rollerine açıktır.
  * Bilerek FULL_ADMIN_ROLES'tan ayrı tutulur: ileride daraltılabilsin diye.
  */
-export const SUPER_ADMIN_ROLES = ['admin', 'yonetici'] as const
+export const SUPER_ADMIN_ROLES = ['admin', 'yonetici', 'kurucu'] as const
 
 export function isSuperAdmin(role?: string | null): boolean {
   return !!role && (SUPER_ADMIN_ROLES as readonly string[]).includes(role)
@@ -151,4 +151,74 @@ export async function requireSuperAdmin(
     )
   }
   return result
+}
+
+
+// ─── BÖLÜM 21: yetki (permission) tabanlı guard ───────────────────
+/**
+ * Tek bir yetki anahtarı ile koruma. Backend tek doğruluk kaynağıdır (§46/§59):
+ * frontend butonu gizlese bile uç nokta yine kontrol eder.
+ *
+ *   const auth = await requirePermission(req, 'agency.wallet.topup')
+ *   if (auth instanceof NextResponse) return auth
+ *   const { user } = auth
+ */
+export async function requirePermission(
+  req: NextRequest,
+  permissionKey: string
+): Promise<{ user: ResolvedUser } | NextResponse> {
+  const result = await requireAuth(req)
+  if (result instanceof NextResponse) return result
+  const user = (result as { user: ResolvedUser }).user
+  let allowed = false
+  try {
+    const { hasPermission } = await import('@/lib/permissions')
+    allowed = await hasPermission(user.role, permissionKey, user.id)
+  } catch (e) {
+    console.error('[RBAC] requirePermission failed:', e)
+    allowed = false // fail-closed
+  }
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Bu işlem için yetkiniz yok',
+          details: { required: permissionKey },
+        },
+      },
+      { status: 403 }
+    )
+  }
+  return { user }
+}
+
+/** Birden fazla yetkiden herhangi biri yeterliyse geçer. */
+export async function requireAnyPermission(
+  req: NextRequest,
+  permissionKeys: string[]
+): Promise<{ user: ResolvedUser } | NextResponse> {
+  const result = await requireAuth(req)
+  if (result instanceof NextResponse) return result
+  const user = (result as { user: ResolvedUser }).user
+  try {
+    const { hasPermission } = await import('@/lib/permissions')
+    for (const key of permissionKeys) {
+      if (await hasPermission(user.role, key, user.id)) return { user }
+    }
+  } catch (e) {
+    console.error('[RBAC] requireAnyPermission failed:', e)
+  }
+  return NextResponse.json(
+    {
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Bu işlem için yetkiniz yok',
+        details: { requiredAny: permissionKeys },
+      },
+    },
+    { status: 403 }
+  )
 }

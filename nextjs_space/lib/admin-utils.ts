@@ -1,6 +1,6 @@
 // lib/admin-utils.ts - Admin role checking utilities
-export const ADMIN_ROLES = ['admin', 'yonetici', 'moderator', 'finans'] as const;
-export const FULL_ADMIN_ROLES = ['admin', 'yonetici'] as const;
+export const ADMIN_ROLES = ['admin', 'yonetici', 'kurucu', 'moderator', 'finans'] as const;
+export const FULL_ADMIN_ROLES = ['admin', 'yonetici', 'kurucu'] as const;
 
 export function isAdminRole(role: string | undefined | null): boolean {
   return ADMIN_ROLES.includes(role as any);

@@ -17,7 +17,7 @@ import { getCached } from '@/lib/cache'
 
 // ─── Permission catalog ────────────────────────────────────
 
-export const PERMISSION_GROUPS = ['finance', 'content', 'moderation', 'system'] as const
+export const PERMISSION_GROUPS = ['finance', 'content', 'moderation', 'system', 'agency', 'contest', 'social', 'analytics'] as const
 
 export interface PermissionDef {
   key: string
@@ -68,6 +68,40 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: 'system.audit.view', name: 'Denetim kaydını görme', group: 'system' },
   { key: 'system.role.manage', name: 'Rol ve yetki yönetimi', group: 'system' },
   { key: 'system.admin.full', name: 'Tam yönetici erişimi', group: 'system' },
+  // ─── BÖLÜM 21: kullanıcı merkezi / ajans / yarışma / sosyal / analitik ───
+  // user 360 center
+  { key: 'user360.view', name: 'Kullanıcı 360 panelini görme', group: 'moderation' },
+  { key: 'user360.finance.view', name: 'Kullanıcı finansal detaylarını görme', group: 'finance' },
+  { key: 'user360.action.execute', name: 'Kullanıcı hızlı işlemlerini uygulama', group: 'moderation' },
+  { key: 'moderation.user.freeze', name: 'Hesap dondurma / çözme', group: 'moderation' },
+  { key: 'moderation.user.fortuneteller', name: 'Falcı yetkisi yönetimi', group: 'moderation' },
+  { key: 'moderation.user.agency', name: 'Kullanıcı ajans bağlantısı yönetimi', group: 'moderation' },
+  // agency
+  { key: 'agency.view', name: 'Ajansları görüntüleme', group: 'agency' },
+  { key: 'agency.application.review', name: 'Ajans başvurularını değerlendirme', group: 'agency' },
+  { key: 'agency.wallet.view', name: 'Ajans cüzdanını görme', group: 'agency' },
+  { key: 'agency.wallet.topup', name: 'Ajans cüzdanı yükleme', group: 'agency' },
+  { key: 'agency.wallet.transfer', name: 'Ajanstan üyeye jeton gönderme', group: 'agency' },
+  { key: 'agency.bonus.configure', name: 'Ajans bonus oranlarını ayarlama', group: 'agency' },
+  { key: 'agency.commission.configure', name: 'Ajans komisyon oranlarını ayarlama', group: 'agency' },
+  { key: 'agency.staff.manage', name: 'Ajans personel yönetimi', group: 'agency' },
+  { key: 'agency.report.view', name: 'Ajans performans raporları', group: 'agency' },
+  // contest (CFC ARENA)
+  { key: 'contest.view', name: 'Yarışmaları görüntüleme', group: 'contest' },
+  { key: 'contest.manage', name: 'Yarışma oluşturma ve yönetme', group: 'contest' },
+  { key: 'contest.score.adjust', name: 'Yarışma puanı düzeltme', group: 'contest' },
+  { key: 'contest.reward.manage', name: 'Yarışma ödüllerini yönetme', group: 'contest' },
+  { key: 'contest.commission.configure', name: 'Yarışma komisyon ayarları', group: 'contest' },
+  // social discovery
+  { key: 'social.discovery.manage', name: 'Keşfet ayarlarını yönetme', group: 'social' },
+  { key: 'social.profile.moderate', name: 'Sosyal profil moderasyonu', group: 'social' },
+  { key: 'social.post.moderate', name: 'Sosyal gönderi moderasyonu', group: 'social' },
+  { key: 'discovery.promote', name: 'Kullanıcı öne çıkarma', group: 'social' },
+  // analytics
+  { key: 'analytics.dashboard.view', name: 'Analitik panelini görme', group: 'analytics' },
+  { key: 'analytics.user.view', name: 'Kullanıcı analitiği görme', group: 'analytics' },
+  { key: 'analytics.live.view', name: 'Canlı durum takibi', group: 'analytics' },
+  { key: 'analytics.export', name: 'Rapor dışa aktarma', group: 'analytics' },
 ]
 
 // ─── Legacy fallback matrix (mirrors current hardcoded behaviour) ──
@@ -79,6 +113,13 @@ export const SYSTEM_ROLES: Array<{
   level: number
   permissions: string[] | '*'
 }> = [
+  {
+    key: 'kurucu',
+    name: 'Kurucu',
+    description: 'Platform kurucusu — tüm yetkiler',
+    level: 1000,
+    permissions: '*',
+  },
   {
     key: 'admin',
     name: 'Yönetici (Admin)',
@@ -134,6 +175,60 @@ export const SYSTEM_ROLES: Array<{
       'payment.view',
     ],
   },
+  {
+    key: 'ajans_admin',
+    name: 'Ajans Yöneticisi',
+    description: 'Ajans başvuruları, cüzdan ve performans yönetimi',
+    level: 50,
+    permissions: [
+      'agency.view',
+      'agency.manage',
+      'agency.member.manage',
+      'agency.application.review',
+      'agency.wallet.view',
+      'agency.wallet.topup',
+      'agency.wallet.transfer',
+      'agency.bonus.configure',
+      'agency.commission.configure',
+      'agency.staff.manage',
+      'agency.report.view',
+      'user360.view',
+      'moderation.user.view',
+      'analytics.dashboard.view',
+    ],
+  },
+  {
+    key: 'destek',
+    name: 'Destek Ekibi',
+    description: 'Kullanıcı destek ve inceleme (işlem yetkisi sınırlı)',
+    level: 30,
+    permissions: [
+      'user360.view',
+      'moderation.user.view',
+      'moderation.report.handle',
+      'moderation.user.mute',
+      'analytics.dashboard.view',
+      'agency.view',
+      'contest.view',
+    ],
+  },
+  {
+    key: 'icerik_moderator',
+    name: 'İçerik Moderatörü',
+    description: 'Sosyal içerik ve profil moderasyonu',
+    level: 30,
+    permissions: [
+      'user360.view',
+      'moderation.user.view',
+      'moderation.user.mute',
+      'moderation.report.handle',
+      'social.profile.moderate',
+      'social.post.moderate',
+      'social.discovery.manage',
+      'content.media.upload',
+      'contest.view',
+    ],
+  },
 ]
 
 function legacyHasPermission(roleKey: string, permissionKey: string): boolean {
@@ -171,8 +266,8 @@ async function getDbRolePermissions(roleKey: string): Promise<string[] | null> {
  */
 export async function hasPermission(roleKey: string | null | undefined, permissionKey: string, userId?: string): Promise<boolean> {
   if (!roleKey) return false
-  // 'admin' and 'yonetici' always keep full access, regardless of DB state.
-  if (roleKey === 'admin' || roleKey === 'yonetici') return true
+  // 'admin', 'yonetici' and 'kurucu' always keep full access, regardless of DB state.
+  if (roleKey === 'admin' || roleKey === 'yonetici' || roleKey === 'kurucu') return true
 
   // Check per-user permission overrides first (if userId provided)
   if (userId) {
@@ -251,4 +346,51 @@ export async function setRolePermissions(roleId: string, permissionKeys: string[
       skipDuplicates: true,
     }),
   ])
+}
+
+// ─── BÖLÜM 21: efektif yetki listesi ───────────────────────
+/**
+ * Kullanıcının gerçekte sahip olduğu tüm yetki anahtarları.
+ * Sadece UI'da buton gizlemek için kullanılır — yetki kontrolü her uçta ayrıca yapılır.
+ */
+export async function getEffectivePermissions(
+  roleKey: string | null | undefined,
+  userId?: string
+): Promise<{ isSuper: boolean; permissions: string[] }> {
+  if (!roleKey) return { isSuper: false, permissions: [] }
+  if (roleKey === 'admin' || roleKey === 'yonetici' || roleKey === 'kurucu') {
+    return { isSuper: true, permissions: PERMISSIONS.map((p) => p.key) }
+  }
+
+  let base: string[] = []
+  try {
+    const dbPerms = await getDbRolePermissions(roleKey)
+    if (dbPerms === null) {
+      const role = SYSTEM_ROLES.find((r) => r.key === roleKey)
+      base = role ? (role.permissions === '*' ? PERMISSIONS.map((p) => p.key) : role.permissions) : []
+    } else if (dbPerms.includes('system.admin.full')) {
+      return { isSuper: true, permissions: PERMISSIONS.map((p) => p.key) }
+    } else {
+      base = dbPerms
+    }
+  } catch (e) {
+    console.error('[RBAC] getEffectivePermissions failed:', e)
+  }
+
+  const set = new Set(base)
+  if (userId) {
+    try {
+      const rows = await prisma.userPermissionOverride.findMany({
+        where: { userId },
+        select: { permissionKey: true, granted: true },
+      })
+      for (const r of rows as any[]) {
+        if (r.granted) set.add(r.permissionKey)
+        else set.delete(r.permissionKey)
+      }
+    } catch (e) {
+      console.error('[RBAC] override merge failed:', e)
+    }
+  }
+  return { isSuper: false, permissions: Array.from(set) }
 }

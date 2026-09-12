@@ -1887,6 +1887,49 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   }
   console.log('VIP membership tiers & feature matrix seeded!')
 
+  // ─── BÖLÜM 21: RBAC yetki ve rol kataloğu (idempotent, silme YOK) ───
+  {
+    const { PERMISSIONS, SYSTEM_ROLES } = await import('../lib/permissions')
+    let permCount = 0
+    for (const perm of PERMISSIONS) {
+      await prisma.permission.upsert({
+        where: { key: perm.key },
+        update: { name: perm.name, group: perm.group },
+        create: { key: perm.key, name: perm.name, group: perm.group },
+      })
+      permCount++
+    }
+    const allPerms = await prisma.permission.findMany({ select: { id: true, key: true } })
+    const permByKey = new Map(allPerms.map((p: any) => [p.key, p.id]))
+
+    let linkCount = 0
+    for (const role of SYSTEM_ROLES) {
+      const dbRole = await prisma.role.upsert({
+        where: { key: role.key },
+        update: { name: role.name, description: role.description, level: role.level, isSystem: true },
+        create: {
+          key: role.key,
+          name: role.name,
+          description: role.description,
+          level: role.level,
+          isSystem: true,
+        },
+      })
+      const keys = role.permissions === '*' ? PERMISSIONS.map((p) => p.key) : role.permissions
+      for (const k of keys) {
+        const pid = permByKey.get(k)
+        if (!pid) continue
+        await prisma.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId: dbRole.id, permissionId: pid } },
+          update: {},
+          create: { roleId: dbRole.id, permissionId: pid },
+        })
+        linkCount++
+      }
+    }
+    console.log(`RBAC seed: ${permCount} yetki, ${SYSTEM_ROLES.length} rol, ${linkCount} eslesme`)
+  }
+
   console.log('Seed completed successfully!')
 }
 
