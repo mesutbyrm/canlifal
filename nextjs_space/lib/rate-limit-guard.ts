@@ -46,6 +46,7 @@ export const DEFAULT_RATE_LIMITS: Record<string, number> = {
   report: 5,
   upload: 5,
   rtc_telemetry: 30,
+  ai_generate: 10,
 }
 
 // Buckets whose window is not the default 60s.
