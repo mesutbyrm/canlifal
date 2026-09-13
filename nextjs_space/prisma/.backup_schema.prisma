@@ -453,6 +453,9 @@ model Fortune {
   isSaved     Boolean      @default(false)
   isPinned    Boolean      @default(false)
   pinnedAt    DateTime?
+  rating      Int?
+  ratingNote  String?
+  ratedAt     DateTime?
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   socialPosts SocialPost[]
@@ -5812,4 +5815,20 @@ model ShareEvent {
   @@index([scope, targetId, userId, createdAt])
   @@index([userId, createdAt])
   @@map("share_events")
+}
+
+
+model UserFavorite {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String
+  targetId   String
+  title      String?
+  url        String?
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+  @@index([userId, createdAt])
+  @@map("user_favorites")
 }
