@@ -29,7 +29,39 @@ export async function POST(
     }
 
     const { roomId } = await params
-    const { action, targetUserId, role, reason, duration, message: announcementMessage, ttl } = await request.json()
+    const body = await request.json()
+    const { targetUserId, reason, duration, message: announcementMessage, ttl } = body
+
+    // Mobil istemci rolü sembol olarak gönderebiliyor (+ @ & ~). Kanonik ada çevir.
+    const ROLE_SYMBOL_TO_NAME: Record<string, string> = {
+      '+': 'voice',
+      '@': 'op',
+      '&': 'sop',
+      '~': 'founder',
+      '': 'none',
+    }
+    const rawRole = typeof body?.role === 'string' ? body.role : body?.role
+    const role = typeof rawRole === 'string' && ROLE_SYMBOL_TO_NAME[rawRole] !== undefined
+      ? ROLE_SYMBOL_TO_NAME[rawRole]
+      : rawRole
+
+    // Mobil istemci kısa eylem adları gönderebiliyor ("ban", "mute", ...).
+    // Bunları kanonik eylem adlarına eşle; bilinmeyenler default dalına düşer.
+    const ACTION_ALIASES: Record<string, string> = {
+      ban: 'ban_user',
+      unban: 'unban_user',
+      mute: 'mute_user',
+      unmute: 'unmute_user',
+      kick: 'kick_user',
+      give_voice: 'set_role',
+      give_op: 'set_role',
+      give_sop: 'set_role',
+      give_founder: 'set_role',
+      assign_role: 'set_role',
+      take_role: 'remove_role',
+    }
+    const rawAction = typeof body?.action === 'string' ? body.action : ''
+    const action = ACTION_ALIASES[rawAction] ?? rawAction
 
     const permissions = await getUserPermissions(roomId, authUser.id)
     const actorRoleLevel = ROLE_HIERARCHY[permissions.role]

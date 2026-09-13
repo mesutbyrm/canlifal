@@ -542,6 +542,10 @@ model ChatRoom {
   djUserIds             String?          @db.Text // JSON array of user IDs who can DJ (max 5)
   activeDjId            String? // Currently active DJ user ID (who has permission to play right now)
   whitelistedWords      String?          @db.Text // JSON array of words marked as safe (not profanity)
+  musicEnabled          Boolean? // null = global default; oda sahibi müzik isteğini kapatabilir
+  musicRequestCost      Int? // null = global default (10 jeton)
+  videoRequestCost      Int? // null = global default (20 jeton)
+  maxMusicQueue         Int? // null = global default kuyruk limiti
   roomType              String           @default("FREE") // FREE, NORMAL, VIP
   password              String? // Room password (NORMAL, VIP only)
   welcomeMessage        String? // Welcome message for users joining

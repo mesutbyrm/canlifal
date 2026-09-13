@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
+import { getRoomMusicSettings } from '@/lib/chat-music-settings'
 import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
 import { calculateMusicDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 
@@ -97,7 +98,10 @@ export async function GET(
         ? `https://www.youtube.com/watch?v=${room.currentMusicVideoId}`
         : null,
       musicQueue: queue,
-      requestCosts: { audio: SONG_REQUEST_COST_AUDIO, video: SONG_REQUEST_COST_VIDEO },
+      requestCosts: await (async () => {
+        const st = await getRoomMusicSettings(params.roomId)
+        return { audio: st.musicRequestCost, video: st.videoRequestCost }
+      })(),
     })
   } catch (error) {
     if (isInsufficientBalanceError(error)) {
@@ -128,7 +132,14 @@ export async function POST(
     const { videoId, title, dedication, note, duration, priority, requestType } = body
     // requestType: 'video' (20 jeton) or 'audio' (10 jeton, default)
     const isVideoRequest = requestType === 'video'
-    const SONG_REQUEST_COST = isVideoRequest ? SONG_REQUEST_COST_VIDEO : SONG_REQUEST_COST_AUDIO
+    // Oda sahibi music-settings ile ücreti/durumu geçersiz kılabilir (null = varsayılan).
+    const roomMusicSettings = await getRoomMusicSettings(params.roomId)
+    if (!roomMusicSettings.musicEnabled) {
+      return NextResponse.json({ error: 'Bu odada müzik isteği kapalı' }, { status: 403 })
+    }
+    const SONG_REQUEST_COST = isVideoRequest
+      ? roomMusicSettings.videoRequestCost
+      : roomMusicSettings.musicRequestCost
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
