@@ -33,8 +33,16 @@ import { recordAudit, getAuditIp } from '@/lib/audit-log'
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const streamId = searchParams.get('streamId')
-    if (!streamId) return NextResponse.json({ error: 'streamId gerekli' }, { status: 400 })
+    const rawStreamId = searchParams.get('streamId')
+    if (!rawStreamId) return NextResponse.json({ error: 'streamId gerekli' }, { status: 400 })
+
+    // `roomId` ile gelen istemcileri de kanonik yayın id'sine çevir
+    const resolved = await prisma.videoStream.findFirst({
+      where: { OR: [{ id: rawStreamId }, { roomId: rawStreamId }] },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+    const streamId = resolved?.id || rawStreamId
 
     // First, expire any stale pending PKs and finalize timed-out active PKs (backend canonical timer)
     await expireAllStalePKs()
@@ -113,24 +121,32 @@ export async function POST(req: NextRequest) {
     _idempotencyRecord = replay.record
 
     const body = await req.json()
-    const { action, streamId, targetStreamId, battleId, duration } = body
+    const { action, streamId: rawStreamId, targetStreamId: rawTargetStreamId, battleId, duration } = body
     const pkLimits = await getPkLimits()
     const clampedDuration = Math.max(pkLimits.minDuration, Math.min(pkLimits.maxDuration, Math.floor(duration || pkLimits.defaultDuration)))
 
     if (action === 'create') {
       // Create a new PK battle request
-      if (!streamId || !targetStreamId) {
+      if (!rawStreamId || !rawTargetStreamId) {
         return NextResponse.json({ error: 'streamId ve targetStreamId gerekli' }, { status: 400 })
       }
 
-      // Check streams are live
+      // Yayınları hem `id` hem de `roomId` ile çözümle (istemciler ikisini de gönderebiliyor)
       const [myStream, targetStream] = await Promise.all([
-        prisma.videoStream.findFirst({ where: { id: streamId, userId: currentUserId, status: 'live' } }),
-        prisma.videoStream.findFirst({ where: { id: targetStreamId, status: 'live' } })
+        prisma.videoStream.findFirst({ where: { OR: [{ id: rawStreamId }, { roomId: rawStreamId }] }, orderBy: { createdAt: 'desc' } }),
+        prisma.videoStream.findFirst({ where: { OR: [{ id: rawTargetStreamId }, { roomId: rawTargetStreamId }] }, orderBy: { createdAt: 'desc' } })
       ])
 
-      if (!myStream) return NextResponse.json({ error: 'Aktif yayınınız bulunamadı' }, { status: 400 })
-      if (!targetStream) return NextResponse.json({ error: 'Hedef yayın aktif değil' }, { status: 400 })
+      // Ayrıştırılmış hata mesajları: neyin yanlış olduğu artık belli
+      if (!myStream) return NextResponse.json({ error: 'Yayınınız bulunamadı (geçersiz yayın kimliği). Sayfayı yenileyip tekrar deneyin.', code: 'STREAM_NOT_FOUND' }, { status: 404 })
+      if (myStream.userId !== currentUserId) return NextResponse.json({ error: 'Sadece yayın sahibi PK başlatabilir', code: 'NOT_STREAM_OWNER' }, { status: 403 })
+      if (myStream.status !== 'live') return NextResponse.json({ error: 'Aktif yayınınız bulunamadı (yayın kapanmış)', code: 'STREAM_NOT_LIVE' }, { status: 400 })
+      if (!targetStream) return NextResponse.json({ error: 'Hedef yayın bulunamadı', code: 'TARGET_NOT_FOUND' }, { status: 404 })
+      if (targetStream.status !== 'live') return NextResponse.json({ error: 'Hedef yayın aktif değil', code: 'TARGET_NOT_LIVE' }, { status: 400 })
+
+      // Bundan sonrası daima kanonik yayın id'leri ile çalışır
+      const streamId = myStream.id
+      const targetStreamId = targetStream.id
 
       // Check no existing active PK for either stream
       const existingPK = await prisma.pKBattle.findFirst({

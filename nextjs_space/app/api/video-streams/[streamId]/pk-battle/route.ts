@@ -16,7 +16,13 @@ export async function GET(
   { params }: { params: { streamId: string } }
 ) {
   try {
-    const streamId = params.streamId
+    const rawStreamId = params.streamId
+    const resolvedStream = await prisma.videoStream.findFirst({
+      where: { OR: [{ id: rawStreamId }, { roomId: rawStreamId }] },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+    const streamId = resolvedStream?.id || rawStreamId
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
 
     // Expire stale pending PKs
@@ -73,18 +79,25 @@ export async function POST(
       }
 
       const [myStream, targetStream] = await Promise.all([
-        prisma.videoStream.findFirst({ where: { id: streamId, userId: authUser.id, status: 'live' } }),
-        prisma.videoStream.findFirst({ where: { id: targetStreamId, status: 'live' } })
+        prisma.videoStream.findFirst({ where: { OR: [{ id: streamId }, { roomId: streamId }] }, orderBy: { createdAt: 'desc' } }),
+        prisma.videoStream.findFirst({ where: { OR: [{ id: targetStreamId }, { roomId: targetStreamId }] }, orderBy: { createdAt: 'desc' } })
       ])
 
-      if (!myStream) return NextResponse.json({ error: 'Aktif yayınınız bulunamadı' }, { status: 400 })
-      if (!targetStream) return NextResponse.json({ error: 'Hedef yayın aktif değil' }, { status: 400 })
+      if (!myStream) return NextResponse.json({ error: 'Yayınınız bulunamadı (geçersiz yayın kimliği)', code: 'STREAM_NOT_FOUND' }, { status: 404 })
+      if (myStream.userId !== authUser.id) return NextResponse.json({ error: 'Sadece yayın sahibi PK başlatabilir', code: 'NOT_STREAM_OWNER' }, { status: 403 })
+      if (myStream.status !== 'live') return NextResponse.json({ error: 'Aktif yayınınız bulunamadı (yayın kapanmış)', code: 'STREAM_NOT_LIVE' }, { status: 400 })
+      if (!targetStream) return NextResponse.json({ error: 'Hedef yayın bulunamadı', code: 'TARGET_NOT_FOUND' }, { status: 404 })
+      if (targetStream.status !== 'live') return NextResponse.json({ error: 'Hedef yayın aktif değil', code: 'TARGET_NOT_LIVE' }, { status: 400 })
+
+      // Kanonik yayın id'leri
+      const sid1 = myStream.id
+      const sid2 = targetStream.id
 
       const existingPK = await prisma.pKBattle.findFirst({
         where: {
           OR: [
-            { stream1Id: { in: [streamId, targetStreamId] } },
-            { stream2Id: { in: [streamId, targetStreamId] } }
+            { stream1Id: { in: [sid1, sid2] } },
+            { stream2Id: { in: [sid1, sid2] } }
           ],
           status: { in: ['pending', 'active'] }
         }
@@ -94,8 +107,8 @@ export async function POST(
 
       const battle = await prisma.pKBattle.create({
         data: {
-          stream1Id: streamId,
-          stream2Id: targetStreamId,
+          stream1Id: sid1,
+          stream2Id: sid2,
           user1Id: authUser.id,
           user2Id: targetStream.userId,
           duration: duration || 180,

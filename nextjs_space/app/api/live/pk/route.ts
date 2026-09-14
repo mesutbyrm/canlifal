@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     _idempotencyRecord = replay.record
 
     const body = await request.json()
-    const { action, roomId, targetRoomId, battleId, duration } = body
+    let { action, roomId, targetRoomId, battleId, duration } = body
 
     // ──────────── CREATE ────────────
     if (action === 'create') {
@@ -132,36 +132,39 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Verify rooms exist — try ChatRoom first, then VideoStream
-      let myOwnerId: string | null = null
-      let targetOwnerId: string | null = null
-      let myRoomName: string | null = null
-      let isStream = false
-
-      const myRoom = await prisma.chatRoom.findUnique({ where: { id: roomId }, select: { id: true, ownerId: true, isActive: true, nameTr: true } })
-      const targetRoom = await prisma.chatRoom.findUnique({ where: { id: targetRoomId }, select: { id: true, ownerId: true, isActive: true, nameTr: true } })
-
-      if (myRoom && targetRoom) {
-        // Voice room PK
-        if (!myRoom.isActive) return NextResponse.json({ success: false, error: { code: 'ROOM_INACTIVE', message: 'Odanız aktif değil' } }, { status: 400 })
-        if (!targetRoom.isActive) return NextResponse.json({ success: false, error: { code: 'TARGET_INACTIVE', message: 'Hedef oda aktif değil' } }, { status: 400 })
-        if (myRoom.ownerId !== authUser.id) return NextResponse.json({ success: false, error: { code: 'NOT_OWNER', message: 'Sadece oda sahibi PK başlatabilir' } }, { status: 403 })
-        myOwnerId = myRoom.ownerId
-        targetOwnerId = targetRoom.ownerId
-        myRoomName = myRoom.nameTr
-      } else {
-        // Check VideoStream
-        const myStream = await prisma.videoStream.findFirst({ where: { OR: [{ id: roomId }, { roomId }], status: 'live' }, select: { id: true, userId: true, title: true } })
-        const targetStream = await prisma.videoStream.findFirst({ where: { OR: [{ id: targetRoomId }, { roomId: targetRoomId }], status: 'live' }, select: { id: true, userId: true } })
-        if (!myStream || !targetStream) return NextResponse.json({ success: false, error: { code: 'ROOM_NOT_FOUND', message: 'Oda bulunamadı' } }, { status: 404 })
-        if (myStream.userId !== authUser.id) return NextResponse.json({ success: false, error: { code: 'NOT_OWNER', message: 'Sadece yayıncı PK başlatabilir' } }, { status: 403 })
-        myOwnerId = myStream.userId
-        targetOwnerId = targetStream.userId
-        myRoomName = myStream.title
-        isStream = true
+      /**
+       * Her taraf BAĞIMSIZ çözümlür: sesli oda (ChatRoom) veya canlı yayın (VideoStream).
+       * Böylece oda↔oda, yayın↔yayın ve karışık (oda↔yayın) PK'lar desteklenir.
+       * Yayınlar hem `id` hem de `roomId` ile bulunabilir.
+       */
+      type Side = { kind: 'room' | 'stream'; id: string; ownerId: string; name: string | null; live: boolean }
+      const resolveSide = async (key: string): Promise<Side | null> => {
+        const room = await prisma.chatRoom.findUnique({ where: { id: key }, select: { id: true, ownerId: true, isActive: true, nameTr: true } })
+        if (room) return { kind: 'room', id: room.id, ownerId: room.ownerId, name: room.nameTr, live: room.isActive }
+        const stream = await prisma.videoStream.findFirst({
+          where: { OR: [{ id: key }, { roomId: key }] },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, userId: true, title: true, status: true },
+        })
+        if (stream) return { kind: 'stream', id: stream.id, ownerId: stream.userId, name: stream.title, live: stream.status === 'live' }
+        return null
       }
 
-      if (!targetOwnerId) return NextResponse.json({ success: false, error: { code: 'NO_TARGET_OWNER', message: 'Hedef oda sahibi bulunamadı' } }, { status: 400 })
+      const [mySide, targetSide] = await Promise.all([resolveSide(roomId), resolveSide(targetRoomId)])
+
+      if (!mySide) return NextResponse.json({ success: false, error: { code: 'ROOM_NOT_FOUND', message: 'Oda/yayın bulunamadı (geçersiz kimlik)' } }, { status: 404 })
+      if (mySide.ownerId !== authUser.id) return NextResponse.json({ success: false, error: { code: 'NOT_OWNER', message: mySide.kind === 'room' ? 'Sadece oda sahibi PK başlatabilir' : 'Sadece yayıncı PK başlatabilir' } }, { status: 403 })
+      if (!mySide.live) return NextResponse.json({ success: false, error: { code: 'ROOM_INACTIVE', message: mySide.kind === 'room' ? 'Odanız aktif değil' : 'Aktif yayınınız bulunamadı (yayın kapanmış)' } }, { status: 400 })
+      if (!targetSide) return NextResponse.json({ success: false, error: { code: 'TARGET_NOT_FOUND', message: 'Hedef oda/yayın bulunamadı' } }, { status: 404 })
+      if (!targetSide.live) return NextResponse.json({ success: false, error: { code: 'TARGET_INACTIVE', message: 'Hedef oda/yayın aktif değil' } }, { status: 400 })
+      if (targetSide.ownerId === authUser.id) return NextResponse.json({ success: false, error: { code: 'SELF_PK', message: 'Kendinizle PK yapamazsınız' } }, { status: 400 })
+
+      // Kanonik kimlikler
+      roomId = mySide.id
+      targetRoomId = targetSide.id
+      const targetOwnerId: string = targetSide.ownerId
+      const myRoomName: string | null = mySide.name
+      const isStream = mySide.kind === 'stream'
 
       // Check existing PKs
       const existingPK = await prisma.pKBattle.findFirst({

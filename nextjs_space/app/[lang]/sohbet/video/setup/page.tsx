@@ -352,8 +352,17 @@ export default function StreamSetupPage() {
       
       if (res.ok) {
         const data = await res.json()
+        // API yanıtı { success, data: { ...yayın } } zarfında döner; eski istemci
+        // doğrudan data.id okuduğu için URL'e "undefined" yazılıyordu.
+        const created = data?.data ?? data
+        const newStreamId = created?.id || created?.streamId
+        if (!newStreamId) {
+          setIsStarting(false)
+          alert('Yayın oluşturuldu ancak yayın kimliği alınamadı. Lütfen tekrar deneyin.')
+          return
+        }
         stopCamera()
-        router.push(`/sohbet/video/broadcast/${data.id}`)
+        router.push(`/sohbet/video/broadcast/${newStreamId}`)
       } else {
         try {
           const errData = await res.json()
