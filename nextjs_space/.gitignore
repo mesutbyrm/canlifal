@@ -1,0 +1,13 @@
+# Ortam dosyaları — ASLA depoya eklenmez
+.env
+.env.*
+!.env.example
+
+# Derleme çıktıları
+.next
+.build
+node_modules
+*.tsbuildinfo
+
+# Geçici scriptler
+scripts/.tmp/

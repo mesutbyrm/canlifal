@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
+
+export const dynamic = 'force-dynamic'
+
+// POST: Use daily free spin
+export async function POST(req: NextRequest) {
+  try {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    let profile = await prisma.userGameProfile.findUnique({ where: { userId: authUser.id } })
+    if (!profile) {
+      profile = await prisma.userGameProfile.create({
+        data: { userId: authUser.id },
+      })
+    }
+
+    // Check if already used daily spin
+    const lastSpin = profile.lastSpinDate ? new Date(profile.lastSpinDate) : null
+    if (lastSpin) {
+      lastSpin.setHours(0, 0, 0, 0)
+      if (lastSpin.getTime() === today.getTime() && profile.dailySpinsUsed >= 1) {
+        return NextResponse.json({ error: 'Günlük ücretsiz çark hakkınız doldu', canSpin: false }, { status: 400 })
+      }
+    }
+
+    // Spin rewards (weighted) - 0-5 CFC
+    const rewards = [0, 1, 2, 3, 4, 5]
+    const weights = [20, 25, 25, 15, 10, 5]
+    const totalWeight = weights.reduce((a, b) => a + b, 0)
+    let rand = Math.random() * totalWeight
+    let reward = rewards[0]
+    for (let i = 0; i < weights.length; i++) {
+      rand -= weights[i]
+      if (rand <= 0) { reward = rewards[i]; break }
+    }
+
+    // Update spin usage
+    await prisma.userGameProfile.update({
+      where: { userId: authUser.id },
+      data: {
+        dailySpinsUsed: lastSpin && lastSpin.getTime() === today.getTime() ? { increment: 1 } : 1,
+        lastSpinDate: today,
+      },
+    })
+
+    // Add CFC (credits)
+    await prisma.user.update({
+      where: { id: authUser.id },
+      data: { credits: { increment: reward } },
+    })
+
+    // Update game profile
+    await prisma.userGameProfile.update({
+      where: { userId: authUser.id },
+      data: { totalJetons: { increment: reward } },
+    })
+
+    const updatedUser = await prisma.user.findUnique({ where: { id: authUser.id }, select: { credits: true } })
+
+    return NextResponse.json({
+      success: true,
+      reward,
+      newBalance: updatedUser?.credits || 0,
+    })
+  } catch (error: any) {
+    console.error('Daily spin error:', error)
+    return NextResponse.json({ error: 'Çark çevirilemedi' }, { status: 500 })
+  }
+}

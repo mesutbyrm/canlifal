@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+.next_backup/
+.build/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# Environment & secrets (NEVER commit)
+.env
+.env.local
+.env.*.local
+nextjs_space/.env
+**/canlifal-firebase-adminsdk*.json
+**/google-services.json
+
+# Abacus platform metadata (managed externally)
+.abacus.donotdelete
+
+# Logs & caches
+.logs/
+.deploy/
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+.project_instructions.md

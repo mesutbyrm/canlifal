@@ -1,0 +1,586 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { useLanguage } from '@/lib/language-context'
+import { useSession } from 'next-auth/react'
+import { Star, Users, Video, MessageCircle, Sparkles, CheckCircle, Clock, Filter, Power, Circle, LayoutDashboard, Zap, Heart, Crown } from 'lucide-react'
+import LoadingSpinner from '@/components/loading-spinner'
+import Link from 'next/link'
+
+interface FortuneTeller {
+  id: string
+  displayName: string
+  bio: string | null
+  specialties: string[]
+  pricePerSession: number
+  rating: number
+  totalSessions: number
+  totalReviews: number
+  isOnline: boolean
+  isVerified: boolean
+  avatar: string | null
+  isStreaming?: boolean
+  isInSession?: boolean
+  pendingCount?: number
+  queuePosition?: number
+  isNewTeller?: boolean
+  trendingScore?: number
+  tellerLevel?: string
+  favoriteCount?: number
+  isGoldUser?: boolean
+  presenceStatus?: string
+  presenceLabel?: { tr: string; en: string }
+}
+
+interface TellerStatus {
+  isTeller: boolean
+  id?: string
+  isOnline?: boolean
+  applicationStatus?: string
+  isBanned?: boolean
+  displayName?: string
+}
+
+const FORTUNE_TYPES: Record<string, { tr: string; en: string; icon: string }> = {
+  coffee: { tr: 'Kahve Falı', en: 'Coffee', icon: '☕' },
+  tarot: { tr: 'Tarot', en: 'Tarot', icon: '🃏' },
+  palm: { tr: 'El Falı', en: 'Palm', icon: '✋' },
+  dream: { tr: 'Rüya', en: 'Dream', icon: '🌙' },
+  horoscope: { tr: 'Burç', en: 'Horoscope', icon: '⭐' },
+  love: { tr: 'Aşk', en: 'Love', icon: '❤️' },
+  general: { tr: 'Genel', en: 'General', icon: '🔮' },
+}
+
+export default function LiveTellersPage() {
+  const { language } = useLanguage()
+  const { data: session } = useSession() || {}
+  const [tellers, setTellers] = useState<FortuneTeller[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'online'>('all')
+  const [sortMode, setSortMode] = useState<string>('default')
+  const [specialtyFilter, setSpecialtyFilter] = useState<string>('')
+  const [tellerStatus, setTellerStatus] = useState<TellerStatus | null>(null)
+  const [togglingOnline, setTogglingOnline] = useState(false)
+  const [togglingFav, setTogglingFav] = useState<string | null>(null)
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetchTellers()
+    if (session?.user) {
+      fetchTellerStatus()
+    }
+  }, [filter, specialtyFilter, sortMode, session])
+
+  const fetchTellerStatus = async () => {
+    try {
+      const res = await fetch('/api/fortune-tellers/toggle-online')
+      const data = await res.json()
+      setTellerStatus(data)
+    } catch (error) {
+      console.error('Failed to fetch teller status:', error)
+    }
+  }
+
+  const toggleOnlineStatus = async () => {
+    if (!tellerStatus?.isTeller) return
+    setTogglingOnline(true)
+    try {
+      const res = await fetch('/api/fortune-tellers/toggle-online', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isOnline: !tellerStatus.isOnline }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setTellerStatus(prev => prev ? { ...prev, isOnline: data.isOnline } : null)
+      // Refresh tellers list
+      fetchTellers()
+    } catch (error) {
+      console.error('Failed to toggle online status:', error)
+    } finally {
+      setTogglingOnline(false)
+    }
+  }
+
+  const fetchTellers = async () => {
+    setIsLoading(true)
+    try {
+      let url = '/api/fortune-tellers?'
+      if (filter === 'online') url += 'online=true&'
+      if (specialtyFilter) url += `specialty=${specialtyFilter}&`
+      if (sortMode && sortMode !== 'default') url += `sort=${sortMode}&`
+      
+      const res = await fetch(url)
+      const data = await res.json()
+      setTellers(data.tellers || [])
+    } catch (error) {
+      console.error('Failed to fetch tellers:', error)
+      setTellers([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const toggleFavorite = async (tellerId: string) => {
+    if (!session?.user) return
+    setTogglingFav(tellerId)
+    try {
+      const res = await fetch('/api/favorite-tellers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tellerId })
+      })
+      if (res.ok) {
+        setFavoritedIds(prev => {
+          const next = new Set(prev)
+          if (next.has(tellerId)) next.delete(tellerId)
+          else next.add(tellerId)
+          return next
+        })
+      }
+    } catch (e) { console.error(e) }
+    finally { setTogglingFav(null) }
+  }
+
+  const onlineTellers = tellers.filter(t => t.isOnline)
+  const offlineTellers = tellers.filter(t => !t.isOnline)
+
+  return (
+    <div className="min-h-screen py-20 px-4 ">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <Video className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="font-serif text-3xl sm:text-4xl text-gold-400 mb-2">
+            {'Canlı Falcılar'}
+          </h1>
+          <p className="text-purple-300 max-w-2xl mx-auto">
+            {'Profesyonel falcılarla canlı seans yapın, kişiye özel fal deneyimi yaşayın.'}
+          </p>
+        </motion.div>
+
+        {/* Teller Status Panel - Only show if user is a teller */}
+        {tellerStatus?.isTeller && tellerStatus.applicationStatus === 'approved' && !tellerStatus.isBanned && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className={`mb-8 p-4 rounded-xl border ${
+              tellerStatus.isOnline 
+                ? 'bg-green-500/10 border-green-500/30' 
+                : 'bg-deep-purple-900/50 border-deep-purple-700'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  tellerStatus.isOnline 
+                    ? 'bg-green-500/20 text-green-400' 
+                    : 'bg-deep-purple-800 text-deep-purple-400'
+                }`}>
+                  <Power className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">
+                    {tellerStatus.displayName}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Circle className={`w-2 h-2 fill-current ${
+                      tellerStatus.isOnline ? 'text-green-400 animate-pulse' : 'text-gray-500'
+                    }`} />
+                    <span className={tellerStatus.isOnline ? 'text-green-400' : 'text-gray-400'}>
+                      {tellerStatus.isOnline 
+                        ? ('Çevrimiçisiniz')
+                        : ('Çevrimdışısınız')
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/canli-falcilar/dashboard`}
+                  className="px-4 py-2.5 rounded-lg font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30 transition-all flex items-center gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  {'Panel'}
+                </Link>
+                <button
+                  onClick={toggleOnlineStatus}
+                  disabled={togglingOnline}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    tellerStatus.isOnline
+                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
+                      : 'bg-green-500 text-white hover:bg-green-400'
+                  } disabled:opacity-50`}
+                >
+                {togglingOnline ? (
+                  <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Power className="w-5 h-5" />
+                )}
+                {tellerStatus.isOnline 
+                  ? ('Çevrimdışı Ol')
+                  : ('Çevrimiçi Ol')
+                }
+              </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Online Tellers Section - Highlighted */}
+        {!isLoading && onlineTellers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-10"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <h2 className="text-xl font-bold text-green-400">
+                  {'Şu An Çevrimiçi'}
+                </h2>
+              </div>
+              <span className="text-green-400/60 text-sm">({onlineTellers.length})</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {onlineTellers.map((teller, index) => (
+                <motion.div
+                  key={teller.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-2 border-green-500/50 rounded-2xl p-4 hover:border-green-400 transition-all duration-300 relative overflow-hidden"
+                >
+                  {/* Status Badges */}
+                  <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+                    {teller.isStreaming && (
+                      <div className="flex items-center gap-1.5 bg-red-500 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-bold text-white">{'Canlı Yayında'}</span>
+                      </div>
+                    )}
+                    {teller.isInSession && (
+                      <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-bold text-white">{'Seansta'}</span>
+                      </div>
+                    )}
+                    {!teller.isStreaming && !teller.isInSession && (
+                      <div className="flex items-center gap-1.5 bg-green-500 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-bold text-white">{'Çevrimiçi'}</span>
+                      </div>
+                    )}
+                    {!!teller.queuePosition && teller.queuePosition > 0 && (
+                      <div className="flex items-center gap-1 bg-purple-600 px-2 py-0.5 rounded-full">
+                        <span className="text-xs text-white">{`Sıra: ${teller.queuePosition}`}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center overflow-hidden ring-2 ring-green-400">
+                        {teller.avatar ? (
+                          <img loading="lazy" src={teller.avatar} alt={teller.displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-white">{teller.displayName.charAt(0)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-white truncate">{teller.displayName}</h3>
+                        {teller.isVerified && <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                        <span className="text-yellow-400">{teller.rating.toFixed(1)}</span>
+                        <span className="text-purple-400">• {teller.totalSessions} {'seans'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-gold-400 font-bold">{teller.pricePerSession}</span>
+                      <span className="text-purple-400"> {'jeton'}</span>
+                    </div>
+                    <Link
+                      href={session?.user ? `/canli-falcilar/${teller.id}` : `/giris`}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-bold rounded-lg transition-colors"
+                    >
+                      <Video className="w-4 h-4" />
+                      {'Bağlan'}
+                    </Link>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="flex flex-wrap gap-3 mb-6"
+        >
+          <div className="flex rounded-lg overflow-hidden border border-purple-700/50">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${filter === 'all' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-800/40'}`}
+            >
+              Tümü
+            </button>
+            <button
+              onClick={() => setFilter('online')}
+              className={`px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${filter === 'online' ? 'bg-green-600 text-white' : 'bg-purple-900/30 text-purple-300 hover:bg-purple-800/40'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              Çevrimiçi
+            </button>
+          </div>
+          <select
+            value={specialtyFilter}
+            onChange={(e) => setSpecialtyFilter(e.target.value)}
+            className="px-4 py-2 bg-purple-900/30 border border-purple-700/50 rounded-lg text-purple-200 focus:outline-none focus:border-gold-500"
+          >
+            <option value="">{'Tüm Uzmanlıklar'}</option>
+            {Object.entries(FORTUNE_TYPES).map(([key, val]) => (
+              <option key={key} value={key}>{val.icon} {val[language]}</option>
+            ))}
+          </select>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value)}
+            className="px-4 py-2 bg-purple-900/30 border border-purple-700/50 rounded-lg text-purple-200 focus:outline-none focus:border-gold-500"
+          >
+            <option value="default">Varsayılan</option>
+            <option value="trending">🔥 Trend</option>
+            <option value="new">🆕 Yeni Falcılar</option>
+            <option value="top_rated">⭐ En Yüksek Puan</option>
+            <option value="price_low">💰 Fiyat (Düşük→Yüksek)</option>
+            <option value="price_high">💎 Fiyat (Yüksek→Düşük)</option>
+          </select>
+        </motion.div>
+
+        {/* All Tellers Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-lg font-semibold text-purple-300 mb-4">
+            {'Tüm Falcılar'}
+          </h2>
+        </motion.div>
+
+        {/* Tellers Grid */}
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner message={'Yükleniyor...'} />
+          </div>
+        ) : tellers.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-12"
+          >
+            <Sparkles className="w-16 h-16 text-purple-600 mx-auto mb-4" />
+            <p className="text-purple-300 text-lg">
+              {'Henüz aktif falcı bulunmuyor.'}
+            </p>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(filter === 'online' ? onlineTellers : tellers).map((teller, index) => (
+              <motion.div
+                key={teller.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-deep-purple-900/50 border border-purple-500/30 rounded-2xl overflow-hidden hover:border-gold-500/50 transition-all duration-300"
+              >
+                {/* Header */}
+                <div className="p-6 pb-4">
+                  <div className="flex items-start gap-4">
+                    {/* Avatar */}
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-gold-500 flex items-center justify-center">
+                        {teller.avatar ? (
+                          <img
+                            src={teller.avatar}
+                            alt={teller.displayName}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-2xl font-bold text-white">
+                            {teller.displayName.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      {teller.isOnline && (
+                        <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-deep-purple-900 rounded-full" />
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-serif text-lg text-gold-400 truncate">{teller.displayName}</h3>
+                        {teller.isGoldUser && (
+                          <span className="inline-flex items-center gap-0.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            <Crown className="w-3 h-3" /> Gold
+                          </span>
+                        )}
+                        {teller.presenceStatus && teller.presenceStatus !== 'offline' && (
+                          <span className={`inline-flex items-center gap-1 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            teller.presenceStatus === 'live' ? 'bg-red-500/90' :
+                            teller.presenceStatus === 'busy' ? 'bg-amber-500/90' :
+                            'bg-green-500/90'
+                          }`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            {teller.presenceLabel?.[language] || teller.presenceStatus}
+                          </span>
+                        )}
+                        {teller.isVerified && (
+                          <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        )}
+                        {teller.isNewTeller && (
+                          <span className="inline-flex items-center gap-0.5 bg-green-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            🆕 Yeni
+                          </span>
+                        )}
+                        {teller.tellerLevel && teller.tellerLevel !== 'bronze' && (
+                          <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            teller.tellerLevel === 'diamond' ? 'bg-cyan-500/90 text-white' :
+                            teller.tellerLevel === 'gold' ? 'bg-yellow-500/90 text-black' :
+                            'bg-gray-300/90 text-black'
+                          }`}>
+                            {teller.tellerLevel === 'diamond' ? '💎' : teller.tellerLevel === 'gold' ? '🥇' : '🥈'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                          <span className="text-yellow-400 text-sm font-medium">{teller.rating.toFixed(1)}</span>
+                        </div>
+                        <span className="text-deep-purple-500">|</span>
+                        <span className="text-deep-purple-400 text-sm">
+                          {teller.totalSessions} {'seans'}
+                        </span>
+                        {(teller.favoriteCount ?? 0) > 0 && (
+                          <>
+                            <span className="text-deep-purple-500">|</span>
+                            <span className="text-pink-400 text-sm flex items-center gap-0.5">
+                              <Heart className="w-3 h-3 fill-pink-400" />{teller.favoriteCount}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {teller.bio && (
+                    <p className="text-deep-purple-300 text-sm mt-4 line-clamp-2">{teller.bio}</p>
+                  )}
+
+                  {/* Specialties */}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {teller.specialties.slice(0, 4).map((spec) => (
+                      <span
+                        key={spec}
+                        className="px-2 py-1 bg-purple-600/30 text-purple-300 text-xs rounded-full"
+                      >
+                        {FORTUNE_TYPES[spec]?.icon} {FORTUNE_TYPES[spec]?.[language] || spec}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-deep-purple-950/50 border-t border-purple-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <span className="text-gold-400 font-bold text-lg">{teller.pricePerSession}</span>
+                      <span className="text-deep-purple-400 text-sm"> {'jeton'}</span>
+                    </div>
+                    {session?.user && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); toggleFavorite(teller.id) }}
+                        disabled={togglingFav === teller.id}
+                        className="p-1.5 rounded-full hover:bg-purple-800/50 transition-colors disabled:opacity-50"
+                        title={favoritedIds.has(teller.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                      >
+                        <Heart className={`w-5 h-5 transition-colors ${favoritedIds.has(teller.id) ? 'text-pink-500 fill-pink-500' : 'text-purple-400 hover:text-pink-400'}`} />
+                      </button>
+                    )}
+                  </div>
+                  <Link
+                    href={session?.user ? `/canli-falcilar/${teller.id}` : `/giris`}
+                    className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                      teller.isOnline
+                        ? 'bg-green-600 text-white hover:bg-green-500'
+                        : 'bg-gold-600 text-black hover:bg-gold-500'
+                    }`}
+                  >
+                    {teller.isOnline ? (
+                      <>
+                        <Video className="w-4 h-4" />
+                        {'Seans Başlat'}
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-4 h-4" />
+                        {'Randevu Al'}
+                      </>
+                    )}
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Become a Teller CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-12 text-center"
+        >
+          <div className="bg-gradient-to-r from-gold-600/20 to-purple-600/20 border border-gold-500/30 rounded-2xl p-8">
+            <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
+            <h2 className="font-serif text-2xl text-gold-400 mb-2">
+              {'Siz de Falcı Olun!'}
+            </h2>
+            <p className="text-deep-purple-200 mb-6 max-w-md mx-auto">
+              {'Yeteneklerinizi paylaşın ve jeton kazanın. Falcı olarak başvurun!'}
+            </p>
+            <Link
+              href={session?.user ? `/canli-falcilar/apply` : `/giris`}
+              className="inline-block px-8 py-3 bg-gold-600 text-black rounded-lg font-semibold hover:bg-gold-500 transition-colors"
+            >
+              {'Başvur'}
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  )
+}

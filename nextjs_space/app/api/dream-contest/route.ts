@@ -1,0 +1,34 @@
+export const dynamic = 'force-dynamic'
+
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
+
+export async function GET(req: NextRequest) {
+  try {
+    const now = new Date()
+    const contests = await prisma.dreamContest.findMany({
+      where: { isActive: true },
+      orderBy: { endDate: 'desc' },
+      include: {
+        _count: { select: { entries: true } },
+      },
+      take: 10,
+    })
+
+    const authUser = await authenticateRequest(req)
+    const userId = authUser ? authUser.id : null
+
+    const contestsWithStatus = contests.map((c: any) => ({
+      ...c,
+      isOngoing: now >= c.startDate && now <= c.endDate,
+      isEnded: now > c.endDate,
+      entryCount: c._count.entries,
+    }))
+
+    return NextResponse.json({ contests: contestsWithStatus })
+  } catch (error) {
+    console.error('Dream contest GET error:', error)
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 })
+  }
+}
