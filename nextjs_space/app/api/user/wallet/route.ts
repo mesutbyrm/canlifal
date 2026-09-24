@@ -6,6 +6,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { getCurrencyBranding } from '@/lib/currency-branding'
 import { getCommissionSummary } from '@/lib/referral-commission'
+import { withCachePolicy } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -158,7 +159,8 @@ export async function GET(request: NextRequest) {
     const minWithdrawal = parseInt(minWithdrawalStr || '100', 10) || 100
     const jetonTlRate = parseFloat(jetonTlRateStr || '0.5') || 0
 
-    return NextResponse.json({
+    // Bakiye/işlem verisi — asla önbelleklenmez.
+    return withCachePolicy(NextResponse.json({
       balances: {
         cfc: user.credits || 0,
         jeton: user.jetonBalance || 0,
@@ -189,7 +191,7 @@ export async function GET(request: NextRequest) {
       total: creditCount + jetonCount,
       limit,
       offset,
-    })
+    }), 'no-store')
   } catch (error) {
     console.error('[wallet] error:', error)
     return NextResponse.json({ error: 'Cüzdan bilgileri alınamadı' }, { status: 500 })

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { withCachePolicy } from '@/lib/perf'
 
 /**
  * GET /api/celebrities
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     const items = hasMore ? celebs.slice(0, limit) : celebs
     const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null
 
-    return NextResponse.json({
+    return withCachePolicy(NextResponse.json({
       success: true,
       data: {
         celebrities: items.map((c: any) => ({
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
         nextCursor,
         hasMore,
       },
-    })
+    }), authUser ? 'private-5m' : 'public-1m')
   } catch (error: any) {
     console.error('[celebrities] list error:', error)
     return NextResponse.json(

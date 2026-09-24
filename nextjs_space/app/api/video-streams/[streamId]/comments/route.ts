@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { withCachePolicy } from '@/lib/perf'
 
 export async function GET(
   request: NextRequest,
@@ -38,7 +39,7 @@ export async function GET(
       }
     })
 
-    return NextResponse.json(processedComments)
+    return withCachePolicy(NextResponse.json(processedComments), 'no-store')
   } catch (error) {
     console.error('Error fetching comments:', error)
     return NextResponse.json([], { status: 500 })

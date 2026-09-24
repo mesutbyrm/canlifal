@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
+import { withCachePolicy } from '@/lib/perf'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
@@ -48,9 +49,9 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({ 
+    return withCachePolicy(NextResponse.json({ 
       following: following.map((f: { following: { id: string; name: string; username: string | null; image: string | null } }) => f.following) 
-    })
+    }), 'private-5m')
   } catch (error) {
     console.error('Following fetch error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

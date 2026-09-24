@@ -63,6 +63,29 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
     : [];
   const favCountMap = new Map(favCounts.map((f: any) => [f.tellerId, f._count]));
 
+  // Değerlendirme istatistikleri: N+1 yerine tek toplu groupBy sorgusu.
+  // (rating/totalReviews falcı satırında denormalize tutuluyor; buradan
+  //  yalnız son değerlendirme tarihi ve doğrulama sayıları geliyor.)
+  const reviewStats = tellerIds.length > 0
+    ? await prisma.liveTellerReview.groupBy({
+        by: ['tellerId'],
+        where: { tellerId: { in: tellerIds } },
+        _count: { _all: true },
+        _avg: { rating: true },
+        _max: { createdAt: true },
+      })
+    : [];
+  const reviewStatMap = new Map(
+    reviewStats.map((r: any) => [
+      r.tellerId,
+      {
+        count: r._count?._all ?? 0,
+        avgRating: r._avg?.rating != null ? Math.round(r._avg.rating * 10) / 10 : 0,
+        lastReviewDate: r._max?.createdAt ?? null,
+      },
+    ])
+  );
+
   return tellers.map((teller: typeof tellers[number]) => {
     const isStreaming = streamingUserIds.has(teller.userId);
     const activeSessions = teller.sessions.filter((s: { status: string }) => s.status === 'active');
@@ -88,6 +111,8 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       (teller.isOnline ? 10 : 0) +
       (isStreaming ? 8 : 0) +
       (teller.rating >= 4.5 ? 5 : 0);
+    const stats = (reviewStatMap.get(teller.id) as { count: number; avgRating: number; lastReviewDate: Date | null } | undefined)
+      ?? { count: teller.totalReviews ?? 0, avgRating: teller.rating ?? 0, lastReviewDate: null };
     const isGold = user?.membership === 'gold' && (!user?.membershipExpiresAt || new Date(user.membershipExpiresAt) > new Date());
     return {
       ...tellerData,
@@ -100,6 +125,9 @@ async function fetchTellerList(specialty: string | null, onlineOnly: boolean, so
       isNewTeller,
       trendingScore,
       favoriteCount: favCountMap.get(teller.id) || 0,
+      // Flutter uyumluluğu (BACKEND_CRITICAL_3_TASKS §2): tek sorguda hazır gelir.
+      reviewCount: stats.count,
+      reviewStats: stats,
       isGoldUser: isGold,
     };
   });

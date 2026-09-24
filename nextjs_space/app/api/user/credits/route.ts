@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { withCachePolicy } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
     const rateStr = await getCachedPlatformSetting('jeton_tl_rate', '0.5')
     const jetonTlRate = parseFloat(rateStr) // default 1 jeton = 0.5 TL
 
-    return NextResponse.json({ 
+    // Bakiye verisi — asla önbelleklenmez (satın alım sonrası bayat bakiye riski).
+    return withCachePolicy(NextResponse.json({ 
       credits: user.credits, 
       jetonBalance: user.jetonBalance ?? 0,
       cfcBalance: user.cfcBalance ?? 0,
@@ -40,7 +42,7 @@ export async function GET(req: NextRequest) {
       withdrawalLimit: user.withdrawalLimit ?? 0,
       membership: user.membership ?? 'basic',
       membershipExpiresAt: user.membershipExpiresAt?.toISOString() ?? null,
-    })
+    }), 'no-store')
   } catch (error) {
     console.error('Fetch credits error:', error)
     return NextResponse.json(

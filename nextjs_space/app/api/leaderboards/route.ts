@@ -4,6 +4,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCached } from '@/lib/cache'
 import { getCommunityLeaderboards } from '@/lib/services/leaderboard-service'
+import { withCachePolicy } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -161,7 +162,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ...data, ...community, currentUserRanks })
+    // Kullanıcıya özel sıralama içerdiğinden oturumluysa private, değilse public.
+    return withCachePolicy(
+      NextResponse.json({ ...data, ...community, currentUserRanks }),
+      currentUserId ? 'private-5m' : 'public-1m',
+    )
   } catch (error) {
     console.error('Leaderboards error:', error)
     return NextResponse.json({ error: 'Sıralama verileri alınamadı' }, { status: 500 })

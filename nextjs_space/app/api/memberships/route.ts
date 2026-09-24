@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     )
     const cached = checkETag(request, plans)
     if (cached) return cached
-    return withPerfHeaders(plans, { maxAge: 120, staleWhileRevalidate: 600, etag: true, requestStart: t0 })
+    return withPerfHeaders(plans, { maxAge: 600, staleWhileRevalidate: 86400, etag: true, requestStart: t0 })
   } catch (error) {
     console.error('Error fetching membership plans:', error)
     return NextResponse.json([], { status: 500 })

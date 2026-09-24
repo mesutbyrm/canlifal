@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { withCachePolicy } from '@/lib/perf'
 
 function db(): any {
   return prisma as any
@@ -50,9 +51,9 @@ export async function GET(request: NextRequest) {
       return true
     })
 
-    return NextResponse.json(
-      { items, total: items.length },
-      { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' } },
+    return withCachePolicy(
+      NextResponse.json({ items, total: items.length }),
+      'public-1d',
     )
   } catch (e) {
     console.error('[site-animations/active GET]', e)

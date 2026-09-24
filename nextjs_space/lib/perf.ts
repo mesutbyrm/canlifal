@@ -254,3 +254,38 @@ export function getMonitoringSnapshot() {
     at: Date.now(),
   }
 }
+
+/**
+ * ---------------------------------------------------------------------------
+ * Cache-Control politikaları (mobil istemci + CDN)
+ * ---------------------------------------------------------------------------
+ * Flutter ekibinin BACKEND_CRITICAL_3_TASKS.md dokümanındaki sınıflandırma.
+ * Mevcut bir NextResponse üzerine başlık yazar; gövdeyi değiştirmez.
+ */
+export const CACHE_POLICIES = {
+  /** Nadiren değişen, fiyat içermeyen herkese açık veri. */
+  'public-1d': 'public, max-age=86400, stale-while-revalidate=86400',
+  /** Herkese açık ama yönetim panelinden değişebilen veri (fiyat, içerik). */
+  'public-10m': 'public, max-age=600, stale-while-revalidate=86400',
+  /** Sık değişen herkese açık liste (sıralama, akış). */
+  'public-1m': 'public, max-age=60, stale-while-revalidate=300',
+  /** Kullanıcıya özel veri — yalnız cihazda saklanır. */
+  'private-5m': 'private, max-age=300',
+  /** Gerçek zamanlı veri — hiç saklanmaz. */
+  'no-store': 'no-cache, no-store, must-revalidate',
+} as const
+
+export type CachePolicy = keyof typeof CACHE_POLICIES
+
+/** Yanıta uygun Cache-Control (ve gerekiyorsa Pragma/Vary) başlıklarını ekler. */
+export function withCachePolicy<T extends NextResponse>(res: T, policy: CachePolicy): T {
+  res.headers.set('Cache-Control', CACHE_POLICIES[policy])
+  if (policy === 'no-store') {
+    res.headers.set('Pragma', 'no-cache')
+    res.headers.set('Expires', '0')
+  }
+  if (policy === 'private-5m') {
+    res.headers.set('Vary', 'Authorization')
+  }
+  return res
+}

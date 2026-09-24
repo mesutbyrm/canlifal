@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { withCachePolicy } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       return { ...post, viewCount }
     }))
 
-    return NextResponse.json({
+    return withCachePolicy(NextResponse.json({
       posts: postsWithStats,
       pagination: {
         page,
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit)
       }
-    })
+    }), 'no-store')
   } catch (error) {
     console.error('Social posts fetch error:', error)
     return NextResponse.json({ error: 'Gönderiler alınamadı' }, { status: 500 })

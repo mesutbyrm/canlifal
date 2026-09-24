@@ -4,6 +4,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
 import { resolveNotificationDeepLink } from '@/lib/notify'
+import { withCachePolicy } from '@/lib/perf'
 
 // Faz 21 (§53) — eski kayıtlarda deepLink boş olabilir; okuma anında türetilir.
 function withDeepLink<T extends { type: string; postId: string | null; fromUserId: string | null; deepLink: string | null }>(n: T): T {
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
         ),
         prisma.notification.count({ where: { userId, isRead: false } }),
       ])
-      return apiPaginated(items.map(withDeepLink), { ...meta, total: unreadCount })
+      return withCachePolicy(apiPaginated(items.map(withDeepLink), { ...meta, total: unreadCount }), 'no-store')
     }
 
     // Run both queries in parallel instead of sequentially
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
       })
     ])
 
-    return NextResponse.json({ notifications: notifications.map(withDeepLink), unreadCount })
+    return withCachePolicy(NextResponse.json({ notifications: notifications.map(withDeepLink), unreadCount }), 'no-store')
   } catch (error) {
     console.error('Notifications fetch error:', error)
     return NextResponse.json({ error: 'Bildirimler alınamadı' }, { status: 500 })

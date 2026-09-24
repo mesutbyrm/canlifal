@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const types = await getCachedFortuneRequestTypes()
     const cached = checkETag(request, types)
     if (cached) return cached
-    return withPerfHeaders(types, { maxAge: 120, staleWhileRevalidate: 600, etag: true, requestStart: t0 })
+    return withPerfHeaders(types, { maxAge: 86400, staleWhileRevalidate: 86400, etag: true, requestStart: t0 })
   } catch (error) {
     console.error('Error fetching fortune request types:', error)
     return NextResponse.json({ error: 'Türler alınamadı' }, { status: 500 })

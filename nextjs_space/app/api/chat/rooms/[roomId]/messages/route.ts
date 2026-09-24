@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
+import { withCachePolicy } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,12 +116,13 @@ export async function GET(
     // If not polling (initial load), reverse to show oldest first
     const orderedMessages = after ? messagesWithRoles : messagesWithRoles.reverse()
 
-    return NextResponse.json({
+    // Gerçek zamanlı veri — hiçbir katmanda saklanmaz.
+    return withCachePolicy(NextResponse.json({
       messages: orderedMessages,
       roomMuted: room?.isMuted || false,
       myPermissions,
       myNickname
-    })
+    }), 'no-store')
   } catch (error) {
     console.error('Error fetching messages:', error)
     return NextResponse.json(

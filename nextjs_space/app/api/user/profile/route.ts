@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import prisma from '@/lib/db';
+import { withCachePolicy } from '@/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,14 +69,14 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
+    return withCachePolicy(NextResponse.json({
       ...user,
       followersCount: user._count.followers,
       followingCount: user._count.following,
       fortunesCount: user._count.fortunes,
       postsCount: user._count.socialPosts,
       likesCount
-    });
+    }), 'private-5m');
   } catch (error) {
     console.error('Get profile error:', error);
     return NextResponse.json({ error: 'Failed to get profile' }, { status: 500 });

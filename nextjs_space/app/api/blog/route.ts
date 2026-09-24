@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { withCachePolicy } from '@/lib/perf'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
       prisma.blogPost.count({ where }),
     ])
 
-    return NextResponse.json({
+    return withCachePolicy(NextResponse.json({
       posts,
       pagination: {
         page,
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    })
+    }), 'public-10m')
   } catch (error) {
     console.error('Public blog fetch error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
