@@ -31,7 +31,8 @@ dosyalar esas alinir**, eski dosyalar tarihsel/urun baglami icin korunur.
 | [`docs/NOTIFICATIONS.md`](./NOTIFICATIONS.md) | Bildirim uclari ve SSE akisi |
 | [`docs/MUSIC_SYSTEM.md`](./MUSIC_SYSTEM.md) | Oda muzik ve sarki istegi |
 | [`docs/PERFORMANCE.md`](./PERFORMANCE.md) | A/B/C kategorili performans bulgulari |
-| [`docs/SECURITY.md`](./SECURITY.md) | Guvenlik incelemesi + 54 route inceleme listesi |
+| [`docs/LIVE_VERIFICATION.md`](./LIVE_VERIFICATION.md) | Canli HTTP dogrulama raporu (110 ucun sonucu) |
+| [`docs/SECURITY.md`](./SECURITY.md) | Guvenlik incelemesi + 15 route inceleme listesi (duzeltildi) |
 | [`docs/API_TESTING.md`](./API_TESTING.md) | Uretim yazmasi olmadan test yontemi |
 | [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md) | Dagitim ve ortam degiskenleri (deger yok) |
 | [`docs/FLUTTER_INTEGRATION_GUIDE.md`](./FLUTTER_INTEGRATION_GUIDE.md) | Flutter tarafi entegrasyon kilavuzu |
@@ -64,7 +65,7 @@ Ek olarak:
 | `docs/ERROR_CODES.md` | CANLIFAL_ERROR_CODES.md | 113 kodun kaynak kodundan cikarilmis tam listesi burada. |
 | `docs/AUTHENTICATION.md` | CANLIFAL_PERMISSIONS.md / CANLIFAL_FLUTTER_BACKEND_CONTRACT.md | Rol matrisi eski dosyalarda; token sureleri burada dogrulandi. |
 | `docs/PERFORMANCE.md` | CANLIFAL_PERFORMANCE.md / CANLIFAL_LOAD_TEST_PLAN.md | Olcum planlari eski dosyalarda; bu dosya kod tabanli A/B/C siniflandirmadir. |
-| `docs/SECURITY.md` | CANLIFAL_SECURITY.md | Eski guvenlik dosyasi korunur; 54 route inceleme listesi burada. |
+| `docs/SECURITY.md` | CANLIFAL_SECURITY.md | Eski guvenlik dosyasi korunur; duzeltilmis 15 route inceleme listesi burada. |
 | `docs/API_TESTING.md` | CANLIFAL_TEST_PLAN.md / CANLIFAL_BACKEND_TEST_PLAN.md / CANLIFAL_LOAD_TEST_PLAN.md | Uretim yazmasiz test yontemi burada. |
 | `docs/DEPLOYMENT.md` | CANLIFAL_BACKEND_RELEASE_GATE.md | Surum kapisi eski dosyada. |
 | `docs/FLUTTER_INTEGRATION_GUIDE.md` | CANLIFAL_FLUTTER_BACKEND_CONTRACT.md / BACKEND_FLUTTER_PARITY.md / STAGE16_FLUTTER_BACKEND_PARITY.md / CANLIFAL_FLUTTER_DELIVERY_CHECKLIST.md | Eski kilavuzlar silinmedi; bu dosya canli kaynakla dogrulanmis ozettir. |

@@ -1,5 +1,16 @@
 # CHANGELOG — Doküman Değişiklikleri
 
+## 2026-09-27 (ikinci tur — canlı doğrulama)
+
+- **110 herkese açık GET ucu** üretimde gerçek HTTP ile çağrıldı: 85 × 200, 17 × 401, 8 × 400, 0 hata.
+- **20 kimlik gerektiren salt-okuma ucu** test hesabıyla çağrıldı: 14 × 200.
+- `/api/notifications/stream` SSE akışı canlı gözlendi: `connected` karesi + `: heartbeat`.
+- SSE olay adlarının `event:` alanıyla değil `data.type` ile taşındığı tespit edildi.
+- Yetki denetimi düzeltildi: yetki izi bulunmayan uç sayısı **54 → 15**; dört uç yanlış alarm olarak kapatıldı.
+- Yeni belge: `docs/LIVE_VERIFICATION.md`.
+
+> Bu turda da **hiçbir backend kodu değiştirilmemiş** ve **üretime hiçbir yazma yapılmamıştır**.
+
 ## 2026-09-27
 
 - Canlı backend kaynak ağacından **programatik envanter** üretildi: 717 route dosyası, 1084 metot-uç.
