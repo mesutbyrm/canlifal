@@ -5836,3 +5836,19 @@ model UserFavorite {
   @@index([userId, createdAt])
   @@map("user_favorites")
 }
+
+model AdRewardGrant {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  userId        String?
+  adNetwork     String?
+  adUnit        String?
+  rewardItem    String?
+  rewardAmount  Int      @default(0)
+  granted       Boolean  @default(false)
+  customData    String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("ad_reward_grants")
+}
