@@ -11,7 +11,7 @@ Tek kaynak dokumantasyon dizini: **[`docs/README.md`](./docs/README.md)**
 | Mimari | [`docs/BACKEND_ARCHITECTURE.md`](./docs/BACKEND_ARCHITECTURE.md) |
 | Flutter entegrasyonu | [`docs/FLUTTER_INTEGRATION_GUIDE.md`](./docs/FLUTTER_INTEGRATION_GUIDE.md) |
 | Uc referansi | [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) |
-| Tam envanter (1080 uc) | [`docs/ENDPOINT_INVENTORY.md`](./docs/ENDPOINT_INVENTORY.md) |
+| Tam envanter (1084 uc) | [`docs/ENDPOINT_INVENTORY.md`](./docs/ENDPOINT_INVENTORY.md) |
 | Kimlik dogrulama | [`docs/AUTHENTICATION.md`](./docs/AUTHENTICATION.md) |
 | Gercek zamanli (SSE) | [`docs/REALTIME_SSE.md`](./docs/REALTIME_SSE.md) |
 | TRTC | [`docs/TRTC_INTEGRATION.md`](./docs/TRTC_INTEGRATION.md) |
