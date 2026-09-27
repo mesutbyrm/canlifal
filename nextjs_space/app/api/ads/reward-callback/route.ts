@@ -82,17 +82,10 @@ export async function GET(request: NextRequest) {
       return new NextResponse('OK', { status: 200 })
     }
 
-    let granted = false
-    if (userId && rewardAmount > 0) {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
-      if (user) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { cfcBalance: { increment: rewardAmount } },
-        })
-        granted = true
-      }
-    }
+    // Bakiye BURADA yüklenmez: uygulama reklam bitince /api/user/watch-ad ile zaten
+    // CFC yüklüyor. Bu uç yalnızca Google imzalı izlenme kaydını (denetim) tutar;
+    // aksi halde kullanıcı aynı reklam için iki kez ödül alırdı.
+    const granted = false
 
     await prisma.adRewardGrant.create({
       data: {
