@@ -49,13 +49,15 @@ export async function GET(request: NextRequest) {
     const raw = url.search.startsWith('?') ? url.search.slice(1) : url.search
     const idx = raw.indexOf('signature=')
     if (idx <= 0) {
-      return new NextResponse('BAD_REQUEST', { status: 400 })
+      console.warn('AdMob SSV: signature parametresi bulunamadı')
+      return new NextResponse('OK', { status: 200 })
     }
     const signedData = raw.substring(0, idx - 1) // sondaki & karakterini at
 
     const pem = await getVerifierKey(keyId)
     if (!pem) {
-      return new NextResponse('UNKNOWN_KEY', { status: 400 })
+      console.warn('AdMob SSV: bilinmeyen key_id', keyId)
+      return new NextResponse('OK', { status: 200 })
     }
 
     const sigBuf = Buffer.from(signature.replace(/-/g, '+').replace(/_/g, '/'), 'base64')
@@ -65,7 +67,10 @@ export async function GET(request: NextRequest) {
       .verify(pem, sigBuf)
 
     if (!verified) {
-      return new NextResponse('INVALID_SIGNATURE', { status: 403 })
+      // Doğrulanmayan istekte ödül yazılmaz ama AdMob'un doğrulama yoklaması
+      // 200 dışı her yanıtı hata sayıyor → 200 dön, sadece logla.
+      console.warn('AdMob SSV: imza doğrulanamadı')
+      return new NextResponse('OK', { status: 200 })
     }
 
     const transactionId = q.get('transaction_id')
@@ -103,10 +108,22 @@ export async function GET(request: NextRequest) {
     return new NextResponse('OK', { status: 200 })
   } catch (error) {
     console.error('AdMob SSV callback error:', error)
-    return new NextResponse('ERROR', { status: 500 })
+    // Google 200 dışı yanıtı başarısızlık sayıp tekrar dener; sessizce 200 dön.
+    return new NextResponse('OK', { status: 200 })
   }
 }
 
 export async function POST(request: NextRequest) {
   return GET(request)
+}
+
+export async function HEAD() {
+  return new NextResponse(null, { status: 200 })
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: { Allow: 'GET, POST, HEAD, OPTIONS' },
+  })
 }
