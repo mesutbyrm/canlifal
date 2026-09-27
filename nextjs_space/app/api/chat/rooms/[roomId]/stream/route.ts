@@ -57,8 +57,23 @@ export async function GET(
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Bağlantı koptuğunda controller.enqueue exception atar. Eskiden bu hata
+      // yutulup 2 sn'lik döngü sonsuza dek devam ediyordu: her kopan istemci
+      // sunucuda kalıcı bir zamanlayıcı bırakıyor, yük arttıkça açık akışlar
+      // da düşüyordu. Artık ilk başarısız yazmada akış tamamen kapatılıyor.
+      const send = (chunk: string): boolean => {
+        if (!isActive) return false
+        try {
+          controller.enqueue(encoder.encode(chunk))
+          return true
+        } catch {
+          isActive = false
+          return false
+        }
+      }
+
       // Send initial connection event
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', roomId })}\n\n`))
+      send(`data: ${JSON.stringify({ type: 'connected', roomId })}\n\n`)
 
       // DJ state will be sent on the first poll cycle (2s) — no blocking initial payload
 
@@ -79,59 +94,59 @@ export async function GET(
           if (newEvents.length > 0) {
             const messages = newEvents.filter(e => e.type === 'message')
             if (messages.length > 0) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              send(`data: ${JSON.stringify({
                 type: 'messages',
                 messages: messages.map(e => e.data)
-              })}\n\n`))
+              })}\n\n`)
             }
             // System events (moderation: kick, ban, mute, announcement, clear)
             const systemEvents = newEvents.filter(e => e.type === 'system')
             for (const sysEvt of systemEvents) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              send(`data: ${JSON.stringify({
                 type: 'system',
                 ...sysEvt.data
-              })}\n\n`))
+              })}\n\n`)
             }
             // Gift events
             const giftEvents = newEvents.filter(e => e.type === 'gift')
             for (const giftEvt of giftEvents) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              send(`data: ${JSON.stringify({
                 type: 'gift',
                 ...giftEvt.data
-              })}\n\n`))
+              })}\n\n`)
             }
             // PK events
             const pkEvents = newEvents.filter(e => e.type === 'pk')
             for (const pkEvt of pkEvents) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              send(`data: ${JSON.stringify({
                 type: 'pk',
                 ...pkEvt.data
-              })}\n\n`))
+              })}\n\n`)
             }
             // Hediye Kutusu olayları (BÖLÜM 22/B4)
             const giftBoxEvents = newEvents.filter(e => e.type === 'gift_box')
             for (const gbEvt of giftBoxEvents) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              send(`data: ${JSON.stringify({
                 type: 'gift_box',
                 ...gbEvt.data
-              })}\n\n`))
+              })}\n\n`)
             }
             // Voice-room realtime events (user_joined/left, mic_changed, seat_changed,
             // room_closed, owner_changed). Forwarded as `room_event` so both web
             // (ignores unknown types) and Flutter (switches on .event) can consume them.
             const roomEvents = newEvents.filter(e => e.type === 'room')
             for (const roomEvt of roomEvents) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              send(`data: ${JSON.stringify({
                 type: 'room_event',
                 ...roomEvt.data
-              })}\n\n`))
+              })}\n\n`)
             }
             // Advance the cursor to the newest event we actually consumed and
             // publish it as the SSE event id so a reconnecting client can send
             // it back via Last-Event-ID and resume exactly here.
             const newestTs = Math.max(...newEvents.map(e => e.timestamp))
             lastEventCheck = newestTs
-            controller.enqueue(encoder.encode(`id: ${newestTs}\n\n`))
+            send(`id: ${newestTs}\n\n`)
           }
 
           // 2. Presence: only check DB every 10 seconds (was 5s)
@@ -186,12 +201,12 @@ export async function GET(
               }
             })
 
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            send(`data: ${JSON.stringify({
               type: 'presence',
               users: activeUsers,
               onlineCount: activeUsers.length,
               totalCount: activeUsers.length
-            })}\n\n`))
+            })}\n\n`)
           }
 
           // 3. DJ updates: first poll fetches full state, subsequent polls check in-memory bus
@@ -199,13 +214,13 @@ export async function GET(
             // First poll — build full DJ payload so client gets initial music state
             try {
               const initialDj = await buildDjPayload(roomId)
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialDj)}\n\n`))
+              send(`data: ${JSON.stringify(initialDj)}\n\n`)
             } catch { /* ignore */ }
             lastDjCheck = Date.now()
           } else {
             const djEvent = getLatestDjEvent(roomId, lastDjCheck)
             if (djEvent) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(djEvent)}\n\n`))
+              send(`data: ${JSON.stringify(djEvent)}\n\n`)
               lastDjCheck = Date.now()
             }
           }
@@ -213,10 +228,10 @@ export async function GET(
           // 4. Typing from in-memory event bus (no DB hit)
           const typingNames = getTypingUsers(roomId, currentUserId)
           if (typingNames.length > 0) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            send(`data: ${JSON.stringify({
               type: 'typing',
               users: typingNames
-            })}\n\n`))
+            })}\n\n`)
           }
 
         } catch (error) {
@@ -233,15 +248,13 @@ export async function GET(
       checkForUpdates()
 
       // Heartbeat to keep connection alive
+      // 10 sn: istemci tarafı watchdog toleransının (40 sn) çok altında kalsın
+      // ki tek bir gecikmiş heartbeat gereksiz yeniden bağlanma tetiklemesin.
       const heartbeat = setInterval(() => {
-        if (isActive) {
-          try {
-            controller.enqueue(encoder.encode(`: heartbeat\n\n`))
-          } catch {
-            clearInterval(heartbeat)
-          }
+        if (!isActive || !send(`: heartbeat\n\n`)) {
+          clearInterval(heartbeat)
         }
-      }, 15000)
+      }, 10000)
 
       // Cleanup on close
       request.signal.addEventListener('abort', () => {
