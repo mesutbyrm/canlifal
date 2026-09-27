@@ -6,7 +6,7 @@ import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 import { triggerEventAnnouncement } from '@/lib/event-announcement';
 import { getCachedPlatformSetting } from '@/lib/cache';
-import { emitTellerEvent } from '@/lib/room-events';
+import { emitTellerEvent, emitRoomEvent } from '@/lib/room-events';
 import { processAgencyCommission } from '@/lib/agency-commission';
 
 export const dynamic = 'force-dynamic';
@@ -165,6 +165,27 @@ export async function PATCH(
       where: { id: params.sessionId },
       data: updateData
     });
+
+    // Kullanıcının oda akışına (SSE) gerçek zamanlı durum olayı gönder.
+    // Kabul anında olay yayınlanmadığı için kullanıcı tarafı seansın
+    // başladığını geç öğreniyordu.
+    if (action === 'accept') {
+      emitRoomEvent(params.sessionId, 'system', {
+        type: 'session_started',
+        status: 'active',
+        sessionId: liveSession.id,
+        roomId: (updateData as any).roomId,
+        maxMinutes: (updateData as any).maxMinutes,
+        creditsPerMinute: (updateData as any).creditsPerMinute
+      })
+    } else if (action === 'complete' || action === 'cancel' || action === 'reject') {
+      emitRoomEvent(params.sessionId, 'session_ended', {
+        type: 'session_ended',
+        status: action === 'complete' ? 'completed' : 'cancelled',
+        sessionId: liveSession.id,
+        reason: action
+      })
+    }
 
     // Emit SSE event for teller's stream (cancel/reject removes from pending list)
     if (action === 'cancel' || action === 'reject') {

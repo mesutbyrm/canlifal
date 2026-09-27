@@ -69,6 +69,15 @@ export async function GET(
         minutesUsed: liveSession.minutesUsed
       })}\n\n`))
 
+      // DB yedeği için durum takibi. Bellek-içi olay veri yolu yalnız aynı
+      // sunucu sürecinde çalışır; farklı süreçte yazılan mesaj/durum değişimi
+      // buradan yakalanır.
+      const emittedMessageIds = new Set<string>()
+      let lastMessageAt = new Date(Date.now() - 10_000)
+      let lastStatus = liveSession.status
+      let lastTimerStartedAt = liveSession.timerStartedAt?.getTime() ?? null
+      let dbTick = 0
+
       const checkForUpdates = async () => {
         if (!isActive) return
 
@@ -76,11 +85,71 @@ export async function GET(
           // Check in-memory event store
           const newEvents = getRoomEventsSince(sessionId, lastEventCheck)
           for (const event of newEvents) {
+            const mid = (event.data as any)?.id
+            if (event.type === 'message' && typeof mid === 'string') {
+              if (emittedMessageIds.has(mid)) continue
+              emittedMessageIds.add(mid)
+            }
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(event.data)}\n\n`))
           }
           if (newEvents.length > 0) {
             lastEventCheck = newestTimestamp(newEvents as any[], lastEventCheck)
             controller.enqueue(encoder.encode(sseIdLine(lastEventCheck)))
+          }
+
+          // DB yedeği: 3 saniyede bir yeni mesajlar ve seans durumu
+          dbTick++
+          if (dbTick >= 3) {
+            dbTick = 0
+
+            const rows = await prisma.liveSessionMessage.findMany({
+              where: { sessionId, createdAt: { gt: lastMessageAt } },
+              orderBy: { createdAt: 'asc' },
+              take: 50
+            })
+            for (const row of rows) {
+              if (emittedMessageIds.has(row.id)) continue
+              emittedMessageIds.add(row.id)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: 'message',
+                id: row.id,
+                senderId: row.senderId,
+                message: row.message,
+                createdAt: row.createdAt.toISOString()
+              })}\n\n`))
+            }
+            if (rows.length > 0) {
+              lastMessageAt = rows[rows.length - 1].createdAt
+            }
+            if (emittedMessageIds.size > 500) {
+              const keep = Array.from(emittedMessageIds).slice(-200)
+              emittedMessageIds.clear()
+              for (const k of keep) emittedMessageIds.add(k)
+            }
+
+            const fresh = await prisma.liveSession.findUnique({
+              where: { id: sessionId },
+              select: {
+                status: true, timerStarted: true, timerStartedAt: true,
+                maxMinutes: true, minutesUsed: true, roomId: true
+              }
+            })
+            if (fresh) {
+              const freshTimerAt = fresh.timerStartedAt?.getTime() ?? null
+              if (fresh.status !== lastStatus || freshTimerAt !== lastTimerStartedAt) {
+                lastStatus = fresh.status
+                lastTimerStartedAt = freshTimerAt
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: fresh.status === 'active' ? 'session_started' : 'session_status',
+                  status: fresh.status,
+                  roomId: fresh.roomId,
+                  timerStarted: fresh.timerStarted,
+                  timerStartedAt: fresh.timerStartedAt?.toISOString() || null,
+                  maxMinutes: fresh.maxMinutes,
+                  minutesUsed: fresh.minutesUsed
+                })}\n\n`))
+              }
+            }
           }
         } catch (error) {
           console.error('[Room SSE] Update error:', error)
