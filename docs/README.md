@@ -32,6 +32,7 @@ dosyalar esas alinir**, eski dosyalar tarihsel/urun baglami icin korunur.
 | [`docs/MUSIC_SYSTEM.md`](./MUSIC_SYSTEM.md) | Oda muzik ve sarki istegi |
 | [`docs/PERFORMANCE.md`](./PERFORMANCE.md) | A/B/C kategorili performans bulgulari |
 | [`docs/LIVE_VERIFICATION.md`](./LIVE_VERIFICATION.md) | Canli HTTP dogrulama raporu (110 ucun sonucu) |
+| [`docs/FIX_PROPOSALS.md`](./FIX_PROPOSALS.md) | Acik urun hatalari icin kok neden analizi ve duzeltme onerileri |
 | [`docs/SECURITY.md`](./SECURITY.md) | Guvenlik incelemesi + 15 route inceleme listesi (duzeltildi) |
 | [`docs/API_TESTING.md`](./API_TESTING.md) | Uretim yazmasi olmadan test yontemi |
 | [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md) | Dagitim ve ortam degiskenleri (deger yok) |

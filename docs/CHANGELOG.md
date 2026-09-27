@@ -1,5 +1,15 @@
 # CHANGELOG — Doküman Değişiklikleri
 
+## 2026-09-27 (üçüncü tur — düzeltme önerileri)
+
+- Yeni belge: `docs/FIX_PROPOSALS.md` — açık iki ürün hatası için kaynak koddan kanıtlanmış
+  kök neden analizi ve somut düzeltme önerileri.
+- PK daveti: üç giriş noktasının `create` adımında **farklı** olay yolları kullandığı tespit edildi
+  (`video-streams/pk` yalnız yayın yoluna, `chat/rooms/[roomId]/pk` yalnız sohbet yoluna yazıyor).
+- Varlık: `heartbeat` ucunun 60 sn temizlik yaparken 300 sn pencereyle sayım yaptığı tespit edildi.
+
+> Bu turda da **hiçbir backend kodu değiştirilmemiş**, dağıtım yapılmamıştır.
+
 ## 2026-09-27 (ikinci tur — canlı doğrulama)
 
 - **110 herkese açık GET ucu** üretimde gerçek HTTP ile çağrıldı: 85 × 200, 17 × 401, 8 × 400, 0 hata.
