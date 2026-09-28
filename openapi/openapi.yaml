@@ -1,0 +1,2215 @@
+openapi: 3.0.3
+info:
+  title: CanliFal Backend API
+  version: "1.0.0"
+  description: >
+    Canli kaynak koddan otomatik uretilmistir (2026-09-27). 717 route dosyasi / 1084 metot-uc.
+    Govde semalari cogu ucta kod icinden tam cikarilamadigi icin serbest nesne olarak birakilmistir.
+servers:
+  - url: https://canlifal.com
+  - url: https://canlifal.com/api/v1
+    description: middleware rewrite ile /api/* ile ayni handler
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { type: object }
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+  requestBodies:
+    AnyJson:
+      required: false
+      content:
+        application/json:
+          schema: { type: object }
+  responses:
+    OK:
+      description: Basarili
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Envelope" }
+    Unauthorized:
+      description: Yetkisiz
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    RateLimited:
+      description: Cok fazla istek
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+paths:
+  /api/auth/change-password:
+    post:
+      operationId: post_auth_change_password
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/email/send-verification:
+    post:
+      operationId: post_auth_email_send_verification
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/email/verify:
+    get:
+      operationId: get_auth_email_verify
+      tags: [auth]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    post:
+      operationId: post_auth_email_verify
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/forgot-password:
+    post:
+      operationId: post_auth_forgot_password
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/logout:
+    post:
+      operationId: post_auth_logout
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/logout-all:
+    post:
+      operationId: post_auth_logout_all
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/mobile-apple:
+    post:
+      operationId: post_auth_mobile_apple
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile-google:
+    post:
+      operationId: post_auth_mobile_google
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile-login:
+    post:
+      operationId: post_auth_mobile_login
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile-refresh:
+    post:
+      operationId: post_auth_mobile_refresh
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile-register:
+    post:
+      operationId: post_auth_mobile_register
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile-sessions:
+    get:
+      operationId: get_auth_mobile_sessions
+      tags: [auth]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile-sessions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: delete_auth_mobile_sessions_id
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/mobile-tiktok:
+    post:
+      operationId: post_auth_mobile_tiktok
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/mobile/device-token:
+    post:
+      operationId: post_auth_mobile_device_token
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    delete:
+      operationId: delete_auth_mobile_device_token
+      tags: [auth]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/phone/send-otp:
+    post:
+      operationId: post_auth_phone_send_otp
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/phone/verify-otp:
+    post:
+      operationId: post_auth_phone_verify_otp
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/reclaim-device:
+    post:
+      operationId: post_auth_reclaim_device
+      tags: [auth]
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/reset-password:
+    post:
+      operationId: post_auth_reset_password
+      tags: [auth]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/auth/sessions:
+    get:
+      operationId: get_auth_sessions
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_auth_sessions
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/auth/verify-device:
+    get:
+      operationId: get_auth_verify_device
+      tags: [auth]
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/broadcast-images:
+    get:
+      operationId: get_chat_broadcast_images
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/cleanup:
+    get:
+      operationId: get_chat_cleanup
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_cleanup
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_cleanup
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/music/popular:
+    get:
+      operationId: get_chat_music_popular
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms:
+    get:
+      operationId: get_chat_rooms
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/background:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_background
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    patch:
+      operationId: patch_chat_rooms_roomId_background
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/banned-words:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_banned_words
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    post:
+      operationId: post_chat_rooms_roomId_banned_words
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/banned-words/{word}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: word
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: delete_chat_rooms_roomId_banned_words_word
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/bans/{userId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_bans_userId
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_bans_userId
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/dj:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_dj
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_dj
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/dj/{targetUserId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: targetUserId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_dj_targetUserId
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_dj_targetUserId
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/gifts:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_gifts
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      operationId: post_chat_rooms_roomId_gifts
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/chat/rooms/{roomId}/join-seat:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_join_seat
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/kick:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_kick
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/mentions:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_mentions
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/messages:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_messages
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      operationId: post_chat_rooms_roomId_messages
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    delete:
+      operationId: delete_chat_rooms_roomId_messages
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/chat/rooms/{roomId}/messages/{messageId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: messageId
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: delete_chat_rooms_roomId_messages_messageId
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/moderation:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_moderation
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_moderation
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/music:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_music
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_music
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_music
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/music-queue:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_music_queue
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/music-request-by-query:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_music_request_by_query
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/music-settings:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_music_settings
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    patch:
+      operationId: patch_chat_rooms_roomId_music_settings
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/music/stop:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_music_stop
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/mute:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_mute
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/pin-message:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_pin_message
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/pk:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_pk
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      operationId: post_chat_rooms_roomId_pk
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/chat/rooms/{roomId}/pk/score:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_pk_score
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/presence:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_presence
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_presence
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_presence
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/queue:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_queue
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    delete:
+      operationId: delete_chat_rooms_roomId_queue
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/report:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_report
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/chat/rooms/{roomId}/roles:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_roles
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/seats:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_seats
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_chat_rooms_roomId_seats
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/settings:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_settings
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_chat_rooms_roomId_settings
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/song-request:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_song_request
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_song_request
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_chat_rooms_roomId_song_request
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/song/{queueId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: queueId
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: delete_chat_rooms_roomId_song_queueId
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/speak-request:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_speak_request
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_speak_request
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_speak_request
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/speak-request/{userId}/block:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_speak_request_userId_block
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_speak_request_userId_block
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/speak-request/{userId}/reject:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_speak_request_userId_reject
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_chat_rooms_roomId_speak_request_userId_reject
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/speak-requests:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_speak_requests
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/speak-requests/{targetUserId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: targetUserId
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      operationId: delete_chat_rooms_roomId_speak_requests_targetUserId
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/speak-requests/{targetUserId}/approve:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: targetUserId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_speak_requests_targetUserId_approve
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/speak-requests/{targetUserId}/block:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: targetUserId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_speak_requests_targetUserId_block
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    delete:
+      operationId: delete_chat_rooms_roomId_speak_requests_targetUserId_block
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/speak-requests/{targetUserId}/reject:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: targetUserId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_speak_requests_targetUserId_reject
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    delete:
+      operationId: delete_chat_rooms_roomId_speak_requests_targetUserId_reject
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/{roomId}/state:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_state
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/stream:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_stream
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/sync:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_sync
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/transfer-ownership:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_chat_rooms_roomId_transfer_ownership
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/typing:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_typing
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_typing
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/{roomId}/voice:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_chat_rooms_roomId_voice
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_chat_rooms_roomId_voice
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/rooms/backgrounds:
+    get:
+      operationId: get_chat_rooms_backgrounds
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/create:
+    post:
+      operationId: post_chat_rooms_create
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/chat/rooms/pk-list:
+    get:
+      operationId: get_chat_rooms_pk_list
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/rooms/pk/candidates:
+    get:
+      operationId: get_chat_rooms_pk_candidates
+      tags: [chat]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/chat/youtube-audio:
+    get:
+      operationId: get_chat_youtube_audio
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    post:
+      operationId: post_chat_youtube_audio
+      tags: [chat]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/chat/youtube-stream:
+    get:
+      operationId: get_chat_youtube_stream
+      tags: [chat]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gift-box:
+    get:
+      operationId: get_gift_box
+      tags: [gift-box]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_gift_box
+      tags: [gift-box]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gift-box/{boxId}:
+    parameters:
+      - name: boxId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_gift_box_boxId
+      tags: [gift-box]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gift-box/{boxId}/join:
+    parameters:
+      - name: boxId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_gift_box_boxId_join
+      tags: [gift-box]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/gift-box/share:
+    post:
+      operationId: post_gift_box_share
+      tags: [gift-box]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/gifts/battles:
+    get:
+      operationId: get_gifts_battles
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_gifts_battles
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/battles/{battleId}:
+    parameters:
+      - name: battleId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_gifts_battles_battleId
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/catalog:
+    get:
+      operationId: get_gifts_catalog
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/check-reciprocal:
+    post:
+      operationId: post_gifts_check_reciprocal
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/display-settings:
+    get:
+      operationId: get_gifts_display_settings
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/goals:
+    get:
+      operationId: get_gifts_goals
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_gifts_goals
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/insights/album/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_gifts_insights_album_userId
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/badge/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_gifts_insights_badge_userId
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/collection/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_gifts_insights_collection_userId
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/feed:
+    get:
+      operationId: get_gifts_insights_feed
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/first-gifter/{context}/{contextId}:
+    parameters:
+      - name: context
+        in: path
+        required: true
+        schema: { type: string }
+      - name: contextId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_gifts_insights_first_gifter_context_contextId
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/leaderboard:
+    get:
+      operationId: get_gifts_insights_leaderboard
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/map:
+    get:
+      operationId: get_gifts_insights_map
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/insights/me/badge:
+    get:
+      operationId: get_gifts_insights_me_badge
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/insights/me/history:
+    get:
+      operationId: get_gifts_insights_me_history
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/insights/me/recommendations:
+    get:
+      operationId: get_gifts_insights_me_recommendations
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/lucky/config:
+    get:
+      operationId: get_gifts_lucky_config
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/lucky/history:
+    get:
+      operationId: get_gifts_lucky_history
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/lucky/send:
+    post:
+      operationId: post_gifts_lucky_send
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/gifts/missions:
+    get:
+      operationId: get_gifts_missions
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/missions/{missionId}/claim:
+    parameters:
+      - name: missionId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_gifts_missions_missionId_claim
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/missions/me:
+    get:
+      operationId: get_gifts_missions_me
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/recent-big:
+    get:
+      operationId: get_gifts_recent_big
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/send:
+    post:
+      operationId: post_gifts_send
+      tags: [gifts]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/gifts/types:
+    get:
+      operationId: get_gifts_types
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/gifts/version:
+    get:
+      operationId: get_gifts_version
+      tags: [gifts]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/create-room:
+    post:
+      operationId: post_live_create_room
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/fal-request/{requestId}/complete:
+    parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_live_fal_request_requestId_complete
+      tags: [live]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/fal-request/{requestId}/update:
+    parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_live_fal_request_requestId_update
+      tags: [live]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    patch:
+      operationId: patch_live_fal_request_requestId_update
+      tags: [live]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/fal-request/create:
+    post:
+      operationId: post_live_fal_request_create
+      tags: [live]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/fal-requests:
+    get:
+      operationId: get_live_fal_requests
+      tags: [live]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/gift-types:
+    get:
+      operationId: get_live_gift_types
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/gift/send:
+    post:
+      operationId: post_live_gift_send
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/live/guest:
+    get:
+      operationId: get_live_guest
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_live_guest
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/guest/list:
+    get:
+      operationId: get_live_guest_list
+      tags: [live]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/heartbeat:
+    post:
+      operationId: post_live_heartbeat
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/join-room:
+    post:
+      operationId: post_live_join_room
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/leave-room:
+    post:
+      operationId: post_live_leave_room
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/message:
+    get:
+      operationId: get_live_message
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      operationId: post_live_message
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/live/online-users:
+    get:
+      operationId: get_live_online_users
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/pk:
+    get:
+      operationId: get_live_pk
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      operationId: post_live_pk
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/live/pk/active:
+    get:
+      operationId: get_live_pk_active
+      tags: [live]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/live/pk/score:
+    post:
+      operationId: post_live_pk_score
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/rooms:
+    get:
+      operationId: get_live_rooms
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/live/seats:
+    get:
+      operationId: get_live_seats
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_live_seats
+      tags: [live]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me:
+    get:
+      operationId: get_me
+      tags: [me]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_me
+      tags: [me]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/admin-capabilities:
+    get:
+      operationId: get_me_admin_capabilities
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/me/membership:
+    get:
+      operationId: get_me_membership
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/membership-events:
+    get:
+      operationId: get_me_membership_events
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/membership-history:
+    get:
+      operationId: get_me_membership_history
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      operationId: put_me_membership_history
+      tags: [me]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/profile-visitors:
+    get:
+      operationId: get_me_profile_visitors
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_me_profile_visitors
+      tags: [me]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/vip-identity:
+    get:
+      operationId: get_me_vip_identity
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      operationId: put_me_vip_identity
+      tags: [me]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/vip-preferences:
+    get:
+      operationId: get_me_vip_preferences
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      operationId: put_me_vip_preferences
+      tags: [me]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/me/vip-xp:
+    get:
+      operationId: get_me_vip_xp
+      tags: [me]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_me_vip_xp
+      tags: [me]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/memberships:
+    get:
+      operationId: get_memberships
+      tags: [memberships]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/memberships/comparison:
+    get:
+      operationId: get_memberships_comparison
+      tags: [memberships]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/memberships/gift:
+    post:
+      operationId: post_memberships_gift
+      tags: [memberships]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/memberships/packages:
+    get:
+      operationId: get_memberships_packages
+      tags: [memberships]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/memberships/purchase:
+    post:
+      operationId: post_memberships_purchase
+      tags: [memberships]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/messages:
+    get:
+      operationId: get_messages
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/messages/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_messages_userId
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      operationId: post_messages_userId
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/messages/{userId}/{messageId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: messageId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_messages_userId_messageId
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_messages_userId_messageId
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/messages/conversations/{peerId}/messages:
+    parameters:
+      - name: peerId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_messages_conversations_peerId_messages
+      tags: [messages]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+    post:
+      operationId: post_messages_conversations_peerId_messages
+      tags: [messages]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/messages/conversations/{peerId}/stream:
+    parameters:
+      - name: peerId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_messages_conversations_peerId_stream
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/messages/conversations/{peerId}/typing:
+    parameters:
+      - name: peerId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_messages_conversations_peerId_typing
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_messages_conversations_peerId_typing
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/messages/request:
+    post:
+      operationId: post_messages_request
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_messages_request
+      tags: [messages]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/music/history:
+    get:
+      operationId: get_music_history
+      tags: [music]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/music/search:
+    get:
+      operationId: get_music_search
+      tags: [music]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notifications:
+    get:
+      operationId: get_notifications
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_notifications
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_notifications
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notifications/{notificationId}/read:
+    parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_notifications_notificationId_read
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_notifications_notificationId_read
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notifications/payment:
+    get:
+      operationId: get_notifications_payment
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_notifications_payment
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notifications/stream:
+    get:
+      operationId: get_notifications_stream
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/notifications/unread:
+    get:
+      operationId: get_notifications_unread
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/pk/{matchId}:
+    parameters:
+      - name: matchId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_pk_matchId
+      tags: [pk]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/pk/{matchId}/stream:
+    parameters:
+      - name: matchId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_pk_matchId_stream
+      tags: [pk]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/pk/active:
+    get:
+      operationId: get_pk_active
+      tags: [pk]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/pk/leaderboard:
+    get:
+      operationId: get_pk_leaderboard
+      tags: [pk]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/pk/me/invites:
+    get:
+      operationId: get_pk_me_invites
+      tags: [pk]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/presence:
+    get:
+      operationId: get_presence
+      tags: [presence]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_presence
+      tags: [presence]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/presence/online-events:
+    get:
+      operationId: get_presence_online_events
+      tags: [presence]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/presence/sections:
+    get:
+      operationId: get_presence_sections
+      tags: [presence]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+  /api/room/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_room_sessionId
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      operationId: patch_room_sessionId
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/room/{sessionId}/messages:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_room_sessionId_messages
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_room_sessionId_messages
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/room/{sessionId}/review:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_room_sessionId_review
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_room_sessionId_review
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/room/{sessionId}/stream:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_room_sessionId_stream
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/room/{sessionId}/summary:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: get_room_sessionId_summary
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/room/{sessionId}/tip:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: post_room_sessionId_tip
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /api/room/signal:
+    get:
+      operationId: get_room_signal
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: post_room_signal
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      operationId: delete_room_signal
+      tags: [room]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/trtc/token:
+    post:
+      operationId: post_trtc_token
+      tags: [trtc]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/trtc/usersig:
+    post:
+      operationId: post_trtc_usersig
+      tags: [trtc]
+      security: [{ bearerAuth: [] }]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/trtc/webhook:
+    post:
+      operationId: post_trtc_webhook
+      tags: [trtc]
+      requestBody: { $ref: "#/components/requestBodies/AnyJson" }
+      responses:
+        "200": { $ref: "#/components/responses/OK" }
