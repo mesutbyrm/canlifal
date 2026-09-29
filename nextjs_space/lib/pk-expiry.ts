@@ -72,8 +72,15 @@ export async function expirePendingPK(battle: {
  * Expire all stale pending PKs globally.
  * Can be called periodically or on any PK-related request.
  */
-export async function expireAllStalePKs(): Promise<number> {
-  const cutoff = new Date(Date.now() - PK_TIMEOUT_MS)
+// Global tarama her GET/SSE turunda çalışıyordu; süreç başına seyreltilir.
+const SWEEP_MIN_INTERVAL_MS = 3000
+let lastExpireSweepAt = 0
+
+export async function expireAllStalePKs(opts?: { force?: boolean }): Promise<number> {
+  const nowMs = Date.now()
+  if (!opts?.force && nowMs - lastExpireSweepAt < SWEEP_MIN_INTERVAL_MS) return 0
+  lastExpireSweepAt = nowMs
+  const cutoff = new Date(nowMs - PK_TIMEOUT_MS)
   try {
     const stalePKs = await prisma.pKBattle.findMany({
       where: {

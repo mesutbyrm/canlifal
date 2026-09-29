@@ -6,6 +6,8 @@ import prisma from '@/lib/db'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getLatestDjEvent, buildDjPayload } from '@/lib/chat-dj-events'
 import { getChatEventsSince, getTypingUsers } from '@/lib/chat-events'
+import { expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
+import { finalizeExpiredActivePKs } from '@/lib/pk-state'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -69,6 +71,11 @@ export async function GET(
         ? parsedLastEventId
         : Date.now()
       let presenceCheckCount = 0
+      // PK durumu veritabanından da senkronlanır: bellek içi olay yolu yalnızca
+      // aynı sunucu örneğinde çalışır; davet/bitiş başka örnekte olursa karşı
+      // taraf bu senkronla yine alır.
+      let pkCheckCount = 0
+      let lastPkSignature: string | null = null
 
       const checkForUpdates = async () => {
         if (!isActive) return
@@ -192,6 +199,58 @@ export async function GET(
               onlineCount: activeUsers.length,
               totalCount: activeUsers.length
             })}\n\n`))
+          }
+
+          // 2b. PK senkronu (~4s): süresi dolanları kapat + son PK durumunu gönder
+          pkCheckCount++
+          if (pkCheckCount >= 2) {
+            pkCheckCount = 0
+            try {
+              await expireAllStalePKs()
+              await finalizeExpiredActivePKs()
+              const pk = await prisma.pKBattle.findFirst({
+                where: {
+                  OR: [{ stream1Id: roomId }, { stream2Id: roomId }],
+                  AND: [{
+                    OR: [
+                      { status: { in: ['pending', 'starting', 'active', 'paused'] } },
+                      { endedAt: { gte: new Date(Date.now() - 60000) } },
+                    ],
+                  }],
+                },
+                orderBy: { createdAt: 'desc' },
+              })
+              const signature = pk ? `${pk.id}:${pk.status}:${pk.score1}:${pk.score2}` : ''
+              // İlk turda bitmiş PK tekrar gönderilmez; yalnızca canlı PK senkronlanır.
+              const skipInitialEnded = lastPkSignature === null && !!pk?.endedAt
+              if (pk && !skipInitialEnded && signature !== lastPkSignature) {
+                const endsAt = pk.endsAt ? pk.endsAt.toISOString() : null
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: 'pk',
+                  battleId: pk.id,
+                  action: 'sync',
+                  room1Id: pk.stream1Id,
+                  room2Id: pk.stream2Id,
+                  user1Id: pk.user1Id,
+                  user2Id: pk.user2Id,
+                  status: pk.status,
+                  duration: pk.duration,
+                  score1: pk.score1,
+                  score2: pk.score2,
+                  endsAt,
+                  endTime: endsAt,
+                  winnerId: pk.winnerId,
+                  isDraw: pk.isDraw,
+                  expiresAt: pk.status === 'pending'
+                    ? new Date(pk.createdAt.getTime() + PK_TIMEOUT_MS).toISOString()
+                    : null,
+                  serverNow: new Date().toISOString(),
+                })}\n\n`))
+              }
+              lastPkSignature = signature
+            } catch (e) {
+              console.error('SSE pk sync error:', e)
+            }
           }
 
           // 3. DJ updates: first poll fetches full state, subsequent polls check in-memory bus
