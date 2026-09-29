@@ -533,6 +533,7 @@ model ChatRoom {
   giftCommissionPercent Int              @default(0) // 0-100, percentage of gift value going to beneficiary
   giftBeneficiaryId     String? // Who receives the commission (null = room owner)
   giftBeneficiary       User?            @relation("RoomGiftBeneficiary", fields: [giftBeneficiaryId], references: [id], onDelete: SetNull)
+  ownerCommissionEnabled Boolean         @default(true) // false: oda sahibi payını almaz, pay hediyeyi alana gider (yüzdeler değişmez)
   backgroundImage       String? // Background image URL for room
   bannedWords           String?          @db.Text // JSON array of custom banned words set by room owner
   currentMusicVideoId   String? // Currently playing YouTube video ID

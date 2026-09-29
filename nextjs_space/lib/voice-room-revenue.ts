@@ -58,7 +58,8 @@ export function roomTypeSupports(roomType: string, feature: string): boolean {
  */
 export async function calculateGiftDistribution(
   totalAmount: number,
-  roomType: string
+  roomType: string,
+  ownerCommissionEnabled: boolean = true
 ): Promise<{
   receiverGross: number
   ownerGross: number
@@ -73,9 +74,12 @@ export async function calculateGiftDistribution(
   const commissionPct = parseInt(await getCachedPlatformSetting('vr_site_commission_percent', '50'))
 
   // Step 1: Split between receiver and owner
-  const receiverGross = Math.floor(totalAmount * receiverPct / 100)
+  const ownerShare = roomType === 'FREE' ? 0 : Math.floor(totalAmount * ownerPct / 100)
+  // Oda sahibi payını almayı kapattıysa pay hediyeyi alana eklenir.
+  const receiverGross = Math.floor(totalAmount * receiverPct / 100) +
+    (ownerCommissionEnabled ? 0 : ownerShare)
   // For FREE rooms, owner gets nothing
-  const ownerGross = roomType === 'FREE' ? 0 : Math.floor(totalAmount * ownerPct / 100)
+  const ownerGross = ownerCommissionEnabled ? ownerShare : 0
 
   // Step 2: Apply commission on each share individually
   const receiverCommission = Math.floor(receiverGross * commissionPct / 100)
