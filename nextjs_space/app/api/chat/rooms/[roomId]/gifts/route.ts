@@ -116,11 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     // Calculate revenue distribution using the new room-type-aware model
     const roomType = (room as any).roomType || 'FREE'
-    const dist = await calculateGiftDistribution(
-      price,
-      roomType,
-      (room as any).ownerCommissionEnabled !== false
-    )
+    const dist = await calculateGiftDistribution(price, roomType)
     const roomOwnerId = room.ownerId
 
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz

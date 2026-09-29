@@ -5,7 +5,6 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { emitChatEvent } from '@/lib/chat-events'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
-import { finalizeExpiredActivePKs } from '@/lib/pk-state'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -32,9 +31,6 @@ export async function GET(request: NextRequest) {
     }
 
     await expireAllStalePKs()
-    // Süresi dolan aktif PK'lar da kapatılmalı; aksi halde canlı yayın PK'sı
-    // yalnız bu ucu sorgulayan istemcide sonsuza dek "aktif" kalıyordu.
-    await finalizeExpiredActivePKs()
 
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
     const battle = await prisma.pKBattle.findFirst({

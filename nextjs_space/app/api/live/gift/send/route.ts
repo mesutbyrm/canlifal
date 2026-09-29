@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
       // ─── Voice Room Gift ───
       const room = await prisma.chatRoom.findFirst({
         where: { OR: [{ id: roomId }, { slug: roomId }] },
-        select: { id: true, ownerId: true, roomType: true, giftCommissionPercent: true, giftBeneficiaryId: true, ownerCommissionEnabled: true }
+        select: { id: true, ownerId: true, roomType: true, giftCommissionPercent: true, giftBeneficiaryId: true }
       })
       if (!room) {
         return fail(404, 'ROOM_NOT_FOUND', 'Oda bulunamadı')
@@ -297,11 +297,7 @@ export async function POST(request: NextRequest) {
 
       // Calculate distribution
       const roomType2 = (room as any).roomType || 'FREE'
-      const dist = await calculateGiftDistribution(
-        totalPrice,
-        roomType2,
-        (room as any).ownerCommissionEnabled !== false
-      )
+      const dist = await calculateGiftDistribution(totalPrice, roomType2)
 
       const txOps: any[] = [
         prisma.chatRoomGift.create({

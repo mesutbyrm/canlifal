@@ -200,13 +200,7 @@ const BATTLE_SELECT = {
  * Süresi dolmuş aktif PK'ları backend tarafında bitirir.
  * İstemcinin "end" çağırmasına gerek kalmaz; sayaç sunucu saatiyle kanoniktir.
  */
-const FINALIZE_MIN_INTERVAL_MS = 3000
-let lastFinalizeSweepAt = 0
-
-export async function finalizeExpiredActivePKs(opts?: { force?: boolean }): Promise<number> {
-  const nowMs = Date.now()
-  if (!opts?.force && nowMs - lastFinalizeSweepAt < FINALIZE_MIN_INTERVAL_MS) return 0
-  lastFinalizeSweepAt = nowMs
+export async function finalizeExpiredActivePKs(): Promise<number> {
   try {
     const now = new Date()
     const stale = await prisma.pKBattle.findMany({

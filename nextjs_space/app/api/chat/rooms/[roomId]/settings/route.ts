@@ -45,7 +45,6 @@ export async function GET(
         ownerId: true,
         owner: { select: { id: true, name: true, username: true } },
         giftCommissionPercent: true,
-        ownerCommissionEnabled: true,
         giftBeneficiaryId: true,
         giftBeneficiary: { select: { id: true, name: true, username: true } },
         backgroundImage: true,
@@ -139,14 +138,6 @@ export async function PATCH(
       }
     }
 
-    // Oda sahibi payını alıp almamayı seçebilir; yüzdelere dokunamaz.
-    if (
-      typeof body.ownerCommissionEnabled === 'boolean' &&
-      (permissions.isRoomOwner || permissions.isGlobalAdmin)
-    ) {
-      updateData.ownerCommissionEnabled = body.ownerCommissionEnabled
-    }
-
     // Commission - only global admin (superadmin) can set
     if (giftCommissionPercent !== undefined && permissions.isGlobalAdmin) {
       const pct = Math.max(0, Math.min(100, parseInt(giftCommissionPercent) || 0))
@@ -171,7 +162,6 @@ export async function PATCH(
         isActive: true,
         isMuted: true,
         giftCommissionPercent: true,
-        ownerCommissionEnabled: true,
         backgroundImage: true,
         bannedWords: true,
         djUserIds: true,
