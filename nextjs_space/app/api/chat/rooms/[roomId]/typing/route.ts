@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,6 +63,8 @@ export async function POST(
     }
 
     const { roomId } = await params
+    const gateDenied = await guardGatedRoom(roomId, { id: typingUserId, role: mobileUser?.role || (session?.user as any)?.role })
+    if (gateDenied) return gateDenied
     const { isTyping } = await request.json()
 
     await prisma.chatPresence.upsert({

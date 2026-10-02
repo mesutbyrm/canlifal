@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
@@ -40,6 +41,10 @@ async function handleState(
     const session = !mobileUser ? await getServerSession(authOptions) : null
     const currentUserId = mobileUser?.id || session?.user?.id
     const { roomId } = await params
+
+    // Şifreli VIP oda: kapıdan geçmemiş kullanıcı oda durumunu GÖREMEZ
+    const gateDenied = await guardGatedRoom(roomId, { id: currentUserId, role: mobileUser?.role || (session?.user as any)?.role })
+    if (gateDenied) return gateDenied
 
     const room = await prisma.chatRoom.findUnique({
       where: { id: roomId },

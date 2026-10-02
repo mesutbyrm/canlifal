@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { emitSeatChanged, emitHostChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
@@ -110,6 +111,8 @@ export async function PATCH(
     }
 
     const { roomId } = await params
+    const gateDenied = await guardGatedRoom(roomId, { id: seatUserId, role: mobileUser?.role || (session?.user as any)?.role })
+    if (gateDenied) return gateDenied
     const body = await request.json()
     const { targetUserId, seatIndex, forceThrone, forceAssign } = body
 

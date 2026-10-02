@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { redisCache } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
@@ -32,6 +33,12 @@ export async function POST(request: NextRequest) {
         { success: false, error: { code: 'MISSING_PARAMS', message: 'roomId ve roomType gereklidir' } },
         { status: 400 }
       )
+    }
+
+    // Şifreli VIP oda: kapıdan geçmemiş kullanıcının heartbeat'i presence YARATAMAZ
+    if (roomType !== 'stream') {
+      const gateDenied = await guardGatedRoom(roomId, authUser)
+      if (gateDenied) return gateDenied
     }
 
     let onlineCount = 0

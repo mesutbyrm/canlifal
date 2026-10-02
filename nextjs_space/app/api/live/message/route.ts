@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { canUserSpeak, getUserRole, ROLE_SYMBOLS } from '@/lib/chat-permissions'
@@ -101,6 +102,9 @@ export async function POST(request: NextRequest) {
       })
     } else {
       // ── Voice room message ──
+      // Şifreli VIP oda: kapıdan geçmemiş kullanıcı YAZAMAZ
+      const gateDeniedV = await guardGatedRoom(roomId, authUser)
+      if (gateDeniedV) return gateDeniedV
       const room = await prisma.chatRoom.findUnique({
         where: { id: roomId },
         select: { id: true, isMuted: true }
@@ -249,6 +253,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: { messages, totalCount: messages.length } })
     } else {
       // Voice room messages
+      // Şifreli VIP oda: kapıdan geçmemiş kullanıcı mesajları OKUYAMAZ
+      const gateDeniedG = await guardGatedRoom(roomId, authUser)
+      if (gateDeniedG) return gateDeniedG
       const where: any = { roomId }
       if (after) where.createdAt = { gt: new Date(after) }
 
