@@ -5836,3 +5836,36 @@ model UserFavorite {
   @@index([userId, createdAt])
   @@map("user_favorites")
 }
+
+// ─────────────────────────────────────────────────────────────
+// VIP oda şifre koruması + oda sahibinden giriş izni (additive)
+// ─────────────────────────────────────────────────────────────
+
+/// Şifreli VIP odaya giriş isteği — kullanıcı + oda başına en fazla 1 kayıt.
+model RoomJoinRequest {
+  id          String    @id @default(cuid())
+  roomId      String
+  requesterId String
+  ownerId     String
+  status      String    @default("pending") // pending | accepted | rejected
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime? // onay 24 saat geçerlidir; oda şifresi değişince iptal olur
+
+  @@unique([roomId, requesterId])
+  @@index([roomId, status])
+  @@index([ownerId, status])
+  @@map("room_join_requests")
+}
+
+/// Şifre deneme sayacı (brute-force koruması): kullanıcı + oda başına.
+model RoomPasswordAttempt {
+  id            String   @id @default(cuid())
+  roomId        String
+  userId        String
+  failCount     Int      @default(0)
+  lastAttemptAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@map("room_password_attempts")
+}

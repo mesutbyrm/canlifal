@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
       ownerId: room.ownerId,
       owner: room.owner,
       roomType: (room as any).roomType || 'FREE',
+      // Şifre yalnızca VIP odalarda; hash/düz metin ASLA istemciye gitmez.
+      hasPassword: (room as any).roomType === 'VIP' && !!(room as any).password,
       backgroundImage: (room as any).backgroundImage || null,
       bannedWords: (room as any).bannedWords || null,
       djUserIds: (room as any).djUserIds || null,

@@ -5,6 +5,8 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getUserPermissions, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { clampSeatCount } from '@/lib/voice-room-seats'
+import { hashRoomPassword, resetPasswordAttempts, invalidateChatRoomCache } from '@/lib/room-access'
+import { recordAudit } from '@/lib/audit-log'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +68,11 @@ export async function GET(
       return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
     }
 
-    return NextResponse.json({ room, myPermissions: permissions })
+    const { password: storedPassword, ...roomSafe } = room as typeof room & { password?: string | null }
+    return NextResponse.json({
+      room: { ...roomSafe, hasPassword: !!storedPassword },
+      myPermissions: permissions,
+    })
   } catch (error) {
     console.error('Error fetching room settings:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
@@ -128,7 +134,29 @@ export async function PATCH(
           : clampSeatCount(body.seatCount)
     }
     if (bannerImage !== undefined) updateData.bannerImage = bannerImage || null
-    if (roomPassword !== undefined) updateData.password = roomPassword || null
+    // Şifre YALNIZCA VIP odalarda tanımlanabilir; saklanan değer bcrypt hash'idir.
+    // Kaldırma (boş değer) her oda türünde serbesttir (eski kayıtları temizlemek için).
+    let passwordChanged = false
+    if (roomPassword !== undefined) {
+      const newPlain = typeof roomPassword === 'string' ? roomPassword.trim() : ''
+      if (newPlain) {
+        const current = await prisma.chatRoom.findUnique({ where: { id: roomId }, select: { roomType: true } })
+        const effectiveType = (roomType !== undefined && permissions.isGlobalAdmin ? roomType : current?.roomType) || 'FREE'
+        if (effectiveType !== 'VIP') {
+          return NextResponse.json(
+            { error: 'Oda şifresi yalnızca VIP odalarda kullanılabilir', code: 'PASSWORD_VIP_ONLY' },
+            { status: 400 }
+          )
+        }
+        if (newPlain.length < 4 || newPlain.length > 64) {
+          return NextResponse.json({ error: 'Şifre 4-64 karakter olmalıdır', code: 'PASSWORD_LENGTH' }, { status: 400 })
+        }
+        updateData.password = await hashRoomPassword(newPlain)
+      } else {
+        updateData.password = null
+      }
+      passwordChanged = true
+    }
 
     // Room type - only global admin can change
     if (roomType !== undefined && permissions.isGlobalAdmin) {
@@ -177,7 +205,19 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json({ success: true, room: updated })
+    if (passwordChanged) {
+      invalidateChatRoomCache({ id: roomId, slug: (updated as any).slug })
+      await resetPasswordAttempts(roomId)
+      await recordAudit({
+        actorId: authUser.id,
+        action: updateData.password ? 'room_password_set' : 'room_password_remove',
+        targetType: 'ChatRoom',
+        targetId: roomId,
+        description: updateData.password ? 'VIP oda şifresi ayarlandı' : 'VIP oda şifresi kaldırıldı',
+      })
+    }
+    const { password: updatedPassword, ...updatedSafe } = updated as typeof updated & { password?: string | null }
+    return NextResponse.json({ success: true, room: { ...updatedSafe, hasPassword: !!updatedPassword } })
   } catch (error) {
     console.error('Error updating room settings:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })

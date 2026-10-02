@@ -15,6 +15,7 @@ import { endPksForSide } from '@/lib/pk-state'
 import { closeGiftBoxesFor } from '@/lib/gift-box'
 import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
 import { awardVipXpSafe } from '@/lib/vip-xp'
+import { authorizeVipEntry } from '@/lib/room-access'
 
 /** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
 async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
@@ -264,11 +265,15 @@ export async function POST(
     let nickname: string | undefined
     let seatIndex: number | undefined
     let providedPassword: string | undefined
+    let providedAccessToken: string | undefined
     try {
       const body = await request.json()
       nickname = body.nickname
       if (typeof body.seatIndex === 'number') {
         seatIndex = body.seatIndex
+      }
+      if (typeof body.roomAccessToken === 'string') {
+        providedAccessToken = body.roomAccessToken
       }
       if (typeof body.password === 'string') {
         providedPassword = body.password
@@ -326,37 +331,29 @@ export async function POST(
         }
       }
 
-      // ── Password gate for NORMAL / VIP rooms ──
-      // Owner and staff (admin/moderator level) bypass. Everyone else must
-      // provide the correct password on their first join. Shared by web + Flutter.
+      // ── Şifre kapısı: YALNIZCA VIP oda (lib/room-access.ts) ──
+      // Doğrulama sunucuda; en fazla 3 deneme; sahip/yönetici muaf; oda sahibinin
+      // verdiği giriş izni veya verify-password'ün imzalı jetonu da kabul edilir.
       const roomType = room?.roomType || 'FREE'
-      const needsPassword = (roomType === 'VIP' || roomType === 'NORMAL') && !!room?.password
-      if (needsPassword) {
-        const isOwner = room?.ownerId === userId
-        let bypass = isOwner
-        if (!bypass) {
-          // Global site staff bypass the room password
-          const currentUser = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { role: true }
-          })
-          const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(currentUser?.role || '')
-          if (isGlobalAdmin) {
-            bypass = true
-          } else {
-            // Per-room staff (sop and above) bypass the room password
-            const myRole = await prisma.chatUserRole.findUnique({
-              where: { roomId_userId: { roomId, userId } },
-              select: { role: true }
-            }).catch(() => null)
-            const myLevel = myRole ? (ROLE_HIERARCHY[myRole.role as keyof typeof ROLE_HIERARCHY] || 0) : 0
-            bypass = myLevel >= ROLE_HIERARCHY['sop']
-          }
-        }
-        if (!bypass && providedPassword !== room?.password) {
+      if (room) {
+        const authUserRole = (await prisma.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role
+        const decision = await authorizeVipEntry({
+          room: { id: roomId, roomType: room.roomType, password: room.password, ownerId: room.ownerId },
+          userId,
+          globalRole: authUserRole,
+          password: providedPassword,
+          accessToken: providedAccessToken,
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+        })
+        if (!decision.ok) {
           return NextResponse.json(
-            { error: 'Oda şifresi hatalı', code: 'INVALID_ROOM_PASSWORD' },
-            { status: 403 }
+            {
+              error: decision.message,
+              code: decision.code,
+              remainingAttempts: decision.remainingAttempts,
+              locked: decision.locked,
+            },
+            { status: decision.status }
           )
         }
       }

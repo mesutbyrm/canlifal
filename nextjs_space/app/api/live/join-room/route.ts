@@ -7,6 +7,7 @@ import { resolveRoomSeatCount, findFirstFreeSeatFor, type SeatUserContext } from
 import { ROLE_HIERARCHY, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getCachedChatRoom } from '@/lib/cache'
 import { withTiming } from '@/lib/perf'
+import { authorizeVipEntry } from '@/lib/room-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -228,28 +229,28 @@ async function handleJoinRoom(request: NextRequest) {
       const presenceTimeoutJoin = seatStaleThreshold()
       const isFreshJoin = !existingPresence || existingPresence.lastSeen < new Date(Date.now() - 30000)
 
-      // ── Password gate for NORMAL / VIP rooms (owner + staff bypass) ──
-      const roomAccess = room.roomType || 'FREE'
-      const needsPassword = (roomAccess === 'VIP' || roomAccess === 'NORMAL') && !!room.password
-      if (needsPassword && isFreshJoin) {
-        let bypass = isHost
-        if (!bypass) {
-          const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(authUser.role || '')
-          if (isGlobalAdmin) {
-            bypass = true
-          } else {
-            const myRole = await prisma.chatUserRole.findUnique({
-              where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-              select: { role: true }
-            }).catch(() => null)
-            const myLevel = myRole ? (ROLE_HIERARCHY[myRole.role as keyof typeof ROLE_HIERARCHY] || 0) : 0
-            bypass = myLevel >= ROLE_HIERARCHY['sop']
-          }
-        }
-        if (!bypass && providedPassword !== room.password) {
+      // ── Şifre kapısı: YALNIZCA VIP oda (lib/room-access.ts) ──
+      if (isFreshJoin) {
+        const decision = await authorizeVipEntry({
+          room: { id: room.id, roomType: room.roomType, password: room.password, ownerId: room.ownerId },
+          userId: authUser.id,
+          globalRole: authUser.role,
+          password: providedPassword,
+          accessToken: body.roomAccessToken,
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+        })
+        if (!decision.ok) {
           return NextResponse.json(
-            { success: false, error: { code: 'INVALID_ROOM_PASSWORD', message: 'Oda şifresi hatalı' } },
-            { status: 403 }
+            {
+              success: false,
+              error: {
+                code: decision.code,
+                message: decision.message,
+                remainingAttempts: decision.remainingAttempts,
+                locked: decision.locked,
+              },
+            },
+            { status: decision.status }
           )
         }
       }
