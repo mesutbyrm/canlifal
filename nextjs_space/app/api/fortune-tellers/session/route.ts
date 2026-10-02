@@ -91,7 +91,19 @@ export async function POST(request: NextRequest) {
     }
     const ftName = fortuneTypeNames[fortuneType || 'general'] || fortuneTypeNames['general']
 
-    await createNotificationWithPush({
+    // Emit SSE event for teller's real-time stream
+    emitTellerEvent(teller.id, 'session_request', {
+      sessionId: liveSession.id,
+      userId,
+      userName: user.name,
+      fortuneType: fortuneType || 'general',
+      duration,
+      creditsCharged: isStaff ? 0 : totalCost,
+      createdAt: liveSession.createdAt
+    })
+
+    // Push/DB bildirimi yanıtı ve SSE'yi geciktirmesin (fire-and-forget).
+    void createNotificationWithPush({
       userId: teller.userId,
       type: 'session_request',
       title: 'Yeni Randevu Talebi',
@@ -105,18 +117,7 @@ export async function POST(request: NextRequest) {
         creditsCharged: totalCost,
         duration
       })
-    })
-
-    // Emit SSE event for teller's real-time stream
-    emitTellerEvent(teller.id, 'session_request', {
-      sessionId: liveSession.id,
-      userId,
-      userName: user.name,
-      fortuneType: fortuneType || 'general',
-      duration,
-      creditsCharged: isStaff ? 0 : totalCost,
-      createdAt: liveSession.createdAt
-    })
+    }).catch((e) => console.error('[session] teller notify error:', e))
 
     return NextResponse.json({
       success: true,
