@@ -8,6 +8,7 @@ import { ROLE_HIERARCHY, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getCachedChatRoom } from '@/lib/cache'
 import { withTiming } from '@/lib/perf'
 import { authorizeVipEntry } from '@/lib/room-access'
+import { welcomeUser } from '@/lib/girlive-bot'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,6 +103,7 @@ async function handleJoinRoom(request: NextRequest) {
           update: { leftAt: null, joinedAt: new Date(), nickname: nickname || null },
           create: { streamId: stream.id, viewerId: authUser.id, nickname: nickname || null }
         })
+        void welcomeUser('live_stream', stream.id, authUser.id)
       }
 
       // Active viewers
@@ -253,6 +255,8 @@ async function handleJoinRoom(request: NextRequest) {
             { status: decision.status }
           )
         }
+        // GirLive Bot hoş geldin (aynı kullanıcıya 30 dk içinde tekrar yazmaz)
+        void welcomeUser('voice_room', room.id, authUser.id)
       }
 
       // ── Auto-seat on fresh join: assign first free seat (0..SEAT_COUNT-1) ──

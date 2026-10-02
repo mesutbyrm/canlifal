@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { welcomeUser } from '@/lib/girlive-bot'
 import { emitStreamEvent } from '@/lib/stream-events'
 
 export const dynamic = 'force-dynamic'
@@ -52,6 +53,8 @@ export async function POST(
       viewerCount: activeCount,
       viewers: activeCount,
     })
+
+    if (authUser?.id) void welcomeUser('live_stream', params.streamId, authUser.id)
 
     return NextResponse.json({ viewerId: viewer.id, joined: true, viewerCount: activeCount })
   } catch (error) {

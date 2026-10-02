@@ -61,6 +61,7 @@ export async function GET(
         tags: true,
         seatCount: true,
         bannerImage: true,
+        autoModeration: true,
       }
     })
 
@@ -134,6 +135,8 @@ export async function PATCH(
           : clampSeatCount(body.seatCount)
     }
     if (bannerImage !== undefined) updateData.bannerImage = bannerImage || null
+    // GirLive Bot otomatik moderasyon: oda sahibi/yönetici açıp kapatabilir
+    if (typeof body.autoModeration === 'boolean') updateData.autoModeration = body.autoModeration
     // Şifre YALNIZCA VIP odalarda tanımlanabilir; saklanan değer bcrypt hash'idir.
     // Kaldırma (boş değer) her oda türünde serbesttir (eski kayıtları temizlemek için).
     let passwordChanged = false
@@ -202,6 +205,7 @@ export async function PATCH(
         tags: true,
         seatCount: true,
         bannerImage: true,
+        autoModeration: true,
       }
     })
 

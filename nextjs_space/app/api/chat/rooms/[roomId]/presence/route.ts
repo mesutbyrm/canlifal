@@ -16,6 +16,7 @@ import { closeGiftBoxesFor } from '@/lib/gift-box'
 import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
 import { awardVipXpSafe } from '@/lib/vip-xp'
 import { authorizeVipEntry } from '@/lib/room-access'
+import { welcomeUser } from '@/lib/girlive-bot'
 
 /** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
 async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
@@ -500,6 +501,8 @@ export async function POST(
       }
       // Broadcast the join to everyone in this room (web + Flutter via SSE)
       emitUserJoined(roomId, userId, nickname || userName || 'Kullanıcı', userImage)
+      // GirLive Bot hoş geldin (30 dk içinde aynı kullanıcıya tekrar yazmaz)
+      void welcomeUser('voice_room', roomId, userId)
       if (typeof seatIndex === 'number' && seatIndex >= 0) {
         emitSeatChanged(roomId, userId, seatIndex, -1, {
           seatKind: seatKind(seatIndex, roomSeatCount),

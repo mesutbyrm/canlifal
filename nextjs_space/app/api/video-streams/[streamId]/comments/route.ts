@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { moderateMessage } from '@/lib/girlive-bot'
 
 export async function GET(
   request: NextRequest,
@@ -64,6 +65,15 @@ export async function POST(
 
     if (!content?.trim()) {
       return NextResponse.json({ error: 'Content required' }, { status: 400 })
+    }
+
+    // GirLive Bot — sunucu taraflı moderasyon
+    const moderation = await moderateMessage({ scope: 'live_stream', scopeId: params.streamId, userId: authUser.id, text: content })
+    if (!moderation.allowed) {
+      return NextResponse.json(
+        { error: moderation.message, code: 'MODERATION_BLOCKED', moderation: { verdict: moderation.verdict, severity: moderation.severity } },
+        { status: 422 }
+      )
     }
 
     const comment = await prisma.videoStreamComment.create({

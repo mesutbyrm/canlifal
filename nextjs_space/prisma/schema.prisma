@@ -557,6 +557,7 @@ model ChatRoom {
   minMembershipTier     String? // null = herkese açık; gold|premium|diamond|svip
   showVipEntranceFx     Boolean          @default(true) // oda sahibi VIP giriş efektlerini kapatabilir
   isVipLounge           Boolean          @default(false) // SVIP Lounge alanı
+  autoModeration        Boolean          @default(true) // GirLive Bot otomatik moderasyon (oda sahibi kapatabilir)
   vipThemeId            String? // VIP odalara özel tema
   createdAt             DateTime         @default(now())
   bans                  ChatBan[]
@@ -5868,4 +5869,28 @@ model RoomPasswordAttempt {
   @@unique([roomId, userId])
   @@index([roomId])
   @@map("room_password_attempts")
+}
+
+// ─────────────────────────────────────────────────────────────
+// GirLive Bot — sunucu taraflı moderasyon kaydı (additive)
+// Sesli oda + canlı yayın aynı tabloyu kullanır. Bot mesajları ayrı bir tablo
+// DEĞİL: `isBot` kullanıcı adına yazılan normal ChatMessage / VideoStreamComment.
+// ─────────────────────────────────────────────────────────────
+model UserModerationAction {
+  id             String    @id @default(cuid())
+  scope          String // voice_room | live_stream
+  scopeId        String // ChatRoom.id | VideoStream.id
+  userId         String
+  severity       String // LOW | MEDIUM | HIGH | CRITICAL (yükseltilmiş, etkin seviye)
+  baseSeverity   String // kelimenin kendi seviyesi
+  action         String // warn | mute | kick | ban
+  matchedWord    String?
+  messageExcerpt String?
+  expiresAt      DateTime? // mute/ban bitişi (null = süresiz / uygulanmaz)
+  createdAt      DateTime  @default(now())
+
+  @@index([scope, scopeId, userId, createdAt])
+  @@index([scope, scopeId, createdAt])
+  @@index([userId, createdAt])
+  @@map("user_moderation_actions")
 }
