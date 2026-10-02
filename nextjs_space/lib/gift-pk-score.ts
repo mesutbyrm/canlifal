@@ -57,7 +57,7 @@ export async function applyGiftPkScore(params: {
    * Puan kaynağı. `gift_box` ve `bonus_reward` PK skoruna DAHİL EDİLMEZ
    * (Bölüm 22 §17: hediye kutusu ödülü PK skoru üretmez).
    */
-  source?: 'gift' | 'gift_box' | 'bonus_reward' | 'manual' | 'battle_bonus'
+  source?: 'gift' | 'gift_box' | 'bonus_reward' | 'manual' | 'battle_bonus' | 'support'
   /** true ise skor hiç yazılmaz (çağıran taraf açıkça hariç tutar). */
   excludeFromPkScore?: boolean
 }): Promise<GiftPkScoreResult> {

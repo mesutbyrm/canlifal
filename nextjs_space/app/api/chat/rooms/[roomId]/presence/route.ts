@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissions'
 import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
@@ -41,6 +42,13 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params
+    // Şifreli VIP oda: katılımcı listesi yalnızca kapıdan geçmişlere açık
+    {
+      const gm = await authenticateRequest(request)
+      const gs = !gm ? await getServerSession(authOptions) : null
+      const gateDenied = await guardGatedRoom(roomId, { id: gm?.id || gs?.user?.id, role: gm?.role || (gs?.user as any)?.role })
+      if (gateDenied) return gateDenied
+    }
     const presenceTimeout = new Date(Date.now() - 300000)
 
     // Run presences + room status in parallel
@@ -60,7 +68,8 @@ export async function GET(
               id: true,
               name: true,
               role: true,
-              image: true
+              image: true,
+              level: true
             }
           }
         }
@@ -100,6 +109,7 @@ export async function GET(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
@@ -609,7 +619,8 @@ export async function POST(
               id: true,
               name: true,
               role: true,
-              image: true
+              image: true,
+              level: true
             }
           }
         }
@@ -645,6 +656,7 @@ export async function POST(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
