@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { canUserSpeak, getUserRole, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { moderateMessage } from '@/lib/girlive-bot'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,15 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // GirLive Bot — sunucu taraflı moderasyon
+      const modS = await moderateMessage({ scope: 'live_stream', scopeId: roomId, userId: authUser.id, text: trimmedContent })
+      if (!modS.allowed) {
+        return NextResponse.json(
+          { success: false, error: { code: 'MODERATION_BLOCKED', message: modS.message, verdict: modS.verdict, severity: modS.severity } },
+          { status: 422 }
+        )
+      }
+
       const comment = await prisma.videoStreamComment.create({
         data: {
           streamId: roomId,
@@ -113,6 +123,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { success: false, error: { code: 'CANNOT_SPEAK', message: errorMap[speakCheck.reason || ''] || 'Mesaj gönderemezsiniz' } },
           { status: 403 }
+        )
+      }
+
+      // GirLive Bot — sunucu taraflı moderasyon
+      const modV = await moderateMessage({ scope: 'voice_room', scopeId: roomId, userId: authUser.id, text: trimmedContent })
+      if (!modV.allowed) {
+        return NextResponse.json(
+          { success: false, error: { code: 'MODERATION_BLOCKED', message: modV.message, verdict: modV.verdict, severity: modV.severity } },
+          { status: 422 }
         )
       }
 

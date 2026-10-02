@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { moderateMessage } from '@/lib/girlive-bot'
 import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 
 export const dynamic = 'force-dynamic'
@@ -231,6 +232,19 @@ export async function POST(
       return NextResponse.json(
         { error: 'Room not found' },
         { status: 404 }
+      )
+    }
+
+    // GirLive Bot — sunucu taraflı moderasyon (istemciye güvenilmez)
+    const moderation = await moderateMessage({ scope: 'voice_room', scopeId: roomId, userId: postUserId, text: content })
+    if (!moderation.allowed) {
+      return NextResponse.json(
+        {
+          error: moderation.message,
+          code: 'MODERATION_BLOCKED',
+          moderation: { verdict: moderation.verdict, severity: moderation.severity },
+        },
+        { status: 422 }
       )
     }
 
