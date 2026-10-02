@@ -74,7 +74,7 @@ export async function GET(
         }
 
         if (isActive) {
-          setTimeout(checkForUpdates, 1000)
+          setTimeout(checkForUpdates, 250)
         }
       }
 
