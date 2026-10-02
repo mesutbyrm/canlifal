@@ -68,7 +68,8 @@ export async function GET(
               id: true,
               name: true,
               role: true,
-              image: true
+              image: true,
+              level: true
             }
           }
         }
@@ -108,6 +109,7 @@ export async function GET(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
@@ -617,7 +619,8 @@ export async function POST(
               id: true,
               name: true,
               role: true,
-              image: true
+              image: true,
+              level: true
             }
           }
         }
@@ -653,6 +656,7 @@ export async function POST(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,

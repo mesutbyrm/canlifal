@@ -404,7 +404,22 @@ async function applyAction(a: {
     return
   }
 
-  // Canlı yayın: kick ve ban aynı sonucu verir (yayından çıkarma — StreamBan).
+  // Canlı yayın: `kick` izleyiciyi yayından ÇIKARIR ama yasaklamaz (yeniden girebilir);
+  // `ban` StreamBan yazar. İstemci `viewerKicked` olayını alınca yayından ayrılır.
+  if (action === 'kick') {
+    await prisma.videoStreamViewer.updateMany({
+      where: { streamId: scopeId, viewerId: userId, leftAt: null },
+      data: { leftAt: new Date() },
+    })
+    emitStreamEvent(scopeId, 'viewerKicked', {
+      type: 'viewerKicked',
+      streamId: scopeId,
+      userId,
+      reason,
+      moderator: BOT_NAME,
+    })
+    return
+  }
   if (action === 'mute') {
     await prisma.streamMutedViewer.upsert({
       where: { streamId_viewerId: { streamId: scopeId, viewerId: userId } },

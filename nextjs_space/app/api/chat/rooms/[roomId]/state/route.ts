@@ -68,7 +68,7 @@ async function handleState(
         nickname: true,
         lastSeen: true,
         seatIndex: true,
-        user: { select: { id: true, name: true, role: true, image: true } }
+        user: { select: { id: true, name: true, role: true, image: true, level: true } }
       }
     })
 
@@ -93,7 +93,7 @@ async function handleState(
     const receivedJetonMap = await getReceivedJetonTotals(roomId, activeUserIds)
     const globalAdminRoles = ['admin', 'moderator', 'site_manager']
 
-    const participants = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; seatIndex: number | null; user: { id: string; name: string; role: string; image: string | null } }) => {
+    const participants = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; seatIndex: number | null; user: { id: string; name: string; role: string; image: string | null; level?: number } }) => {
       const isGlobalAdmin = globalAdminRoles.includes(p.user.role)
       const chatRole = (roleMap.get(p.userId) as string | undefined) || (isGlobalAdmin ? 'superadmin' : null)
       const roleSymbol = chatRole ? (ROLE_SYMBOLS[chatRole as keyof typeof ROLE_SYMBOLS] || '') : ''
@@ -103,6 +103,7 @@ async function handleState(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen.toISOString(),
         seatIndex: typeof p.seatIndex === 'number' ? p.seatIndex : -1,
         micOn: micOnSet.has(p.userId),
