@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { applyGiftPkScore } from '@/lib/gift-pk-score'
+import { emitStreamEvent } from '@/lib/stream-events'
 
 /** PK sırasında aynı kullanıcının beğeni→puan dönüşümü için en kısa aralık. */
 const PK_LIKE_COOLDOWN_MS = 400
@@ -45,6 +46,23 @@ export async function POST(
       where: { id: params.streamId },
       data: { likeCount: { increment: count } },
       select: { likeCount: true }
+    })
+
+    // Beğeniyi yayındaki HERKESE anında yayınla. Eskiden yalnızca likeCount DB'ye
+    // yazılıyordu: diğer izleyiciler/yayıncı, kendileri beğeni yapıp yanıttaki
+    // toplamı alana dek bu beğenileri göremiyordu.
+    let likerId: string | null = null
+    try {
+      likerId = (await authenticateRequest(request))?.id ?? null
+    } catch {}
+    emitStreamEvent(params.streamId, 'like', {
+      type: 'like',
+      eventType: 'STREAM_LIKE',
+      streamId: params.streamId,
+      likeCount: stream.likeCount,
+      count,
+      userId: likerId,
+      timestamp: Date.now(),
     })
 
     // Aktif PK varsa beğeni, izleyicinin bulunduğu yayının tarafına PK puanı yazar

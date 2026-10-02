@@ -128,6 +128,27 @@ export async function applyGiftPkScore(params: {
 
     const side: 1 | 2 = isSide1 ? 1 : 2
 
+    // Skor DB'de güncellendi → önce iki tarafa yayınla; ledger yazımı (4 ek DB
+    // turu) izleyicilerin puanını geciktirmesin.
+    const payload = {
+      type: 'pk',
+      eventType: 'PK_SCORE',
+      action: 'score_update', // eski istemciler bu alanı okuyor
+      battleId: battle.id,
+      room1Id: battle.stream1Id,
+      room2Id: battle.stream2Id,
+      score1: updated.score1,
+      score2: updated.score2,
+      addedAmount: amount,
+      addedSide: isSide1 ? 'room1' : 'room2',
+      side,
+      contributorId: params.contributorId ?? null,
+      receiverId: params.receiverId ?? null,
+      source: params.source ?? 'gift',
+      timestamp: Date.now(),
+    }
+    emitPkToBothSides(battle, payload)
+
     // ── §7: Her skor değişikliği ledger'a yazılır (PkScore + PkGift) ──
     let scoreLogId: string | null = null
     try {
@@ -161,25 +182,6 @@ export async function applyGiftPkScore(params: {
     } catch (e) {
       console.error('[gift-pk-score] ledger write error:', e)
     }
-
-    const payload = {
-      type: 'pk',
-      eventType: 'PK_SCORE',
-      action: 'score_update', // eski istemciler bu alanı okuyor
-      battleId: battle.id,
-      room1Id: battle.stream1Id,
-      room2Id: battle.stream2Id,
-      score1: updated.score1,
-      score2: updated.score2,
-      addedAmount: amount,
-      addedSide: isSide1 ? 'room1' : 'room2',
-      side,
-      contributorId: params.contributorId ?? null,
-      receiverId: params.receiverId ?? null,
-      source: params.source ?? 'gift',
-      timestamp: Date.now(),
-    }
-    emitPkToBothSides(battle, payload)
 
     return {
       battleId: battle.id,

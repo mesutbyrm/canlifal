@@ -226,6 +226,40 @@ export async function POST(
 
     const [gift] = await prisma.$transaction(txOps)
 
+    // ── GERÇEK ZAMANLI YOL: PK skoru + hediye motoru, para akışı commit olur
+    // olmaz ve diğer (ledger/bildirim/duyuru) işlerden BAĞIMSIZ başlar. Eskiden
+    // bunlar ledger/aktivite/bildirim/duyuru işlerinin ve ek DB sorgusunun
+    // ARKASINDA bekliyordu → izleyicilerde hediye ve PK puanı geç görünüyordu.
+    const streamUserPromise = prisma.user.findUnique({
+      where: { id: stream.userId },
+      select: { name: true, username: true },
+    })
+    const pkPromise = applyGiftPkScore({
+      sideIds: [params.streamId, (stream as any)?.id, (stream as any)?.roomId],
+      amount: totalPrice,
+      contributorId: userId,
+      receiverId: stream.userId,
+      giftTypeId: giftType.id,
+      quantity,
+      source: 'gift',
+    })
+    const enginePromise = streamUserPromise
+      .then((streamUser) =>
+        processGiftSend({
+          context: 'live_stream',
+          contextId: params.streamId,
+          giftType,
+          sender: { id: userId as string, name: userName, image: userImage },
+          receiver: { id: stream.userId, name: streamUser?.name ?? streamUser?.username ?? null },
+          quantity,
+          coinAmount: senderExcluded ? 0 : totalPrice,
+        })
+      )
+      .catch((engErr) => {
+        console.error('Stream gift engine error (non-fatal):', engErr)
+        return null
+      })
+
     // ── Immutable ledger (fire-and-forget) ──
     if (!senderExcluded) {
       const siteAmount = totalPrice - ledgerRecipientAmount
@@ -290,23 +324,12 @@ export async function POST(
     }).catch(err => console.error('Stream gift notification error:', err))
 
     // Auto-create scrolling announcement (settings determine threshold)
-    const streamUser = await prisma.user.findUnique({ where: { id: stream.userId }, select: { name: true, username: true } })
+    const streamUser = await streamUserPromise
     createStreamGiftAnnouncement(
       userName || 'Kullanıcı', null || null,
       streamUser?.name || 'Kullanıcı', streamUser?.username || null,
       giftType.icon, giftType.name, totalPrice, giftType.id
     ).catch(err => console.error('Stream gift announcement error:', err))
-
-    // PK Battle: skor atfı tek kanonik yoldan (oda izolasyonu + süre kontrolü)
-    const pkUpdate = await applyGiftPkScore({
-      sideIds: [params.streamId, (stream as any)?.id, (stream as any)?.roomId],
-      amount: totalPrice,
-      contributorId: userId,
-      receiverId: stream.userId,
-      giftTypeId: giftType.id,
-      quantity,
-      source: 'gift',
-    })
 
     // Leaderboard skor: hediye alıcısına puan (canlı yayın)
     incrementLeaderboardScore('live_stream', stream.userId, totalPrice, 'gift_received', params.streamId).catch(() => {})
@@ -322,24 +345,8 @@ export async function POST(
     // NOT: Legacy `gift` SSE olayı motorun ALTINDA, yalnızca motor başarısız
     // olursa yedek olarak yayınlanır (çift animasyonu önlemek için).
 
-    // ── Gift Engine (additive) ──────────────────────────────────────────────
-    // Layer the professional engine on top: combo, per-stream FIFO queue,
-    // GiftHistory and the unified gift_received / gift_queue_updated events.
-    // Never throws; the money flow above is already committed.
-    let enginePayload: any = null
-    try {
-      enginePayload = await processGiftSend({
-        context: 'live_stream',
-        contextId: params.streamId,
-        giftType,
-        sender: { id: userId as string, name: userName, image: userImage },
-        receiver: { id: stream.userId, name: streamUser?.name ?? streamUser?.username ?? null },
-        quantity,
-        coinAmount: senderExcluded ? 0 : totalPrice,
-      })
-    } catch (engErr) {
-      console.error('Stream gift engine error (non-fatal):', engErr)
-    }
+    // Gift Engine + PK skoru yukarıda paralel başlatıldı; burada sonuçları topla.
+    const [pkUpdate, enginePayload] = await Promise.all([pkPromise, enginePromise])
 
     // Fallback: motor çalışmadıysa legacy `gift` SSE olayını yayınla
     if (!enginePayload) {

@@ -10,7 +10,7 @@ interface StreamEvent {
    */
   eventId: string
   timestamp: number
-  type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift' | 'pk' | 'guest' | 'gift_box' | 'viewerKicked'
+  type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift' | 'pk' | 'guest' | 'gift_box' | 'viewerKicked' | 'like'
   data: any
 }
 
