@@ -52,11 +52,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Update viewer's joinedAt as heartbeat (or re-join if leftAt was set)
-      await prisma.videoStreamViewer.upsert({
-        where: { streamId_viewerId: { streamId: stream.id, viewerId: authUser.id } },
-        update: { leftAt: null, joinedAt: new Date() },
-        create: { streamId: stream.id, viewerId: authUser.id }
+      // Heartbeat sadece MEVCUT ve aktif izleyici kaydını tazeler.
+      // Odaya katılım yalnızca join uçlarından yapılır; aksi halde gecikmiş/yarışan
+      // bir heartbeat kullanıcıyı hiç girmediği yayına ekleyebiliyordu.
+      await prisma.videoStreamViewer.updateMany({
+        where: { streamId: stream.id, viewerId: authUser.id, leftAt: null },
+        data: { joinedAt: new Date() }
       })
 
       // Auto-cleanup: mark viewers who haven't heartbeat within the presence TTL as left
@@ -91,21 +92,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Update chat presence
-      try {
-        await prisma.chatPresence.upsert({
-          where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-          update: { lastSeen: new Date() },
-          create: { roomId: room.id, userId: authUser.id, seatIndex: -1 }
-        })
-      } catch (e: any) {
-        if (e?.code === 'P2002') {
-          await prisma.chatPresence.update({
-            where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-            data: { lastSeen: new Date() }
-          })
-        }
-      }
+      // Heartbeat sadece MEVCUT varlık kaydını tazeler, yeni kayıt OLUŞTURMAZ.
+      // Odaya katılım yalnızca /api/live/join-room ve presence POST üzerinden olur.
+      await prisma.chatPresence.updateMany({
+        where: { roomId: room.id, userId: authUser.id },
+        data: { lastSeen: new Date() }
+      })
 
       // Update voice session ping if active
       await prisma.voiceSession.updateMany({

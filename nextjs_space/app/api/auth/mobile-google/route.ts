@@ -8,8 +8,9 @@ import { authLimiter } from '@/lib/rate-limiter'
 import { randomBytes } from 'crypto'
 import { logActivity } from '@/lib/activity-logger'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { resolveGoogleAudiences, maskClientId, isGoogleTransportError } from '@/lib/google-audience'
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+const googleClient = new OAuth2Client()
 
 function generateReferralCode(): string {
   return randomBytes(4).toString('hex').toUpperCase()
@@ -37,21 +38,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Google ID token gerekli' }, { status: 400 })
     }
 
+    // Kabul edilecek audience listesi (GOOGLE_CLIENT_IDS / GOOGLE_CLIENT_ID / GOOGLE_SERVER_CLIENT_ID)
+    const audiences = resolveGoogleAudiences()
+    if (audiences.length === 0) {
+      console.error(
+        '[mobile-google] GOOGLE_CLIENT_ID tanımlı değil — GOOGLE_CLIENT_IDS, GOOGLE_CLIENT_ID veya GOOGLE_SERVER_CLIENT_ID ortam değişkenlerinden en az biri ayarlanmalı.'
+      )
+      return NextResponse.json(
+        { error: 'Google giriş yapılandırması eksik', code: 'GOOGLE_CLIENT_ID_MISSING' },
+        { status: 500 }
+      )
+    }
+
     // Verify the Google ID token
     let ticket
     try {
       ticket = await googleClient.verifyIdToken({
         idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: audiences,
       })
-    } catch (e) {
-      console.error('Google ID token verification failed:', e)
+    } catch (e: any) {
+      if (isGoogleTransportError(e)) {
+        console.error('[mobile-google] Google anahtarları alınamadı (ağ hatası):', e?.message || e)
+        return NextResponse.json(
+          { error: 'Google doğrulama servisine ulaşılamıyor. Lütfen tekrar deneyin.', code: 'GOOGLE_UNAVAILABLE' },
+          { status: 503 }
+        )
+      }
+      console.error(
+        '[mobile-google] ID token doğrulanamadı:',
+        e?.message || e,
+        '| beklenen audience:',
+        audiences.map(maskClientId).join(', ')
+      )
       return NextResponse.json({ error: 'Geçersiz Google token' }, { status: 401 })
     }
 
     const payload = ticket.getPayload()
     if (!payload || !payload.email) {
       return NextResponse.json({ error: 'Google hesabından e-posta alınamadı' }, { status: 400 })
+    }
+
+    // E-posta doğrulanmamışsa mevcut hesaba bağlanmasına izin verme (hesap ele geçirme riski)
+    if (payload.email_verified !== true) {
+      console.warn('[mobile-google] email_verified=false, giriş reddedildi | aud:', maskClientId(String(payload.aud || '')))
+      return NextResponse.json(
+        { error: 'Google hesabınızın e-postası doğrulanmamış', code: 'EMAIL_NOT_VERIFIED' },
+        { status: 401 }
+      )
     }
 
     const { email, name, picture, sub: googleId } = payload
@@ -79,8 +113,28 @@ export async function POST(req: NextRequest) {
         birthDate: true,
         zodiacSign: true,
         referralCode: true,
+        isBanned: true,
+        banReason: true,
+        bannedUntil: true,
       },
     })
+
+    // Engelli hesap — token üretme
+    if (user?.isBanned) {
+      const stillBanned = !user.bannedUntil || new Date(user.bannedUntil) > new Date()
+      if (stillBanned) {
+        return NextResponse.json(
+          {
+            error: user.bannedUntil
+              ? 'Hesabınız geçici olarak askıya alındı' + (user.banReason ? ` — Sebep: ${user.banReason}` : '')
+              : 'Hesabınız askıya alındı' + (user.banReason ? ` — Sebep: ${user.banReason}` : ''),
+            code: 'ACCOUNT_BANNED',
+            bannedUntil: user.bannedUntil,
+          },
+          { status: 403 }
+        )
+      }
+    }
 
     let isNewUser = false
 
@@ -187,6 +241,7 @@ export async function POST(req: NextRequest) {
           credits: true, jetonBalance: true, cfcBalance: true, membership: true,
           membershipExpiresAt: true, preferredLanguage: true, level: true,
           bio: true, phone: true, birthDate: true, zodiacSign: true, referralCode: true,
+          isBanned: true, banReason: true, bannedUntil: true,
         },
       })
     } else {
