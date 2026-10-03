@@ -13,6 +13,8 @@ import crypto from 'crypto'
  */
 
 export const VERIFIER_KEYS_URL = 'https://www.gstatic.com/admob/reward/verifier-keys.json'
+// AdMob konsolundaki "URL'yi doğrula" testi bu ayrı (test) anahtarlarla imzalanır.
+export const TEST_VERIFIER_KEYS_URL = 'https://www.gstatic.com/admob/reward/verifier-keys-test.json'
 
 const KEY_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 saat
 const REFRESH_COOLDOWN_MS = 60 * 1000 // bilinmeyen key_id için en fazla dakikada bir yenile
@@ -24,9 +26,9 @@ type KeyCache = { fetchedAt: number; keys: Map<string, string> }
 let keyCache: KeyCache | null = null
 let lastRefreshAttemptAt = 0
 
-async function fetchVerifierKeys(): Promise<KeyCache | null> {
+async function fetchVerifierKeys(url: string = VERIFIER_KEYS_URL): Promise<KeyCache | null> {
   try {
-    const res = await fetch(VERIFIER_KEYS_URL, { cache: 'no-store' })
+    const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const json = (await res.json()) as { keys?: VerifierKey[] }
     const keys = new Map<string, string>()
@@ -76,6 +78,17 @@ export async function getVerifierKeyPem(keyId: string): Promise<string | null> {
   return keyCache?.keys.get(keyId) ?? null
 }
 
+let testKeyCache: KeyCache | null = null
+
+/** Test anahtarı (yalnız konsol doğrulama testi için); 24 saat önbelleklenir. */
+async function getTestVerifierKeyPem(keyId: string): Promise<string | null> {
+  if (!testKeyCache || Date.now() - testKeyCache.fetchedAt > KEY_CACHE_TTL_MS) {
+    const fresh = await fetchVerifierKeys(TEST_VERIFIER_KEYS_URL)
+    if (fresh) testKeyCache = fresh
+  }
+  return testKeyCache?.keys.get(keyId) ?? null
+}
+
 function base64UrlToBuffer(value: string): Buffer {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
@@ -115,6 +128,8 @@ export type SsvVerifyResult = {
   reason?: SsvFailureReason
   signedData?: string
   keyId?: string
+  /** Konsol doğrulama testi (test anahtarıyla imzalı): 200 dön, ASLA ödül verme. */
+  isTest?: boolean
 }
 
 /**
@@ -124,7 +139,12 @@ export async function verifyAdMobSsvQuery(rawQuery: string): Promise<SsvVerifyRe
   const parts = extractSignedContent(rawQuery)
   if (!parts) return { ok: false, reason: 'missing_signature' }
 
-  const pem = await getVerifierKeyPem(parts.keyId)
+  let pem = await getVerifierKeyPem(parts.keyId)
+  let isTest = false
+  if (!pem) {
+    pem = await getTestVerifierKeyPem(parts.keyId)
+    isTest = !!pem
+  }
   if (!pem) return { ok: false, reason: 'unknown_key' }
 
   try {
@@ -134,7 +154,7 @@ export async function verifyAdMobSsvQuery(rawQuery: string): Promise<SsvVerifyRe
       .verify(pem, base64UrlToBuffer(parts.signature))
 
     if (!verified) return { ok: false, reason: 'bad_signature' }
-    return { ok: true, signedData: parts.signedData, keyId: parts.keyId }
+    return { ok: true, signedData: parts.signedData, keyId: parts.keyId, isTest }
   } catch {
     return { ok: false, reason: 'bad_signature' }
   }

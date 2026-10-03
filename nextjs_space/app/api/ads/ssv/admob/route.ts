@@ -32,6 +32,9 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Forbidden', { status: 403 })
   }
 
+  // Konsol "URL'yi doğrula" testi: kabul et, ödül verme, kayıt yazma.
+  if (verification.isTest) return new NextResponse('OK', { status: 200 })
+
   try {
     const transactionId = q.get('transaction_id')
     if (!transactionId) return new NextResponse('OK', { status: 200 })
