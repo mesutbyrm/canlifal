@@ -5899,3 +5899,19 @@ model UserModerationAction {
   @@index([userId, createdAt])
   @@map("user_moderation_actions")
 }
+
+
+model RealtimeEvent {
+  id        String   @id @default(cuid())
+  channel   String // chat | session | teller | stream
+  scope     String // roomId / sessionId / tellerId / streamId
+  type      String
+  eventId   String
+  payload   String   @db.Text
+  originId  String // olayi yayimlayan sunucu ornegi
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([channel, scope, createdAt])
+  @@map("realtime_events")
+}
