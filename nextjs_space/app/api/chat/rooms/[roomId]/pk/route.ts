@@ -267,6 +267,7 @@ export async function POST(
 
       // Emit PK event to both rooms
       const pkEventData = {
+        type: 'pk',
         battleId: battle.id,
         action: 'created',
         room1Id: roomId,
@@ -279,8 +280,8 @@ export async function POST(
         expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString(),
         timeoutSeconds: PK_TIMEOUT_MS / 1000,
       }
-      emitChatEvent(roomId, 'pk', pkEventData)
-      emitChatEvent(targetRoomId, 'pk', pkEventData)
+      // Ortak yayıncı: karışık oda↔yayın PK'sında yayın veri yolunu dinleyen taraf da daveti alır.
+      emitPkToBothSides({ stream1Id: roomId, stream2Id: targetRoomId }, pkEventData)
 
       // Additive: dedicated pk_invite / pk_requested room_event for the opponent room owner popup
       try {

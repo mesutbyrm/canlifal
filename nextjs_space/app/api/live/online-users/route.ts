@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getCached, redisCache, CACHE_TTL } from '@/lib/cache'
+import { presenceCutoff } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // ── Voice room presences ──
-      const presenceTimeout = new Date(Date.now() - 300000)
+      const presenceTimeout = presenceCutoff()
       const [presences, count] = await Promise.all([
         prisma.chatPresence.findMany({
           where: { roomId, lastSeen: { gte: presenceTimeout } },

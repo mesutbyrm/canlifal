@@ -36,8 +36,12 @@ const WEBHOOK_KEY = process.env.TRTC_WEBHOOK_KEY || ''
 // ── Signature verification ──────────────────────────────────────────
 function verifySignature(rawBody: string, signHeader: string | null): boolean {
   if (!WEBHOOK_KEY) {
-    // No key configured → skip verification (dev mode)
-    console.warn('[TRTC-Webhook] TRTC_WEBHOOK_KEY not set, skipping signature check')
+    // Üretimde anahtarsız webhook kabul edilmez; yalnızca geliştirmede atlanır.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[TRTC-Webhook] TRTC_WEBHOOK_KEY not set in production, rejecting request')
+      return false
+    }
+    console.warn('[TRTC-Webhook] TRTC_WEBHOOK_KEY not set, skipping signature check (dev only)')
     return true
   }
   if (!signHeader) return false

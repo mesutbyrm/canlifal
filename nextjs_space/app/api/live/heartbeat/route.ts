@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
+import { presenceCutoff, PRESENCE_TTL_MS } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,8 +59,8 @@ export async function POST(request: NextRequest) {
         create: { streamId: stream.id, viewerId: authUser.id }
       })
 
-      // Auto-cleanup: mark viewers who haven't heartbeat in 60s as left
-      const sixtySecondsAgo = new Date(Date.now() - 60000)
+      // Auto-cleanup: mark viewers who haven't heartbeat within the presence TTL as left
+      const sixtySecondsAgo = new Date(Date.now() - PRESENCE_TTL_MS)
       const staleResult = await prisma.videoStreamViewer.updateMany({
         where: {
           streamId: stream.id,
@@ -112,8 +113,8 @@ export async function POST(request: NextRequest) {
         data: { lastPing: new Date() }
       })
 
-      // Auto-cleanup stale voice sessions (>60s no ping)
-      const sixtySecondsAgo = new Date(Date.now() - 60000)
+      // Auto-cleanup stale voice sessions (presence TTL boyunca ping gelmeyenler)
+      const sixtySecondsAgo = new Date(Date.now() - PRESENCE_TTL_MS)
       const staleVoice = await prisma.voiceSession.updateMany({
         where: {
           roomId: room.id,
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       staleRemoved = staleVoice.count
 
       // Count active presences
-      const presenceTimeout = new Date(Date.now() - 300000) // 5 min window
+      const presenceTimeout = presenceCutoff()
       onlineCount = await prisma.chatPresence.count({
         where: { roomId: room.id, lastSeen: { gte: presenceTimeout } }
       })

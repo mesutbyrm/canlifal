@@ -5,6 +5,8 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { emitChatEvent } from '@/lib/chat-events'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
+import { emitPkToBothSides } from '@/lib/pk-state'
+import { emitPkInvite } from '@/lib/voice-room-events'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -213,10 +215,15 @@ export async function POST(request: NextRequest) {
 
       // Emit PK event
       const pkData = { battleId: battle.id, action: 'created', room1Id: roomId, room2Id: targetRoomId, user1Id: authUser.id, user2Id: targetOwnerId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
-      emitChatEvent(roomId, 'pk', pkData)
-      emitChatEvent(targetRoomId, 'pk', pkData)
-      emitStreamEvent(roomId, 'pk', { type: 'pk', ...pkData })
-      emitStreamEvent(targetRoomId, 'pk', { type: 'pk', ...pkData })
+      // Davet adımı da kabul/iptal/bitiş adımlarıyla aynı ortak yayıncıyı kullanır:
+      // böylece oda↔oda, yayın↔yayın ve karışık oda↔yayın PK'sında her iki veri yolu da beslenir.
+      emitPkToBothSides({ stream1Id: roomId, stream2Id: targetRoomId }, { type: 'pk', ...pkData })
+      try {
+        emitPkInvite(targetRoomId, { ...battle, ...pkData }, {
+          userId: authUser.id,
+          userName: challenger?.name || undefined,
+        })
+      } catch (e) { console.error('PK invite room_event emit error:', e) }
 
       return NextResponse.json({ success: true, data: { id: battle.id, status: 'pending', room1Id: roomId, room2Id: targetRoomId, duration: battle.duration } })
     }

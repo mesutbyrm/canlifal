@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { presenceCutoff } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 
@@ -135,7 +136,7 @@ export async function GET(request: NextRequest) {
       totalVoice = voiceCount
 
       // Get online counts for voice rooms
-      const presenceTimeout = new Date(Date.now() - 300000)
+      const presenceTimeout = presenceCutoff()
       const voiceRoomIds = chatRooms.map((r: any) => r.id)
       const onlineCounts = voiceRoomIds.length > 0
         ? await prisma.chatPresence.groupBy({

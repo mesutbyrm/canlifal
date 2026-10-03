@@ -8,6 +8,7 @@ import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { expirePendingPK, expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { emitPkInvite } from '@/lib/voice-room-events'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -241,8 +242,14 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error('PK invite push error:', err))
 
       const pkData = { type: 'pk', battleId: battle.id, action: 'created', room1Id: streamId, room2Id: targetStreamId, user1Id: currentUserId, user2Id: targetStream.userId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
-      emitStreamEvent(streamId, 'pk', pkData)
-      emitStreamEvent(targetStreamId, 'pk', pkData)
+      // Ortak yayıncı: karışık oda↔yayın PK'sında sohbet veri yolunu dinleyen taraf da daveti alır.
+      emitPkToBothSides({ stream1Id: streamId, stream2Id: targetStreamId }, pkData)
+      try {
+        emitPkInvite(targetStreamId, { ...battle, ...pkData }, {
+          userId: currentUserId,
+          userName: challenger?.name || undefined,
+        })
+      } catch (e) { console.error('PK invite room_event emit error:', e) }
 
       recordAudit({ actorId: currentUserId, action: 'pk.create', targetType: 'pk_battle', targetId: battle.id, metadata: { streamId, targetStreamId, duration: battle.duration }, ip: getAuditIp(req) }).catch(() => {})
       return NextResponse.json(battle)

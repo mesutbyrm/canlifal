@@ -11,6 +11,7 @@ import { resolveRoomSeatCount, buildSeatLayout } from '@/lib/voice-room-seats'
 import { withTiming } from '@/lib/perf'
 import { buildDjPayload } from '@/lib/chat-dj-events'
 import { expireAllStalePKs } from '@/lib/pk-expiry'
+import { presenceCutoff } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,7 @@ async function handleState(
       )
     }
 
-    const presenceTimeout = new Date(Date.now() - 300000)
+    const presenceTimeout = presenceCutoff()
     const presences = await prisma.chatPresence.findMany({
       where: { roomId, lastSeen: { gte: presenceTimeout } },
       select: {

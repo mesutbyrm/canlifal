@@ -6,6 +6,8 @@ import prisma from '@/lib/db'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getLatestDjEvent, buildDjPayload } from '@/lib/chat-dj-events'
 import { getChatEventsSince, getTypingUsers } from '@/lib/chat-events'
+import { getPkSnapshotEvent } from '@/lib/pk-snapshot'
+import { presenceCutoff } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -74,6 +76,12 @@ export async function GET(
 
       // Send initial connection event
       send(`data: ${JSON.stringify({ type: 'connected', roomId })}\n\n`)
+
+      // Bekleyen/aktif PK anlık görüntüsü: bağlantıdan hemen önce oluşmuş bir
+      // davet olay veri yoluna takılmaz, bu yüzden bir kez doğrudan gönderilir.
+      getPkSnapshotEvent(roomId)
+        .then(pkSnap => { if (pkSnap) send(`data: ${JSON.stringify(pkSnap)}\n\n`) })
+        .catch(e => console.error('[SSE] pk snapshot error:', e))
 
       // DJ state will be sent on the first poll cycle (2s) — no blocking initial payload
 
@@ -156,7 +164,7 @@ export async function GET(
             const presences = await prisma.chatPresence.findMany({
               where: {
                 roomId,
-                lastSeen: { gte: new Date(Date.now() - 300000) }
+                lastSeen: { gte: presenceCutoff() }
               },
               include: {
                 user: { select: { id: true, name: true, role: true, image: true } }

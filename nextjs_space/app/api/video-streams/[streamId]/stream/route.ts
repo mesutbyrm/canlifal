@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getStreamEventsSince } from '@/lib/stream-events'
 import { resumeCursor, newestTimestamp, sseIdLine } from '@/lib/sse-resume'
+import { getPkSnapshotEvent } from '@/lib/pk-snapshot'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -54,6 +55,16 @@ export async function GET(
         })}\n\n`))
       } catch (e) {
         console.error('[Stream SSE] Initial viewer count error:', e)
+      }
+
+      // Bekleyen/aktif PK anlık görüntüsü (bağlantı anındaki durum bir kez gönderilir)
+      try {
+        const pkSnap = await getPkSnapshotEvent(streamId)
+        if (pkSnap && isActive) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(pkSnap)}\n\n`))
+        }
+      } catch (e) {
+        console.error('[Stream SSE] pk snapshot error:', e)
       }
 
       const checkForUpdates = async () => {

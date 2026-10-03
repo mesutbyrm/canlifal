@@ -15,6 +15,7 @@ import { endPksForSide } from '@/lib/pk-state'
 import { closeGiftBoxesFor } from '@/lib/gift-box'
 import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
 import { awardVipXpSafe } from '@/lib/vip-xp'
+import { presenceCutoff } from '@/lib/presence'
 
 /** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
 async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
@@ -39,7 +40,7 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params
-    const presenceTimeout = new Date(Date.now() - 300000)
+    const presenceTimeout = presenceCutoff()
 
     // Run presences + room status in parallel
     const [presences, room] = await Promise.all([
@@ -362,7 +363,7 @@ export async function POST(
       }
 
       const maxUsers = await getMaxUsersForRoomType(roomType)
-      const presenceTimeout = new Date(Date.now() - 300000)
+      const presenceTimeout = presenceCutoff()
       const activeCount = await prisma.chatPresence.count({
         where: { roomId, lastSeen: { gte: presenceTimeout } }
       })
@@ -491,7 +492,7 @@ export async function POST(
     if (isNewJoin) {
       try {
         await prisma.chatPresence.updateMany({
-          where: { userId, roomId: { not: roomId }, lastSeen: { gte: new Date(Date.now() - 300000) } },
+          where: { userId, roomId: { not: roomId }, lastSeen: { gte: presenceCutoff() } },
           data: { lastSeen: new Date(0), seatIndex: -1 }
         })
         await prisma.voiceSession.updateMany({
@@ -592,7 +593,7 @@ export async function POST(
     }
 
     // Return updated active users
-    const presenceTimeout = new Date(Date.now() - 300000)
+    const presenceTimeout = presenceCutoff()
     const [presences, room] = await Promise.all([
       prisma.chatPresence.findMany({
         where: {
@@ -752,7 +753,7 @@ export async function DELETE(
     let onlineCount = 0
     try {
       onlineCount = await prisma.chatPresence.count({
-        where: { roomId, lastSeen: { gte: new Date(Date.now() - 300000) } }
+        where: { roomId, lastSeen: { gte: presenceCutoff() } }
       })
     } catch {}
 

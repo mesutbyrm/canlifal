@@ -4,7 +4,19 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback-secret'
+/**
+ * Üretimde tahmin edilebilir bir yedek anahtar kullanılmaz: anahtar tanımsızsa
+ * imzalama/doğrulama hata verir (modül yüklenirken değil, kullanım anında —
+ * böylece derleme kırılmaz). Geliştirmede eskisi gibi yerel bir yedek kullanılır.
+ */
+function getJwtSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET
+  if (secret) return secret
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEXTAUTH_SECRET is not configured; refusing to sign/verify mobile tokens')
+  }
+  return 'dev-only-insecure-secret'
+}
 const ACCESS_TOKEN_EXPIRY = '7d'   // 7 gün
 const REFRESH_TOKEN_EXPIRY = '30d' // 30 gün
 
@@ -32,12 +44,12 @@ export interface AuthenticatedUser {
 export function generateMobileTokens(user: { id: string; email: string; role: string }) {
   const accessToken = jwt.sign(
     { userId: user.id, email: user.email, role: user.role, type: 'access' } as MobileTokenPayload,
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   )
   const refreshToken = jwt.sign(
     { userId: user.id, email: user.email, role: user.role, type: 'refresh' } as MobileTokenPayload,
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: REFRESH_TOKEN_EXPIRY }
   )
   return { accessToken, refreshToken }
@@ -48,7 +60,7 @@ export function generateMobileTokens(user: { id: string; email: string; role: st
  */
 export function verifyMobileToken(token: string): MobileTokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as MobileTokenPayload
+    const decoded = jwt.verify(token, getJwtSecret()) as MobileTokenPayload
     return decoded
   } catch {
     return null

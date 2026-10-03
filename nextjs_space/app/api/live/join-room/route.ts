@@ -7,6 +7,7 @@ import { resolveRoomSeatCount, findFirstFreeSeatFor, type SeatUserContext } from
 import { ROLE_HIERARCHY, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getCachedChatRoom } from '@/lib/cache'
 import { withTiming } from '@/lib/perf'
+import { presenceCutoff } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 
@@ -298,7 +299,7 @@ async function handleJoinRoom(request: NextRequest) {
       }
 
       // Active presences
-      const presenceTimeout = new Date(Date.now() - 300000)
+      const presenceTimeout = presenceCutoff()
       const presences = await prisma.chatPresence.findMany({
         where: { roomId: room.id, lastSeen: { gte: presenceTimeout } },
         select: {
