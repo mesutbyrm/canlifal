@@ -4,7 +4,7 @@
 #   BASE_URL=http://localhost:3000 bash scripts/acceptance-tests/admob-ssv-http.sh
 #
 # NOT: Geçerli imza testi yalnızca Google'ın özel anahtarıyla mümkün olduğundan
-# burada YALNIZCA imzasız yoklama (200) ve geçersiz imza (403) kontrol edilir.
+# burada YALNIZCA imzasız yoklama (200) ve geçersiz imza (200, yan etkisiz) kontrol edilir.
 # İmza mantığının kendisi scripts/acceptance-tests/admob-ssv.ts ile test edilir.
 # Bu betik VERİTABANINA YAZMAZ: iki senaryo da ödül yoluna girmez.
 set -u
@@ -18,9 +18,9 @@ expect() { # name url expected
 }
 
 expect "imzasız yoklama 200 (AdMob 'URL'yi doğrula')" "$EP" 200
-expect "geçersiz imza 403" \
-  "$EP?ad_network=1&ad_unit=8698346072&reward_amount=5&reward_item=credits&timestamp=1759500000000&transaction_id=bogus-tx-$RANDOM&user_id=bogus-user&signature=Zm9vYmFy&key_id=3335741209" 403
-expect "bilinmeyen key_id 403" \
-  "$EP?ad_network=1&ad_unit=8698346072&reward_amount=5&reward_item=credits&timestamp=1759500000000&transaction_id=bogus-tx-$RANDOM&user_id=bogus-user&signature=Zm9vYmFy&key_id=0" 403
+expect "geçersiz imza 200 (yan etkisiz)" \
+  "$EP?ad_network=1&ad_unit=8698346072&reward_amount=5&reward_item=credits&timestamp=1759500000000&transaction_id=bogus-tx-$RANDOM&user_id=bogus-user&signature=Zm9vYmFy&key_id=3335741209" 200
+expect "bilinmeyen key_id 200 (yan etkisiz)" \
+  "$EP?ad_network=1&ad_unit=8698346072&reward_amount=5&reward_item=credits&timestamp=1759500000000&transaction_id=bogus-tx-$RANDOM&user_id=bogus-user&signature=Zm9vYmFy&key_id=0" 200
 
 exit $fail

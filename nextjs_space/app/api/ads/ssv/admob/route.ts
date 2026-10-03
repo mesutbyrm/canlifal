@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic'
  * Herkese açıktır (oturum/JWT yok); yetki imza doğrulamasıyla sağlanır.
  *
  * Davranış:
- *  - İmza doğrulanamazsa 403.
+ *  - İmza doğrulanamazsa ödül VERİLMEZ ve kayıt yazılmaz; yine de 200 döner
+ *    (AdMob konsolundaki "URL'yi doğrula" testi 200 bekler; yetki yalnız doğrulanmış imzada).
  *  - İmza geçerliyse her durumda 200 (tekrar eden işlem, bilinmeyen kullanıcı,
  *    limit dolu, iç hata) — AdMob 200 dışı yanıtta isteği tekrar dener.
  *  - Ödül miktarı sunucudaki kurallardan gelir; reward_amount'a güvenilmez.
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
   const verification = await verifyAdMobSsvQuery(url.search)
   if (!verification.ok) {
     console.warn('AdMob SSV: doğrulama başarısız', verification.reason)
-    return new NextResponse('Forbidden', { status: 403 })
+    // Yan etki yok: ödül yok, veritabanı yazımı yok. 200, konsol testini geçirir.
+    return new NextResponse('OK', { status: 200 })
   }
 
   // Konsol "URL'yi doğrula" testi: kabul et, ödül verme, kayıt yazma.
