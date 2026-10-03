@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
 
           // 2. DB fallback: check pending sessions every 6 seconds
           pendingCheckCount++
-          if (pendingCheckCount >= 2) { // 2 * 3s = 6s
+          if (pendingCheckCount >= 2) { // 2 * 3s = 6s (çok-örnek dağıtımda bellek içi olay kaçarsa)
             pendingCheckCount = 0
             const pendingSessions = await prisma.liveSession.findMany({
               where: { tellerId, status: 'pending' },

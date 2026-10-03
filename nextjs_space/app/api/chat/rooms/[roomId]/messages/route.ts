@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { moderateMessage } from '@/lib/girlive-bot'
 import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { withCachePolicy } from '@/lib/perf'
 
@@ -22,6 +24,9 @@ export async function GET(
     const currentUserName = mobileUser?.name || session?.user?.name
     
     const { roomId } = await params
+    // Şifreli VIP oda: kapıdan geçmemiş kullanıcı mesajları OKUYAMAZ
+    const gateDenied = await guardGatedRoom(roomId, { id: currentUserId, role: mobileUser?.role || (session?.user as any)?.role })
+    if (gateDenied) return gateDenied
     const { searchParams } = new URL(request.url)
     const after = searchParams.get('after') // For polling new messages
     const limit = parseInt(searchParams.get('limit') || '100')
@@ -194,6 +199,9 @@ export async function POST(
     if (rateLimited) return rateLimited
 
     const { roomId } = await params
+    // Şifreli VIP oda: kapıdan geçmemiş kullanıcı YAZAMAZ (presence'ı da oluşturamaz)
+    const gateDeniedPost = await guardGatedRoom(roomId, { id: postUserId, role: mobileUserPost?.role || (sessionPost?.user as any)?.role })
+    if (gateDeniedPost) return gateDeniedPost
     const { content, nickname } = await request.json()
 
     // Check if user can speak
@@ -233,6 +241,19 @@ export async function POST(
       return NextResponse.json(
         { error: 'Room not found' },
         { status: 404 }
+      )
+    }
+
+    // GirLive Bot — sunucu taraflı moderasyon (istemciye güvenilmez)
+    const moderation = await moderateMessage({ scope: 'voice_room', scopeId: roomId, userId: postUserId, text: content })
+    if (!moderation.allowed) {
+      return NextResponse.json(
+        {
+          error: moderation.message,
+          code: 'MODERATION_BLOCKED',
+          moderation: { verdict: moderation.verdict, severity: moderation.severity },
+        },
+        { status: 422 }
       )
     }
 

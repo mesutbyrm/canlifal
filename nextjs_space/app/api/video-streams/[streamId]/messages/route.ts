@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { moderateMessage } from '@/lib/girlive-bot'
 import { emitStreamEvent } from '@/lib/stream-events'
 
 export const dynamic = 'force-dynamic'
@@ -107,6 +108,15 @@ export async function POST(
     }
     if (stream.status !== 'live') {
       return NextResponse.json({ error: 'Yayın sona ermiş' }, { status: 400 })
+    }
+
+    // GirLive Bot — sunucu taraflı moderasyon
+    const moderation = await moderateMessage({ scope: 'live_stream', scopeId: params.streamId, userId: authUser.id, text: content })
+    if (!moderation.allowed) {
+      return NextResponse.json(
+        { error: moderation.message, code: 'MODERATION_BLOCKED', moderation: { verdict: moderation.verdict, severity: moderation.severity } },
+        { status: 422 }
+      )
     }
 
     // Create the message using existing VideoStreamComment model

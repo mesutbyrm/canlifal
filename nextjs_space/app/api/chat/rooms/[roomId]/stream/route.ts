@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getLatestDjEvent, buildDjPayload } from '@/lib/chat-dj-events'
 import { getChatEventsSince, getTypingUsers } from '@/lib/chat-events'
@@ -22,6 +23,10 @@ export async function GET(
   const session = !mobileUser ? await getServerSession(authOptions) : null
   const currentUserId = mobileUser?.id || session?.user?.id
   const { roomId } = await params
+
+  // Şifreli VIP oda: kapıdan geçmemiş kullanıcı canlı akışı (SSE) DİNLEYEMEZ
+  const gateDenied = await guardGatedRoom(roomId, { id: currentUserId, role: mobileUser?.role || (session?.user as any)?.role })
+  if (gateDenied) return gateDenied
 
   console.log(`[SSE] Stream opened roomId=${roomId} userId=${currentUserId || 'anonymous'} source=${mobileUser ? 'mobile' : 'web'}`)
 

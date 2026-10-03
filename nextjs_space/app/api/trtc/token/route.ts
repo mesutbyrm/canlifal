@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Şifreli VIP oda: kapıdan geçmemiş kullanıcıya ses kanalı jetonu VERİLMEZ.
+    // (TRTC UserSig odaya özel değildir; oda anahtarını bilen biri jeton alıp
+    // doğrudan ses kanalına girebilirdi. Presence'sız istekler burada durur.)
+    const gateDenied = await guardGatedRoom(String(roomId).replace(/^voice_room_/, ''), authUser)
+    if (gateDenied) return gateDenied
 
     const sdkAppId = parseInt(
       process.env.TRTC_SDK_APP_ID ||

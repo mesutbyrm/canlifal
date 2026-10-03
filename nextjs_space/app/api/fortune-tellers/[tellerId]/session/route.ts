@@ -6,6 +6,7 @@ import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guar
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
+import { emitTellerEvent } from '@/lib/room-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,12 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { fortuneType, duration = 10 } = body; // Default 10 minutes
+    const { fortuneType } = body;
+    // Sözleşme `maxMinutes` der (mobil); web `duration` gönderir. Varsayılan 10 dk.
+    const rawDuration = Number(body.maxMinutes ?? body.duration ?? 10);
+    const duration = Number.isFinite(rawDuration)
+      ? Math.min(60, Math.max(1, Math.round(rawDuration)))
+      : 10;
 
     // Get teller
     const teller = await prisma.liveFortuneTeller.findUnique({
@@ -94,7 +100,18 @@ export async function POST(
 
     const ftName = fortuneTypeNames[fortuneType || 'general'] || fortuneTypeNames['general'];
     
-    await createNotificationWithPush({
+    // Falcının SSE akışına anında düşür (bildirim/push'u beklemeden).
+    emitTellerEvent(teller.id, 'session_request', {
+      sessionId: liveSession.id,
+      userId: authUser.id,
+      userName: fullUser?.name,
+      fortuneType: fortuneType || 'general',
+      duration,
+      creditsCharged: isStaff ? 0 : totalCost,
+      createdAt: liveSession.createdAt
+    });
+
+    void createNotificationWithPush({
       userId: teller.userId,
       type: 'session_request',
       title: 'Yeni Randevu Talebi',
@@ -108,7 +125,7 @@ export async function POST(
         creditsCharged: totalCost,
         duration: duration
       })
-    });
+    }).catch((e) => console.error('[tellerId/session] notify error:', e));
 
     return NextResponse.json({ 
       success: true, 

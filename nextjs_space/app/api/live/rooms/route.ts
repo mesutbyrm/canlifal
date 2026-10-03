@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
             bannerImage: true,
             ownerId: true,
             roomType: true,
+            password: true,
             tags: true,
             owner: { select: { id: true, name: true, image: true } }
           }
@@ -164,6 +165,8 @@ export async function GET(request: NextRequest) {
           backgroundImage: r.backgroundImage || '',
           bannerImage: r.bannerImage || '',
           roomAccessType: r.roomType || 'FREE',
+          // Şifre yalnızca VIP odalarda; hash/düz metin ASLA istemciye gitmez.
+          hasPassword: r.roomType === 'VIP' && !!r.password,
           tags: r.tags ? r.tags.split(',').map((t: string) => t.trim()) : [],
           viewerCount: ocMap.get(r.id) || 0,
           likeCount: 0,

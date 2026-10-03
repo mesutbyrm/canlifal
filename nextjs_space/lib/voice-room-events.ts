@@ -32,6 +32,9 @@ export type RoomEventKind =
   // PK daveti
   | 'pk_invite'
   | 'pk_requested'
+  // VIP şifreli odaya giriş isteği (oda sahibine)
+  | 'join_request'
+  | 'join_request_resolved'
 
 export interface RoomEventPayload {
   event: RoomEventKind
@@ -136,6 +139,36 @@ export function emitVoiceRequest(
   const base = { userId: user.userId, userName: user.userName, avatar: user.avatar ?? null, ...extra }
   emit(roomId, { event: 'voice_request', name: user.userName, image: user.avatar ?? null, ...base })
   emit(roomId, { event: 'hand_raised', name: user.userName, image: user.avatar ?? null, ...base })
+}
+
+/** Şifreli VIP odaya giriş isteği oluştu — oda sahibine popup için. */
+export function emitJoinRequest(
+  roomId: string,
+  req: { requestId: string; userId: string; userName: string; username?: string | null; avatar?: string | null }
+) {
+  emit(roomId, {
+    event: 'join_request',
+    requestId: req.requestId,
+    userId: req.userId,
+    userName: req.userName,
+    name: req.username || req.userName,
+    avatar: req.avatar ?? null,
+    image: req.avatar ?? null,
+  })
+}
+
+/** İstek sonuçlandı — diğer yöneticilerin popup'ı kapansın. */
+export function emitJoinRequestResolved(
+  roomId: string,
+  req: { requestId: string; userId: string; status: 'accepted' | 'rejected'; handledBy: string }
+) {
+  emit(roomId, {
+    event: 'join_request_resolved',
+    requestId: req.requestId,
+    userId: req.userId,
+    reason: req.status,
+    handledBy: req.handledBy,
+  })
 }
 
 export function emitVoiceRequestCancelled(roomId: string, user: SpeakRequestUser, requestId?: string) {
