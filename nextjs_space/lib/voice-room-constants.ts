@@ -12,13 +12,14 @@ export const SEAT_COUNT = 11
 export const MAX_SEAT_INDEX = SEAT_COUNT - 1
 
 // How long (ms) a seat stays reserved for its occupant after their last
-// heartbeat. Clients (web + Flutter) MUST send a presence heartbeat every
-// ~15s. If two heartbeats are missed (>45s) the occupant is treated as gone
-// and their seat is freed immediately — this fixes the "seat looks empty but
-// I can't sit" ghost-seat bug when a user closes the app / loses network
-// without a clean leave. This is intentionally MUCH shorter than the 5-minute
-// presence-list window so seats free up fast.
-export const SEAT_STALE_MS = 45000
+// heartbeat. Gerçek istemci aralıkları: Flutter 10s, web 12s. 90s eşiği ile
+// üst üste ~7 atış kaçırılmadan koltuk düşmez; tek yavaş/başarısız istek
+// kullanıcıyı koltuktan atmaz (eski 45s eşiğinde web'in 20s aralığıyla
+// yalnızca 2 atış sığıyordu ve sık sık koltuktan düşme yaşanıyordu).
+// Temiz ayrılmada koltuk zaten ANINDA boşaltılıyor (leave-room / presence
+// DELETE → seatIndex -1), bu yüzden bu eşik sadece çökme/ağ kopması için
+// bir emniyet ağı. Yine de varlık listesi penceresinden bağımsızdır.
+export const SEAT_STALE_MS = 90000
 
 /**
  * Threshold Date for seat-occupancy queries: a seat is only considered taken

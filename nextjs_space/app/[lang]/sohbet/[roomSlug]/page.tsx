@@ -663,7 +663,7 @@ export default function ChatRoomPage() {
         intervalsRef.push(
           setInterval(fetchMessages, 5000),       // was 3s
           setInterval(fetchActiveUsers, 15000),   // was 5s
-          setInterval(updatePresence, 20000),     // was 10s
+          setInterval(updatePresence, 12000),     // koltuk heartbeat'i: SEAT_STALE_MS ile uyumlu
           setInterval(fetchAllRooms, 90000),      // was 60s
           setInterval(fetchVoiceUsers, 15000),    // was 5s
           setInterval(fetchTypingUsers, 8000),    // was 2s
