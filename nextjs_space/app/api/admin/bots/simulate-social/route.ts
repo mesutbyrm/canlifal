@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { POST_COMMENTS, STREAM_COMMENTS, STREAM_EMOJIS } from '@/lib/bot-social-messages'
 import type { Personality } from '@/lib/bot-messages'
@@ -36,7 +35,7 @@ export async function POST(req: NextRequest) {
     const isInternalCron = cronSecret === process.env.BOT_CRON_SECRET
 
     if (!isInternalCron) {
-      const session = await getServerSession(authOptions)
+      const session = await getStaffSession()
       if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
         return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
       }
@@ -270,7 +269,7 @@ export async function POST(req: NextRequest) {
 // GET: Get social simulation status
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

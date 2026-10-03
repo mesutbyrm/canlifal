@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { getStaffSession } from '@/lib/admin-auth'
 
 const ADMIN_ROLES = ['admin', 'yonetici', 'moderator', 'finans']
 
@@ -11,7 +12,8 @@ function db(): any {
 }
 
 async function isAdmin() {
-  const session = await getServerSession(authOptions)
+  // Çift kimlik: web çerezi VEYA mobil Bearer JWT
+  const session = await getStaffSession()
   const role = (session?.user as any)?.role
   return !!session?.user && ADMIN_ROLES.includes(role)
 }

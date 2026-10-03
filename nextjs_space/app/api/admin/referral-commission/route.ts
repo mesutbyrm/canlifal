@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
@@ -16,7 +15,7 @@ function startOfMonth() {
 /** Komisyon defteri listesi + istatistikler */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     const role = (session?.user as any)?.role
     if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })

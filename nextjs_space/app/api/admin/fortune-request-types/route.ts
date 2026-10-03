@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
@@ -32,7 +31,7 @@ export async function GET() {
 // POST - Create a new fortune request type (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Update a fortune request type (admin only)
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -119,7 +118,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete a fortune request type (admin only)
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

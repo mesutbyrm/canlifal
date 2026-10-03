@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { recordLedger } from '@/lib/ledger'
 import { recordAudit } from '@/lib/audit-log'
@@ -12,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     
     if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.jeton.adjust', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json(

@@ -3,8 +3,7 @@
  * Additive: mevcut kozmetik admin akislarina dokunmaz.
  */
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import {
   ANIMATION_CATEGORIES,
   ANIMATION_TYPES,
@@ -27,7 +26,8 @@ export type AnimationAdminAuth =
   | { ok: false; userId: null; role: null; response: NextResponse }
 
 export async function requireAnimationAdmin(full = false): Promise<AnimationAdminAuth> {
-  const session = await getServerSession(authOptions)
+  // Çift kimlik: web çerezi VEYA mobil Bearer JWT
+  const session = await getStaffSession()
   const user: any = session?.user
   const role = user?.role as string | undefined
   const allowed = full ? (ANIMATION_FULL_ADMIN_ROLES as readonly string[]) : (ANIMATION_ADMIN_ROLES as readonly string[])

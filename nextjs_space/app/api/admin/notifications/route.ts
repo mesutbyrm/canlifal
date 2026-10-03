@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { sendNotification, getAppStats, getNotificationDetails, cancelNotification } from '@/lib/onesignal-admin'
 import { staffCan } from '@/lib/permissions'
@@ -10,7 +9,7 @@ import { staffCan } from '@/lib/permissions'
 // GET: Fetch notification history + dashboard stats
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
@@ -90,7 +89,7 @@ export async function GET(request: NextRequest) {
 // POST: Send a new notification
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
@@ -148,7 +147,7 @@ export async function POST(request: NextRequest) {
 // DELETE: Cancel a scheduled notification
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

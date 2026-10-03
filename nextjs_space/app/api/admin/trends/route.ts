@@ -1,13 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server'
 import prisma from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
 async function checkAdmin() {
-  const session = await getServerSession(authOptions)
+  const session = await getStaffSession()
   if (!session?.user) return false
   const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
   return user && (await staffCan(user.role, session.user.id, 'content.media.upload', ['admin', 'yonetici', 'moderator']))

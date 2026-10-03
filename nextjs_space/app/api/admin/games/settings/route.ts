@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { invalidateCachePrefix } from '@/lib/cache'
 import { staffCan } from '@/lib/permissions'
@@ -10,7 +9,7 @@ export const dynamic = 'force-dynamic'
 // GET: Fetch game settings from PlatformSettings
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'system.config.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
@@ -47,7 +46,7 @@ export async function GET() {
 // PUT: Update game settings
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'system.config.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
@@ -12,7 +11,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     const role = (session?.user as any)?.role
     if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'moderation.user.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })

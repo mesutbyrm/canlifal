@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
 // GET: List all membership purchases with user details
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -95,7 +94,7 @@ export async function GET(req: NextRequest) {
 // POST: Grant membership to a user
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -178,7 +177,7 @@ export async function POST(req: NextRequest) {
 // PATCH: Update membership purchase (extend/cancel)
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

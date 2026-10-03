@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
 import { staffCan } from '@/lib/permissions'
@@ -62,7 +61,7 @@ function migrateSettings(raw: Record<string, unknown>): Record<string, CategoryC
 // GET - fetch current announcement section settings
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -105,7 +104,7 @@ export async function GET() {
 // POST - save announcement section settings (supports single category or all)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

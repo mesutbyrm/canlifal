@@ -78,6 +78,10 @@ export async function GET(request: NextRequest) {
       andConditions.push({ createdAt: { gte: weekAgo } })
     } else if (segment === 'spender') {
       andConditions.push({ jetonBalance: { gte: 1000 } })
+    } else if (segment === 'banned') {
+      andConditions.push({ isBanned: true })
+    } else if (segment === 'muted') {
+      andConditions.push({ canChat: false })
     }
 
     // §53 Advanced filters — resolve user IDs for relational filters
@@ -95,6 +99,10 @@ export async function GET(request: NextRequest) {
       })
       const ids = liveStreamers.map(s => s.userId)
       andConditions.push({ id: { in: ids.length > 0 ? ids : ['__none__'] } })
+    }
+    // `broadcaster` = yayın yetkisi olan (şu an canlı olması gerekmez) — `broadcasting` ile karıştırılmamalı
+    if (advFilters.includes('broadcaster')) {
+      andConditions.push({ canBroadcast: true })
     }
     if (advFilters.includes('inRoom')) {
       const inRoom = await prisma.chatPresence.findMany({
@@ -134,6 +142,12 @@ export async function GET(request: NextRequest) {
           lastActiveAt: true,
           createdAt: true,
           isFrozen: true,
+          isBanned: true,
+          bannedUntil: true,
+          banReason: true,
+          canChat: true,
+          canBroadcast: true,
+          canCreateRoom: true,
           _count: {
             select: {
               fortunes: true,
@@ -148,7 +162,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Segment + advanced filter counts (cached per request)
-    const [totalAll, activeCount, newCount, vipCount, broadcastingCount, inRoomCount, fortuneTellerCount, hasAgencyCount] = await Promise.all([
+    const [totalAll, activeCount, newCount, vipCount, broadcastingCount, inRoomCount, fortuneTellerCount, hasAgencyCount, bannedCount, mutedCount, broadcasterCount] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { lastActiveAt: { gte: weekAgo } } }),
       prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
@@ -157,10 +171,19 @@ export async function GET(request: NextRequest) {
       prisma.chatPresence.count({ where: { lastSeen: { gte: fiveMinAgo } } }),
       prisma.liveFortuneTeller.count(),
       prisma.agencyUser.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { isBanned: true } }),
+      prisma.user.count({ where: { canChat: false } }),
+      prisma.user.count({ where: { canBroadcast: true } }),
     ])
 
+    // `isOnline` türetilmiş alan: son 5 dakika içinde aktif olanlar
+    const usersWithStatus = users.map((u: any) => ({
+      ...u,
+      isOnline: !!u.lastActiveAt && new Date(u.lastActiveAt).getTime() >= fiveMinAgo.getTime(),
+    }))
+
     return NextResponse.json({
-      users,
+      users: usersWithStatus,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -170,10 +193,13 @@ export async function GET(request: NextRequest) {
         new: newCount,
         vip: vipCount,
         passive: totalAll - activeCount,
+        banned: bannedCount,
+        muted: mutedCount,
       },
       advancedCounts: {
         online: activeCount, // approximation via lastActiveAt
         broadcasting: broadcastingCount,
+        broadcaster: broadcasterCount,
         inRoom: inRoomCount,
         fortuneTeller: fortuneTellerCount,
         hasAgency: hasAgencyCount,

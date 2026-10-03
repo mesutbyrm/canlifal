@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { staffCan } from '@/lib/permissions'
 
@@ -13,7 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }

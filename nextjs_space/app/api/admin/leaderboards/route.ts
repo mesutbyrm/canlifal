@@ -5,8 +5,7 @@
  * POST — Aksiyonlar: update_config, finalize_now, distribute_rewards, seed_defaults
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { recordAudit } from '@/lib/audit-log'
 import { requireConfirmation } from '@/lib/critical-confirm'
@@ -25,7 +24,7 @@ export const dynamic = 'force-dynamic'
 const ADMIN_ROLES = ['admin', 'yonetici']
 
 async function requireAdmin() {
-  const session = await getServerSession(authOptions)
+  const session = await getStaffSession()
   const role = (session?.user as any)?.role
   if (!role || !(await staffCan(role, (session?.user as any)?.id, 'analytics.dashboard.view', ADMIN_ROLES))) return null
   return (session?.user as any)?.id as string

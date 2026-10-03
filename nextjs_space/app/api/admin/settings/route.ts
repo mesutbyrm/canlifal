@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 import { staffCan } from '@/lib/permissions'
@@ -10,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // Get all platform settings
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'system.config.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
@@ -51,7 +50,7 @@ export async function GET() {
 // Update platform settings
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'system.config.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }

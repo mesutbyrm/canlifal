@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { invalidateCache } from '@/lib/cache';
 import { recordAudit, getAuditIp } from '@/lib/audit-log';
@@ -17,7 +16,7 @@ export async function GET(
   { params }: { params: { giftId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
@@ -47,7 +46,7 @@ export async function PATCH(
   { params }: { params: { giftId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
@@ -184,7 +183,7 @@ export async function DELETE(
   { params }: { params: { giftId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }

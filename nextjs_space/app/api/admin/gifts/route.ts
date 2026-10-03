@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { invalidateCache } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
@@ -14,7 +13,7 @@ export const dynamic = 'force-dynamic';
 // GET all gifts (admin list with filters)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
@@ -74,7 +73,7 @@ export async function GET(request: NextRequest) {
 // POST create new gift
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }

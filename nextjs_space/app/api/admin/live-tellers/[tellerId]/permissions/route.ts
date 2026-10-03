@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { staffCan } from '@/lib/permissions'
@@ -13,7 +12,7 @@ export async function PUT(
   { params }: { params: { tellerId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

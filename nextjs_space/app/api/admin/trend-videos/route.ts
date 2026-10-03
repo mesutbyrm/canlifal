@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
@@ -11,7 +10,7 @@ const ADMIN_ROLES = ['admin', 'yonetici', 'moderator']
 // GET - list all videos with categories for admin
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }
@@ -35,7 +34,7 @@ export async function GET() {
 // POST - create/update category or video
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

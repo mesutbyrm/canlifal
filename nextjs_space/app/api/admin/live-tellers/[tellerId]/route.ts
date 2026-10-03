@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { staffCan } from '@/lib/permissions'
 
@@ -12,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ tellerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     
     if (!session || !(await staffCan(session.user.role, (session?.user as any)?.id, 'content.teller.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
@@ -66,7 +65,7 @@ export async function PUT(
   { params }: { params: Promise<{ tellerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     
     if (!session || !(await staffCan(session.user.role, (session?.user as any)?.id, 'content.teller.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
@@ -103,7 +102,7 @@ export async function DELETE(
   { params }: { params: Promise<{ tellerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     
     if (!session || !(await staffCan(session.user.role, (session?.user as any)?.id, 'content.teller.manage', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });

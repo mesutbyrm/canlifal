@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { slugifyTurkish } from '@/lib/dream-utils'
 import OpenAI from 'openai'
@@ -13,7 +12,7 @@ const openai = new OpenAI({
 })
 
 async function isAdmin() {
-  const session = await getServerSession(authOptions)
+  const session = await getStaffSession()
   return session?.user && ((session.user as any).role || '').toLowerCase() === 'admin'
 }
 

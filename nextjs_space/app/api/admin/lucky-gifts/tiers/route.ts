@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
 async function requireAdmin() {
-  const session = await getServerSession(authOptions)
+  const session = await getStaffSession()
   const role = (session?.user as any)?.role
   if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'content.gift.manage', ['admin', 'yonetici']))) return null
   return session

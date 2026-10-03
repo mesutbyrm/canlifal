@@ -3,8 +3,7 @@
  * Additive modul: mevcut AdNetwork akisi ve /api/ads/active bozulmadi.
  */
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 
 /** Reklam yerlesim yonetimine erisebilecek roller */
@@ -67,7 +66,8 @@ export type AdAdminAuth =
   | { ok: false; userId: null; role: null; response: NextResponse }
 
 export async function requireAdAdmin(full = false): Promise<AdAdminAuth> {
-  const session = await getServerSession(authOptions)
+  // Çift kimlik: web çerezi VEYA mobil Bearer JWT
+  const session = await getStaffSession()
   const user: any = session?.user
   const role = user?.role as string | undefined
   const allowed = full ? (AD_FULL_ADMIN_ROLES as readonly string[]) : (AD_ADMIN_ROLES as readonly string[])

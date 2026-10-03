@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { getStaffSession } from '@/lib/admin-auth'
 import { generatePresignedUploadUrl } from '@/lib/s3';
 import { resolveMediaUrl } from '@/lib/media-url';
 import { staffCan } from '@/lib/permissions'
@@ -19,7 +18,7 @@ const ALL_ALLOWED = Object.values(ALLOWED_TYPES).flat();
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getStaffSession();
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
     }

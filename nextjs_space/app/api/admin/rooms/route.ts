@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
 
@@ -9,7 +8,7 @@ export const dynamic = 'force-dynamic'
 // GET - List all rooms with commission settings
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.email) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
     if (!user || !(await staffCan(user.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
@@ -36,7 +35,7 @@ export async function GET() {
 // PATCH - Update room commission settings
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getStaffSession()
     if (!session?.user?.email) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
     if (!user || !(await staffCan(user.role, (session?.user as any)?.id, 'moderation.room.manage', ['admin','yonetici','moderator','finans']))) return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
