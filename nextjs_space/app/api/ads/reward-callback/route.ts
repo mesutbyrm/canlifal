@@ -1,36 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
 import prisma from '@/lib/db'
+import { verifyAdMobSsvQuery } from '@/lib/admob-ssv'
 
 export const dynamic = 'force-dynamic'
 
-const VERIFIER_KEYS_URL = 'https://www.gstatic.com/admob/reward/verifier-keys.json'
-
-type VerifierKey = { keyId: number | string; pem: string; base64: string }
-
-let keyCache: { at: number; keys: Map<string, string> } | null = null
-
-async function getVerifierKey(keyId: string): Promise<string | null> {
-  const now = Date.now()
-  if (!keyCache || now - keyCache.at > 6 * 60 * 60 * 1000 || !keyCache.keys.has(keyId)) {
-    try {
-      const res = await fetch(VERIFIER_KEYS_URL, { cache: 'no-store' })
-      if (!res.ok) return keyCache?.keys.get(keyId) ?? null
-      const json = (await res.json()) as { keys: VerifierKey[] }
-      const map = new Map<string, string>()
-      for (const k of json.keys || []) map.set(String(k.keyId), k.pem)
-      keyCache = { at: now, keys: map }
-    } catch {
-      return keyCache?.keys.get(keyId) ?? null
-    }
-  }
-  return keyCache.keys.get(keyId) ?? null
-}
-
 /**
- * Google AdMob Server-Side Verification (SSV) callback.
- * Google sends a signed GET request after a user finishes a rewarded ad.
- * Must always answer with HTTP 200 when the request is accepted.
+ * Google AdMob Server-Side Verification (SSV) callback — ESKİ ADRES.
+ * Yeni/önerilen adres: /api/ads/ssv/admob
+ *
+ * Bu uç geriye dönük uyumluluk için aynen korunur: yalnızca denetim kaydı
+ * tutar (granted=false), bakiye yüklemez ve HER durumda 200 döner.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -45,31 +24,10 @@ export async function GET(request: NextRequest) {
       return new NextResponse('OK', { status: 200 })
     }
 
-    // İmzalanan içerik: query string'in &signature= öncesindeki tüm kısmı
-    const raw = url.search.startsWith('?') ? url.search.slice(1) : url.search
-    const idx = raw.indexOf('signature=')
-    if (idx <= 0) {
-      console.warn('AdMob SSV: signature parametresi bulunamadı')
-      return new NextResponse('OK', { status: 200 })
-    }
-    const signedData = raw.substring(0, idx - 1) // sondaki & karakterini at
-
-    const pem = await getVerifierKey(keyId)
-    if (!pem) {
-      console.warn('AdMob SSV: bilinmeyen key_id', keyId)
-      return new NextResponse('OK', { status: 200 })
-    }
-
-    const sigBuf = Buffer.from(signature.replace(/-/g, '+').replace(/_/g, '/'), 'base64')
-    const verified = crypto
-      .createVerify('SHA256')
-      .update(signedData, 'utf8')
-      .verify(pem, sigBuf)
-
-    if (!verified) {
-      // Doğrulanmayan istekte ödül yazılmaz ama AdMob'un doğrulama yoklaması
-      // 200 dışı her yanıtı hata sayıyor → 200 dön, sadece logla.
-      console.warn('AdMob SSV: imza doğrulanamadı')
+    const verification = await verifyAdMobSsvQuery(url.search)
+    if (!verification.ok) {
+      // Doğrulanmayan istekte kayıt yazılmaz ama bu eski uç her zaman 200 döner.
+      console.warn('AdMob SSV (reward-callback): doğrulama başarısız', verification.reason)
       return new NextResponse('OK', { status: 200 })
     }
 
