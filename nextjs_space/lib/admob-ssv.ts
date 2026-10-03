@@ -115,7 +115,8 @@ export function extractSignedContent(rawQuery: string): {
   const tail = q.substring(idx >= 0 ? idx + 1 : 0)
   const tailParams = new URLSearchParams(tail)
   const signature = tailParams.get('signature')
-  const keyId = tailParams.get('key_id')
+  // key_id normalde signature'dan sonra gelir; gelmezse tüm sorguda ararız.
+  const keyId = tailParams.get('key_id') ?? new URLSearchParams(q).get('key_id')
 
   if (!signature || !keyId) return null
   return { signedData, signature, keyId }

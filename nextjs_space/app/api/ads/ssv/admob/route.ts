@@ -28,8 +28,17 @@ export async function GET(request: NextRequest) {
 
   const verification = await verifyAdMobSsvQuery(url.search)
   if (!verification.ok) {
-    console.warn('AdMob SSV: doğrulama başarısız', verification.reason)
-    return new NextResponse('Forbidden', { status: 403 })
+    // Teşhis: AdMob konsolu "URL'yi doğrula" hatalarını izleyebilmek için ham sorgu loglanır.
+    console.warn(
+      'ADMOB_SSV_FAIL reason=%s key_id=%s query=%s',
+      verification.reason,
+      q.get('key_id'),
+      url.search
+    )
+    return new NextResponse('Forbidden', {
+      status: 403,
+      headers: { 'x-ssv-reason': String(verification.reason || 'unknown') },
+    })
   }
 
   // Konsol "URL'yi doğrula" testi: kabul et, ödül verme, kayıt yazma.
