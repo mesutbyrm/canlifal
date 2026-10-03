@@ -52,7 +52,7 @@ export function isSharedType(type: string): boolean {
   return !SKIPPED_TYPES.has(type)
 }
 
-export type BridgeChannel = 'chat' | 'session' | 'teller' | 'stream'
+export type BridgeChannel = 'chat' | 'session' | 'teller' | 'stream' | 'dj'
 
 export interface IncomingEvent {
   scope: string
