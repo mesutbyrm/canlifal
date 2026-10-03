@@ -34,14 +34,20 @@ export async function getAdSettings() {
   }
 }
 
-/** SSV ucunun ödül yazıp yazmayacağı. Ayar yoksa varsayılan: yazar. */
+/**
+ * SSV ucunun ödül yazıp yazmayacağı.
+ * VARSAYILAN: KAPALI (yalnızca denetim kaydı).
+ * Sebep: istemci reklam bitince zaten /api/user/watch-ad çağırıyor; SSV de ödül
+ * yazarsa aynı reklam için iki kez kredi verilir. İstemci tarafındaki çağrı
+ * kaldırıldıktan sonra `admob_ssv_grant_credits` ayarı '1' yapılarak açılabilir.
+ */
 export async function isSsvGrantEnabled(): Promise<boolean> {
   try {
     const s = await prisma.siteSetting.findUnique({ where: { key: SSV_GRANT_SETTING_KEY } })
-    if (!s) return true
-    return s.value !== '0' && s.value.toLowerCase() !== 'false'
+    if (!s) return false
+    return s.value === '1' || s.value.toLowerCase() === 'true'
   } catch {
-    return true
+    return false
   }
 }
 
