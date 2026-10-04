@@ -39,7 +39,9 @@
     ".build/types/**/*.ts",
     ".next/11f57bb01a/types/**/*.ts",
     ".next/52bcb3f46/types/**/*.ts",
-    ".next/11ee156f85/types/**/*.ts"
+    ".next/11ee156f85/types/**/*.ts",
+    ".next/11584b10f7/types/**/*.ts",
+    ".next/10b3a67233/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

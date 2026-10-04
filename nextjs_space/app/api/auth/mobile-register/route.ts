@@ -7,6 +7,7 @@ import { generateMobileTokens } from '@/lib/mobile-auth'
 import { authLimiter } from '@/lib/rate-limiter'
 import { randomBytes } from 'crypto'
 import { logActivity } from '@/lib/activity-logger'
+import { sendNotificationEmail, getWelcomeEmailHtml, getNewUserSignupEmailHtml } from '@/lib/email-service'
 
 import { getCachedPlatformSetting } from '@/lib/cache'
 
@@ -123,6 +124,23 @@ export async function POST(req: NextRequest) {
         prisma.user.update({ where: { id: referrer.id }, data: { credits: { increment: REFERRAL_BONUS }, referralCreditsEarned: { increment: REFERRAL_BONUS } } }),
       ])
     }
+
+    // Hoş geldin e-postası (engellemez)
+    const userLanguage = preferredLanguage || 'tr'
+    sendNotificationEmail({
+      notificationId: process.env.NOTIF_ID_WELCOME_EMAIL || '',
+      recipientEmail: normalizedEmail,
+      subject: userLanguage === 'tr' ? '✨ Falcı\'ya Hoş Geldiniz!' : '✨ Welcome to Falcı!',
+      htmlBody: getWelcomeEmailHtml(name, userLanguage),
+    }).catch(err => console.error('Welcome email error:', err))
+
+    // Yönetici bildirimi (engellemez)
+    sendNotificationEmail({
+      notificationId: process.env.NOTIF_ID_YENI_KULLANC_KAYD || '',
+      recipientEmail: 'mesutbyrm1@gmail.com',
+      subject: `🎉 Yeni Kullanıcı (mobil): ${name}`,
+      htmlBody: getNewUserSignupEmailHtml(name, normalizedEmail),
+    }).catch(err => console.error('Admin notification error:', err))
 
     // Generate tokens
     const tokens = generateMobileTokens({ id: user.id, email: user.email, role: user.role })

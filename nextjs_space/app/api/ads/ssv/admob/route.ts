@@ -35,8 +35,10 @@ export async function GET(request: NextRequest) {
       q.get('key_id'),
       url.search
     )
-    return new NextResponse('Forbidden', {
-      status: 403,
+    // canlifal #13: AdMob konsolu 403'ü hata saydığı için 200 dönülür.
+    // YAN ETKİ YOKTUR: ödül verilmez, veritabanına yazılmaz — akış burada biter.
+    return new NextResponse('OK', {
+      status: 200,
       headers: { 'x-ssv-reason': String(verification.reason || 'unknown') },
     })
   }
