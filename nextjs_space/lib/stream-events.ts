@@ -3,6 +3,8 @@
  * SSE streams poll this for changes (streamMessage, viewerCount, streamEnded).
  */
 
+import { publishEvent, registerBridgeHandler, touchBridge, type IncomingEvent } from './realtime-bridge'
+
 interface StreamEvent {
   /**
    * Benzersiz olay kimliği (F6 — spec 28). İstemciler SSE yeniden bağlanması /
@@ -10,7 +12,7 @@ interface StreamEvent {
    */
   eventId: string
   timestamp: number
-  type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift' | 'pk' | 'guest' | 'gift_box'
+  type: 'streamMessage' | 'viewerCount' | 'streamEnded' | 'gift' | 'pk' | 'guest' | 'gift_box' | 'viewerKicked' | 'like'
   data: any
 }
 
@@ -44,12 +46,32 @@ export function emitStreamEvent(streamId: string, type: StreamEvent['type'], dat
     events.splice(0, events.length - MAX_EVENTS_PER_STREAM)
   }
   streamEventStore.set(streamId, events)
+  publishEvent('stream', streamId, type, eventId, data)
 }
+
+/** Baska bir sunucu orneginden gelen yayin olayini yerel tampona enjekte eder. */
+export function __ingestRemoteStreamEvent(ev: IncomingEvent) {
+  const events = streamEventStore.get(ev.scope) || []
+  if (events.some(e => e.eventId === ev.eventId)) return
+  events.push({
+    eventId: ev.eventId,
+    timestamp: Date.now(),
+    type: ev.type as StreamEvent['type'],
+    data: ev.data,
+  })
+  if (events.length > MAX_EVENTS_PER_STREAM) {
+    events.splice(0, events.length - MAX_EVENTS_PER_STREAM)
+  }
+  streamEventStore.set(ev.scope, events)
+}
+
+registerBridgeHandler('stream', __ingestRemoteStreamEvent)
 
 /**
  * Get all events for a stream newer than the given timestamp.
  */
 export function getStreamEventsSince(streamId: string, sinceTimestamp: number): StreamEvent[] {
+  touchBridge()
   const events = streamEventStore.get(streamId) || []
   return events.filter(e => e.timestamp > sinceTimestamp)
 }

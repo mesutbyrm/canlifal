@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { seatStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount } from '@/lib/voice-room-seats'
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    const gateDenied = await guardGatedRoom(roomId, authUser)
+    if (gateDenied) return gateDenied
 
     // Verify the room exists and is a voice room (ChatRoom)
     const room = await prisma.chatRoom.findUnique({
@@ -218,6 +221,8 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
+    const gateDeniedGet = await guardGatedRoom(roomId, authUser)
+    if (gateDeniedGet) return gateDeniedGet
 
     // Seats list uses the short stale window so freed seats show as empty.
     const presenceTimeout = seatStaleThreshold()

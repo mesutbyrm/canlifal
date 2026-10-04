@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
+import { presenceCutoff, PRESENCE_TTL_MS } from '@/lib/presence'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,15 +52,16 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Update viewer's joinedAt as heartbeat (or re-join if leftAt was set)
-      await prisma.videoStreamViewer.upsert({
-        where: { streamId_viewerId: { streamId: stream.id, viewerId: authUser.id } },
-        update: { leftAt: null, joinedAt: new Date() },
-        create: { streamId: stream.id, viewerId: authUser.id }
+      // Heartbeat sadece MEVCUT ve aktif izleyici kaydını tazeler.
+      // Odaya katılım yalnızca join uçlarından yapılır; aksi halde gecikmiş/yarışan
+      // bir heartbeat kullanıcıyı hiç girmediği yayına ekleyebiliyordu.
+      await prisma.videoStreamViewer.updateMany({
+        where: { streamId: stream.id, viewerId: authUser.id, leftAt: null },
+        data: { joinedAt: new Date() }
       })
 
-      // Auto-cleanup: mark viewers who haven't heartbeat in 60s as left
-      const sixtySecondsAgo = new Date(Date.now() - 60000)
+      // Auto-cleanup: mark viewers who haven't heartbeat within the presence TTL as left
+      const sixtySecondsAgo = new Date(Date.now() - PRESENCE_TTL_MS)
       const staleResult = await prisma.videoStreamViewer.updateMany({
         where: {
           streamId: stream.id,
@@ -90,21 +92,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Update chat presence
-      try {
-        await prisma.chatPresence.upsert({
-          where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-          update: { lastSeen: new Date() },
-          create: { roomId: room.id, userId: authUser.id, seatIndex: -1 }
-        })
-      } catch (e: any) {
-        if (e?.code === 'P2002') {
-          await prisma.chatPresence.update({
-            where: { roomId_userId: { roomId: room.id, userId: authUser.id } },
-            data: { lastSeen: new Date() }
-          })
-        }
-      }
+      // Heartbeat sadece MEVCUT varlık kaydını tazeler, yeni kayıt OLUŞTURMAZ.
+      // Odaya katılım yalnızca /api/live/join-room ve presence POST üzerinden olur.
+      await prisma.chatPresence.updateMany({
+        where: { roomId: room.id, userId: authUser.id },
+        data: { lastSeen: new Date() }
+      })
 
       // Update voice session ping if active
       await prisma.voiceSession.updateMany({
@@ -112,8 +105,8 @@ export async function POST(request: NextRequest) {
         data: { lastPing: new Date() }
       })
 
-      // Auto-cleanup stale voice sessions (>60s no ping)
-      const sixtySecondsAgo = new Date(Date.now() - 60000)
+      // Auto-cleanup stale voice sessions (presence TTL boyunca ping gelmeyenler)
+      const sixtySecondsAgo = new Date(Date.now() - PRESENCE_TTL_MS)
       const staleVoice = await prisma.voiceSession.updateMany({
         where: {
           roomId: room.id,
@@ -125,7 +118,7 @@ export async function POST(request: NextRequest) {
       staleRemoved = staleVoice.count
 
       // Count active presences
-      const presenceTimeout = new Date(Date.now() - 300000) // 5 min window
+      const presenceTimeout = presenceCutoff()
       onlineCount = await prisma.chatPresence.count({
         where: { roomId: room.id, lastSeen: { gte: presenceTimeout } }
       })

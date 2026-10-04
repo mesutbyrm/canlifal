@@ -175,7 +175,8 @@ export async function PATCH(
     }
 
     // Send notification to the user
-    await createNotificationWithPush({
+    // Kabul yanıtı push/DB bildirimini beklemesin.
+    void createNotificationWithPush({
       userId: liveSession.userId,
       type: 'session_update',
       title: action === 'accept' ? 'Randevu Kabul Edildi' 
@@ -190,7 +191,7 @@ export async function PATCH(
         tellerId: liveSession.tellerId,
         action
       })
-    });
+    }).catch((e) => console.error('[session PATCH] notify error:', e));
 
     return NextResponse.json(updatedSession);
   } catch (error) {

@@ -5,6 +5,8 @@
  * and SSE consumers pull from memory instead of querying DB.
  */
 
+import { publishEvent, registerBridgeHandler, touchBridge, type IncomingEvent } from './realtime-bridge'
+
 interface ChatEvent {
   /**
    * Benzersiz olay kimliği (BÖLÜM 2). İstemciler (web + Flutter) aynı olayın
@@ -49,12 +51,37 @@ export function emitChatEvent(roomId: string, type: ChatEvent['type'], data: any
     events.splice(0, events.length - MAX_EVENTS_PER_ROOM)
   }
   roomEvents.set(roomId, events)
+  // Diger sunucu orneklerine de ulassin (ates-unut; hata yutulur).
+  publishEvent('chat', roomId, type, eventId, data)
 }
+
+/**
+ * Baska bir sunucu orneginden gelen olayi yerel tampona enjekte eder.
+ * Zaman damgasi olarak YEREL varis ani kullanilir; boylece istemcinin
+ * `since` imleci yuzunden olay dusmez.
+ */
+export function __ingestRemoteChatEvent(ev: IncomingEvent) {
+  const events = roomEvents.get(ev.scope) || []
+  if (events.some(e => e.eventId === ev.eventId)) return
+  events.push({
+    eventId: ev.eventId,
+    timestamp: Date.now(),
+    type: ev.type as ChatEvent['type'],
+    data: ev.data,
+  })
+  if (events.length > MAX_EVENTS_PER_ROOM) {
+    events.splice(0, events.length - MAX_EVENTS_PER_ROOM)
+  }
+  roomEvents.set(ev.scope, events)
+}
+
+registerBridgeHandler('chat', __ingestRemoteChatEvent)
 
 /**
  * Get all events for a room newer than the given timestamp.
  */
 export function getChatEventsSince(roomId: string, sinceTimestamp: number): ChatEvent[] {
+  touchBridge()
   const events = roomEvents.get(roomId) || []
   return events.filter(e => e.timestamp > sinceTimestamp)
 }

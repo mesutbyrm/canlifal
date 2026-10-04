@@ -4,6 +4,8 @@
  * Replaces 3s polling with near-instant event delivery.
  */
 
+import { publishEvent, registerBridgeHandler, touchBridge, type IncomingEvent } from './realtime-bridge'
+
 interface RoomEvent {
   eventId: string
   timestamp: number
@@ -47,12 +49,35 @@ export function emitRoomEvent(sessionId: string, type: RoomEvent['type'], data: 
     events.splice(0, events.length - MAX_EVENTS)
   }
   sessionEvents.set(sessionId, events)
+  publishEvent('session', sessionId, type, eventId, data)
 }
+
+/** Baska bir sunucu orneginden gelen oturum olayini enjekte eder. */
+export function __ingestRemoteSessionEvent(ev: IncomingEvent) {
+  const events = sessionEvents.get(ev.scope) || []
+  if (events.some(e => e.eventId === ev.eventId)) return
+  events.push({ eventId: ev.eventId, timestamp: Date.now(), type: ev.type as RoomEvent['type'], data: ev.data })
+  if (events.length > MAX_EVENTS) events.splice(0, events.length - MAX_EVENTS)
+  sessionEvents.set(ev.scope, events)
+}
+
+/** Baska bir sunucu orneginden gelen falci olayini enjekte eder. */
+export function __ingestRemoteTellerEvent(ev: IncomingEvent) {
+  const events = tellerEvents.get(ev.scope) || []
+  if (events.some(e => e.eventId === ev.eventId)) return
+  events.push({ eventId: ev.eventId, timestamp: Date.now(), type: ev.type as TellerEvent['type'], data: ev.data })
+  if (events.length > MAX_EVENTS) events.splice(0, events.length - MAX_EVENTS)
+  tellerEvents.set(ev.scope, events)
+}
+
+registerBridgeHandler('session', __ingestRemoteSessionEvent)
+registerBridgeHandler('teller', __ingestRemoteTellerEvent)
 
 /**
  * Get room events since a timestamp
  */
 export function getRoomEventsSince(sessionId: string, sinceTimestamp: number): RoomEvent[] {
+  touchBridge()
   const events = sessionEvents.get(sessionId) || []
   return events.filter(e => e.timestamp > sinceTimestamp)
 }
@@ -71,12 +96,14 @@ export function emitTellerEvent(tellerId: string, type: TellerEvent['type'], dat
     events.splice(0, events.length - MAX_EVENTS)
   }
   tellerEvents.set(tellerId, events)
+  publishEvent('teller', tellerId, type, eventId, data)
 }
 
 /**
  * Get teller events since a timestamp
  */
 export function getTellerEventsSince(tellerId: string, sinceTimestamp: number): TellerEvent[] {
+  touchBridge()
   const events = tellerEvents.get(tellerId) || []
   return events.filter(e => e.timestamp > sinceTimestamp)
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { guardGatedRoom } from '@/lib/room-access-guard'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY, isUserBanned } from '@/lib/chat-permissions'
 import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
@@ -15,6 +16,8 @@ import { endPksForSide } from '@/lib/pk-state'
 import { closeGiftBoxesFor } from '@/lib/gift-box'
 import { getUserEntitlements, meetsMinTier } from '@/lib/vip-entitlements'
 import { awardVipXpSafe } from '@/lib/vip-xp'
+import { authorizeVipEntry } from '@/lib/room-access'
+import { welcomeUser } from '@/lib/girlive-bot'
 
 /** Oda sahibi odadan ayrıldıysa o odaya bağlı bekleyen/aktif PK'ları kapat. */
 async function endPksIfOwnerLeft(roomId: string, leavingUserId: string) {
@@ -39,6 +42,13 @@ export async function GET(
 ) {
   try {
     const { roomId } = await params
+    // Şifreli VIP oda: katılımcı listesi yalnızca kapıdan geçmişlere açık
+    {
+      const gm = await authenticateRequest(request)
+      const gs = !gm ? await getServerSession(authOptions) : null
+      const gateDenied = await guardGatedRoom(roomId, { id: gm?.id || gs?.user?.id, role: gm?.role || (gs?.user as any)?.role })
+      if (gateDenied) return gateDenied
+    }
     const presenceTimeout = new Date(Date.now() - 300000)
 
     // Run presences + room status in parallel
@@ -58,7 +68,8 @@ export async function GET(
               id: true,
               name: true,
               role: true,
-              image: true
+              image: true,
+              level: true
             }
           }
         }
@@ -98,6 +109,7 @@ export async function GET(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
@@ -264,11 +276,15 @@ export async function POST(
     let nickname: string | undefined
     let seatIndex: number | undefined
     let providedPassword: string | undefined
+    let providedAccessToken: string | undefined
     try {
       const body = await request.json()
       nickname = body.nickname
       if (typeof body.seatIndex === 'number') {
         seatIndex = body.seatIndex
+      }
+      if (typeof body.roomAccessToken === 'string') {
+        providedAccessToken = body.roomAccessToken
       }
       if (typeof body.password === 'string') {
         providedPassword = body.password
@@ -326,37 +342,29 @@ export async function POST(
         }
       }
 
-      // ── Password gate for NORMAL / VIP rooms ──
-      // Owner and staff (admin/moderator level) bypass. Everyone else must
-      // provide the correct password on their first join. Shared by web + Flutter.
+      // ── Şifre kapısı: YALNIZCA VIP oda (lib/room-access.ts) ──
+      // Doğrulama sunucuda; en fazla 3 deneme; sahip/yönetici muaf; oda sahibinin
+      // verdiği giriş izni veya verify-password'ün imzalı jetonu da kabul edilir.
       const roomType = room?.roomType || 'FREE'
-      const needsPassword = (roomType === 'VIP' || roomType === 'NORMAL') && !!room?.password
-      if (needsPassword) {
-        const isOwner = room?.ownerId === userId
-        let bypass = isOwner
-        if (!bypass) {
-          // Global site staff bypass the room password
-          const currentUser = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { role: true }
-          })
-          const isGlobalAdmin = ['admin', 'moderator', 'site_manager'].includes(currentUser?.role || '')
-          if (isGlobalAdmin) {
-            bypass = true
-          } else {
-            // Per-room staff (sop and above) bypass the room password
-            const myRole = await prisma.chatUserRole.findUnique({
-              where: { roomId_userId: { roomId, userId } },
-              select: { role: true }
-            }).catch(() => null)
-            const myLevel = myRole ? (ROLE_HIERARCHY[myRole.role as keyof typeof ROLE_HIERARCHY] || 0) : 0
-            bypass = myLevel >= ROLE_HIERARCHY['sop']
-          }
-        }
-        if (!bypass && providedPassword !== room?.password) {
+      if (room) {
+        const authUserRole = (await prisma.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role
+        const decision = await authorizeVipEntry({
+          room: { id: roomId, roomType: room.roomType, password: room.password, ownerId: room.ownerId },
+          userId,
+          globalRole: authUserRole,
+          password: providedPassword,
+          accessToken: providedAccessToken,
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+        })
+        if (!decision.ok) {
           return NextResponse.json(
-            { error: 'Oda şifresi hatalı', code: 'INVALID_ROOM_PASSWORD' },
-            { status: 403 }
+            {
+              error: decision.message,
+              code: decision.code,
+              remainingAttempts: decision.remainingAttempts,
+              locked: decision.locked,
+            },
+            { status: decision.status }
           )
         }
       }
@@ -503,6 +511,8 @@ export async function POST(
       }
       // Broadcast the join to everyone in this room (web + Flutter via SSE)
       emitUserJoined(roomId, userId, nickname || userName || 'Kullanıcı', userImage)
+      // GirLive Bot hoş geldin (30 dk içinde aynı kullanıcıya tekrar yazmaz)
+      void welcomeUser('voice_room', roomId, userId)
       if (typeof seatIndex === 'number' && seatIndex >= 0) {
         emitSeatChanged(roomId, userId, seatIndex, -1, {
           seatKind: seatKind(seatIndex, roomSeatCount),
@@ -609,7 +619,8 @@ export async function POST(
               id: true,
               name: true,
               role: true,
-              image: true
+              image: true,
+              level: true
             }
           }
         }
@@ -645,6 +656,7 @@ export async function POST(
         name: p.user.name,
         nickname: p.nickname || p.user.name,
         image: p.user.image || null,
+        level: p.user.level ?? 1,
         lastSeen: p.lastSeen,
         chatRole,
         roleSymbol,
