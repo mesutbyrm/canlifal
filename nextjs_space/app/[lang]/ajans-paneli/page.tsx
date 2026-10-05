@@ -130,6 +130,7 @@ export default function AgencyPanelPage() {
   const [addUsername, setAddUsername] = useState('')
   const [addingMember, setAddingMember] = useState(false)
   const [removingMember, setRemovingMember] = useState<string | null>(null)
+  const [pendingInvites, setPendingInvites] = useState<any[]>([])
   // Leave requests
   // §19 — Canlı takip
   const [liveData, setLiveData] = useState<any>(null)
@@ -183,6 +184,7 @@ export default function AgencyPanelPage() {
         const d = await res.json()
         setMembers(d.members)
         setLeaveRequests(d.leaveRequests || [])
+        setPendingInvites(d.pendingInvites || [])
       }
     } catch (e) { console.error(e) }
   }
@@ -818,7 +820,7 @@ export default function AgencyPanelPage() {
           <div className={`${cardBg} rounded-xl p-4`}>
             <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
               <UserPlus className={`w-4 h-4 ${accentColor}`} />
-              Üye Ekle
+              Üye Davet Et
             </h3>
             <div className="flex gap-2">
               <input
@@ -835,10 +837,40 @@ export default function AgencyPanelPage() {
                 className={`px-4 py-2 rounded-lg ${btnPrimary} text-sm font-medium flex items-center gap-1.5 disabled:opacity-50`}
               >
                 {addingMember ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Ekle
+                Davet Et
               </button>
             </div>
+            <p className={`text-[11px] ${textSecondary} mt-2`}>
+              Davet gönderilir; kullanıcı kabul edene kadar ajansa eklenmez. Onaysız üye eklenemez.
+            </p>
           </div>
+
+          {/* Pending Member Invites */}
+          {pendingInvites.length > 0 && (
+            <div className={`${cardBg} rounded-xl p-4`}>
+              <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                <UserPlus className="w-4 h-4 text-blue-400" />
+                Bekleyen Davetler
+                <span className="ml-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-bold">{pendingInvites.length}</span>
+              </h3>
+              <div className="space-y-2">
+                {pendingInvites.map((inv: any) => (
+                  <div key={inv.id} className={`p-3 rounded-xl bg-black/20 flex items-center gap-2`}>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                      {inv.user?.name?.charAt(0) || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-medium ${textPrimary} truncate`}>{inv.user?.name}</div>
+                      <div className={`text-[10px] ${textSecondary}`}>
+                        @{inv.user?.username} • {new Date(inv.createdAt).toLocaleDateString('tr-TR')}
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 font-medium">Yanıt bekleniyor</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Leave Requests */}
           {leaveRequests.length > 0 && (
@@ -861,6 +893,15 @@ export default function AgencyPanelPage() {
                           @{lr.user?.username} • {new Date(lr.createdAt).toLocaleDateString('tr-TR')}
                         </div>
                       </div>
+                      {(() => {
+                        const deadline = new Date(new Date(lr.createdAt).getTime() + 3 * 24 * 60 * 60 * 1000)
+                        const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+                        return (
+                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${daysLeft <= 0 ? 'bg-red-500/20 text-red-300' : 'bg-orange-500/20 text-orange-300'}`}>
+                            {daysLeft <= 0 ? 'Otomatik onay yakında' : `${daysLeft} gün sonra otomatik onay`}
+                          </span>
+                        )
+                      })()}
                     </div>
                     {lr.reason && (
                       <p className={`text-xs ${textSecondary} flex items-start gap-1`}>

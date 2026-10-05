@@ -3,6 +3,8 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
+import { createNotificationWithPush } from '@/lib/notify'
+import { processExpiredLeaveRequests } from '@/lib/agency-auto-leave'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +53,9 @@ export async function GET(req: NextRequest) {
       orderBy: { joinedAt: 'desc' },
     })
 
+    // 3 günden eski bekleyen çıkış taleplerini otomatik onayla (tembel tetikleme)
+    await processExpiredLeaveRequests(membership.agencyId)
+
     // Also get pending leave requests
     const leaveRequests = await prisma.agencyLeaveRequest.findMany({
       where: { agencyId: membership.agencyId, status: 'pending' },
@@ -60,14 +65,24 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ members, leaveRequests })
+    // Bekleyen üye davetleri (davetsiz ekleme engeli)
+    const pendingInvites = await prisma.agencyMemberInvite.findMany({
+      where: { agencyId: membership.agencyId, status: 'pending' },
+      include: {
+        user: { select: { id: true, name: true, username: true, image: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json({ members, leaveRequests, pendingInvites })
   } catch (error: any) {
     console.error('[Agency Members] Error:', error)
     return NextResponse.json({ error: 'Üyeler alınamadı' }, { status: 500 })
   }
 }
 
-// POST: Add member by username (owner/manager only)
+// POST: Üyeyi kullanıcı adıyla DAVET ET (owner/manager). Davetsiz ekleme YOK —
+// kullanıcı daveti kabul edene kadar ajansa eklenmez.
 export async function POST(req: NextRequest) {
   try {
     const authUser = await authenticateRequest(req)
@@ -80,6 +95,21 @@ export async function POST(req: NextRequest) {
     })
     if (!membership || !['owner', 'manager'].includes(membership.role)) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+    }
+
+    // Ajans davet gönderebilir durumda mı?
+    const agency = await prisma.agency.findUnique({
+      where: { id: membership.agencyId },
+      select: { id: true, name: true, status: true, invitesDisabled: true },
+    })
+    if (!agency) {
+      return NextResponse.json({ error: 'Ajans bulunamadı' }, { status: 404 })
+    }
+    if (agency.status !== 'approved') {
+      return NextResponse.json({ error: 'Ajansınız henüz onaylı değil' }, { status: 403 })
+    }
+    if (agency.invitesDisabled) {
+      return NextResponse.json({ error: 'Ajansınızın davet yetkisi askıya alınmış' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -99,6 +129,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
+    if (targetUser.id === authUser.id) {
+      return NextResponse.json({ error: 'Kendinizi davet edemezsiniz' }, { status: 400 })
+    }
+
     // Check if already in an agency
     const existingMembership = await prisma.agencyUser.findUnique({
       where: { userId: targetUser.id },
@@ -107,30 +141,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bu kullanıcı zaten bir ajansa üye' }, { status: 409 })
     }
 
-    // Add to agency
-    await prisma.agencyUser.create({
+    // Zaten bekleyen bir davet var mı?
+    const existingInvite = await prisma.agencyMemberInvite.findFirst({
+      where: { agencyId: membership.agencyId, userId: targetUser.id, status: 'pending' },
+    })
+    if (existingInvite) {
+      return NextResponse.json({ error: 'Bu kullanıcıya zaten bekleyen bir davet var' }, { status: 409 })
+    }
+
+    // Davet oluştur (DOĞRUDAN EKLEME YOK — kullanıcı onayı gerekir)
+    const invite = await prisma.agencyMemberInvite.create({
       data: {
         agencyId: membership.agencyId,
         userId: targetUser.id,
-        role: 'member',
-        joinedVia: 'direct',
-        isActive: true,
-      }
+        invitedById: authUser.id,
+        status: 'pending',
+      },
     })
 
-    // Update agency counts
-    await prisma.agency.update({
-      where: { id: membership.agencyId },
-      data: {
-        totalMembers: { increment: 1 },
-        activeMembers: { increment: 1 },
-      }
+    // Kullanıcıya bildirim + push gönder
+    await createNotificationWithPush({
+      userId: targetUser.id,
+      type: 'agency_invite',
+      title: 'Ajans Daveti',
+      message: `${agency.name} ajansı sizi üye olmaya davet etti. Kabul etmek için dokunun.`,
+      fromUserId: authUser.id,
+      targetPath: '/ajans',
+      targetId: invite.id,
+      data: JSON.stringify({ inviteId: invite.id, agencyId: agency.id, agencyName: agency.name }),
     })
 
-    return NextResponse.json({ success: true, message: `${targetUser.name || targetUser.username} ajansa eklendi` })
+    return NextResponse.json({
+      success: true,
+      invited: true,
+      inviteId: invite.id,
+      message: `${targetUser.name || targetUser.username} kullanıcısına davet gönderildi. Kabul edince ajansa katılacak.`,
+    })
   } catch (error: any) {
     console.error('[Agency Members POST] Error:', error)
-    return NextResponse.json({ error: 'Üye eklenirken hata oluştu' }, { status: 500 })
+    return NextResponse.json({ error: 'Davet gönderilirken hata oluştu' }, { status: 500 })
   }
 }
 

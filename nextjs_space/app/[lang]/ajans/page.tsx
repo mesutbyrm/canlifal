@@ -26,6 +26,9 @@ export default function AgencyPage() {
   const [agencyDesc, setAgencyDesc] = useState('')
   const [agencyEmail, setAgencyEmail] = useState('')
   const [agencyPhone, setAgencyPhone] = useState('')
+  // Incoming member invites
+  const [incomingInvites, setIncomingInvites] = useState<any[]>([])
+  const [inviteActionLoading, setInviteActionLoading] = useState<string | null>(null)
 
   const isFacebook = theme === 'facebook'
   const isCosmic = theme === 'cosmic'
@@ -38,16 +41,46 @@ export default function AgencyPage() {
   const tabActive = isFacebook ? 'bg-blue-500 text-white' : isCosmic ? 'bg-blue-600 text-white' : 'bg-fuchsia-600 text-white'
   const tabInactive = isFacebook ? 'bg-gray-100 text-gray-600' : isCosmic ? 'bg-blue-900/30 text-blue-300' : 'bg-purple-900/30 text-purple-300'
 
+  const fetchIncomingInvites = () => {
+    fetch('/api/agency/invites').then(r => r.json()).then(d => {
+      setIncomingInvites(d.invites || [])
+    }).catch(() => {})
+  }
+
   useEffect(() => {
     if (session?.user) {
       fetch('/api/agency/my').then(r => r.json()).then(d => {
         setMyAgency(d)
         setCheckingMembership(false)
       }).catch(() => setCheckingMembership(false))
+      fetchIncomingInvites()
     } else {
       setCheckingMembership(false)
     }
   }, [session])
+
+  const handleInviteAction = async (inviteId: string, action: 'accept' | 'reject') => {
+    setInviteActionLoading(inviteId)
+    setMessage(null)
+    try {
+      const res = await fetch('/api/agency/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, action }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setMessage({ type: 'success', text: d.message || (action === 'accept' ? 'Ajansa katıldınız' : 'Davet reddedildi') })
+        fetchIncomingInvites()
+        if (action === 'accept') {
+          fetch('/api/agency/my').then(r => r.json()).then(setMyAgency).catch(() => {})
+        }
+      } else {
+        setMessage({ type: 'error', text: d.error || 'Hata oluştu' })
+      }
+    } catch { setMessage({ type: 'error', text: 'Bir hata oluştu' }) }
+    finally { setInviteActionLoading(null) }
+  }
 
   const handleJoin = async () => {
     if (!inviteCode.trim()) { setMessage({ type: 'error', text: 'Davet kodu giriniz' }); return }
@@ -184,6 +217,52 @@ export default function AgencyPage() {
           <p className={`text-xs ${textSecondary}`}>Bir ajansa katılın veya kendi ajansınızı kurun</p>
         </div>
       </div>
+
+      {/* Incoming member invites */}
+      {incomingInvites.length > 0 && (
+        <div className={`${cardBg} rounded-2xl p-5 mb-6`}>
+          <h2 className={`text-base font-bold ${textPrimary} mb-1 flex items-center gap-2`}>
+            <UserPlus className={`w-5 h-5 ${accentColor}`} />
+            Ajans Davetleriniz
+          </h2>
+          <p className={`text-xs ${textSecondary} mb-4`}>Sizi üye olmaya davet eden ajanslar</p>
+          <div className="space-y-3">
+            {incomingInvites.map((inv: any) => (
+              <div key={inv.id} className="p-3 rounded-xl bg-black/20 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                    {inv.agency?.name?.charAt(0) || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium ${textPrimary} truncate`}>{inv.agency?.name}</div>
+                    <div className={`text-[10px] ${textSecondary}`}>
+                      {inv.invitedBy?.name ? `${inv.invitedBy.name} davet etti` : 'Ajans daveti'} • {new Date(inv.createdAt).toLocaleDateString('tr-TR')}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleInviteAction(inv.id, 'accept')}
+                    disabled={inviteActionLoading === inv.id}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-medium disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Kabul Et
+                  </button>
+                  <button
+                    onClick={() => handleInviteAction(inv.id, 'reject')}
+                    disabled={inviteActionLoading === inv.id}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-medium disabled:opacity-50"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Reddet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { processExpiredLeaveRequests, AUTO_LEAVE_DAYS } from '@/lib/agency-auto-leave'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,15 @@ export async function GET(req: NextRequest) {
     const authUser = await authenticateRequest(req)
     if (!authUser) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+
+    // 3 günlük otomatik çıkış kuralını tembel tetikle (kullanıcının ajansı için)
+    const myMembershipForSweep = await prisma.agencyUser.findUnique({
+      where: { userId: authUser.id },
+      select: { agencyId: true },
+    })
+    if (myMembershipForSweep) {
+      await processExpiredLeaveRequests(myMembershipForSweep.agencyId)
     }
 
     // Check if user is member of an agency
@@ -37,6 +47,21 @@ export async function GET(req: NextRequest) {
       where: { userId: authUser.id, status: 'pending' },
     })
 
+    // Kullanıcının bekleyen ajans davetleri (davetsiz ekleme engeli)
+    const pendingInvites = await prisma.agencyMemberInvite.findMany({
+      where: { userId: authUser.id, status: 'pending' },
+      include: {
+        agency: { select: { id: true, name: true, logoUrl: true, level: true } },
+        invitedBy: { select: { id: true, name: true, username: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Bekleyen çıkış talebi için otomatik onay tarihi (createdAt + 3 gün)
+    const autoLeaveAt = pendingLeaveRequest
+      ? new Date(pendingLeaveRequest.createdAt.getTime() + AUTO_LEAVE_DAYS * 24 * 60 * 60 * 1000)
+      : null
+
     return NextResponse.json({
       membership: membership ? {
         id: membership.id,
@@ -47,7 +72,10 @@ export async function GET(req: NextRequest) {
       } : null,
       ownedAgency: ownedAgency || null,
       isOwner: !!ownedAgency && ownedAgency.status === 'approved',
-      pendingLeaveRequest: pendingLeaveRequest || null,
+      pendingLeaveRequest: pendingLeaveRequest
+        ? { ...pendingLeaveRequest, autoLeaveAt, autoLeaveDays: AUTO_LEAVE_DAYS }
+        : null,
+      pendingInvites,
     })
   } catch (error: any) {
     console.error('[Agency My] Error:', error)
