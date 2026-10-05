@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     const rateLimited = await guardRateLimit(req, 'room_create', { userId: authUser.id })
     if (rateLimited) return rateLimited
 
-    const { name, description, icon, paymentType, roomType: requestedRoomType } = await req.json()
+    const { name, description, icon, paymentType, roomType: requestedRoomType, jetonSource } = await req.json()
     // paymentType: 'jeton' or 'cfc'
 
     if (!name || !description || !icon) {
@@ -84,8 +85,9 @@ export async function POST(req: NextRequest) {
     // Deduct balance and create room (staff skip payment)
     if (!isStaff) {
       if (paymentType === 'jeton') {
-        await atomicDebitJeton(prisma, user.id, cost)
-        await prisma.jetonTransaction.create({
+        const createPlan = await resolveJetonSpend(user.id, cost, parseJetonSource(jetonSource))
+        await atomicDebitJeton(prisma, user.id, cost, createPlan.source)
+        if (createPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: user.id,
             amount: -cost,

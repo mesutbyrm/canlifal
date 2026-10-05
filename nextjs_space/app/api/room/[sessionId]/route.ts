@@ -8,6 +8,7 @@ import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { emitRoomEvent, clearRoomEvents } from '@/lib/room-events';
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger';
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,7 +101,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { action, minutes } = body;
+    const { action, minutes, jetonSource } = body;
 
     const liveSession = await prisma.liveSession.findUnique({
       where: { id: params.sessionId },
@@ -190,9 +191,13 @@ export async function PATCH(
           where: { id: liveSession.userId },
           select: { jetonBalance: true, role: true }
         });
-        const addUserIsStaff = currentUser?.role === 'yonetici';
+        const addPlan = await resolveJetonSpend(liveSession.userId, jetonsNeeded, parseJetonSource(jetonSource));
+        const addUserIsStaff = addPlan.skipDeduction;
 
-        if (!currentUser || (!addUserIsStaff && (currentUser.jetonBalance ?? 0) < jetonsNeeded)) {
+        if (!currentUser) {
+          return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 400 });
+        }
+        if (!addUserIsStaff && (addPlan.source === 'fake' ? addPlan.fakeBalance : addPlan.realBalance) < jetonsNeeded) {
           return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok' }, { status: 400 });
         }
 
@@ -202,13 +207,13 @@ export async function PATCH(
             where: { id: params.sessionId },
             data: {
               maxMinutes: { increment: addMinutes },
-              creditsCharged: addUserIsStaff ? undefined : { increment: jetonsNeeded }
+              creditsCharged: addPlan.countsAsFinance ? { increment: jetonsNeeded } : undefined
             }
           })
         ];
         if (!addUserIsStaff) {
           addTimeTx.unshift(
-            atomicDebitJeton(prisma, liveSession.userId, jetonsNeeded)
+            atomicDebitJeton(prisma, liveSession.userId, jetonsNeeded, addPlan.source)
           );
         }
         await prisma.$transaction(addTimeTx);
@@ -245,9 +250,13 @@ export async function PATCH(
           where: { id: liveSession.userId },
           select: { jetonBalance: true, role: true }
         });
-        const extUserIsStaff = extUser?.role === 'yonetici';
+        const extPlan = await resolveJetonSpend(liveSession.userId, jetonsNeeded, parseJetonSource(jetonSource));
+        const extUserIsStaff = extPlan.skipDeduction;
 
-        if (!extUser || (!extUserIsStaff && (extUser.jetonBalance ?? 0) < jetonsNeeded)) {
+        if (!extUser) {
+          return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 400 });
+        }
+        if (!extUserIsStaff && (extPlan.source === 'fake' ? extPlan.fakeBalance : extPlan.realBalance) < jetonsNeeded) {
           return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 });
         }
 
@@ -257,13 +266,13 @@ export async function PATCH(
             where: { id: params.sessionId },
             data: {
               maxMinutes: { increment: extendMinutes },
-              creditsCharged: extUserIsStaff ? undefined : { increment: jetonsNeeded }
+              creditsCharged: extPlan.countsAsFinance ? { increment: jetonsNeeded } : undefined
             }
           })
         ];
         if (!extUserIsStaff) {
           extTx.unshift(
-            atomicDebitJeton(prisma, liveSession.userId, jetonsNeeded)
+            atomicDebitJeton(prisma, liveSession.userId, jetonsNeeded, extPlan.source)
           );
         }
         await prisma.$transaction(extTx);

@@ -7,6 +7,7 @@ import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guar
 import { getRoomMusicSettings } from '@/lib/chat-music-settings'
 import { emitDjUpdate, buildDjPayload } from '@/lib/chat-dj-events'
 import { calculateMusicDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 
 export const dynamic = 'force-dynamic'
 
@@ -166,7 +167,8 @@ export async function POST(
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    const isStaff = user.role === 'yonetici'
+    const songPlan = await resolveJetonSpend(userId, SONG_REQUEST_COST, parseJetonSource(body?.jetonSource))
+    const isStaff = songPlan.skipDeduction
     // Staff always skip payment — client skipPayment param removed for security
     const shouldSkipPayment = isStaff
 
@@ -182,12 +184,13 @@ export async function POST(
 
     // Deduct jetons only if not skipping payment
     if (!shouldSkipPayment) {
-      if (user.jetonBalance < SONG_REQUEST_COST) {
+      const songAvail = songPlan.source === 'fake' ? songPlan.fakeBalance : songPlan.realBalance
+      if (songAvail < SONG_REQUEST_COST) {
         return NextResponse.json({ error: `Yetersiz jeton. ${SONG_REQUEST_COST} jeton gerekiyor.` }, { status: 400 })
       }
 
-      await atomicDebitJeton(prisma, userId, SONG_REQUEST_COST)
-      await prisma.jetonTransaction.create({
+      await atomicDebitJeton(prisma, userId, SONG_REQUEST_COST, songPlan.source)
+      if (songPlan.countsAsFinance) await prisma.jetonTransaction.create({
         data: {
           userId,
           amount: -SONG_REQUEST_COST,

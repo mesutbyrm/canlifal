@@ -11,6 +11,7 @@ import { recordContribution } from '@/lib/supporter-level';
 import { recordTeamPoints } from '@/lib/team-points';
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { guardRateLimit } from '@/lib/rate-limit-guard';
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export async function POST(
     const rateLimited = await guardRateLimit(request, 'tip', { userId: authUser.id });
     if (rateLimited) return rateLimited;
 
-    const { amount } = await request.json();
+    const { amount, jetonSource } = await request.json();
     
     // Validate amount
     const validAmounts = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
@@ -55,16 +56,17 @@ export async function POST(
       return NextResponse.json({ error: 'Sadece kullanıcı bahşiş verebilir' }, { status: 403 });
     }
 
-    // Check if tipper is staff
-    const tipperUser = await prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: { role: true }
-    });
-    const tipperIsStaff = tipperUser?.role === 'yonetici';
+    // Gerçek / sahte jeton seçimi
+    const spendPlan = await resolveJetonSpend(authUser.id, amount, parseJetonSource(jetonSource));
+    const tipperIsStaff = spendPlan.skipDeduction;
+    const countsAsFinance = spendPlan.countsAsFinance;
 
     // Check jeton balance (staff skip)
-    if (!tipperIsStaff && (liveSession.user.jetonBalance ?? 0) < amount) {
-      return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
+    if (!tipperIsStaff) {
+      const avail = spendPlan.source === 'fake' ? spendPlan.fakeBalance : spendPlan.realBalance;
+      if (avail < amount) {
+        return NextResponse.json({ error: spendPlan.source === 'fake' ? 'Yetersiz sahte jeton bakiyesi' : 'Yetersiz jeton bakiyesi' }, { status: 400 });
+      }
     }
 
     // Get commission rate (cached)
@@ -74,7 +76,7 @@ export async function POST(
     const tellerEarnings = amount - commissionAmount;
 
     // Process agency commission if teller's user is in an agency (staff skip financial)
-    if (!tipperIsStaff && tellerEarnings > 0) {
+    if (countsAsFinance && tellerEarnings > 0) {
       processAgencyCommission({
         userId: liveSession.teller.userId || '',
         earnedAmount: tellerEarnings,
@@ -107,19 +109,25 @@ export async function POST(
         }
       })
     ];
-    if (!tipperIsStaff) {
+    if (countsAsFinance) {
       tipTx.unshift(
-        atomicDebitJeton(prisma, liveSession.userId, amount),
         prisma.liveFortuneTeller.update({
           where: { id: liveSession.tellerId },
           data: { totalEarnings: { increment: tellerEarnings } }
         })
       );
     }
+    if (!tipperIsStaff) {
+      tipTx.unshift(atomicDebitJeton(prisma, liveSession.userId, amount, spendPlan.source));
+    }
     await prisma.$transaction(tipTx);
 
+    // Puan/katkı etkileri sahte jetonda da işlenir
+    recordContribution(authUser.id, liveSession.tellerId, amount).catch(() => {});
+    recordTeamPoints(authUser.id, amount).catch(() => {});
+
     // ── Immutable ledger (fire-and-forget) ──
-    if (!tipperIsStaff) {
+    if (countsAsFinance) {
       const legs: LedgerLeg[] = [
         {
           accountType: 'user_jeton',
@@ -156,8 +164,6 @@ export async function POST(
         actorId: authUser.id,
         metadata: { tellerId: liveSession.tellerId, commissionRate },
       }).catch((e) => console.error('[Ledger][tip]', e));
-      recordContribution(authUser.id, liveSession.tellerId, amount).catch(() => {});
-      recordTeamPoints(authUser.id, amount).catch(() => {});
     }
 
     // Get updated balance

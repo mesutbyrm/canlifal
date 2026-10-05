@@ -44,6 +44,12 @@ model User {
   theme                        String                   @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
   jetonBalance                 Int                      @default(0)
+  // Sahte (bonus) jeton — admin tarafından yüklenir. Harcandığında kar/zarara
+  // işlemez, alıcıya gerçek bakiye olarak geçmez, paraya çevrilemez/çekilemez;
+  // yalnızca puan/XP/sıralama etkilerini tetikler.
+  fakeJetonBalance             Int                      @default(0)
+  // Site kurucusu rozeti (her yerde "Site Kurucusu" olarak görünür)
+  isFounder                    Boolean                  @default(false)
   // Location for gift leaderboards / sender map (added, optional)
   city                         String?
   country                      String?                  @default("TR")

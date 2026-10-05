@@ -768,7 +768,7 @@ export default function ProfilePage() {
 
         {/* Membership Badge */}
         <div className="flex justify-center mt-2">
-          <MembershipBadge membership={(session.user as any).role === 'admin' ? 'admin' : (profile?.membership || 'basic')} size="md" />
+          <MembershipBadge membership={profile?.membership || 'basic'} role={(profile as any)?.role || (session.user as any).role} isFounder={(profile as any)?.isFounder} size="md" />
         </div>
 
         {/* Bio */}

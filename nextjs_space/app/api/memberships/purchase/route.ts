@@ -7,6 +7,7 @@ import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/id
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { applyMembership } from '@/lib/membership-lifecycle'
 import { invalidateUserEntitlements } from '@/lib/vip-entitlements'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     const rateLimited = await guardRateLimit(req, 'membership', { userId })
     if (rateLimited) return rateLimited
 
-    const { planId, paymentMethod } = await req.json()
+    const { planId, paymentMethod, jetonSource } = await req.json()
     if (!planId) {
       return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
     }
@@ -49,7 +50,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    const isStaff = user.role === 'yonetici'
+    const memPlan = await resolveJetonSpend(userId, plan.price, parseJetonSource(jetonSource))
+    const isStaff = memPlan.skipDeduction
 
     // Idempotency: reserved after validation
     const idem = await beginIdempotent(req, 'membership_purchase', userId)
@@ -64,11 +66,11 @@ export async function POST(req: NextRequest) {
         }
         await atomicDebitCredits(prisma, userId, plan.price)
       } else {
-        if (user.jetonBalance < plan.price) {
+        if ((memPlan.source === 'fake' ? memPlan.fakeBalance : memPlan.realBalance) < plan.price) {
           return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
         }
-        await atomicDebitJeton(prisma, userId, plan.price)
-        await prisma.jetonTransaction.create({
+        await atomicDebitJeton(prisma, userId, plan.price, memPlan.source)
+        if (memPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: userId,
             amount: -plan.price,

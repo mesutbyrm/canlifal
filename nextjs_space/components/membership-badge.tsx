@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { FOUNDER_LABEL_UPPER, isFounderAccount } from '@/lib/founder'
 
 interface BadgeData {
   id: string
@@ -13,6 +14,8 @@ interface MembershipBadgeProps {
   membership: string // basic, premium, gold, diamond, admin
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  role?: string | null
+  isFounder?: boolean | null
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -20,7 +23,9 @@ const TIER_LABELS: Record<string, string> = {
   premium: 'PREMIUM',
   gold: 'GOLD',
   diamond: 'DIAMOND',
-  admin: 'ADMIN',
+  admin: FOUNDER_LABEL_UPPER,
+  yonetici: FOUNDER_LABEL_UPPER,
+  founder: FOUNDER_LABEL_UPPER,
   faluser: 'BASIC',
 }
 
@@ -29,7 +34,9 @@ const TIER_COLORS: Record<string, string> = {
   premium: 'from-purple-600 to-purple-500',
   gold: 'from-yellow-600 to-amber-500',
   diamond: 'from-cyan-500 to-blue-500',
-  admin: 'from-red-600 to-red-500',
+  admin: 'from-amber-500 via-yellow-400 to-amber-600',
+  yonetici: 'from-amber-500 via-yellow-400 to-amber-600',
+  founder: 'from-amber-500 via-yellow-400 to-amber-600',
   faluser: 'from-gray-600 to-gray-500',
 }
 
@@ -57,7 +64,7 @@ function fetchBadges(): Promise<BadgeData[]> {
   return badgeFetchPromise
 }
 
-export default function MembershipBadge({ membership, size = 'sm', className = '' }: MembershipBadgeProps) {
+export default function MembershipBadge({ membership, size = 'sm', className = '', role, isFounder }: MembershipBadgeProps) {
   const [badges, setBadges] = useState<BadgeData[]>(badgeCache || [])
   const [loaded, setLoaded] = useState(!!badgeCache)
   const [imgError, setImgError] = useState(false)
@@ -73,13 +80,16 @@ export default function MembershipBadge({ membership, size = 'sm', className = '
     }
   }, [])
 
-  const rawTier = membership || 'basic'
+  const founder = isFounderAccount({ role, isFounder }) || membership === 'admin' || membership === 'yonetici' || membership === 'founder'
+  const rawTier = founder ? 'founder' : (membership || 'basic')
   // Map faluser to basic for badge lookup
   const tier = rawTier === 'faluser' ? 'basic' : rawTier
-  const label = TIER_LABELS[tier] || tier.toUpperCase()
+  const label = founder ? FOUNDER_LABEL_UPPER : (TIER_LABELS[tier] || tier.toUpperCase())
 
-  // Find a badge image for this tier
-  const tierBadge = badges.find(b => b.tier === tier)
+  // Find a badge image for this tier (kurucu rozeti yoksa admin rozetine düşer)
+  const tierBadge = founder
+    ? (badges.find(b => b.tier === 'founder') || badges.find(b => b.tier === 'admin'))
+    : badges.find(b => b.tier === tier)
 
   const sizeConfig = {
     sm: { w: 80, h: 24, text: 'text-[8px]' },

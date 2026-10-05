@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Star, Users, MessageCircle, Crown, BadgeCheck } from 'lucide-react'
+import { FOUNDER_LABEL, isFounderAccount } from '@/lib/founder'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/language-context'
 import FramedAvatar from './framed-avatar'
@@ -15,6 +16,8 @@ interface UserProfile {
   bio: string | null
   zodiacSign: string | null
   membership: string
+  role?: string | null
+  isFounder?: boolean | null
   specialBadges: string | null
   followerCount: number
   followingCount: number
@@ -58,6 +61,8 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
           bio: data.bio,
           zodiacSign: data.zodiacSign,
           membership: data.membership,
+          role: data.role,
+          isFounder: data.isFounder,
           specialBadges: data.specialBadges,
           followerCount: data.followerCount || 0,
           followingCount: data.followingCount || 0,
@@ -152,8 +157,8 @@ export function ProfilePopupProvider({ children }: { children: ReactNode }) {
                     <p className="text-purple-400 text-xs">@{profile.username}</p>
                   )}
                   <div className="flex items-center justify-center gap-2 mt-1">
-                    <span className={`text-xs font-medium ${getMembershipColor(profile.membership)}`}>
-                      {getMembershipLabel(profile.membership)}
+                    <span className={`text-xs font-medium ${isFounderAccount(profile) ? 'text-amber-400' : getMembershipColor(profile.membership)}`}>
+                      {isFounderAccount(profile) ? FOUNDER_LABEL : getMembershipLabel(profile.membership)}
                     </span>
                     {profile.zodiacSign && (
                       <span className="text-xs text-purple-300">

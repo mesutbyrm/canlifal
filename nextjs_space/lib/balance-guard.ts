@@ -23,7 +23,10 @@
  * sessizce negatife düşen işlem artık tamamen iptal edilir.
  */
 
-export type BalanceField = 'jetonBalance' | 'credits'
+export type BalanceField = 'jetonBalance' | 'credits' | 'fakeJetonBalance'
+
+/** Harcamanın hangi jeton havuzundan yapılacağı. */
+export type JetonSource = 'real' | 'fake'
 
 function buildSql(field: BalanceField) {
   return `WITH upd AS (
@@ -56,8 +59,18 @@ export function atomicDebitOp(
   return client.$executeRawUnsafe(buildSql(field), amt, userId)
 }
 
-export function atomicDebitJeton(client: any, userId: string, amount: number) {
-  return atomicDebitOp(client, 'jetonBalance', userId, amount)
+export function atomicDebitJeton(
+  client: any,
+  userId: string,
+  amount: number,
+  source: JetonSource = 'real',
+) {
+  return atomicDebitOp(
+    client,
+    source === 'fake' ? 'fakeJetonBalance' : 'jetonBalance',
+    userId,
+    amount,
+  )
 }
 
 export function atomicDebitCredits(client: any, userId: string, amount: number) {
@@ -83,6 +96,7 @@ export function isInsufficientBalanceError(e: unknown): boolean {
   return (
     msg.includes('INSUFFICIENT_BALANCE') ||
     msg.includes('users_jetonBalance_nonneg') ||
+    msg.includes('users_fakeJetonBalance_nonneg') ||
     msg.includes('users_credits_nonneg')
   )
 }

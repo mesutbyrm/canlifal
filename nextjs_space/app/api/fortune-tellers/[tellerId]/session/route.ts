@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { createNotificationWithPush } from '@/lib/notify';
 import { getCachedPlatformSetting } from '@/lib/cache';
@@ -55,9 +56,12 @@ export async function POST(
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
     }
 
-    const isStaff = user.role === 'yonetici';
+    // Sahte/gerçek jeton seçimi: sahte ödemede falcıya kazanç yazılmaz.
+    const spendPlan = await resolveJetonSpend(authUser.id, totalCost, parseJetonSource(body?.jetonSource));
+    const isStaff = spendPlan.skipDeduction;
+    const chargeCounts = spendPlan.countsAsFinance;
 
-    if (!isStaff && (user.jetonBalance ?? 0) < totalCost) {
+    if (!isStaff && (spendPlan.source === 'fake' ? spendPlan.fakeBalance : (user.jetonBalance ?? 0)) < totalCost) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });
     }
 
@@ -74,7 +78,7 @@ export async function POST(
           tellerId: teller.id,
           userId: authUser.id,
           fortuneType: fortuneType || 'general',
-          creditsCharged: isStaff ? 0 : totalCost,
+          creditsCharged: chargeCounts ? totalCost : 0,
           maxMinutes: duration,
           creditsPerMinute: creditsPerMinute,
           status: 'pending'
@@ -83,7 +87,7 @@ export async function POST(
     ];
     if (!isStaff) {
       txOps.push(
-        atomicDebitJeton(prisma, authUser.id, totalCost)
+        atomicDebitJeton(prisma, authUser.id, totalCost, spendPlan.source)
       );
     }
     const [liveSession] = await prisma.$transaction(txOps);

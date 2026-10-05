@@ -455,7 +455,7 @@ export default function Navbar() {
                             <p className={`font-semibold truncate ${isLight ? 'text-[#050505]' : 'text-white'} ${(session.user as any).role === 'admin' ? 'effect-glitch' : ''}`} data-text={session.user.name}>{session.user.name}</p>
                             <p className={`text-xs truncate ${isLight ? 'text-[#65676B]' : 'text-fuchsia-300'}`}>{session.user.email}</p>
                             <div className="mt-1 flex items-center gap-2 flex-wrap">
-                              <MembershipBadge membership={(session.user as any).role === 'admin' ? 'admin' : userMembership} size="sm" />
+                              <MembershipBadge membership={userMembership} role={(session.user as any).role} isFounder={(session.user as any).isFounder} size="sm" />
                               <UserLevelBadge compact />
                             </div>
                           </div>

@@ -3,7 +3,7 @@ import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
-import { isExcludedFromFinance } from '@/lib/admin-check'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { heavyLimiter } from '@/lib/rate-limiter'
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
-    const { recipientUsername, giftTypeId, jetonAmount, type } = await req.json()
+    const { recipientUsername, giftTypeId, jetonAmount, type, jetonSource } = await req.json()
     // type: 'gift' or 'jeton'
 
     if (!recipientUsername) {
@@ -128,9 +128,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sender not found' }, { status: 404 })
     }
 
-    const isStaff = sender.role === 'yonetici'
-    // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
-    const senderExcluded = await isExcludedFromFinance(sender.id)
+    // Sahte/gerçek jeton seçimi: sahte harcama alıcıya bakiye olarak yansımaz
+    // ve kar/zarara işlemez.
+    const spendPlan = await resolveJetonSpend(sender.id, 1, parseJetonSource(jetonSource))
+    const isStaff = spendPlan.skipDeduction
+    const senderExcluded = !spendPlan.countsAsFinance
 
     if (type === 'gift' && giftTypeId) {
       // Send a gift item
@@ -152,7 +154,7 @@ export async function POST(req: NextRequest) {
 
       // Deduct jetons from sender (staff skip)
       if (!isStaff) {
-        await atomicDebitJeton(prisma, sender.id, giftType.price)
+        await atomicDebitJeton(prisma, sender.id, giftType.price, spendPlan.source)
         await prisma.jetonTransaction.create({
           data: {
             userId: sender.id,
@@ -271,7 +273,7 @@ export async function POST(req: NextRequest) {
 
       if (!isStaff) {
         // Deduct from sender
-        await atomicDebitJeton(prisma, sender.id, amount)
+        await atomicDebitJeton(prisma, sender.id, amount, spendPlan.source)
         // Record sender transaction
         await prisma.jetonTransaction.create({
           data: {

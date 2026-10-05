@@ -7,7 +7,7 @@ import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guar
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { createNotificationWithPush } from '@/lib/notify'
-import { isExcludedFromFinance } from '@/lib/admin-check'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { processAgencyCommission } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { emitChatEvent } from '@/lib/chat-events'
@@ -98,10 +98,12 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     const unitPrice = giftType.price
     const price = unitPrice * quantity
-    const isStaff = sender.role === 'yonetici'
+    // Sahte/gerçek jeton seçimi (istemci `jetonSource` gönderir)
+    const spendPlan = await resolveJetonSpend(sender.id, price, parseJetonSource(body.jetonSource))
+    const isStaff = spendPlan.skipDeduction
 
     // Check jeton balance (staff skip)
-    if (!isStaff && (sender.jetonBalance ?? 0) < price) {
+    if (!isStaff && (spendPlan.source === 'fake' ? spendPlan.fakeBalance : (sender.jetonBalance ?? 0)) < price) {
       return NextResponse.json({ error: 'insufficient_jeton', message: 'Yetersiz jeton bakiyesi' }, { status: 400 })
     }
 
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const roomOwnerId = room.ownerId
 
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
-    const senderExcluded = await isExcludedFromFinance(sender.id)
+    const senderExcluded = !spendPlan.countsAsFinance
 
     // ── Atomic money movement ──────────────────────────────────────────────
     // Sender deduction, recipient credit and room-owner commission are wrapped
@@ -129,7 +131,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     await prisma.$transaction(async (tx: any) => {
       // Deduct jetons from sender (staff skip - unlimited balance)
       if (!isStaff) {
-        await atomicDebitJeton(tx, sender.id, price)
+        await atomicDebitJeton(tx, sender.id, price, spendPlan.source)
         await tx.jetonTransaction.create({
           data: {
             userId: sender.id,

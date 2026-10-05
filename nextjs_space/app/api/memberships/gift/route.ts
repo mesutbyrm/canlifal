@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { atomicDebitCredits, atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { recordLedger } from '@/lib/ledger'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -57,7 +58,8 @@ export async function POST(req: NextRequest) {
     })
     if (!giver) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
-    const isStaff = giver.role === 'yonetici'
+    const giftPlan = await resolveJetonSpend(giverId, plan.price, parseJetonSource(body?.jetonSource))
+    const isStaff = giftPlan.skipDeduction
 
     const idem = await beginIdempotent(req, 'membership_gift', giverId)
     if (idem.response) return idem.response
@@ -71,11 +73,11 @@ export async function POST(req: NextRequest) {
         }
         await atomicDebitCredits(prisma, giverId, plan.price)
       } else {
-        if (giver.jetonBalance < plan.price) {
+        if ((giftPlan.source === 'fake' ? giftPlan.fakeBalance : giftPlan.realBalance) < plan.price) {
           return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 })
         }
-        await atomicDebitJeton(prisma, giverId, plan.price)
-        await prisma.jetonTransaction.create({
+        await atomicDebitJeton(prisma, giverId, plan.price, giftPlan.source)
+        if (giftPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: giverId,
             amount: -plan.price,

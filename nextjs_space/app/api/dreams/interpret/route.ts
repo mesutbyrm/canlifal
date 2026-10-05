@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = authUser.id
-    const { dreamText } = await req.json()
+    const { dreamText, jetonSource } = await req.json()
     if (!dreamText || typeof dreamText !== 'string' || dreamText.trim().length < 10) {
       return NextResponse.json({ error: 'Rüyanızı en az 10 karakter olarak yazın' }, { status: 400 })
     }
@@ -34,8 +35,10 @@ export async function POST(req: NextRequest) {
       where: { id: userId },
       select: { jetonBalance: true, zodiacSign: true, risingSign: true, name: true, birthDate: true, role: true },
     })
-    const isStaff = user?.role === 'yonetici'
-    if (!user || (!isStaff && user.jetonBalance < JETON_COST)) {
+    const dreamPlan = await resolveJetonSpend(userId, JETON_COST, parseJetonSource(jetonSource))
+    const isStaff = dreamPlan.skipDeduction
+    const dreamAvail = dreamPlan.source === 'fake' ? dreamPlan.fakeBalance : dreamPlan.realBalance
+    if (!user || (!isStaff && dreamAvail < JETON_COST)) {
       return NextResponse.json({ error: `Yetersiz jeton. Bu işlem ${JETON_COST} jeton gerektirir.`, jetonRequired: JETON_COST }, { status: 402 })
     }
 
@@ -106,9 +109,9 @@ Kurallar:
 
     // Deduct jetons (staff skip)
     if (!isStaff) {
-      await atomicDebitJeton(prisma, userId, JETON_COST)
+      await atomicDebitJeton(prisma, userId, JETON_COST, dreamPlan.source)
       try {
-        await prisma.jetonTransaction.create({
+        if (dreamPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId,
             amount: -JETON_COST,

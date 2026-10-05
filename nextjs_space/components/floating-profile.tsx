@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
+import { FOUNDER_LABEL, isFounderAccount } from '@/lib/founder'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -30,6 +31,7 @@ interface UserProfile {
   image: string | null
   credits: number
   role?: string
+  isFounder?: boolean
   membership: string
   profileFrame?: { id: string; name: string; imageUrl: string } | null
   adminAssignedFrame?: { id: string; name: string; imageUrl: string } | null
@@ -179,12 +181,17 @@ export default function FloatingProfile() {
                 </div>
 
                 {/* Membership badge */}
-                {profile?.membership && profile.membership !== 'basic' && (
+                {isFounderAccount(profile) ? (
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <Crown className="w-4 h-4 text-amber-400" />
+                    <span className="text-amber-400 font-semibold">{FOUNDER_LABEL}</span>
+                  </div>
+                ) : profile?.membership && profile.membership !== 'basic' ? (
                   <div className="mt-2 flex items-center gap-2 text-sm">
                     <Crown className="w-4 h-4 text-gold-400" />
                     <span className="text-gold-400 capitalize">{profile.membership}</span>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Menu Items */}

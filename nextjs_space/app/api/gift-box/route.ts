@@ -212,7 +212,9 @@ export async function POST(req: NextRequest) {
     let box
     try {
       box = await prisma.$transaction(async (tx) => {
-        await atomicDebitJeton(tx, userId, totalAmount)
+        // Hediye kutusu kazananlara gerçek bakiye dağıttığı için yalnızca
+        // GERÇEK jetonla açılabilir (sahte jeton paraya çevrilemez).
+        await atomicDebitJeton(tx, userId, totalAmount, 'real')
         return tx.giftBox.create({
           data: {
             scope, streamId, roomId, creatorId: userId,

@@ -6,7 +6,7 @@ import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { logActivity } from '@/lib/activity-logger'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
-import { isExcludedFromFinance } from '@/lib/admin-check'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
@@ -122,7 +122,7 @@ export async function POST(
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
-    const { giftTypeId, quantity = 1 } = await request.json()
+    const { giftTypeId, quantity = 1, jetonSource } = await request.json()
 
     if (!giftTypeId) {
       return NextResponse.json({ error: 'giftTypeId required' }, { status: 400 })
@@ -145,9 +145,10 @@ export async function POST(
       select: { id: true, name: true, jetonBalance: true, role: true }
     })
 
-    // Staff kullanıcılar (admin/yonetici) sınırsız bakiyeye sahiptir
-    const isStaff = user?.role === 'yonetici'
-    if (!isStaff && (!user || (user.jetonBalance ?? 0) < totalPrice)) {
+    // Sahte/gerçek jeton seçimi — staff (admin/yonetici) sınırsız bakiyeye sahiptir
+    const spendPlan = await resolveJetonSpend(userId, totalPrice, parseJetonSource(jetonSource))
+    const isStaff = spendPlan.skipDeduction
+    if (!isStaff && (!user || (spendPlan.source === 'fake' ? spendPlan.fakeBalance : (user.jetonBalance ?? 0)) < totalPrice)) {
       return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
     }
 
@@ -162,7 +163,7 @@ export async function POST(
     }
 
     // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
-    const senderExcluded = await isExcludedFromFinance(userId)
+    const senderExcluded = !spendPlan.countsAsFinance
 
     const txOps: any[] = [
       prisma.streamGift.create({
@@ -183,7 +184,7 @@ export async function POST(
     // Staff kullanıcılardan jeton düşülmez (sınırsız bakiye)
     if (!senderExcluded) {
       txOps.push(
-        atomicDebitJeton(prisma, userId, totalPrice)
+        atomicDebitJeton(prisma, userId, totalPrice, spendPlan.source)
       )
     }
 

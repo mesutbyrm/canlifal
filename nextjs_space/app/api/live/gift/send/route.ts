@@ -5,7 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
-import { isExcludedFromFinance } from '@/lib/admin-check'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
@@ -100,11 +100,13 @@ export async function POST(request: NextRequest) {
       return fail(404, 'USER_NOT_FOUND', 'Kullanıcı bulunamadı')
     }
 
-    const isStaff = sender.role === 'yonetici'
-    const senderExcluded = await isExcludedFromFinance(sender.id)
+    // Sahte/gerçek jeton seçimi (istemci `jetonSource` gönderir)
+    const spendPlan = await resolveJetonSpend(sender.id, totalPrice, parseJetonSource(body.jetonSource))
+    const isStaff = spendPlan.skipDeduction
+    const senderExcluded = !spendPlan.countsAsFinance
 
     // Check jeton balance (staff skip)
-    if (!isStaff && (sender.jetonBalance ?? 0) < totalPrice) {
+    if (!isStaff && (spendPlan.source === 'fake' ? spendPlan.fakeBalance : (sender.jetonBalance ?? 0)) < totalPrice) {
       return fail(400, 'INSUFFICIENT_BALANCE', 'Yetersiz jeton bakiyesi')
     }
 

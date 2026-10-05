@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 
 // ── Fal isteği oluşturma: gövde ayrıştırma ve hata eşleme yardımcıları ──
 type FortuneCreateBodyOk = {
@@ -10,6 +11,7 @@ type FortuneCreateBodyOk = {
   nickname: string | null
   isHidden: boolean
   question: string | null
+  jetonSource?: string | null
 }
 type FortuneCreateBodyError = { ok: false; status: number; body: Record<string, unknown> }
 type ParsedFortuneCreateBody = FortuneCreateBodyOk | FortuneCreateBodyError
@@ -60,7 +62,8 @@ async function parseFortuneCreateBody(request: NextRequest): Promise<ParsedFortu
     typeId: typeIdRaw.trim(),
     nickname: typeof nicknameRaw === 'string' ? (nicknameRaw.trim().slice(0, 60) || null) : null,
     isHidden: isHiddenRaw === true,
-    question: typeof questionRaw === 'string' ? (questionRaw.trim().slice(0, 500) || null) : null
+    question: typeof questionRaw === 'string' ? (questionRaw.trim().slice(0, 500) || null) : null,
+    jetonSource: typeof body.jetonSource === 'string' ? body.jetonSource : null
   }
 }
 
@@ -193,7 +196,7 @@ export async function POST(
       const err = parsed as FortuneCreateBodyError
       return NextResponse.json(err.body, { status: err.status })
     }
-    const { typeId, nickname, isHidden, question } = parsed as FortuneCreateBodyOk
+    const { typeId, nickname, isHidden, question, jetonSource } = parsed as FortuneCreateBodyOk
 
     // --- Yayın var mı? (geçersiz streamId -> 404) ---
     if (!params.streamId || params.streamId.trim().length === 0) {
@@ -249,9 +252,11 @@ export async function POST(
       where: { id: authUser.id },
       select: { jetonBalance: true, role: true }
     })
-    const isStaff = user?.role === 'yonetici'
-    
-    if (!user || (!isStaff && user.jetonBalance < fortuneType.jetonCost)) {
+    const frPlan = await resolveJetonSpend(authUser.id, fortuneType.jetonCost, parseJetonSource(jetonSource))
+    const isStaff = frPlan.skipDeduction
+    const frAvail = frPlan.source === 'fake' ? frPlan.fakeBalance : frPlan.realBalance
+
+    if (!user || (!isStaff && frAvail < fortuneType.jetonCost)) {
       return NextResponse.json({ 
         error: 'Yetersiz jeton bakiyesi', 
         errorEn: 'Insufficient jeton balance',
@@ -265,7 +270,7 @@ export async function POST(
     const txOps: any[] = []
     if (!isStaff) {
       txOps.push(
-        atomicDebitJeton(prisma, authUser.id, fortuneType.jetonCost)
+        atomicDebitJeton(prisma, authUser.id, fortuneType.jetonCost, frPlan.source)
       )
     }
     txOps.push(
@@ -281,7 +286,7 @@ export async function POST(
           nickname: nickname || null,
           isHidden: isHidden || false,
           question: question || null,
-          jetonAmount: isStaff ? 0 : fortuneType.jetonCost,
+          jetonAmount: frPlan.countsAsFinance ? fortuneType.jetonCost : 0,
           status: 'pending',
           refundedAt: null
         },
@@ -292,7 +297,7 @@ export async function POST(
           nickname: nickname || null,
           isHidden: isHidden || false,
           question: question || null,
-          jetonAmount: isStaff ? 0 : fortuneType.jetonCost
+          jetonAmount: frPlan.countsAsFinance ? fortuneType.jetonCost : 0
         }
       })
     )
