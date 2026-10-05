@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getUserPermissions, ROLE_HIERARCHY, ChatRole } from '@/lib/chat-permissions'
 import { emitChatEvent } from '@/lib/chat-events'
+import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +13,34 @@ export const dynamic = 'force-dynamic'
 const kickWarnings = new Map<string, Map<string, { count: number; lastKick: number }>>()
 const KICK_WARNING_RESET_MS = 30 * 60 * 1000 // 30 minutes
 const MAX_KICKS_BEFORE_BAN = 3
+
+
+// Admin koruması: girişim sayacı (kullanıcı+oda başına, 30 dk pencere)
+const ADMIN_GUARD_WARNINGS = 1
+const ADMIN_GUARD_WINDOW_MS = 30 * 60 * 1000
+const adminGuardAttempts = new Map<string, { count: number; first: number }>()
+function registerAdminGuardAttempt(actorId: string, roomId: string): number {
+  const key = `${roomId}:${actorId}`
+  const now = Date.now()
+  const cur = adminGuardAttempts.get(key)
+  if (!cur || now - cur.first > ADMIN_GUARD_WINDOW_MS) {
+    adminGuardAttempts.set(key, { count: 1, first: now })
+    return 1
+  }
+  cur.count += 1
+  return cur.count
+}
+async function notifyAdminGuard(actorId: string, adminId: string, actorName: string, action: string) {
+  const what = action === 'kick_user' ? 'atmaya' : action === 'mute_user' ? 'sessize almaya' : 'yasaklamaya'
+  await createNotificationWithPush({
+    userId: adminId,
+    type: 'admin_guard_attempt',
+    title: 'Yönetici koruması',
+    message: `${actorName} sizi ${what} çalıştı.`,
+    fromUserId: actorId,
+    skipDedupe: true,
+  } as any).catch(() => {})
+}
 
 // POST - Perform moderation action
 export async function POST(
@@ -70,42 +99,75 @@ export async function POST(
     let targetRoleLevel = 0
     let targetUserGlobal: { role: string } | null = null
     if (targetUserId) {
-      // Check if target is a protected user (admin, moderator, site_manager)
+      // Site admini ('admin') korumalıdır: yetkisi ne olursa olsun, ona yönelik
+      // sustur / at / yasakla girişimi KENDİ ÜSTÜNE döner. İlk girişimde yalnızca
+      // sesli + push uyarı gider ("1 daha denerseniz ..."); ikinci girişimde
+      // eylem girişimi yapanın kendisine uygulanır. Yalnızca admin korunur.
       targetUserGlobal = await prisma.user.findUnique({
         where: { id: targetUserId },
         select: { role: true }
       })
-      const protectedRoles = ['admin', 'moderator', 'site_manager']
-      const isTargetProtected = targetUserGlobal && protectedRoles.includes(targetUserGlobal.role)
-      const isActorProtected = protectedRoles.includes(authUser.role || '')
+      const guardedActions = ['kick_user', 'mute_user', 'ban_user']
+      const isTargetProtected = targetUserGlobal?.role === 'admin'
+      if (isTargetProtected && targetUserId !== authUser.id && guardedActions.includes(action)) {
+        const attempts = registerAdminGuardAttempt(authUser.id, roomId)
+        const verbTr = action === 'kick_user' ? 'atılırsınız' : action === 'mute_user' ? 'sessize alınırsınız' : 'yasaklanırsınız'
+        const actorLabel = authUser.name || 'Bir kullanıcı'
+        void notifyAdminGuard(authUser.id, targetUserId, actorLabel, action)
 
-      // If target is protected and actor is NOT protected, reverse the action
-      if (isTargetProtected && !isActorProtected) {
-        const reverseAction = action
-        if (reverseAction === 'kick_user') {
-          // Auto-kick the attacker from the room
-          await prisma.chatPresence.deleteMany({
-            where: { roomId, userId: authUser.id }
-          })
-          return NextResponse.json({ error: 'Bu kullanıcıyı atamazsınız! Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
+        if (attempts < ADMIN_GUARD_WARNINGS + 1) {
+          void createNotificationWithPush({
+            userId: authUser.id,
+            type: 'admin_guard_warning',
+            title: 'Uyarı',
+            message: `Site yöneticisi üzerinde işlem yapamazsınız. 1 daha denerseniz ${verbTr}.`,
+            skipDedupe: true,
+          } as any).catch(() => {})
+          return NextResponse.json({
+            error: `Site yöneticisi üzerinde işlem yapamazsınız. 1 daha denerseniz ${verbTr}.`,
+            code: 'ADMIN_GUARD_WARNING',
+            warned: true,
+            attemptsLeft: 0,
+          }, { status: 403 })
         }
-        if (reverseAction === 'mute_user') {
-          // Auto-mute the attacker
+
+        // Tekrar: eylem girişimi yapanın kendisine uygulanır.
+        if (action === 'mute_user') {
+          const expiresAt = new Date(Date.now() + 30 * 60000)
           await prisma.chatMute.upsert({
             where: { roomId_userId: { roomId, userId: authUser.id } },
-            update: { mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) },
-            create: { roomId, userId: authUser.id, mutedBy: targetUserId, reason: 'Yetkili kullanıcıyı susturmaya çalıştı', expiresAt: new Date(Date.now() + 30 * 60000) }
+            update: { mutedBy: targetUserId, reason: 'Site yöneticisini susturmaya çalıştı', expiresAt },
+            create: { roomId, userId: authUser.id, mutedBy: targetUserId, reason: 'Site yöneticisini susturmaya çalıştı', expiresAt }
           })
-          return NextResponse.json({ error: 'Bu kullanıcıyı susturamazsınız! Kendiniz susturuldunuz.', reversed: true, reverseAction: 'muted' }, { status: 403 })
+          void createNotificationWithPush({
+            userId: authUser.id, type: 'admin_guard_action', title: 'Sessize alındınız',
+            message: 'Site yöneticisini sessize almaya çalıştığınız için 30 dakika sessize alındınız.', skipDedupe: true,
+          } as any).catch(() => {})
+          return NextResponse.json({ error: 'Site yöneticisini susturamazsınız. Kendiniz susturuldunuz.', reversed: true, reverseAction: 'muted' }, { status: 403 })
         }
-        if (reverseAction === 'ban_user') {
-          // Auto-kick the attacker and ban them
-          await prisma.chatPresence.deleteMany({
-            where: { roomId, userId: authUser.id }
-          })
-          return NextResponse.json({ error: 'Bu kullanıcıyı banlayamazsınız! Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
+        // kick / ban: girişimi yapan odadan çıkarılır (ban için kısa süreli yasak)
+        await prisma.chatPresence.deleteMany({ where: { roomId, userId: authUser.id } })
+        if (action === 'ban_user') {
+          await prisma.chatBan.upsert({
+            where: { roomId_userId: { roomId, userId: authUser.id } },
+            update: { bannedBy: targetUserId, reason: 'Site yöneticisini yasaklamaya çalıştı', expiresAt: new Date(Date.now() + 60 * 60000) },
+            create: { roomId, userId: authUser.id, bannedBy: targetUserId, reason: 'Site yöneticisini yasaklamaya çalıştı', expiresAt: new Date(Date.now() + 60 * 60000) }
+          }).catch(() => {})
         }
-        // For any other action on protected users, just deny
+        void createNotificationWithPush({
+          userId: authUser.id, type: 'admin_guard_action', title: 'Odadan çıkarıldınız',
+          message: 'Site yöneticisine işlem yapmaya çalıştığınız için odadan çıkarıldınız.', skipDedupe: true,
+        } as any).catch(() => {})
+        emitChatEvent(roomId, 'system', {
+          event: action === 'ban_user' ? 'USER_BANNED' : 'USER_KICKED',
+          userId: authUser.id,
+          userName: authUser.name || 'Kullanıcı',
+          reason: 'Site yöneticisine işlem yapmaya çalıştı',
+          moderator: 'Yönetici koruması'
+        })
+        return NextResponse.json({ error: 'Site yöneticisine işlem yapamazsınız. Odadan çıkarıldınız.', reversed: true, reverseAction: 'kicked' }, { status: 403 })
+      }
+      if (isTargetProtected && targetUserId !== authUser.id) {
         return NextResponse.json({ error: 'Bu kullanıcı üzerinde yetkiniz yok' }, { status: 403 })
       }
 

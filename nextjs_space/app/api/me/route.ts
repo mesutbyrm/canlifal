@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
         zodiacSign: true,
         risingSign: true,
         favoriteTeam: true,
+        city: true,
         level: true,
         xp: true,
         loginStreak: true,
@@ -81,6 +82,7 @@ export async function GET(req: NextRequest) {
       zodiacSign: user.zodiacSign,
       risingSign: user.risingSign,
       favoriteTeam: user.favoriteTeam,
+      city: user.city,
       level: user.level,
       xp: user.xp,
       loginStreak: user.loginStreak,
@@ -115,7 +117,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const allowedFields = [
       'name', 'username', 'phone', 'bio', 'birthDate', 'birthTime',
-      'zodiacSign', 'favoriteTeam', 'preferredLanguage', 'image',
+      'zodiacSign', 'favoriteTeam', 'city', 'preferredLanguage', 'image',
     ]
 
     const updateData: Record<string, any> = {}
@@ -151,7 +153,7 @@ export async function PATCH(req: NextRequest) {
       select: {
         id: true, email: true, name: true, username: true, phone: true,
         image: true, bio: true, birthDate: true, birthTime: true,
-        zodiacSign: true, favoriteTeam: true, preferredLanguage: true,
+        zodiacSign: true, favoriteTeam: true, city: true, preferredLanguage: true,
       },
     })
 
