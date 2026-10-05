@@ -8,6 +8,7 @@ import { ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { emitSeatChanged, emitHostChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { resolveUserCosmetics, emptyCosmetics } from '@/lib/voice-room-cosmetics'
 import {
   resolveRoomSeatCount,
   buildSeatLayout,
@@ -51,16 +52,10 @@ export async function GET(
       : []
     const micOnSet = new Set(micSessions.map((v: { userId: string }) => v.userId))
     const receivedJetonMap = await getReceivedJetonTotals(roomId, activeUserIds)
+    // Kozmetik/süsleme alanları (web ile birebir aynı görsel için).
+    const cosmeticsMap = await resolveUserCosmetics(activeUserIds)
 
-    const seats: Array<null | {
-      seatIndex: number
-      userId: string
-      name: string
-      nickname: string
-      image: string | null
-      micOn: boolean
-      receivedJetons: number
-    }> = new Array(SEAT_COUNT).fill(null)
+    const seats: Array<null | Record<string, any>> = new Array(SEAT_COUNT).fill(null)
     for (const s of seated) {
       if (s.seatIndex !== null && s.seatIndex >= 0 && s.seatIndex < SEAT_COUNT) {
         seats[s.seatIndex] = {
@@ -70,7 +65,8 @@ export async function GET(
           nickname: s.nickname || s.user.name,
           image: s.user.image || null,
           micOn: micOnSet.has(s.userId),
-          receivedJetons: receivedJetonMap.get(s.userId) || 0
+          receivedJetons: receivedJetonMap.get(s.userId) || 0,
+          ...(cosmeticsMap.get(s.userId) || emptyCosmetics())
         }
       }
     }

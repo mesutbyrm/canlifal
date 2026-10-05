@@ -13,6 +13,7 @@ import { withTiming } from '@/lib/perf'
 import { buildDjPayload } from '@/lib/chat-dj-events'
 import { expireAllStalePKs } from '@/lib/pk-expiry'
 import { presenceCutoff } from '@/lib/presence'
+import { resolveUserCosmetics, emptyCosmetics } from '@/lib/voice-room-cosmetics'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,6 +93,9 @@ async function handleState(
     const roleMap = new Map(chatRoles.map((r: { userId: string; role: string }) => [r.userId, r.role]))
     const micOnSet = new Set(micSessions.map((v: { userId: string }) => v.userId))
     const receivedJetonMap = await getReceivedJetonTotals(roomId, activeUserIds)
+    // Kozmetik/süsleme alanları (profil çerçevesi, mic çerçevesi, isim/giriş efekti,
+    // sohbet balonu, avatar aksesuarı) — web ile birebir aynı görsel için.
+    const cosmeticsMap = await resolveUserCosmetics(activeUserIds)
     const globalAdminRoles = ['admin', 'moderator', 'site_manager']
 
     const participants = presences.map((p: { userId: string; nickname: string | null; lastSeen: Date; seatIndex: number | null; user: { id: string; name: string; role: string; image: string | null; level?: number } }) => {
@@ -113,7 +117,8 @@ async function handleState(
         roleLevel,
         isAdmin: isGlobalAdmin,
         isOwner: room.ownerId === p.userId,
-        receivedJetons: receivedJetonMap.get(p.userId) || 0
+        receivedJetons: receivedJetonMap.get(p.userId) || 0,
+        ...(cosmeticsMap.get(p.userId) || emptyCosmetics())
       }
     })
 
@@ -129,7 +134,7 @@ async function handleState(
     const seatStaleMs = seatStaleThreshold().getTime()
     // BÖLÜM 2 — odanın etkin koltuk sayısı (oda özel değeri → global varsayılan)
     const SEAT_COUNT = await resolveRoomSeatCount(roomId, (room as any).seatCount ?? null)
-    const seats: Array<null | { seatIndex: number; userId: string; name: string; nickname: string; image: string | null; micOn: boolean; receivedJetons: number }> = new Array(SEAT_COUNT).fill(null)
+    const seats: Array<null | Record<string, any>> = new Array(SEAT_COUNT).fill(null)
     for (const p of participants) {
       const seatFresh = new Date(p.lastSeen).getTime() >= seatStaleMs
       if (seatFresh && p.seatIndex >= 0 && p.seatIndex < SEAT_COUNT) {
@@ -140,7 +145,8 @@ async function handleState(
           nickname: p.nickname,
           image: p.image,
           micOn: p.micOn,
-          receivedJetons: p.receivedJetons
+          receivedJetons: p.receivedJetons,
+          ...(cosmeticsMap.get(p.id) || emptyCosmetics())
         }
       }
     }
@@ -201,6 +207,12 @@ async function handleState(
           descEn: room.descEn,
           icon: room.icon,
           backgroundImage: room.backgroundImage,
+          bannerImage: room.bannerImage,
+          vipThemeId: room.vipThemeId,
+          showVipEntranceFx: room.showVipEntranceFx,
+          isVipLounge: room.isVipLounge,
+          welcomeMessage: room.welcomeMessage,
+          pinnedAnnouncement: room.pinnedAnnouncement,
           roomType: room.roomType,
           isActive: room.isActive,
           isMuted: room.isMuted,

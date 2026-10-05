@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { userIdToNumericUid } from '@/lib/trtc-room'
 import { emitMicChanged } from '@/lib/voice-room-events'
+import { resolveUserCosmetics, emptyCosmetics } from '@/lib/voice-room-cosmetics'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,10 +38,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       select: { userId: true, userName: true, joinedAt: true }
     })
 
+    // Kozmetik/süsleme alanlarını toplu çöz (web ile birebir aynı görsel).
+    const cosmeticsMap = await resolveUserCosmetics(voiceSessions.map((s: any) => s.userId))
+
     const voiceUsers = voiceSessions.map((s: any) => ({
       id: s.userId,
       name: s.userName,
-      joinedAt: s.joinedAt.getTime()
+      joinedAt: s.joinedAt.getTime(),
+      ...(cosmeticsMap.get(s.userId) || emptyCosmetics())
     }))
 
     // Update caller's ping if they're in voice
