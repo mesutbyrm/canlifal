@@ -72,6 +72,7 @@ export default function CoffeeFortunePage() {
         fileName: file.name,
         contentType: file.type,
         isPublic: false,
+        folder: 'fortune',
       }),
     })
 

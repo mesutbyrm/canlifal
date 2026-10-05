@@ -141,7 +141,8 @@ export default function ChatPage() {
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type,
-          isPublic: true
+          isPublic: true,
+          folder: 'chat'
         })
       })
 

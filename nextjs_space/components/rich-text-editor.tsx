@@ -99,7 +99,8 @@ export default function RichTextEditor({ value, onChange, placeholder = 'İçeri
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type,
-          isPublic: true
+          isPublic: true,
+          folder: 'announcement'
         })
       })
 

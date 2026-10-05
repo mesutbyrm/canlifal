@@ -47,7 +47,7 @@ export default function AdminBroadcastImagesPage() {
       const presignedRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true, folder: 'announcement' })
       })
       if (!presignedRes.ok) return null
       const { uploadUrl, publicUrl } = await presignedRes.json()

@@ -329,6 +329,7 @@ export default function AdminNotificationsPage() {
           fileName: file.name,
           contentType: file.type,
           isPublic: true,
+          folder: 'announcement',
         }),
       })
 

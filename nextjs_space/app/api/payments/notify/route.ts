@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { sendNotificationEmail } from '@/lib/email-service'
 import { decoratePaymentNotification, PRODUCT_TYPE_LABELS } from '@/lib/payment-status'
+import { computeJetonPrice, computeCfcPrice, validateClientAmount, round2 } from '@/lib/jeton-pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +43,46 @@ export async function POST(req: NextRequest) {
     const requestedGoldType =
       productType === 'gold' && body.requestedGoldType ? String(body.requestedGoldType).slice(0, 40) : null
 
+    // ──────────────────────────────────────────────────────────────
+    // SUNUCU TARAFI FİYAT DOĞRULAMASI (tek yetkili kaynak)
+    // İstemciden gelen `amount` ASLA doğrudan kullanılmaz.
+    // jeton/cfc için tutar = adet × birim fiyat olarak yeniden hesaplanır.
+    // ──────────────────────────────────────────────────────────────
+    let finalAmount = round2(parseFloat(amount))
+    let pricingNote = ''
+    let effectiveRequested = requestedAmount
+
+    if (productType === 'jeton' || productType === 'cfc') {
+      const compute = productType === 'jeton' ? computeJetonPrice : computeCfcPrice
+      // Adet gönderilmemişse eski istemciler için tutardan türet.
+      if (!effectiveRequested || effectiveRequested <= 0) {
+        const probe = await compute(1)
+        effectiveRequested = Math.max(1, Math.round(round2(parseFloat(amount)) / probe.unitPrice))
+      }
+      const quote = await compute(effectiveRequested)
+      const check = validateClientAmount(quote, amount)
+      if (!check.ok) {
+        return NextResponse.json(
+          {
+            error: check.message,
+            code: 'PRICE_MISMATCH',
+            expectedAmount: quote.finalAmount,
+            unitPrice: quote.unitPrice,
+            jetonAmount: quote.jetonAmount,
+            discountEnabled: quote.discountEnabled,
+            discountPercent: quote.discountPercent,
+          },
+          { status: 400 }
+        )
+      }
+      finalAmount = quote.finalAmount
+      pricingNote = `[sunucu fiyatı: ${quote.jetonAmount} × ${quote.unitPrice.toFixed(2)} TL = ${quote.finalAmount.toFixed(2)} TL]`
+    }
+
+    if (!isFinite(finalAmount) || finalAmount <= 0) {
+      return NextResponse.json({ error: 'Geçersiz tutar' }, { status: 400 })
+    }
+
     // Get user info
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -58,14 +99,14 @@ export async function POST(req: NextRequest) {
         userId,
         username: user.username || user.name || 'Kullanıcı',
         paymentMethod,
-        amount: parseFloat(amount),
+        amount: finalAmount,
         transactionId: transactionId || null,
         senderName: senderName || null,
-        notes: notes || null,
+        notes: [notes || '', pricingNote].filter(Boolean).join(' ').slice(0, 1000) || null,
         status: 'pending',
         productType,
-        requestedAmount,
-        originalRequestedAmount: requestedAmount,
+        requestedAmount: effectiveRequested,
+        originalRequestedAmount: effectiveRequested,
         requestedGoldDays,
         requestedGoldType,
         proofUrl: proofUrl ? String(proofUrl).slice(0, 500) : null,
@@ -85,14 +126,14 @@ export async function POST(req: NextRequest) {
         userId: admin.id,
         type: 'payment_notification',
         title: 'Yeni Ödeme Bildirimi 💰',
-        message: `${user.username || user.name} kullanıcısı ${amount} TL ödeme bildirimi gönderdi. (${PRODUCT_TYPE_LABELS[productType] || productType})`,
+        message: `${user.username || user.name} kullanıcısı ${finalAmount.toFixed(2)} TL ödeme bildirimi gönderdi. (${PRODUCT_TYPE_LABELS[productType] || productType})`,
         fromUserId: userId,
         fromUserName: user.username || user.name || undefined,
         data: JSON.stringify({
           paymentNotificationId: notification.id,
           userId,
           username: user.username || user.name,
-          amount,
+          amount: finalAmount,
           paymentMethod
         })
       })
@@ -104,7 +145,7 @@ export async function POST(req: NextRequest) {
         <h2 style="color: #d4af37; border-bottom: 2px solid #d4af37; padding-bottom: 10px;">💰 Yeni Ödeme Bildirimi</h2>
         <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 10px 0;"><strong>Kullanıcı:</strong> ${user.username || user.name}</p>
-          <p style="margin: 10px 0;"><strong>Tutar:</strong> ${amount} TL</p>
+          <p style="margin: 10px 0;"><strong>Tutar:</strong> ${finalAmount.toFixed(2)} TL</p>
           <p style="margin: 10px 0;"><strong>Ödeme Yöntemi:</strong> ${paymentMethod}</p>
           <p style="margin: 10px 0;"><strong>Ürün:</strong> ${PRODUCT_TYPE_LABELS[productType] || productType}${requestedAmount ? ` — ${requestedAmount}` : ''}${requestedGoldDays ? ` — ${requestedGoldDays} gün` : ''}</p>
           ${transactionId ? `<p style="margin: 10px 0;"><strong>İşlem No:</strong> ${transactionId}</p>` : ''}
@@ -116,7 +157,7 @@ export async function POST(req: NextRequest) {
       </div>
     `;
 
-    const emailSubject = `💰 Yeni Ödeme Bildirimi: ${user.username || user.name} - ${amount} TL`
+    const emailSubject = `💰 Yeni Ödeme Bildirimi: ${user.username || user.name} - ${finalAmount.toFixed(2)} TL`
 
     for (const admin of admins) {
       if (!admin.email) continue

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
+import { getWithdrawalTaxPercent, round2 } from '@/lib/jeton-pricing';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { requireFeature } from '@/lib/check-feature';
 import { guardRateLimit } from '@/lib/rate-limit-guard'
@@ -112,6 +113,11 @@ export async function POST(request: NextRequest) {
     const jetonTlRate = parseFloat(rateStr);
     const amountTL = parseFloat((amount * jetonTlRate).toFixed(2));
 
+    // ── Vergi / kesinti (adminden yönetilir) ──
+    const taxPercent = await getWithdrawalTaxPercent();
+    const taxAmount = round2((amountTL * taxPercent) / 100);
+    const netAmountTL = round2(amountTL - taxAmount);
+
     // Check if user belongs to an agency
     const agencyMembership = await prisma.agencyUser.findFirst({
       where: { userId: authUser.id, isActive: true },
@@ -130,6 +136,9 @@ export async function POST(request: NextRequest) {
         userId: authUser.id,
         amount,
         amountTL,
+        taxPercent,
+        taxAmount,
+        netAmountTL,
         method,
         accountDetails,
         agencyId: agencyMembership?.agencyId || null,
@@ -163,7 +172,18 @@ export async function POST(request: NextRequest) {
       metadata: { amountTL, method },
     }).catch(e => console.error('[Risk] withdrawal error:', e))
 
-    const responseBody = { success: true, withdrawal };
+    const responseBody = {
+      success: true,
+      withdrawal,
+      summary: {
+        jeton: amount,
+        unitRate: jetonTlRate,
+        grossTL: amountTL,
+        taxPercent,
+        taxAmount,
+        netAmountTL,
+      },
+    };
     await completeIdempotent(idemRecord, 200, responseBody);
     return NextResponse.json(responseBody);
   } catch (error) {

@@ -9,6 +9,16 @@ import { recordLedger } from '@/lib/ledger'
 import { createNotificationWithPush } from '@/lib/notify'
 import { awardTopupCommissions } from '@/lib/referral-commission'
 import { applyTopupBonus } from '@/lib/currency-branding'
+import { decoratePaymentNotification } from '@/lib/payment-status'
+import {
+  computeJetonPrice,
+  getJetonUnitPrice,
+  getCfcUnitPrice,
+  computeCfcPrice,
+  getDiscountSettings,
+  round2,
+  PRICE_TOLERANCE,
+} from '@/lib/jeton-pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +70,37 @@ export async function GET(req: NextRequest) {
         where: { status: 'approved', creditApplied: true },
         _sum: { amount: true, jetonLoaded: true, cfcLoaded: true, goldDaysLoaded: true },
       })
+
+      // §9/§17 — Jeton ve CFC istatistikleri AYRI raporlanır.
+      const perType = async (pt: string) => {
+        const [p, a, r] = await Promise.all([
+          prisma.paymentNotification.count({ where: { productType: pt, status: 'pending' } }),
+          prisma.paymentNotification.count({ where: { productType: pt, status: 'approved' } }),
+          prisma.paymentNotification.count({ where: { productType: pt, status: 'rejected' } }),
+        ])
+        const sum = await prisma.paymentNotification.aggregate({
+          where: { productType: pt, status: 'approved', creditApplied: true },
+          _sum: { amount: true, jetonLoaded: true, cfcLoaded: true },
+        })
+        return {
+          pending: p,
+          approved: a,
+          rejected: r,
+          revenueTRY: sum._sum.amount || 0,
+          unitsSold: pt === 'cfc' ? sum._sum.cfcLoaded || 0 : sum._sum.jetonLoaded || 0,
+        }
+      }
+      const [jetonStats, cfcStats, goldStats] = await Promise.all([
+        perType('jeton'),
+        perType('cfc'),
+        perType('gold'),
+      ])
+      const [unitPrice, cfcUnitPrice, discount] = await Promise.all([
+        getJetonUnitPrice(),
+        getCfcUnitPrice(),
+        getDiscountSettings(),
+      ])
+
       return ok({
         counts: { pending, approved, rejected, corrected, cancelled },
         totals: {
@@ -68,6 +109,16 @@ export async function GET(req: NextRequest) {
           cfcLoaded: aggs._sum.cfcLoaded || 0,
           goldDaysLoaded: aggs._sum.goldDaysLoaded || 0,
         },
+        pricing: {
+          jetonUnitPrice: unitPrice,
+          cfcUnitPrice,
+          discountEnabled: discount.enabled,
+          discountPercent: discount.percent,
+          topupBonusEnabled: discount.topupBonusEnabled,
+        },
+        jeton: jetonStats,
+        cfc: cfcStats,
+        gold: goldStats,
       })
     }
 
@@ -82,7 +133,11 @@ export async function GET(req: NextRequest) {
         where: { id: pn.userId },
         select: { id: true, name: true, username: true, email: true, image: true, jetonBalance: true, cfcBalance: true, credits: true, membership: true },
       })
-      return ok({ notification: pn, user })
+      const [uP, cP] = await Promise.all([getJetonUnitPrice(), getCfcUnitPrice()])
+      return ok({
+        notification: decoratePaymentNotification(pn, { unitPrice: uP, cfcUnitPrice: cP }),
+        user,
+      })
     }
 
     /* --- list view (default) --------------------------------------- */
@@ -109,7 +164,18 @@ export async function GET(req: NextRequest) {
       prisma.paymentNotification.count({ where }),
     ])
 
-    return ok({ notifications, total, page, totalPages: Math.ceil(total / limit) })
+    const [uP2, cP2] = await Promise.all([getJetonUnitPrice(), getCfcUnitPrice()])
+    const decorated = notifications.map((n) =>
+      decoratePaymentNotification(n, { unitPrice: uP2, cfcUnitPrice: cP2 })
+    )
+
+    return ok({
+      notifications: decorated,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      pricing: { jetonUnitPrice: uP2, cfcUnitPrice: cP2 },
+    })
   } catch (error) {
     console.error('Admin GET payments error:', error)
     return err('Bir hata oluştu', 500)
@@ -120,6 +186,8 @@ export async function GET(req: NextRequest) {
 /*  POST — all payment admin actions                                   */
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest) {
+  // Atomik çift-onay kilidi: hata durumunda serbest bırakılır.
+  let claimedNotificationId: string | null = null
   try {
     const actor = await resolveUser(req)
     if (!actor) return err('Oturum açmanız gerekiyor', 401)
@@ -170,6 +238,41 @@ export async function POST(req: NextRequest) {
           ? Math.max(1, parseInt(loadAmount))
           : (pn.correctedAmount || pn.requestedAmount || 0)
         if (effectiveAmount < 1) return err('Yüklenecek miktar belirtilmeli')
+
+        // ── SUNUCU TARAFI FİYAT YENİDEN HESABI (§7) ──
+        // Onay anında TL tutarı = adet × güncel birim fiyat olarak yeniden
+        // hesaplanır. Kayıttaki tutar farklıysa doğru değerle düzeltilir.
+        let recomputedTRY: number | null = null
+        if (pn.productType === 'jeton' || pn.productType === 'cfc') {
+          const quote =
+            pn.productType === 'jeton'
+              ? await computeJetonPrice(effectiveAmount)
+              : await computeCfcPrice(effectiveAmount)
+          recomputedTRY = quote.finalAmount
+          if (Math.abs(round2(pn.amount) - recomputedTRY) > PRICE_TOLERANCE) {
+            await prisma.paymentNotification.update({
+              where: { id: notificationId },
+              data: {
+                amount: recomputedTRY,
+                notes: [pn.notes || '', `[düzeltildi: ${round2(pn.amount).toFixed(2)} TL → ${recomputedTRY.toFixed(2)} TL]`]
+                  .filter(Boolean)
+                  .join(' ')
+                  .slice(0, 1000),
+              },
+            })
+            pn.amount = recomputedTRY
+          }
+        }
+
+        // ── ATOMİK ÇİFT-ONAY KORUMASI (§12) ──
+        // creditApplied bayrağını koşullu olarak sahiplen; ikinci istek 0 satır günceller.
+        const claim = await prisma.paymentNotification.updateMany({
+          where: { id: notificationId, creditApplied: false },
+          data: { creditApplied: true, creditAppliedAt: new Date() },
+        })
+        if (claim.count === 0)
+          return err('Bu ödeme için bakiye zaten yüklenmiş (idempotency)', 409)
+        claimedNotificationId = notificationId
 
         const targetUser = await prisma.user.findUnique({
           where: { id: pn.userId },
@@ -224,7 +327,13 @@ export async function POST(req: NextRequest) {
 
           // Commission & bonus (fire-and-forget)
           awardTopupCommissions({ userId: pn.userId, amount: effectiveAmount, currency: 'jeton', sourceType: 'jeton_payment', sourceId: notificationId }).catch(() => {})
-          applyTopupBonus({ userId: pn.userId, amount: effectiveAmount, currency: 'jeton', sourceType: 'jeton_payment', sourceId: notificationId }).catch(() => {})
+          // Otomatik yükleme bonusu VARSAYILAN OLARAK KAPALI (§2/§15).
+          getDiscountSettings()
+            .then((d) => {
+              if (d.topupBonusEnabled)
+                return applyTopupBonus({ userId: pn.userId, amount: effectiveAmount, currency: 'jeton', sourceType: 'jeton_payment', sourceId: notificationId })
+            })
+            .catch(() => {})
 
         } else if (pn.productType === 'cfc') {
           const before = targetUser.cfcBalance || 0
@@ -259,7 +368,12 @@ export async function POST(req: NextRequest) {
           }).catch(() => {})
 
           awardTopupCommissions({ userId: pn.userId, amount: effectiveAmount, currency: 'cfc', sourceType: 'cfc_payment', sourceId: notificationId }).catch(() => {})
-          applyTopupBonus({ userId: pn.userId, amount: effectiveAmount, currency: 'cfc', sourceType: 'cfc_payment', sourceId: notificationId }).catch(() => {})
+          getDiscountSettings()
+            .then((d) => {
+              if (d.topupBonusEnabled)
+                return applyTopupBonus({ userId: pn.userId, amount: effectiveAmount, currency: 'cfc', sourceType: 'cfc_payment', sourceId: notificationId })
+            })
+            .catch(() => {})
 
         } else if (pn.productType === 'gold') {
           const goldDays = pn.requestedGoldDays || 30
@@ -519,8 +633,9 @@ export async function POST(req: NextRequest) {
         const { userId: targetUserId, productType, amount: rawAmount, reason } = body
         if (!targetUserId) return err('userId gerekli')
         if (!productType || !['jeton', 'cfc'].includes(productType)) return err('productType jeton veya cfc olmalı')
-        const amount = Math.max(1, parseInt(rawAmount) || 0)
-        if (amount < 1) return err('Miktar en az 1 olmalı')
+        // §18 — Manuel Jeton/CFC EKLEME ve ÇIKARMA (negatif değer = düşme)
+        const amount = Math.trunc(Number(rawAmount) || 0)
+        if (amount === 0) return err('Miktar 0 olamaz (pozitif = ekle, negatif = çıkar)')
 
         // Permission based on product type
         const permKey = productType === 'jeton' ? 'finance.jeton.adjust' : 'finance.cfc.adjust'
@@ -535,14 +650,15 @@ export async function POST(req: NextRequest) {
 
         if (productType === 'jeton') {
           const before = targetUser.jetonBalance || 0
-          const after = before + amount
+          const after = Math.max(0, before + amount)
+          if (amount < 0 && before + amount < 0) return err(`Yetersiz bakiye: kullanıcıda ${before} jeton var`)
           await prisma.$transaction([
             prisma.user.update({ where: { id: targetUserId }, data: { jetonBalance: after } }),
             prisma.jetonTransaction.create({
               data: {
                 userId: targetUserId,
                 amount,
-                type: 'admin_load',
+                type: amount > 0 ? 'admin_load' : 'admin_deduct',
                 description: reason || `Admin tarafından yüklendi`,
                 balanceBefore: before,
                 balanceAfter: after,
@@ -552,7 +668,7 @@ export async function POST(req: NextRequest) {
           recordLedger({
             debit: { accountType: 'platform_jeton', accountId: 'platform' },
             credit: { accountType: 'user_jeton', accountId: targetUserId, balanceBefore: before, balanceAfter: after },
-            amount,
+            amount: Math.abs(amount),
             category: 'admin_adjust',
             currency: 'jeton',
             description: reason || 'Admin manual jeton load',
@@ -560,14 +676,15 @@ export async function POST(req: NextRequest) {
           }).catch(() => {})
         } else {
           const before = targetUser.cfcBalance || 0
-          const after = before + amount
+          const after = Math.max(0, before + amount)
+          if (amount < 0 && before + amount < 0) return err(`Yetersiz bakiye: kullanıcıda ${before} CFC var`)
           await prisma.$transaction([
             prisma.user.update({ where: { id: targetUserId }, data: { cfcBalance: after } }),
           ])
           recordLedger({
             debit: { accountType: 'platform_cfc', accountId: 'platform' },
             credit: { accountType: 'user_cfc', accountId: targetUserId, balanceBefore: before, balanceAfter: after },
-            amount,
+            amount: Math.abs(amount),
             category: 'admin_adjust',
             currency: 'cfc',
             description: reason || 'Admin manual CFC load',
@@ -578,13 +695,17 @@ export async function POST(req: NextRequest) {
         createNotificationWithPush({
           userId: targetUserId,
           type: productType === 'jeton' ? 'jeton_added' : 'cfc_added',
-          title: productType === 'jeton' ? 'Jeton Eklendi! 🪙' : 'CFC Eklendi! 💎',
-          message: `Hesabınıza ${amount} ${productType === 'jeton' ? 'jeton' : 'CFC'} eklendi.`,
+          title: amount > 0
+            ? (productType === 'jeton' ? 'Jeton Eklendi! 🪙' : 'CFC Eklendi! 💎')
+            : (productType === 'jeton' ? 'Jeton Düşüldü' : 'CFC Düşüldü'),
+          message: amount > 0
+            ? `Hesabınıza ${amount} ${productType === 'jeton' ? 'jeton' : 'CFC'} eklendi.`
+            : `Hesabınızdan ${Math.abs(amount)} ${productType === 'jeton' ? 'jeton' : 'CFC'} düşüldü.`,
         }).catch(() => {})
 
         recordAudit({ actorId: actor.id, action: 'manual_balance_load', targetType: 'user', targetId: targetUserId, ip, metadata: { productType, amount, reason } }).catch(() => {})
 
-        return ok({ success: true, message: `${targetUser.username || targetUser.name} kullanıcısına ${amount} ${productType} yüklendi.` })
+        return ok({ success: true, message: `${targetUser.username || targetUser.name} kullanıcısı için ${Math.abs(amount)} ${productType} ${amount > 0 ? 'yüklendi' : 'düşüldü'}.` })
       }
 
       default:
@@ -592,6 +713,15 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('Admin POST payments error:', error)
+    // Kilit alındı ama işlem tamamlanamadıysa serbest bırak — tekrar denenebilsin.
+    if (claimedNotificationId) {
+      await prisma.paymentNotification
+        .updateMany({
+          where: { id: claimedNotificationId, status: { not: 'approved' } },
+          data: { creditApplied: false, creditAppliedAt: null },
+        })
+        .catch(() => {})
+    }
     return err('Bir hata oluştu', 500)
   }
 }
