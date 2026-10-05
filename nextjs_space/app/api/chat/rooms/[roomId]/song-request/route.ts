@@ -166,7 +166,7 @@ export async function POST(
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
     }
 
-    const isStaff = user.role === 'yonetici'
+    const isStaff = user.role === 'yonetici' || user.role === 'admin'
     // Staff always skip payment — client skipPayment param removed for security
     const shouldSkipPayment = isStaff
 
