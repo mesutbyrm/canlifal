@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options';
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { guardRateLimit } from '@/lib/rate-limit-guard';
+import { notifyWithdrawalStatus } from '@/lib/withdrawal-notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,6 +102,15 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    // Kullanıcıya durum bildirimi (uygulama içi + push + e-posta)
+    notifyWithdrawalStatus({
+      userId: wr.userId,
+      status: action === 'approve' ? 'agency_approved' : 'rejected',
+      amount: wr.amount,
+      amountTL: wr.amountTL,
+      note: note || null,
+    }).catch(e => console.error('[Agency Withdrawal] notify error:', e))
 
     return NextResponse.json({ success: true });
   } catch (error) {

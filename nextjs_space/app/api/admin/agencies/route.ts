@@ -10,6 +10,7 @@ import prisma from '@/lib/db'
 import { resolveUser, isAdminRole, type ResolvedUser } from '@/lib/rbac'
 import { hasPermission } from '@/lib/permissions'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
+import { processExpiredLeaveRequests } from '@/lib/agency-auto-leave'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +51,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'agencyId gerekli' } }, { status: 400 })
     }
 
-    const [agency, members, earnings, penalties] = await Promise.all([
+    // 3 günlük otomatik çıkış kuralını tembel tetikle
+    await processExpiredLeaveRequests(agencyId)
+
+    const [agency, members, earnings, penalties, leaveRequests, pendingInvites] = await Promise.all([
       prisma.agency.findUnique({ where: { id: agencyId } }),
       prisma.agencyUser.findMany({
         where: { agencyId },
@@ -59,6 +63,19 @@ export async function GET(req: NextRequest) {
       }),
       prisma.agencyEarning.aggregate({ where: { agencyId }, _sum: { amount: true, originalAmount: true }, _count: true }),
       prisma.agencyPenalty.findMany({ where: { agencyId }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      prisma.agencyLeaveRequest.findMany({
+        where: { agencyId, status: 'pending' },
+        include: { user: { select: { id: true, name: true, username: true, image: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.agencyMemberInvite.findMany({
+        where: { agencyId, status: 'pending' },
+        include: {
+          user: { select: { id: true, name: true, username: true, image: true } },
+          invitedBy: { select: { id: true, name: true, username: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
     ])
 
     if (!agency) {
@@ -81,9 +98,13 @@ export async function GET(req: NextRequest) {
         totalOriginalAmount: earnings._sum.originalAmount || 0,
         earningCount: earnings._count,
         activePenalties: penalties.filter((p: any) => p.isActive).length,
+        pendingLeaveRequests: leaveRequests.length,
+        pendingInvites: pendingInvites.length,
       },
       members,
       penalties,
+      leaveRequests,
+      pendingInvites,
     })
   }
 

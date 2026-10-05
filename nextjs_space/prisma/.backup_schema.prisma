@@ -137,6 +137,8 @@ model User {
   // Agency system
   agencyMembership             AgencyUser?
   agencyLeaveRequests          AgencyLeaveRequest[]
+  agencyInvitesReceived        AgencyMemberInvite[]     @relation("AgencyInviteTarget")
+  agencyInvitesSent            AgencyMemberInvite[]     @relation("AgencyInviteInviter")
   // Celebrity follows
   celebrityFollows             CelebrityFollow[]
   // Fan clubs
@@ -2969,6 +2971,7 @@ model Agency {
   tasks            AgencyTask[]
   penalties        AgencyPenalty[]
   leaveRequests    AgencyLeaveRequest[]
+  memberInvites    AgencyMemberInvite[]
   wallet           AgencyWallet?
   walletTxns       AgencyWalletTransaction[]
   commissionRules  AgencyCommissionRule[]
@@ -3085,6 +3088,26 @@ model AgencyPenalty {
   @@index([agencyId])
   @@index([isActive])
   @@map("agency_penalties")
+}
+
+// Ajansa Üye Daveti (onay gerektirir — davetsiz ekleme engeli)
+model AgencyMemberInvite {
+  id          String    @id @default(cuid())
+  agencyId    String
+  userId      String // Davet edilen kullanıcı
+  invitedById String // Daveti gönderen (owner/manager)
+  status      String    @default("pending") // pending, accepted, rejected, cancelled, expired
+  message     String?
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+  agency      Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user        User      @relation("AgencyInviteTarget", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy   User      @relation("AgencyInviteInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([status])
+  @@map("agency_member_invites")
 }
 
 // Ajanstan Çıkma Talepleri

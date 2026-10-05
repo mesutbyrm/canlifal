@@ -3,6 +3,7 @@ import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { recordAudit } from '@/lib/audit-log';
 import { staffCan } from '@/lib/permissions'
+import { notifyWithdrawalStatus } from '@/lib/withdrawal-notify'
 
 export const dynamic = 'force-dynamic';
 
@@ -126,6 +127,16 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    // Kullanıcıya durum bildirimi (uygulama içi + push + e-posta)
+    const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed'
+    notifyWithdrawalStatus({
+      userId: wr.userId,
+      status: newStatus as any,
+      amount: wr.amount,
+      amountTL: wr.amountTL,
+      note: adminNote || null,
+    }).catch(e => console.error('[Admin Withdrawal] notify error:', e))
 
     // Audit: record admin withdrawal action
     recordAudit({
