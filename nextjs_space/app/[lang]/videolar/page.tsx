@@ -29,6 +29,7 @@ export default function VideolarPage() {
   const [categories, setCategories] = useState<VideoCategory[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [disabled, setDisabled] = useState(false)
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -38,6 +39,7 @@ export default function VideolarPage() {
           const data = await res.json()
           setAllVideos(data.videos || [])
           setCategories(data.categories || [])
+          setDisabled(Boolean(data.disabled))
         }
       } catch (e) {
         console.error(e)
@@ -95,7 +97,9 @@ export default function VideolarPage() {
       ) : allVideos.length === 0 ? (
         <div className="text-center py-20 px-4">
           <Youtube className="w-16 h-16 text-white/10 mx-auto mb-4" />
-          <p className="text-white/40 font-medium">Henüz video eklenmemiş</p>
+          <p className="text-white/40 font-medium">
+            {disabled ? 'Trend Videolar bölümü şu anda kapalı.' : 'Henüz video eklenmemiş'}
+          </p>
         </div>
       ) : (
         <div className="px-4 space-y-6">

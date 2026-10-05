@@ -303,7 +303,8 @@ export default function SocialPage() {
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type,
-          isPublic: true
+          isPublic: true,
+          folder: file.type.startsWith('video/') ? 'video' : 'social'
         })
       })
       if (!presignedRes.ok) throw new Error('Failed to get upload URL')
