@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { isTrendVideosEnabled } from '@/lib/trend-videos'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,10 @@ export async function GET(req: NextRequest) {
     const limitParam = searchParams.get('limit')
     const limit = limitParam ? parseInt(limitParam) : undefined
     const sortBy = searchParams.get('sort') || 'order' // order | views
+
+    if (!(await isTrendVideosEnabled())) {
+      return NextResponse.json({ videos: [], categories: [], disabled: true })
+    }
 
     const where: any = { isActive: true }
     if (categorySlug) {

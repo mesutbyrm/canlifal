@@ -1,5 +1,6 @@
 import prisma from '@/lib/db'
 import { getCachedPlatformSetting, invalidateCache } from '@/lib/cache'
+import { getDiscountSettings } from '@/lib/jeton-pricing'
 
 /**
  * BÖLÜM 6b — Para birimi kuralları, markalama ve yükleme bonusu.
@@ -175,6 +176,11 @@ export async function resolveTopupBonus(params: {
   try {
     const amount = Math.floor(Number(params.amount) || 0)
     if (amount <= 0) return { tier: null, bonusAmount: 0 }
+
+    // Otomatik yükleme bonusu varsayılan olarak KAPALIDIR. Yalnızca admin
+    // panelinden `jeton_topup_bonus_enabled` açıldığında uygulanır.
+    const { topupBonusEnabled } = await getDiscountSettings()
+    if (!topupBonusEnabled) return { tier: null, bonusAmount: 0 }
 
     const currency = String(params.currency || 'credits').toLowerCase()
     const normalized = currency === 'credits' ? 'cfc' : currency

@@ -35,6 +35,19 @@ export const PRODUCT_TYPE_LABELS: Record<string, string> = {
   gold: 'Gold Üyelik',
 }
 
+/** §5/§6/§16 — admin kartlarında gösterilecek net işlem türü etiketi. */
+export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
+  jeton: 'JETON ÖDEMESİ',
+  cfc: 'CFC ÖDEMESİ',
+  gold: 'GOLD ÜYELİK ÖDEMESİ',
+}
+
+export const TRANSACTION_TYPE_ICONS: Record<string, string> = {
+  jeton: '🪙',
+  cfc: '💰',
+  gold: '👑',
+}
+
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   papara: 'Papara',
   bank_transfer: 'Banka Transferi',
@@ -91,9 +104,16 @@ function requestedSummary(n: any): string | null {
  * Ham PaymentNotification kaydını kullanıcıya gösterilecek hale getirir.
  * Mevcut alanlar korunur, sadece yeni alanlar eklenir (geriye dönük uyumlu).
  */
-export function decoratePaymentNotification(n: any) {
+export function decoratePaymentNotification(n: any, opts?: { unitPrice?: number; cfcUnitPrice?: number }) {
   const status = String(n.status || 'pending')
   const productType = String(n.productType || 'jeton')
+  const unitPrice =
+    productType === 'cfc' ? (opts?.cfcUnitPrice ?? null) : (opts?.unitPrice ?? null)
+  const qty = n.correctedAmount ?? n.requestedAmount ?? null
+  const expectedAmountTRY =
+    unitPrice != null && qty != null
+      ? Math.round(Number(qty) * Number(unitPrice) * 100) / 100
+      : null
   const isCorrected =
     status === 'corrected' ||
     (n.correctedAmount != null && n.correctedAmount !== n.originalRequestedAmount)
@@ -103,6 +123,12 @@ export function decoratePaymentNotification(n: any) {
     statusLabel: PAYMENT_STATUS_LABELS[status] || status,
     statusColor: PAYMENT_STATUS_COLORS[status] || 'gray',
     productLabel: PRODUCT_TYPE_LABELS[productType] || productType,
+    transactionTypeLabel: TRANSACTION_TYPE_LABELS[productType] || String(productType).toUpperCase(),
+    transactionTypeIcon: TRANSACTION_TYPE_ICONS[productType] || '•',
+    unitPrice,
+    expectedAmountTRY,
+    amountMatchesUnitPrice:
+      expectedAmountTRY == null ? null : Math.abs(Number(n.amount || 0) - expectedAmountTRY) <= 0.01,
     paymentMethodLabel: methodLabel(n.paymentMethod),
     requestedSummary: requestedSummary(n),
     loadedSummary: loadedSummary(n),

@@ -117,6 +117,12 @@ export default function KazancPage() {
 
   // Çekim formu
   const [amount, setAmount] = useState('')
+  const [quote, setQuote] = useState<{
+    grossTL: number
+    taxPercent: number
+    taxAmount: number
+    netAmountTL: number
+  } | null>(null)
   const [method, setMethod] = useState('bank_transfer')
   const [accountDetails, setAccountDetails] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -143,6 +149,30 @@ export default function KazancPage() {
       setIsLoading(false)
     }
   }, [status, load])
+
+  // Para çekim ön hesabı (vergi/kesinti dâhil)
+  useEffect(() => {
+    const value = parseInt(amount, 10)
+    if (!value || value <= 0) {
+      setQuote(null)
+      return
+    }
+    let cancelled = false
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/withdrawals/quote?amount=${value}`)
+        if (!res.ok) return
+        const json = await res.json()
+        if (!cancelled) setQuote(json)
+      } catch {
+        /* sessizce yoksay */
+      }
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [amount])
 
   const submitWithdrawal = async () => {
     setFormError(null)
@@ -335,10 +365,21 @@ export default function KazancPage() {
                     placeholder={String(withdrawal.minWithdrawal)}
                     className="w-full px-3 py-2 bg-deep-purple-900/60 border border-purple-500/30 rounded-lg text-white text-sm focus:outline-none focus:border-gold-500"
                   />
-                  {parseInt(amount, 10) > 0 && withdrawal.jetonTlRate > 0 && (
-                    <p className="text-[11px] text-deep-purple-400 mt-1">
-                      ≈ {(parseInt(amount, 10) * withdrawal.jetonTlRate).toFixed(2)} ₺
-                    </p>
+                  {parseInt(amount, 10) > 0 && quote && (
+                    <div className="mt-2 rounded-lg border border-purple-500/30 bg-deep-purple-900/40 p-2 space-y-1">
+                      <div className="flex justify-between text-[11px] text-deep-purple-300">
+                        <span>Toplam kazandığınız</span>
+                        <span className="text-white">{quote.grossTL.toFixed(2)} ₺</span>
+                      </div>
+                      <div className="flex justify-between text-[11px] text-deep-purple-300">
+                        <span>{quote.taxPercent > 0 ? `Kesinti (%${quote.taxPercent})` : 'Kesinti yok'}</span>
+                        <span className="text-red-300">-{quote.taxAmount.toFixed(2)} ₺</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-semibold border-t border-purple-500/20 pt-1">
+                        <span className="text-gold-300">Elinize geçecek tahmini tutar</span>
+                        <span className="text-gold-400">{quote.netAmountTL.toFixed(2)} ₺</span>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div>

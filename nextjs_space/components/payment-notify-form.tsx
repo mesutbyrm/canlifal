@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -60,6 +60,27 @@ export default function PaymentNotifyForm({
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [unitPrice, setUnitPrice] = useState<number>(0.5)
+  const [cfcUnitPrice, setCfcUnitPrice] = useState<number>(1)
+  const [discountEnabled, setDiscountEnabled] = useState(false)
+  const [discountPercent, setDiscountPercent] = useState(0)
+
+  // §1/§7 — Birim fiyat TEK yetkili kaynaktan (sunucu) okunur, istemcide sabit yazılmaz.
+  useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    fetch('/api/public/jeton-price', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d) return
+        if (typeof d.unitPrice === 'number') setUnitPrice(d.unitPrice)
+        if (typeof d.cfcUnitPrice === 'number') setCfcUnitPrice(d.cfcUnitPrice)
+        setDiscountEnabled(Boolean(d.discountEnabled))
+        setDiscountPercent(Number(d.discountPercent) || 0)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [isOpen])
 
   const paymentOptions = [
     { value: 'papara', label: 'Papara', icon: <Wallet className="w-5 h-5" />, gradient: 'from-purple-500 to-purple-700' },
@@ -82,6 +103,21 @@ export default function PaymentNotifyForm({
 
   const isGold = productType === 'gold'
   const productLabel = productType === 'cfc' ? 'CFC' : productType === 'gold' ? 'Gold Üyelik' : 'Jeton'
+  const activeUnitPrice = productType === 'cfc' ? cfcUnitPrice : unitPrice
+
+  // §2/§7 — Tutar istemcide serbestçe yazılamaz; miktar × birim fiyat olarak hesaplanır.
+  const computed = useMemo(() => {
+    const qty = parseInt(requestedAmount || '0', 10)
+    if (!qty || qty < 1) return null
+    const base = Math.round(qty * activeUnitPrice * 100) / 100
+    const final = discountEnabled && discountPercent > 0
+      ? Math.round(base * (1 - discountPercent / 100) * 100) / 100
+      : base
+    return { qty, base, final }
+  }, [requestedAmount, activeUnitPrice, discountEnabled, discountPercent])
+
+  const effectiveAmount = isGold ? parseFloat(amount || '0') : computed?.final ?? 0
+  const fmtTL = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n || 0)
 
   const handleClose = () => {
     resetForm()
@@ -93,8 +129,13 @@ export default function PaymentNotifyForm({
       setError('Ödeme yöntemi seçin')
       return
     }
-    if (!amount || parseFloat(amount) <= 0) {
-      setError('Geçerli bir tutar girin')
+    if (isGold) {
+      if (!amount || parseFloat(amount) <= 0) {
+        setError('Geçerli bir tutar girin')
+        return
+      }
+    } else if (!computed) {
+      setError(`Yüklenmesini istediğiniz ${productLabel} miktarını girin`)
       return
     }
 
@@ -107,12 +148,12 @@ export default function PaymentNotifyForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentMethod,
-          amount: parseFloat(amount),
+          amount: effectiveAmount,
           transactionId: transactionId || undefined,
           senderName: senderName || undefined,
           notes: notes || undefined,
           productType,
-          requestedAmount: !isGold && requestedAmount ? parseInt(requestedAmount, 10) : undefined,
+          requestedAmount: !isGold && computed ? computed.qty : undefined,
           requestedGoldDays: isGold && goldDays ? parseInt(goldDays, 10) : undefined,
           requestedGoldType: isGold ? defaultGoldType || undefined : undefined,
         }),
@@ -241,20 +282,22 @@ export default function PaymentNotifyForm({
                     </div>
                   </div>
 
-                  {/* Amount */}
-                  <div>
-                    <label className={`${textSecondary} text-sm font-medium mb-2 block`}>Tutar (₺) *</label>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={1}
-                      step={0.01}
-                      placeholder="Ödediğiniz tutarı girin"
-                      value={amount}
-                      onChange={(e) => { setAmount(e.target.value); setError('') }}
-                      className={`w-full px-4 py-3 rounded-xl text-lg font-bold focus:outline-none transition-all ${inputClass}`}
-                    />
-                  </div>
+                  {/* Amount — sadece Gold için serbest giriş */}
+                  {isGold && (
+                    <div>
+                      <label className={`${textSecondary} text-sm font-medium mb-2 block`}>Tutar (₺) *</label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min={1}
+                        step={0.01}
+                        placeholder="Ödediğiniz tutarı girin"
+                        value={amount}
+                        onChange={(e) => { setAmount(e.target.value); setError('') }}
+                        className={`w-full px-4 py-3 rounded-xl text-lg font-bold focus:outline-none transition-all ${inputClass}`}
+                      />
+                    </div>
+                  )}
 
                   {/* Talep edilen ürün miktarı (spec §80-81) */}
                   {isGold ? (
@@ -276,7 +319,7 @@ export default function PaymentNotifyForm({
                   ) : (
                     <div>
                       <label className={`${textSecondary} text-sm font-medium mb-2 block`}>
-                        Talep Edilen {productLabel} <span className="opacity-50">(opsiyonel)</span>
+                        Talep Edilen {productLabel} *
                       </label>
                       <input
                         type="number"
@@ -284,9 +327,27 @@ export default function PaymentNotifyForm({
                         min={1}
                         placeholder={`Yüklenmesini istediğiniz ${productLabel} miktarı`}
                         value={requestedAmount}
-                        onChange={(e) => setRequestedAmount(e.target.value)}
+                        onChange={(e) => { setRequestedAmount(e.target.value); setError('') }}
                         className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all ${inputClass}`}
                       />
+
+                      {/* §7 — Ödenecek tutar otomatik hesaplanır, elle değiştirilemez. */}
+                      <div className={`mt-3 rounded-xl px-4 py-3 ${cardBg} border ${modalBorder}`}>
+                        <div className="flex justify-between text-sm">
+                          <span className={textSecondary}>Birim {productLabel} fiyatı</span>
+                          <span className={`${textPrimary} font-medium`}>{fmtTL(activeUnitPrice)}</span>
+                        </div>
+                        {discountEnabled && discountPercent > 0 && computed && (
+                          <div className="flex justify-between text-sm mt-1">
+                            <span className={textSecondary}>İndirim (%{discountPercent})</span>
+                            <span className="text-emerald-500 font-medium">-{fmtTL(computed.base - computed.final)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-base mt-2 pt-2 border-t border-white/10">
+                          <span className={`${textSecondary} font-medium`}>Ödenecek tutar</span>
+                          <span className="font-bold" style={{ color: goldColor }}>{fmtTL(effectiveAmount)}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
 

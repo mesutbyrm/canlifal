@@ -44,6 +44,12 @@ model User {
   theme                        String                   @default("mystical") // mystical, facebook
   // Jeton (token) balance for Bana Özel
   jetonBalance                 Int                      @default(0)
+  // Sahte (bonus) jeton — admin tarafından yüklenir. Harcandığında kar/zarara
+  // işlemez, alıcıya gerçek bakiye olarak geçmez, paraya çevrilemez/çekilemez;
+  // yalnızca puan/XP/sıralama etkilerini tetikler.
+  fakeJetonBalance             Int                      @default(0)
+  // Site kurucusu rozeti (her yerde "Site Kurucusu" olarak görünür)
+  isFounder                    Boolean                  @default(false)
   // Location for gift leaderboards / sender map (added, optional)
   city                         String?
   country                      String?                  @default("TR")
@@ -131,6 +137,8 @@ model User {
   // Agency system
   agencyMembership             AgencyUser?
   agencyLeaveRequests          AgencyLeaveRequest[]
+  agencyInvitesReceived        AgencyMemberInvite[]     @relation("AgencyInviteTarget")
+  agencyInvitesSent            AgencyMemberInvite[]     @relation("AgencyInviteInviter")
   // Celebrity follows
   celebrityFollows             CelebrityFollow[]
   // Fan clubs
@@ -2033,7 +2041,10 @@ model WithdrawalRequest {
   id               String    @id @default(cuid())
   userId           String
   amount           Int // Amount in jetons to withdraw
-  amountTL         Float // Equivalent TL amount
+  amountTL         Float // Equivalent TL amount (brüt)
+  taxPercent       Float     @default(0) // Uygulanan vergi/kesinti yüzdesi
+  taxAmount        Float     @default(0) // Kesilen tutar (TL)
+  netAmountTL      Float? // Kullanıcının eline geçecek net tutar (TL)
   method           String // bank_transfer, papara, etc.
   accountDetails   String?   @db.Text // JSON: IBAN, name, etc.
   // 3-stage approval: pending → agency_approved → approved/rejected
@@ -2963,6 +2974,7 @@ model Agency {
   tasks            AgencyTask[]
   penalties        AgencyPenalty[]
   leaveRequests    AgencyLeaveRequest[]
+  memberInvites    AgencyMemberInvite[]
   wallet           AgencyWallet?
   walletTxns       AgencyWalletTransaction[]
   commissionRules  AgencyCommissionRule[]
@@ -3079,6 +3091,26 @@ model AgencyPenalty {
   @@index([agencyId])
   @@index([isActive])
   @@map("agency_penalties")
+}
+
+// Ajansa Üye Daveti (onay gerektirir — davetsiz ekleme engeli)
+model AgencyMemberInvite {
+  id          String    @id @default(cuid())
+  agencyId    String
+  userId      String // Davet edilen kullanıcı
+  invitedById String // Daveti gönderen (owner/manager)
+  status      String    @default("pending") // pending, accepted, rejected, cancelled, expired
+  message     String?
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+  agency      Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user        User      @relation("AgencyInviteTarget", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy   User      @relation("AgencyInviteInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([status])
+  @@map("agency_member_invites")
 }
 
 // Ajanstan Çıkma Talepleri
@@ -5838,11 +5870,22 @@ model UserFavorite {
   @@map("user_favorites")
 }
 
-// ─────────────────────────────────────────────────────────────
-// VIP oda şifre koruması + oda sahibinden giriş izni (additive)
-// ─────────────────────────────────────────────────────────────
+model AdRewardGrant {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  userId        String?
+  adNetwork     String?
+  adUnit        String?
+  rewardItem    String?
+  rewardAmount  Int      @default(0)
+  granted       Boolean  @default(false)
+  customData    String?
+  createdAt     DateTime @default(now())
 
-/// Şifreli VIP odaya giriş isteği — kullanıcı + oda başına en fazla 1 kayıt.
+  @@index([userId, createdAt])
+  @@map("ad_reward_grants")
+}
+
 model RoomJoinRequest {
   id          String    @id @default(cuid())
   roomId      String
@@ -5850,7 +5893,7 @@ model RoomJoinRequest {
   ownerId     String
   status      String    @default("pending") // pending | accepted | rejected
   createdAt   DateTime  @default(now())
-  respondedAt DateTime? // onay 24 saat geçerlidir; oda şifresi değişince iptal olur
+  respondedAt DateTime? // onay 24 saat gecerlidir; oda sifresi degisince iptal olur
 
   @@unique([roomId, requesterId])
   @@index([roomId, status])
@@ -5858,7 +5901,6 @@ model RoomJoinRequest {
   @@map("room_join_requests")
 }
 
-/// Şifre deneme sayacı (brute-force koruması): kullanıcı + oda başına.
 model RoomPasswordAttempt {
   id            String   @id @default(cuid())
   roomId        String
@@ -5871,26 +5913,37 @@ model RoomPasswordAttempt {
   @@map("room_password_attempts")
 }
 
-// ─────────────────────────────────────────────────────────────
-// GirLive Bot — sunucu taraflı moderasyon kaydı (additive)
-// Sesli oda + canlı yayın aynı tabloyu kullanır. Bot mesajları ayrı bir tablo
-// DEĞİL: `isBot` kullanıcı adına yazılan normal ChatMessage / VideoStreamComment.
-// ─────────────────────────────────────────────────────────────
 model UserModerationAction {
   id             String    @id @default(cuid())
   scope          String // voice_room | live_stream
   scopeId        String // ChatRoom.id | VideoStream.id
   userId         String
-  severity       String // LOW | MEDIUM | HIGH | CRITICAL (yükseltilmiş, etkin seviye)
-  baseSeverity   String // kelimenin kendi seviyesi
+  severity       String // LOW | MEDIUM | HIGH | CRITICAL
+  baseSeverity   String
   action         String // warn | mute | kick | ban
   matchedWord    String?
   messageExcerpt String?
-  expiresAt      DateTime? // mute/ban bitişi (null = süresiz / uygulanmaz)
+  expiresAt      DateTime?
   createdAt      DateTime  @default(now())
 
   @@index([scope, scopeId, userId, createdAt])
   @@index([scope, scopeId, createdAt])
   @@index([userId, createdAt])
   @@map("user_moderation_actions")
+}
+
+
+model RealtimeEvent {
+  id        String   @id @default(cuid())
+  channel   String // chat | session | teller | stream
+  scope     String // roomId / sessionId / tellerId / streamId
+  type      String
+  eventId   String
+  payload   String   @db.Text
+  originId  String // olayi yayimlayan sunucu ornegi
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([channel, scope, createdAt])
+  @@map("realtime_events")
 }
