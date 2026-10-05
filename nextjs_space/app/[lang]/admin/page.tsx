@@ -196,6 +196,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     groupLabel: '💰 Finans & Jeton',
     groupIcon: '💰',
     links: [
+      { href: `/admin/jeton-yonetimi`, icon: Coins, trLabel: 'Jeton Yönetimi', enLabel: 'Jeton Management', emoji: '🪙', desc: 'Fiyat, paket, indirim, ödeme başvuruları — hepsi tek yerde' },
       { href: `/admin/finance`, icon: TrendingUp, trLabel: 'Finans Yönetimi', enLabel: 'Finance Management', emoji: '📊', desc: 'Gelir-gider takibi' },
       { href: `/admin/credits`, icon: Coins, trLabel: 'Jeton Yükleme', enLabel: 'Load Jetons', emoji: '🪙', desc: 'Kullanıcılara jeton ekle' },
       { href: `/admin/credit-packages`, icon: DollarSign, trLabel: 'CFC Paketleri', enLabel: 'CFC Packages', emoji: '📦', desc: 'Satış paketlerini düzenle' },

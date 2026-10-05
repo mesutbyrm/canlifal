@@ -259,7 +259,7 @@ export default function ProfilePage() {
       const presignedRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true })
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, isPublic: true, folder: 'profile' })
       })
 
       if (!presignedRes.ok) throw new Error('Failed to get upload URL')

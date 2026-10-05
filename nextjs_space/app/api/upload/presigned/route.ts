@@ -19,15 +19,36 @@ export async function POST(request: NextRequest) {
     // Map an optional "folder"/"purpose" hint to an organized subfolder under
     // the R2 "gift/" root. Unknown/empty values fall back to gift/uploads.
     const ALLOWED_FOLDERS: Record<string, string> = {
+      // Profil & kapak fotoğrafları
       profile: 'gift/profiles',
       profiles: 'gift/profiles',
+      avatar: 'gift/profiles',
+      cover: 'gift/covers',
+      kapak: 'gift/covers',
+      // Paylaşılan görsel / gönderiler
       social: 'gift/social',
       sosyal: 'gift/social',
       post: 'gift/social',
+      // Paylaşılan videolar
+      video: 'gift/videos',
+      videos: 'gift/videos',
+      shorts: 'gift/videos',
+      // Site hediyeleri
       gift: 'gift/gifts',
       gifts: 'gift/gifts',
+      // Kozmetikler (çerçeve, rozet, animasyon)
+      cosmetic: 'gift/cosmetics',
+      kozmetik: 'gift/cosmetics',
+      frame: 'gift/frames',
+      badge: 'gift/badges',
+      // Fal görselleri
       fortune: 'gift/fortunes',
+      // Sohbet ekleri
       chat: 'gift/chat',
+      // Duyuru / bildirim görselleri
+      announcement: 'gift/announcements',
+      duyuru: 'gift/announcements',
+      broadcast: 'gift/announcements',
       uploads: 'gift/uploads',
     }
     const targetFolder =

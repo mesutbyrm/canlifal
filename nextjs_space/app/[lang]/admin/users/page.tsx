@@ -329,7 +329,8 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ 
           fileName: file.name, 
           contentType: file.type,
-          isPublic: true 
+          isPublic: true,
+          folder: 'profile'
         })
       })
       const { uploadUrl, cloud_storage_path } = await presignedRes.json()

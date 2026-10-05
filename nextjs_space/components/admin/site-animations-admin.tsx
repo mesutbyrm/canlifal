@@ -153,7 +153,7 @@ export default function SiteAnimationsAdmin() {
       const presignedRes = await fetch('/api/upload/presigned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream', isPublic: true }),
+        body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream', isPublic: true, folder: 'cosmetic' }),
       })
       if (!presignedRes.ok) throw new Error('presigned failed')
       const { uploadUrl, cloud_storage_path } = await presignedRes.json()

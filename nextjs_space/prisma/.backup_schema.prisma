@@ -2041,7 +2041,10 @@ model WithdrawalRequest {
   id               String    @id @default(cuid())
   userId           String
   amount           Int // Amount in jetons to withdraw
-  amountTL         Float // Equivalent TL amount
+  amountTL         Float // Equivalent TL amount (brüt)
+  taxPercent       Float     @default(0) // Uygulanan vergi/kesinti yüzdesi
+  taxAmount        Float     @default(0) // Kesilen tutar (TL)
+  netAmountTL      Float? // Kullanıcının eline geçecek net tutar (TL)
   method           String // bank_transfer, papara, etc.
   accountDetails   String?   @db.Text // JSON: IBAN, name, etc.
   // 3-stage approval: pending → agency_approved → approved/rejected
