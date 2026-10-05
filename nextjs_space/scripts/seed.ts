@@ -1989,6 +1989,150 @@ Papara No: 1555517663`, description: 'WhatsApp otomatik mesaj şablonu' }
   })
   console.log('BÖLÜM 21/A4: ajans uygunluk skoru varsayılan ağırlıkları hazır')
 
+
+  // ─── KOZMETİK KATALOGLAR (mic frame / giriş efekti / isim efekti / sohbet balonu / aksesuar) ───
+  const COSMETIC_TIERS = ['basic', 'gold', 'premium', 'diamond'] as const
+  const TIER_TR: Record<string, string> = { basic: 'Basic', gold: 'Gold', premium: 'Premium', diamond: 'Diamond' }
+  const tierOrder = (t: string) => COSMETIC_TIERS.indexOf(t as any)
+
+  async function ensureByName(model: string, name: string, data: any) {
+    const m = (prisma as any)[model]
+    const existing = await m.findFirst({ where: { name } })
+    if (existing) {
+      await m.update({ where: { id: existing.id }, data })
+    } else {
+      await m.create({ data: { name, ...data } })
+    }
+  }
+
+  const MIC_VARIANTS = ['Halka', 'Kesik Halka', 'Işın', 'Taç Halka', 'Yıldız Noktalı']
+  const BUBBLE_VARIANTS = ['Yumuşak', 'Kuyruklu', 'Parıltılı', 'Çift Çerçeve', 'Mühürlü']
+  const ENTRANCE_VARIANTS = ['Dalga', 'Yıldız', 'Kapsül', 'Kemer', 'Ekolayzer']
+  const ACCESSORY_SLOTS: Array<[string, string]> = [
+    ['hat', 'Şapka'],
+    ['crown', 'Taç'],
+    ['glasses', 'Gözlük'],
+    ['wings', 'Kanat'],
+    ['mask', 'Maske'],
+  ]
+
+  for (const tier of COSMETIC_TIERS) {
+    const tl = TIER_TR[tier]
+    for (let v = 0; v < 5; v++) {
+      const sort = tierOrder(tier) * 10 + v
+      await ensureByName('micFrame', `${tl} Mikrofon · ${MIC_VARIANTS[v]}`, {
+        assetUrl: `/cosmetics/mic-frames/${tier}-${v + 1}.svg`,
+        tier,
+        isActive: true,
+        sortOrder: sort,
+      })
+      await ensureByName('chatBubbleSkin', `${tl} Balon · ${BUBBLE_VARIANTS[v]}`, {
+        assetUrl: `/cosmetics/chat-bubbles/${tier}-${v + 1}.svg`,
+        tier,
+        isActive: true,
+        sortOrder: sort,
+      })
+      await ensureByName('entranceEffect', `${tl} Giriş · ${ENTRANCE_VARIANTS[v]}`, {
+        assetUrl: `/cosmetics/entrance-effects/${tier}-${v + 1}.svg`,
+        assetType: 'image',
+        tier,
+        durationMs: 2500 + v * 500,
+        isActive: true,
+        sortOrder: sort,
+      })
+    }
+    for (let i = 0; i < ACCESSORY_SLOTS.length; i++) {
+      const [slot, slotTr] = ACCESSORY_SLOTS[i]
+      await ensureByName('avatarAccessory', `${tl} ${slotTr}`, {
+        slot,
+        assetUrl: `/cosmetics/avatar-accessories/${tier}-${slot}.svg`,
+        tier,
+        isActive: true,
+        sortOrder: tierOrder(tier) * 10 + i,
+      })
+    }
+  }
+  console.log('Kozmetik: mic frame / sohbet balonu / giriş efekti / aksesuar katalogları hazır')
+
+  // ─── İSİM EFEKTLERİ (CSS tabanlı, görsel gerekmez) ───
+  const NAME_PRESETS: Array<{ suffix: string; label: string; css: any }> = [
+    { suffix: 'solid', label: 'Düz', css: { color: '#A1A1AA', fontWeight: 700 } },
+    { suffix: 'gradient', label: 'Degrade', css: { backgroundImage: 'linear-gradient(90deg,{b},{a},{c})', WebkitBackgroundClip: 'text', color: 'transparent', fontWeight: 800 } },
+    { suffix: 'glow', label: 'Işıltı', css: { color: '{b}', textShadow: '0 0 6px {a}, 0 0 14px {a}', fontWeight: 700 } },
+    { suffix: 'outline', label: 'Konturlu', css: { color: '{b}', WebkitTextStroke: `1px {c}`, fontWeight: 800 } },
+    { suffix: 'shine', label: 'Parlama', css: { backgroundImage: 'linear-gradient(110deg,{c} 20%,{b} 45%,{a} 60%,{c} 80%)', backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', color: 'transparent', animation: 'cfShine 2.8s linear infinite', fontWeight: 800 } },
+  ]
+  const TIER_COLORS: Record<string, { a: string; b: string; c: string }> = {
+    basic: { a: '#9CA3AF', b: '#E5E7EB', c: '#6B7280' },
+    gold: { a: '#F59E0B', b: '#FDE68A', c: '#B45309' },
+    premium: { a: '#A855F7', b: '#E9D5FF', c: '#6D28D9' },
+    diamond: { a: '#22D3EE', b: '#CFFAFE', c: '#0E7490' },
+  }
+  for (const tier of COSMETIC_TIERS) {
+    const col = TIER_COLORS[tier]
+    for (let i = 0; i < NAME_PRESETS.length; i++) {
+      const pre = NAME_PRESETS[i]
+      const cssJson = JSON.parse(
+        JSON.stringify(pre.css).replace(/\{a\}/g, col.a).replace(/\{b\}/g, col.b).replace(/\{c\}/g, col.c)
+      )
+      const key = `${tier}_${pre.suffix}`
+      await prisma.nameEffect.upsert({
+        where: { key },
+        update: { name: `${TIER_TR[tier]} İsim · ${pre.label}`, tier, cssPreset: JSON.stringify(cssJson), isActive: true, sortOrder: tierOrder(tier) * 10 + i },
+        create: { key, name: `${TIER_TR[tier]} İsim · ${pre.label}`, tier, cssPreset: JSON.stringify(cssJson), isActive: true, sortOrder: tierOrder(tier) * 10 + i },
+      })
+    }
+  }
+  console.log('Kozmetik: isim efektleri hazır')
+
+  // ─── ANİMASYONLAR (giriş / çıkış / profil / oda × 4 yetki derecesi × 5 adet) ───
+  const ANIM_CATS: Array<[string, string]> = [
+    ['entrance', 'Giriş'],
+    ['exit', 'Çıkış'],
+    ['profile', 'Profil'],
+    ['room', 'Oda'],
+  ]
+  const ANIM_VARIANTS = ['Dalga', 'Yıldız', 'Kapsül', 'Kemer', 'Ekolayzer']
+  const RARITY: Record<string, string> = { basic: 'normal', gold: 'rare', premium: 'epic', diamond: 'legendary' }
+  for (const tier of COSMETIC_TIERS) {
+    for (const [cat, catTr] of ANIM_CATS) {
+      for (let v = 0; v < 5; v++) {
+        const slug = `${cat}-${tier}-${v + 1}`
+        const data = {
+          name: `${TIER_TR[tier]} ${catTr} · ${ANIM_VARIANTS[v]}`,
+          category: cat,
+          type: 'image',
+          assetUrl: `/cosmetics/animations/${cat}-${tier}-${v + 1}.svg`,
+          thumbnailUrl: `/cosmetics/animations/${cat}-${tier}-${v + 1}.svg`,
+          durationMs: 2500 + v * 500,
+          priority: 10 + tierOrder(tier) * 10,
+          status: 'active',
+          rarity: RARITY[tier],
+          membershipLevel: tier,
+          contexts: ['voice_room', 'live_stream', 'social'],
+          position: cat === 'room' ? 'center' : cat === 'profile' ? 'center' : 'bottom_center',
+          scale: tier === 'diamond' ? 'large' : 'medium',
+          anchor: cat === 'room' ? 'room' : 'user',
+          canSkip: true,
+          sortOrder: tierOrder(tier) * 10 + v,
+        }
+        await prisma.animation.upsert({ where: { slug }, update: data, create: { slug, ...data } })
+      }
+    }
+    // her yetki derecesi için varsayılan animasyon ataması
+    for (const [cat] of ANIM_CATS) {
+      const anim = await prisma.animation.findUnique({ where: { slug: `${cat}-${tier}-1` } })
+      if (anim) {
+        await prisma.animationMembershipDefault.upsert({
+          where: { membershipTier_category: { membershipTier: tier, category: cat } },
+          update: { animationId: anim.id, isActive: true },
+          create: { membershipTier: tier, category: cat, animationId: anim.id, isActive: true },
+        })
+      }
+    }
+  }
+  console.log('Animasyonlar: giriş/çıkış/profil/oda × 4 yetki derecesi hazır')
+
   console.log('Seed completed successfully!')
 }
 

@@ -97,10 +97,16 @@ export interface CosmeticPublicConfig {
   seasonal?: boolean
 }
 
+// Kademeli erişim: üst seviye, altındaki tüm kademelerin kozmetiklerini de görür.
+const COSMETIC_TIER_LADDER = ['free', 'basic', 'gold', 'premium', 'diamond'] as const
+
 function accessibleTiers(membership?: string | null): string[] {
-  const tiers = ['free']
-  if (membership === 'gold' || membership === 'premium' || membership === 'diamond') tiers.push('gold')
-  return tiers
+  const m = (membership || 'basic').toLowerCase()
+  // svip/vip/platinum gibi üst roller tüm kademeleri görür
+  if (['svip', 'vip', 'platinum', 'admin'].includes(m)) return [...COSMETIC_TIER_LADDER]
+  const idx = COSMETIC_TIER_LADDER.indexOf(m as any)
+  if (idx < 0) return ['free', 'basic']
+  return COSMETIC_TIER_LADDER.slice(0, idx + 1)
 }
 
 export function createCosmeticPublicHandlers(cfg: CosmeticPublicConfig) {
