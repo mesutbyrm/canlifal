@@ -55,7 +55,7 @@ export async function POST(
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
     }
 
-    const isStaff = user.role === 'yonetici';
+    const isStaff = user.role === 'yonetici' || user.role === 'admin';
 
     if (!isStaff && (user.jetonBalance ?? 0) < totalCost) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi' }, { status: 400 });

@@ -56,6 +56,7 @@ export async function GET(
           specialBadges: true,
           profileEffect: true,
           favoriteTeam: true,
+          city: true,
         },
       }),
 
@@ -139,6 +140,7 @@ export async function GET(
           specialBadges: targetUser.specialBadges,
           profileEffect: targetUser.profileEffect,
           favoriteTeam: targetUser.favoriteTeam,
+          city: targetUser.city,
           joinedAt: targetUser.createdAt,
         },
         stats: {
