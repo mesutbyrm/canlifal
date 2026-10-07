@@ -4,13 +4,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { recordAudit } from '@/lib/audit-log';
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic';
 
 const REFUND_ADMIN_ROLES = ['admin', 'yonetici', 'finans'];
 
-async function getAdmin() {
-  const session = await getServerSession(authOptions);
+async function getAdmin(req?: Request) {
+  const session = await getHybridSession(req);
   const role = (session?.user as any)?.role as string | undefined;
   if (!session?.user?.id || !(await staffCan(role || '', (session?.user as any)?.id, 'payment.refund', REFUND_ADMIN_ROLES))) return null;
   return { id: session.user.id, role: role as string };
@@ -18,7 +19,7 @@ async function getAdmin() {
 
 // Admin: iade taleplerini listeler (status ile filtrelenebilir).
 export async function GET(request: NextRequest) {
-  const admin = await getAdmin();
+  const admin = await getAdmin(request);
   if (!admin) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 401 });
 
   const status = request.nextUrl.searchParams.get('status') || undefined;
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
 // Admin: iade talebini onaylar/reddeder/işler.
 export async function PATCH(request: NextRequest) {
-  const admin = await getAdmin();
+  const admin = await getAdmin(request);
   if (!admin) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));

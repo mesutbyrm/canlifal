@@ -2,19 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
-async function isAdmin() {
-  const session = await getServerSession(authOptions)
+async function isAdmin(req?: Request) {
+  const session = await getHybridSession(req)
   return session?.user && ((session.user as any).role || '').toLowerCase() === 'admin'
 }
 
 const SEO_KEYS = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_favicon', 'site_og_image'] as const
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    if (!(await isAdmin(request))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const settings = await prisma.siteSetting.findMany({
       where: { key: { in: [...SEO_KEYS] } },
     })
@@ -29,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    if (!(await isAdmin(req))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const body = await req.json()
     const updates: Promise<any>[] = []
     for (const key of SEO_KEYS) {

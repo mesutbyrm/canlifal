@@ -3,18 +3,19 @@ import prisma from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
-async function checkAdmin() {
-  const session = await getServerSession(authOptions)
+async function checkAdmin(req?: Request) {
+  const session = await getHybridSession(req)
   if (!session?.user) return false
   const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
   return user && (await staffCan(user.role, session.user.id, 'content.media.upload', ['admin', 'yonetici', 'moderator']))
 }
 
 export async function GET(req: NextRequest) {
-  if (!(await checkAdmin())) {
+  if (!(await checkAdmin(req))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await checkAdmin())) {
+  if (!(await checkAdmin(req))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!(await checkAdmin())) {
+  if (!(await checkAdmin(req))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
 

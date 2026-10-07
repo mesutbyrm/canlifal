@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,9 +21,9 @@ const CFC_SETTINGS_KEYS = [
 ]
 
 // GET - Get CFC payment settings
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.config.manage', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
@@ -46,7 +47,7 @@ export async function GET() {
 // POST - Update CFC payment settings (bulk)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.config.manage', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }

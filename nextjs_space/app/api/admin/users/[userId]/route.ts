@@ -4,13 +4,14 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 // GET - Fetch single user details
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(request)
   if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'moderation.user.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
@@ -97,7 +98,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(request)
   if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'moderation.user.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }
@@ -290,7 +291,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(request)
   if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'moderation.user.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
     return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   }

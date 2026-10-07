@@ -7,6 +7,7 @@ import { getUserPermissions, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { clampSeatCount } from '@/lib/voice-room-seats'
 import { hashRoomPassword, resetPasswordAttempts, invalidateChatRoomCache } from '@/lib/room-access'
 import { recordAudit } from '@/lib/audit-log'
+import { emitRoomBackgroundChanged } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -208,6 +209,10 @@ export async function PATCH(
         autoModeration: true,
       }
     })
+
+    if (backgroundImage !== undefined) {
+      emitRoomBackgroundChanged(roomId, updated.backgroundImage ?? null)
+    }
 
     if (passwordChanged) {
       invalidateChatRoomCache({ id: roomId, slug: (updated as any).slug })

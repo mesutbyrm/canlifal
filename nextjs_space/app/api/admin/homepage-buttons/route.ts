@@ -2,24 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
-async function isAdmin() {
-  const session = await getServerSession(authOptions)
+async function isAdmin(req?: Request) {
+  const session = await getHybridSession(req)
   return (session?.user as any)?.role === 'admin'
 }
 
 // GET all buttons (admin - includes hidden)
-export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+export async function GET(request: NextRequest) {
+  if (!(await isAdmin(request))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const buttons = await prisma.homepageButton.findMany({ orderBy: { sortOrder: 'asc' } })
   return NextResponse.json({ buttons })
 }
 
 // POST - create new button
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  if (!(await isAdmin(req))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { label, icon, href, specialBehavior } = body
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
 
 // PATCH - update button
 export async function PATCH(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  if (!(await isAdmin(req))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
 
   // Batch reorder
@@ -77,7 +78,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE - delete button
 export async function DELETE(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  if (!(await isAdmin(req))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })

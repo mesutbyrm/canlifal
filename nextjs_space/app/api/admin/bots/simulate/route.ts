@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { generateBotMessage, type Personality } from '@/lib/bot-messages'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 // ── Configuration ──
 const MAX_CONCURRENT_BOTS_PER_ROOM = 8  // Max bots active in one room at a time
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     const isInternalCron = cronSecret === process.env.BOT_CRON_SECRET
 
     if (!isInternalCron) {
-      const session = await getServerSession(authOptions)
+      const session = await getHybridSession(req)
       if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
         return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
       }
@@ -238,7 +239,7 @@ export async function POST(req: NextRequest) {
 // GET: Get simulation status
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

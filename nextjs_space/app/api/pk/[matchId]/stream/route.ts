@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import { serializePkMatch, loadPkUsers } from '@/lib/pk-match'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,16 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { matchId: string } },
 ) {
+  // PK-002: kimliksiz uzun ömürlü bağlantı DB yoklaması açamasın.
+  // Bearer (mobil) veya NextAuth çerezi (web) kabul edilir.
+  const user = await authenticateRequest(request)
+  if (!user?.id) {
+    return new Response(JSON.stringify({ error: 'Oturum açmanız gerekiyor' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const matchId = params.matchId
   const encoder = new TextEncoder()
   let isActive = true

@@ -2,24 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
-async function isAdmin() {
-  const session = await getServerSession(authOptions)
+async function isAdmin(req?: Request) {
+  const session = await getHybridSession(req)
   return (session?.user as any)?.role === 'admin'
 }
 
 // GET all sections (admin)
-export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+export async function GET(request: NextRequest) {
+  if (!(await isAdmin(request))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const sections = await prisma.onlineFalSection.findMany({ orderBy: { sortOrder: 'asc' } })
   return NextResponse.json({ sections })
 }
 
 // PATCH - update section visibility/order
 export async function PATCH(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  if (!(await isAdmin(req))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { id, isVisible, sortOrder, title, icon } = body
 
@@ -40,7 +41,7 @@ export async function PATCH(req: NextRequest) {
 
 // POST - batch reorder sections
 export async function POST(req: NextRequest) {
-  if (!(await isAdmin())) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  if (!(await isAdmin(req))) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
   const body = await req.json()
   const { order } = body // array of { id, sortOrder }
 

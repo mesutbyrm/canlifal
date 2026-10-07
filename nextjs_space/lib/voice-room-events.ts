@@ -35,6 +35,8 @@ export type RoomEventKind =
   // VIP şifreli odaya giriş isteği (oda sahibine)
   | 'join_request'
   | 'join_request_resolved'
+  // BG-002 — oda görünümü (arka plan) değişti
+  | 'room_updated'
 
 export interface RoomEventPayload {
   event: RoomEventKind
@@ -71,6 +73,8 @@ export interface RoomEventPayload {
   // pk_invite
   battleId?: string
   battle?: any
+  // room_updated
+  backgroundImage?: string | null
   ts: number
 }
 
@@ -115,6 +119,14 @@ export function emitHostChanged(roomId: string, userId: string, isHost: boolean,
 
 export function emitRoomClosed(roomId: string) {
   emit(roomId, { event: 'room_closed' })
+}
+
+/**
+ * BG-002 — arka plan değişince odadaki herkes (web + Flutter) yenilemeden
+ * yeni görseli görsün. `backgroundImage: null` = varsayılana dön.
+ */
+export function emitRoomBackgroundChanged(roomId: string, backgroundImage: string | null) {
+  emit(roomId, { event: 'room_updated', backgroundImage })
 }
 
 // ──────────── Konuşma isteği (el kaldırma) olayları ────────────

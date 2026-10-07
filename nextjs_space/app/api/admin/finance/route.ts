@@ -5,12 +5,13 @@ import prisma from '@/lib/db'
 import { getExcludedUserIds } from '@/lib/admin-check'
 import { invalidateCachePrefix } from '@/lib/cache'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.report.view', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -668,7 +669,7 @@ export async function GET(request: NextRequest) {
 // POST: Multiple actions - adjust user balance, update commission settings, manual profit adjustment
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.report.view', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
