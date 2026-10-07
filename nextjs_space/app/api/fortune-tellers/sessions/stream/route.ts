@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { getTellerEventsSince } from '@/lib/room-events'
 import { resumeCursor, newestTimestamp, sseIdLine } from '@/lib/sse-resume'
+import { expireStalePendingSessions, pendingCutoff } from '@/lib/live-session-lifecycle'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -55,8 +56,11 @@ export async function GET(request: NextRequest) {
 
       // Send any existing pending sessions on connect
       try {
+        // Süresi dolmuş istekler iptal + iade edilir; yeniden bağlanınca
+        // eski istek tekrar gösterilmez (FORTUNE-002).
+        await expireStalePendingSessions({ tellerId })
         const pendingSessions = await prisma.liveSession.findMany({
-          where: { tellerId, status: 'pending' },
+          where: { tellerId, status: 'pending', createdAt: { gte: pendingCutoff() } },
           include: {
             user: { select: { id: true, name: true, image: true } }
           },
@@ -101,8 +105,9 @@ export async function GET(request: NextRequest) {
           pendingCheckCount++
           if (pendingCheckCount >= 2) { // 2 * 3s = 6s (çok-örnek dağıtımda bellek içi olay kaçarsa)
             pendingCheckCount = 0
+            await expireStalePendingSessions({ tellerId })
             const pendingSessions = await prisma.liveSession.findMany({
-              where: { tellerId, status: 'pending' },
+              where: { tellerId, status: 'pending', createdAt: { gte: pendingCutoff() } },
               include: {
                 user: { select: { id: true, name: true, image: true } }
               },
