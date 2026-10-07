@@ -9,6 +9,7 @@ import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guar
 import { createNotificationWithPush } from '@/lib/notify'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitTellerEvent } from '@/lib/room-events'
+import { expireStalePendingSessions, pendingCutoff } from '@/lib/live-session-lifecycle'
 
 /**
  * Flutter-friendly session route without tellerId in URL.
@@ -155,6 +156,18 @@ export async function GET(request: NextRequest) {
       if (!liveSession) return NextResponse.json({ error: 'Oturum bulunamadı' }, { status: 404 })
       if (liveSession.userId !== userId && liveSession.teller?.userId !== userId) {
         return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
+      }
+      // Yanıtsız kalmış istek: iptal + iade, güncel durumu döndür (FORTUNE-002).
+      if (liveSession.status === 'pending' && liveSession.createdAt < pendingCutoff()) {
+        await expireStalePendingSessions({ userId: liveSession.userId })
+        const fresh = await prisma.liveSession.findUnique({
+          where: { id: sessionId },
+          include: {
+            teller: { select: { id: true, userId: true, displayName: true, specialties: true, avatar: true } },
+            user: { select: { id: true, name: true, image: true } }
+          }
+        })
+        if (fresh) return NextResponse.json(fresh)
       }
       return NextResponse.json(liveSession)
     }

@@ -8,6 +8,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement';
 import { getCachedPlatformSetting } from '@/lib/cache';
 import { emitTellerEvent } from '@/lib/room-events';
 import { processAgencyCommission } from '@/lib/agency-commission';
+import { roomIdForSession, transitionLiveSession, pendingCutoff } from '@/lib/live-session-lifecycle';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,9 +43,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Verify the current user owns this teller profile
-    if (liveSession.teller.userId !== authUser.id) {
+    // Falcı tüm işlemleri yapar. Danışan yalnız kendi BEKLEYEN isteğini iptal
+    // edebilir (mobil bekleme ekranı süre dolunca / vazgeçince) — önceden 403
+    // dönüyordu, istek `pending` kalıp jeton iade edilmiyordu (FORTUNE-002).
+    const isTeller = liveSession.teller.userId === authUser.id;
+    const isClientCancel =
+      liveSession.userId === authUser.id && action === 'cancel';
+    if (!isTeller && !isClientCancel) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
+    }
+    if (isClientCancel && !isTeller && liveSession.status !== 'pending') {
+      return NextResponse.json({ error: 'Session is not pending' }, { status: 409 });
     }
 
     let updateData: Record<string, unknown> = {};
@@ -52,8 +61,15 @@ export async function PATCH(
 
     switch (action) {
       case 'accept':
+        if (liveSession.status === 'active' && liveSession.roomId) {
+          // İdempotent: aynı falcının tekrar kabulü aynı oda ile döner.
+          return NextResponse.json(liveSession);
+        }
         if (liveSession.status !== 'pending') {
-          return NextResponse.json({ error: 'Session is not pending' }, { status: 400 });
+          return NextResponse.json({ error: 'Session is not pending' }, { status: 409 });
+        }
+        if (liveSession.createdAt < pendingCutoff()) {
+          return NextResponse.json({ error: 'Session request expired' }, { status: 410 });
         }
         
         // Get session duration settings (cached)
@@ -64,8 +80,8 @@ export async function PATCH(
         const cpmStr = await getCachedPlatformSetting('credits_per_minute', '10');
         const creditsPerMinute = parseInt(cpmStr);
         
-        // Generate unique room ID
-        const roomId = `room_${liveSession.id}_${Date.now()}`;
+        // Deterministik oda kimliği — çift kabulde iki ayrı oda oluşmaz.
+        const roomId = roomIdForSession(liveSession.id);
         
         updateData = {
           status: 'active',
@@ -75,16 +91,6 @@ export async function PATCH(
           creditsPerMinute,
           lastPingAt: new Date()
         };
-        
-        // Create chat session for this live session
-        await prisma.tellerChatSession.create({
-          data: {
-            liveSessionId: liveSession.id,
-            userId: liveSession.userId,
-            tellerId: liveSession.tellerId,
-            status: 'active'
-          }
-        });
         
         notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Canlı sohbet odasına girin.`;
         break;
@@ -97,6 +103,13 @@ export async function PATCH(
           status: 'completed',
           endedAt: new Date()
         };
+        if (!(await transitionLiveSession({
+          sessionId: liveSession.id,
+          from: ['active'],
+          data: updateData,
+        }))) {
+          return NextResponse.json({ error: 'Session is not active' }, { status: 409 });
+        }
         
         // Get commission rate from settings
         const commRateStr = await getCachedPlatformSetting('commission_rate', '20');
@@ -148,11 +161,17 @@ export async function PATCH(
           endedAt: new Date()
         };
         
-        // Refund jetons to user
-        await prisma.user.update({
-          where: { id: liveSession.userId },
-          data: { jetonBalance: { increment: liveSession.creditsCharged } }
-        });
+        // Atomik iptal + iade: yalnız geçişi yapan çağrı iade eder (önceden
+        // iki iptal / iptal edilmişi tekrar iptal = çift iade).
+        if (!(await transitionLiveSession({
+          sessionId: liveSession.id,
+          from: ['pending', 'active'],
+          data: updateData,
+          refundTo: liveSession.userId,
+          refundAmount: liveSession.creditsCharged,
+        }))) {
+          return NextResponse.json({ error: 'Session already closed' }, { status: 409 });
+        }
         
         notificationMessage = action === 'reject'
           ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Jetonlarınız iade edildi.`
@@ -160,10 +179,35 @@ export async function PATCH(
         break;
     }
 
-    // Update the session
-    const updatedSession = await prisma.liveSession.update({
-      where: { id: params.sessionId },
-      data: updateData
+    if (action === 'accept') {
+      const accepted = await transitionLiveSession({
+        sessionId: liveSession.id,
+        from: ['pending'],
+        data: updateData,
+      });
+      if (!accepted) {
+        const current = await prisma.liveSession.findUnique({ where: { id: liveSession.id } });
+        if (current?.status === 'active' && current.roomId) {
+          return NextResponse.json(current);
+        }
+        return NextResponse.json({ error: 'Session is not pending' }, { status: 409 });
+      }
+      // Sohbet oturumu — tekrar denemede benzersiz kısıtı patlamasın.
+      await prisma.tellerChatSession.upsert({
+        where: { liveSessionId: liveSession.id },
+        create: {
+          liveSessionId: liveSession.id,
+          userId: liveSession.userId,
+          tellerId: liveSession.tellerId,
+          status: 'active'
+        },
+        update: { status: 'active' }
+      });
+    }
+
+    // Geçiş yukarıda atomik yapıldı; güncel kaydı döndür.
+    const updatedSession = await prisma.liveSession.findUnique({
+      where: { id: params.sessionId }
     });
 
     // Emit SSE event for teller's stream (cancel/reject removes from pending list)
@@ -176,7 +220,8 @@ export async function PATCH(
 
     // Send notification to the user
     // Kabul yanıtı push/DB bildirimini beklemesin.
-    void createNotificationWithPush({
+    // Danışan kendi isteğini iptal ettiyse kendisine "falcı iptal etti" gitmez.
+    if (!(isClientCancel && !isTeller)) void createNotificationWithPush({
       userId: liveSession.userId,
       type: 'session_update',
       title: action === 'accept' ? 'Randevu Kabul Edildi' 
