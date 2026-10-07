@@ -90,8 +90,13 @@ export function resolveDisplayArea(g: any): string {
 
 /** Display duration in ms. */
 export function resolveDurationMs(g: any): number {
-  const d = g?.animationDurationMs ?? g?.displayDurationMs
-  if (typeof d === 'number' && d > 0) return d
+  // GIFT-001 — video hediyelerde gerçek asset süresini kullan; admin açıkça bir
+  // animasyon/gösterim süresi girdiyse o önceliklidir, aksi halde videonun
+  // kendi uzunluğu (assetDurationMs) kullanılır. Hiçbiri yoksa 3sn'e düşer.
+  const explicit = g?.animationDurationMs ?? g?.displayDurationMs
+  if (typeof explicit === 'number' && explicit > 0) return explicit
+  const assetMs = g?.assetDurationMs
+  if (typeof assetMs === 'number' && assetMs > 0) return assetMs
   return 3000
 }
 

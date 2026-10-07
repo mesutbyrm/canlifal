@@ -1,6 +1,9 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { serializePkMatch, loadPkUsers } from '@/lib/pk-match'
+import { authenticateRequest } from '@/lib/mobile-auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -15,6 +18,14 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { matchId: string } },
 ) {
+  // PK-002 — canlı PK akışı için kimlik kontrolü: yalnızca giriş yapmış
+  // kullanıcılar (web çerezi VEYA mobil Bearer JWT) bağlanabilir.
+  const mobileUser = await authenticateRequest(request)
+  const session = !mobileUser ? await getServerSession(authOptions) : null
+  if (!mobileUser?.id && !session?.user?.id) {
+    return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
+  }
+
   const matchId = params.matchId
   const encoder = new TextEncoder()
   let isActive = true

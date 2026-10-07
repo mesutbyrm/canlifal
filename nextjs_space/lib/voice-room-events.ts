@@ -18,6 +18,8 @@ export type RoomEventKind =
   | 'mic_changed'
   | 'seat_changed'
   | 'room_closed'
+  // Oda arka planı (tema) değişti — anlık güncelleme için
+  | 'background_changed'
   | 'owner_changed'
   // BÖLÜM 2 — oda sunuculuğu (host) değişimi
   | 'host_changed'
@@ -45,6 +47,8 @@ export interface RoomEventPayload {
   image?: string | null
   // mic_changed
   micOn?: boolean
+  // background_changed — yeni arka plan görsel/video URL'si (null = kaldırıldı)
+  backgroundImage?: string | null
   // seat_changed
   seatIndex?: number
   previousSeatIndex?: number
@@ -249,4 +253,16 @@ export function emitPkInvite(roomId: string, battle: any, opts?: { userId?: stri
 
 export function emitOwnerChanged(roomId: string, newOwnerId: string, newOwnerName?: string) {
   emit(roomId, { event: 'owner_changed', newOwnerId, newOwnerName })
+}
+
+/**
+ * Oda arka planı (tema) değişti — tüm bağlı istemciler (web + Flutter) anında
+ * yeni arka planı uygular. `backgroundImage=null` arka planın kaldırıldığını belirtir.
+ */
+export function emitBackgroundChanged(
+  roomId: string,
+  backgroundImage: string | null,
+  changedBy?: string
+) {
+  emit(roomId, { event: 'background_changed', backgroundImage, userId: changedBy })
 }

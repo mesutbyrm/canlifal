@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { PK_LIVE_STATUSES, listPkParticipants } from '@/lib/pk-state'
 import { serializeGiftBox } from '@/lib/gift-box'
+import { presenceCutoff } from '@/lib/presence'
 
 /**
  * GET /api/chat/rooms/{roomId}/sync
@@ -32,7 +33,7 @@ export async function GET(
         select: {
           id: true, slug: true, nameTr: true, nameEn: true,
           ownerId: true, isMuted: true,
-          _count: { select: { presences: { where: { lastSeen: { gt: new Date(Date.now() - 5 * 60 * 1000) } } } } },
+          _count: { select: { presences: { where: { lastSeen: { gt: presenceCutoff() } } } } },
         },
       }),
       prisma.pKBattle.findFirst({

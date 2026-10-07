@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { resolveChatActor, canManageRoomWords } from '@/lib/chat-banned-words'
+import { emitBackgroundChanged } from '@/lib/voice-room-events'
 
 // GET / PATCH /api/chat/rooms/{roomId}/background
 // Mobil istemcinin /settings ucuna alternatif kullandığı arka plan kısayolu.
@@ -49,5 +50,7 @@ export async function PATCH(
     where: { id: params.roomId },
     data: { backgroundImage: value },
   })
+  // BG-002 — arka plan değişti: tüm bağlı istemcilere anlık canlı olay gönder
+  emitBackgroundChanged(params.roomId, value, userId)
   return NextResponse.json({ success: true, background: value, backgroundImage: value })
 }

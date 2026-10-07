@@ -7,6 +7,7 @@ import { getUserPermissions, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { clampSeatCount } from '@/lib/voice-room-seats'
 import { hashRoomPassword, resetPasswordAttempts, invalidateChatRoomCache } from '@/lib/room-access'
 import { recordAudit } from '@/lib/audit-log'
+import { emitBackgroundChanged } from '@/lib/voice-room-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -219,6 +220,10 @@ export async function PATCH(
         targetId: roomId,
         description: updateData.password ? 'VIP oda şifresi ayarlandı' : 'VIP oda şifresi kaldırıldı',
       })
+    }
+    // BG-002 — arka plan bu istekte değiştiyse tüm istemcilere anlık canlı olay gönder
+    if (backgroundImage !== undefined) {
+      emitBackgroundChanged(roomId, updateData.backgroundImage ?? null, authUser.id)
     }
     const { password: updatedPassword, ...updatedSafe } = updated as typeof updated & { password?: string | null }
     return NextResponse.json({ success: true, room: { ...updatedSafe, hasPassword: !!updatedPassword } })
