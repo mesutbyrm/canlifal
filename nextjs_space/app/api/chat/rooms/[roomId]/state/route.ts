@@ -7,7 +7,7 @@ import prisma from '@/lib/db'
 import { ROLE_SYMBOLS, ROLE_HIERARCHY } from '@/lib/chat-permissions'
 import { voiceTrtcRoomId, userIdToNumericUid } from '@/lib/trtc-room'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold, presenceStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, buildSeatLayout } from '@/lib/voice-room-seats'
 import { withTiming } from '@/lib/perf'
 import { buildDjPayload } from '@/lib/chat-dj-events'
@@ -60,7 +60,7 @@ async function handleState(
       )
     }
 
-    const presenceTimeout = new Date(Date.now() - 300000)
+    const presenceTimeout = presenceStaleThreshold()
     const presences = await prisma.chatPresence.findMany({
       where: { roomId, lastSeen: { gte: presenceTimeout } },
       select: {

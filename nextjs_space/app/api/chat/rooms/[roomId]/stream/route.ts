@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { guardGatedRoom } from '@/lib/room-access-guard'
 import { isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { getLatestDjEvent, buildDjPayload } from '@/lib/chat-dj-events'
+import { presenceStaleThreshold } from '@/lib/voice-room-constants'
 import { getChatEventsSince, getTypingUsers } from '@/lib/chat-events'
 
 export const dynamic = 'force-dynamic'
@@ -146,7 +147,7 @@ export async function GET(
             const presences = await prisma.chatPresence.findMany({
               where: {
                 roomId,
-                lastSeen: { gte: new Date(Date.now() - 300000) }
+                lastSeen: { gte: presenceStaleThreshold() }
               },
               include: {
                 user: { select: { id: true, name: true, role: true, image: true } }

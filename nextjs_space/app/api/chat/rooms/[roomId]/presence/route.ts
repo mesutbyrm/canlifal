@@ -10,7 +10,7 @@ import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
 import { emitUserJoined, emitUserLeft, emitSeatChanged, emitHostChanged } from '@/lib/voice-room-events'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
-import { seatStaleThreshold } from '@/lib/voice-room-constants'
+import { seatStaleThreshold, presenceStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
 import { endPksForSide } from '@/lib/pk-state'
 import { closeGiftBoxesFor } from '@/lib/gift-box'
@@ -49,7 +49,7 @@ export async function GET(
       const gateDenied = await guardGatedRoom(roomId, { id: gm?.id || gs?.user?.id, role: gm?.role || (gs?.user as any)?.role })
       if (gateDenied) return gateDenied
     }
-    const presenceTimeout = new Date(Date.now() - 300000)
+    const presenceTimeout = presenceStaleThreshold()
 
     // Run presences + room status in parallel
     const [presences, room] = await Promise.all([
@@ -370,7 +370,7 @@ export async function POST(
       }
 
       const maxUsers = await getMaxUsersForRoomType(roomType)
-      const presenceTimeout = new Date(Date.now() - 300000)
+      const presenceTimeout = presenceStaleThreshold()
       const activeCount = await prisma.chatPresence.count({
         where: { roomId, lastSeen: { gte: presenceTimeout } }
       })
@@ -499,7 +499,7 @@ export async function POST(
     if (isNewJoin) {
       try {
         await prisma.chatPresence.updateMany({
-          where: { userId, roomId: { not: roomId }, lastSeen: { gte: new Date(Date.now() - 300000) } },
+          where: { userId, roomId: { not: roomId }, lastSeen: { gte: presenceStaleThreshold() } },
           data: { lastSeen: new Date(0), seatIndex: -1 }
         })
         await prisma.voiceSession.updateMany({
@@ -602,7 +602,7 @@ export async function POST(
     }
 
     // Return updated active users
-    const presenceTimeout = new Date(Date.now() - 300000)
+    const presenceTimeout = presenceStaleThreshold()
     const [presences, room] = await Promise.all([
       prisma.chatPresence.findMany({
         where: {
@@ -764,7 +764,7 @@ export async function DELETE(
     let onlineCount = 0
     try {
       onlineCount = await prisma.chatPresence.count({
-        where: { roomId, lastSeen: { gte: new Date(Date.now() - 300000) } }
+        where: { roomId, lastSeen: { gte: presenceStaleThreshold() } }
       })
     } catch {}
 

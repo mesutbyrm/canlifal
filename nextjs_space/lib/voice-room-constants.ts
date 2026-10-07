@@ -21,6 +21,16 @@ export const MAX_SEAT_INDEX = SEAT_COUNT - 1
 // bir emniyet ağı. Yine de varlık listesi penceresinden bağımsızdır.
 export const SEAT_STALE_MS = 90000
 
+// VOICE-004: oda içi varlık (kullanıcı listesi / çevrim içi sayısı) penceresi.
+// Eski 300s eşiği çöken/ağı kopan kullanıcıyı 5 dk listede tutuyordu. İstemci
+// atış aralıkları 10–12s; arka plan sekmesi zamanlayıcıları dakikada bire
+// kısılabildiği için 120s (~10 atış) güvenli emniyet payıdır.
+export const PRESENCE_STALE_MS = 120000
+
+export function presenceStaleThreshold(): Date {
+  return new Date(Date.now() - PRESENCE_STALE_MS)
+}
+
 /**
  * Threshold Date for seat-occupancy queries: a seat is only considered taken
  * if its occupant's lastSeen is newer than this. Use everywhere a seat is

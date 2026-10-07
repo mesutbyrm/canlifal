@@ -88,11 +88,24 @@ export function resolveDisplayArea(g: any): string {
   return 'CENTER'
 }
 
+// GIFT-001: süre bilgisi olmayan video hediye için varsayılan (3 sn videoyu
+// yarıda kesiyordu). İstemci yine de video bitene kadar sırayı tutar.
+const DEFAULT_VIDEO_GIFT_DURATION_MS = 8000
+const DEFAULT_GIFT_DURATION_MS = 3000
+
 /** Display duration in ms. */
 export function resolveDurationMs(g: any): number {
   const d = g?.animationDurationMs ?? g?.displayDurationMs
   if (typeof d === 'number' && d > 0) return d
-  return 3000
+  // Video/ses hediyesinde gerçek medya süresi bilinçli yönetici ayarı gibi kullanılır.
+  const media = g?.assetDurationMs
+  if (typeof media === 'number' && media > 0) return media
+  const type = String(g?.assetType || '').toLowerCase()
+  const url = String(g?.assetUrl || g?.animationUrl || '').toLowerCase()
+  if (type === 'video' || /\.(mp4|webm|mov)(\?|$)/.test(url)) {
+    return DEFAULT_VIDEO_GIFT_DURATION_MS
+  }
+  return DEFAULT_GIFT_DURATION_MS
 }
 
 /** Seat effect name, or null when disabled by admin. */
