@@ -5,13 +5,14 @@ import prisma from '@/lib/db'
 import { createNotificationWithPush } from '@/lib/notify'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
 // GET - reported/flagged content
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session.user as any).role, (session.user as any).id, 'moderation.report.handle', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
 // POST - take moderation action
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session.user as any).role, (session.user as any).id, 'moderation.report.handle', ['admin', 'yonetici', 'moderator', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

@@ -5,13 +5,14 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 const ADMIN_ROLES = ['admin', 'yonetici']
 
 // GET /api/admin/backup?type=sql|settings|users|tables
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.config.manage', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 403 })
     }

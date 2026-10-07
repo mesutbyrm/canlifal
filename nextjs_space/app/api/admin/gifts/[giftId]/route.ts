@@ -8,6 +8,7 @@ import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function GET(
   { params }: { params: { giftId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getHybridSession(request);
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
@@ -47,7 +48,7 @@ export async function PATCH(
   { params }: { params: { giftId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getHybridSession(request);
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
@@ -184,7 +185,7 @@ export async function DELETE(
   { params }: { params: { giftId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getHybridSession(request);
     if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.gift.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }

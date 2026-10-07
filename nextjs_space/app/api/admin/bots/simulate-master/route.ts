@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 // Master simulation controller - runs all 3 simulation engines in sequence
 // with anti-spam safeguards and gradual activity scaling
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     const isInternalCron = cronSecret === process.env.BOT_CRON_SECRET
 
     if (!isInternalCron) {
-      const session = await getServerSession(authOptions)
+      const session = await getHybridSession(req)
       if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
         return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
       }
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
 // GET: Get comprehensive simulation status
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

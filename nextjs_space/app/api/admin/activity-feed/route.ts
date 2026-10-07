@@ -3,14 +3,15 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
 const ADMIN_ROLES = ['admin', 'yonetici', 'moderator']
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     const role = (session?.user as any)?.role
     if (!role || !(await staffCan(role, (session?.user as any)?.id, 'analytics.dashboard.view', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
@@ -45,7 +46,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     const role = (session?.user as any)?.role
     if (!role || !(await staffCan(role, (session?.user as any)?.id, 'analytics.dashboard.view', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,9 +61,9 @@ function migrateSettings(raw: Record<string, unknown>): Record<string, CategoryC
 }
 
 // GET - fetch current announcement section settings
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -105,7 +106,7 @@ export async function GET() {
 // POST - save announcement section settings (supports single category or all)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

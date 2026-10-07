@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 import {
   COMMISSION_SETTING_KEYS,
   COMMISSION_SETTING_DEFAULTS,
@@ -16,9 +17,9 @@ const ADMIN_ROLES = ['admin', 'yonetici', 'moderator', 'finans']
 const WRITE_ROLES = ['admin', 'yonetici', 'finans']
 const KEYS = Object.values(COMMISSION_SETTING_KEYS) as string[]
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     const role = (session?.user as any)?.role
     if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', ADMIN_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
@@ -43,7 +44,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     const role = (session?.user as any)?.role
     if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', WRITE_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })

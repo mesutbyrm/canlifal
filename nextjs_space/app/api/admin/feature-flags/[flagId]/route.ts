@@ -7,6 +7,7 @@ import prisma from '@/lib/db'
 import { invalidateCache } from '@/lib/cache'
 import { recordAudit } from '@/lib/audit-log'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 const ADMIN_ROLES = ['admin', 'yonetici']
 
@@ -15,7 +16,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { flagId: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(req)
   if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.feature.toggle', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
@@ -54,7 +55,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { flagId: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(req)
   if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.feature.toggle', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }

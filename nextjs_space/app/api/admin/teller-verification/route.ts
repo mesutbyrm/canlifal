@@ -3,13 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
 // Admin: Bekleyen doğrulamaları listele
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.teller.manage', ['admin', 'yonetici', 'moderator']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
 // Admin: Onayla/Reddet
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.teller.manage', ['admin', 'yonetici', 'moderator']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }

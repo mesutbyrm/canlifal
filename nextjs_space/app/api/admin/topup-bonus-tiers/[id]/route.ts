@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ const SOURCE_TYPES = ['all', 'admin_credit', 'cfc_payment', 'package']
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     const role = (session?.user as any)?.role
     if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', WRITE_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
@@ -53,7 +54,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(_request)
     const role = (session?.user as any)?.role
     if (!session?.user?.id || !(await staffCan(role, (session?.user as any)?.id, 'finance.report.view', FULL_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })

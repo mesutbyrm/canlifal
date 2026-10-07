@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import OpenAI from 'openai'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,8 +12,8 @@ const openai = new OpenAI({
   baseURL: 'https://routellm.abacus.ai/v1',
 })
 
-async function isAdmin() {
-  const session = await getServerSession(authOptions)
+async function isAdmin(req?: Request) {
+  const session = await getHybridSession(req)
   return session?.user && ((session.user as any).role || '').toLowerCase() === 'admin'
     ? (session.user as any).id
     : null
@@ -204,7 +205,7 @@ JSON formatında yanıt ver:
 
 export async function POST(req: NextRequest) {
   try {
-    const adminId = await isAdmin()
+    const adminId = await isAdmin(req)
     if (!adminId) {
       return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
     }

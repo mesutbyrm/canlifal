@@ -7,12 +7,13 @@ import { recordAudit } from '@/lib/audit-log'
 import { awardTopupCommissions } from '@/lib/referral-commission'
 import { applyTopupBonus } from '@/lib/currency-branding'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     
     if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.jeton.adjust', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json(

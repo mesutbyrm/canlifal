@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 const ALLOWED_ROLES = ['admin', 'yonetici', 'moderator']
 
@@ -18,9 +19,9 @@ function slugify(text: string): string {
 }
 
 // GET - fetch all categories
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
@@ -40,7 +41,7 @@ export async function GET() {
 // POST - create category
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
 // PATCH - update category
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
@@ -95,7 +96,7 @@ export async function PATCH(req: NextRequest) {
 // DELETE - remove category
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'content.media.upload', ALLOWED_ROLES))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }

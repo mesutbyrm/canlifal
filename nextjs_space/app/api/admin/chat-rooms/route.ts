@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
-import { emitRoomClosed } from '@/lib/voice-room-events'
+import { emitRoomClosed, emitRoomBackgroundChanged } from '@/lib/voice-room-events'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
 // GET - List all rooms (including inactive) for admin
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
 // POST - Create room (admin, free)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
 // PUT - Update room (including owner assignment)
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -147,6 +148,9 @@ export async function PUT(req: NextRequest) {
     if (isActive === false) {
       emitRoomClosed(roomId)
     }
+    if (backgroundImage !== undefined) {
+      emitRoomBackgroundChanged(roomId, room.backgroundImage ?? null)
+    }
 
     return NextResponse.json({ success: true, room })
   } catch (error) {
@@ -158,7 +162,7 @@ export async function PUT(req: NextRequest) {
 // DELETE - Delete room
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }

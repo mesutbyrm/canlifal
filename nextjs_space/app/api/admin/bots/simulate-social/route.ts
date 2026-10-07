@@ -7,6 +7,7 @@ import prisma from '@/lib/db'
 import { POST_COMMENTS, STREAM_COMMENTS, STREAM_EMOJIS } from '@/lib/bot-social-messages'
 import type { Personality } from '@/lib/bot-messages'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function pickRandom(arr: readonly any[]): any {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     const isInternalCron = cronSecret === process.env.BOT_CRON_SECRET
 
     if (!isInternalCron) {
-      const session = await getServerSession(authOptions)
+      const session = await getHybridSession(req)
       if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
         return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
       }
@@ -270,7 +271,7 @@ export async function POST(req: NextRequest) {
 // GET: Get social simulation status
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(req)
     if (!session?.user?.role || !(await staffCan(session.user.role, (session?.user as any)?.id, 'system.config.manage', ['admin', 'yonetici']))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
     }

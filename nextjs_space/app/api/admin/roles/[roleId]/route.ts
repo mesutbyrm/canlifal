@@ -7,12 +7,13 @@ import prisma from '@/lib/db'
 import { setRolePermissions, staffCan } from '@/lib/permissions'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { invalidateCache } from '@/lib/cache'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 const ADMIN_ROLES = ['admin', 'yonetici']
 
 // PATCH /api/admin/roles/[roleId] — rol bilgisi ve/veya yetkilerini güncelle
 export async function PATCH(req: NextRequest, { params }: { params: { roleId: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(req)
   if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.role.manage', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }
@@ -89,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roleId: st
 
 // DELETE /api/admin/roles/[roleId] — sistem dışı rolleri sil
 export async function DELETE(req: NextRequest, { params }: { params: { roleId: string } }) {
-  const session = await getServerSession(authOptions)
+  const session = await getHybridSession(req)
   if (!session?.user || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.role.manage', ADMIN_ROLES))) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
   }

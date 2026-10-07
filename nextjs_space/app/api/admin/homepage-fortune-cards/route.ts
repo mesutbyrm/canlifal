@@ -4,19 +4,20 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { invalidateCachePrefix } from '@/lib/cache'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
-async function isAdmin() {
-  const session = await getServerSession(authOptions)
+async function isAdmin(req?: Request) {
+  const session = await getHybridSession(req)
   const role = ((session?.user as any)?.role || '').toLowerCase()
   return session?.user && (await staffCan(role, (session?.user as any)?.id, 'content.media.upload', ['admin', 'yonetici', 'moderator', 'finans']))
 }
 
 // GET - list all fortune cards
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    if (!(await isAdmin())) {
+    if (!(await isAdmin(request))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
     const cards = await prisma.homepageFortuneCard.findMany({
@@ -32,7 +33,7 @@ export async function GET() {
 // POST - create or update a fortune card
 export async function POST(req: NextRequest) {
   try {
-    if (!(await isAdmin())) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
     const body = await req.json()
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
 // PUT - update an existing fortune card
 export async function PUT(req: NextRequest) {
   try {
-    if (!(await isAdmin())) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
     const body = await req.json()
@@ -106,7 +107,7 @@ export async function PUT(req: NextRequest) {
 // Accepts either { key, value } (single setting) or { settings: { key: value, ... } } (batch)
 export async function PATCH(req: NextRequest) {
   try {
-    if (!(await isAdmin())) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
     const body = await req.json()
@@ -150,7 +151,7 @@ export async function PATCH(req: NextRequest) {
 // DELETE - delete a fortune card (accepts body { id } or query param ?id=)
 export async function DELETE(req: NextRequest) {
   try {
-    if (!(await isAdmin())) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
     }
     let id: string | null = null

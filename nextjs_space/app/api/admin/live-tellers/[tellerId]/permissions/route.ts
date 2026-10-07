@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { staffCan } from '@/lib/permissions'
+import { getHybridSession } from '@/lib/hybrid-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export async function PUT(
   { params }: { params: { tellerId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getHybridSession(request)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
