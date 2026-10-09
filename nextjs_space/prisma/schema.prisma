@@ -5947,3 +5947,180 @@ model RealtimeEvent {
   @@index([channel, scope, createdAt])
   @@map("realtime_events")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ajans yönetimi (2026-10) — YALNIZCA EKLEME. Mevcut tablolara dokunulmaz;
+// ilişkiler düz kimlik alanıyla tutulur (Agency/User modelleri değişmez).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Ajans üyelik geçmişi — AgencyUser satırı silinse/taşınsa da kayıt kalır.
+model AgencyMembershipHistory {
+  id          String    @id @default(cuid())
+  agencyId    String
+  userId      String
+  role        String    @default("member")
+  joinedVia   String?
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  leaveReason String?
+  endedBy     String? // user, agency, admin, auto, transfer
+  actorId     String?
+  createdAt   DateTime  @default(now())
+
+  @@index([agencyId, joinedAt])
+  @@index([userId, joinedAt])
+  @@index([agencyId, userId])
+  @@map("agency_membership_history")
+}
+
+/// Kullanıcının bir ajansa katılma başvurusu (davetin tersi yönü).
+model AgencyJoinRequest {
+  id           String    @id @default(cuid())
+  agencyId     String
+  userId       String
+  message      String?
+  status       String    @default("pending") // pending, accepted, rejected, cancelled
+  reviewedById String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([agencyId, status])
+  @@index([userId, status])
+  @@map("agency_join_requests")
+}
+
+/// Ajans çalışanına verilen sınırlı yetkiler (members, invites, reports, announce, targets).
+model AgencyStaffPermission {
+  id          String   @id @default(cuid())
+  agencyId    String
+  userId      String
+  permissions String[]
+  grantedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([agencyId, userId])
+  @@index([userId])
+  @@map("agency_staff_permissions")
+}
+
+/// Ajans içi duyuru (yalnız ajans üyeleri görür).
+model AgencyAnnouncement {
+  id        String    @id @default(cuid())
+  agencyId  String
+  authorId  String
+  title     String
+  body      String
+  pinned    Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([agencyId, createdAt])
+  @@map("agency_announcements")
+}
+
+/// Ajans vaadi — içerik sürümlerde; yalnız admin onaylı sürüm yayımlanır.
+model AgencyPromise {
+  id               String   @id @default(cuid())
+  agencyId         String
+  title            String
+  status           String   @default("draft") // draft, active, archived
+  currentVersionId String?
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([agencyId, status])
+  @@map("agency_promises")
+}
+
+/// Vaat sürümü — onaylandıktan sonra DEĞİŞMEZ; yeni şart = yeni sürüm.
+model AgencyPromiseVersion {
+  id                   String    @id @default(cuid())
+  promiseId            String
+  agencyId             String
+  version              Int
+  body                 String
+  measurement          String
+  targetPeriod         String? // daily, weekly, monthly
+  targetMinutes        Int?
+  minDays              Int?
+  bonusJeton           Int       @default(0)
+  periodStart          DateTime
+  periodEnd            DateTime?
+  requiresReaccept     Boolean   @default(true)
+  status               String    @default("pending") // pending, approved, rejected, superseded, withdrawn
+  reviewedById         String?
+  reviewNote           String?
+  reviewedAt           DateTime?
+  createdById          String
+  createdAt            DateTime  @default(now())
+
+  @@unique([promiseId, version])
+  @@index([agencyId, status])
+  @@index([status, createdAt])
+  @@map("agency_promise_versions")
+}
+
+/// Yayıncının bir vaat sürümünü açıkça kabulü.
+model AgencyPromiseAcceptance {
+  id         String   @id @default(cuid())
+  versionId  String
+  promiseId  String
+  agencyId   String
+  userId     String
+  acceptedAt DateTime @default(now())
+  ip         String?
+
+  @@unique([versionId, userId])
+  @@index([agencyId, userId])
+  @@index([promiseId, userId])
+  @@map("agency_promise_acceptances")
+}
+
+/// Yayıncı yayın hedefi. Değişince eski satır kapanır (endsAt), yenisi açılır.
+model BroadcasterTarget {
+  id               String    @id @default(cuid())
+  agencyId         String
+  userId           String
+  period           String // daily, weekly, monthly
+  targetMinutes    Int
+  minDays          Int?
+  bonusJeton       Int       @default(0)
+  promiseVersionId String?
+  startsAt         DateTime  @default(now())
+  endsAt           DateTime?
+  createdById      String
+  createdAt        DateTime  @default(now())
+
+  @@index([agencyId, userId])
+  @@index([userId, endsAt])
+  @@map("broadcaster_targets")
+}
+
+/// Dönem kapanışında hesaplanan hak ediş; ödeme ajans cüzdanından yapılır.
+model BroadcasterAccrual {
+  id              String    @id @default(cuid())
+  agencyId        String
+  userId          String
+  targetId        String
+  period          String
+  periodStart     DateTime
+  periodEnd       DateTime
+  targetMinutes   Int
+  verifiedMinutes Int
+  activeDays      Int       @default(0)
+  met             Boolean
+  bonusJeton      Int       @default(0)
+  status          String // not_met, met (bonussuz), earned, paying, paid, void
+  paidTxnId       String?
+  paidAt          DateTime?
+  paidById        String?
+  createdAt       DateTime  @default(now())
+
+  @@unique([targetId, periodStart])
+  @@index([agencyId, periodStart])
+  @@index([userId, periodStart])
+  @@map("broadcaster_accruals")
+}

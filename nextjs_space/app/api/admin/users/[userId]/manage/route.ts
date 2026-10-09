@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { recordMembershipJoin, recordMembershipLeave } from '@/lib/agency-membership-history'
 import { resolveUser, isAdminRole, type ResolvedUser } from '@/lib/rbac'
 import { hasPermission } from '@/lib/permissions'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
@@ -861,10 +862,17 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         where: { userId: target.id },
         data: { agencyId, role, isActive: true, leftAt: null, joinedVia: 'admin' },
       })
+      if (existing.agencyId !== agencyId || !existing.isActive) {
+        if (existing.isActive) {
+          await recordMembershipLeave({ agencyId: existing.agencyId, userId: target.id, endedBy: 'transfer', actorId: admin.id, joinedAt: existing.joinedAt, role: existing.role })
+        }
+        await recordMembershipJoin({ agencyId, userId: target.id, role, via: 'admin', actorId: admin.id })
+      }
     } else {
       await prisma.agencyUser.create({
         data: { agencyId, userId: target.id, role, joinedVia: 'admin', isActive: true },
       })
+      await recordMembershipJoin({ agencyId, userId: target.id, role, via: 'admin', actorId: admin.id })
     }
 
     await logAdminAction({
@@ -887,6 +895,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Kullanıcı bir ajansa bağlı değil' } }, { status: 404 })
     }
     await prisma.agencyUser.update({ where: { userId: target.id }, data: { isActive: false, leftAt: new Date() } })
+    if (existing.isActive) {
+      await recordMembershipLeave({ agencyId: existing.agencyId, userId: target.id, endedBy: 'admin', actorId: admin.id, reason: data.reason ?? null, joinedAt: existing.joinedAt, role: existing.role })
+    }
 
     await logAdminAction({
       targetUserId: target.id, adminId: admin.id, adminName, action: 'agency_remove',
