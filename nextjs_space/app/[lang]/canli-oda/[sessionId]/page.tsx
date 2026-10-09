@@ -178,11 +178,15 @@ export default function LiveRoomPage() {
   // uygulama TRTC kullandığı için web ↔ mobil görüşmede iki taraf hiç
   // buluşmuyordu (ses/görüntü yok). Artık iki istemci de
   // POST /api/trtc/token { roomId: sessionId } → `trtcRoomId` kanalına girer.
-  const fetchTrtcCredentials = useCallback(async (isTeller: boolean) => {
+  const fetchTrtcCredentials = useCallback(async (isTeller: boolean, roomKey?: string | null) => {
+    // Mobil, seansın `roomId` alanını (`room_<sessionId>`, lib/live-session-lifecycle
+    // roomIdForSession) token'a gönderir → kanal `voice_room_room_<sessionId>`.
+    // Web aynı anahtarı kullanmalı; yoksa iki taraf farklı kanallara düşer.
+    const trtcKey = roomKey?.trim() || `room_${sessionId}`;
     const res = await fetch('/api/trtc/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roomId: sessionId, role: isTeller ? 'host' : 'audience' }),
+      body: JSON.stringify({ roomId: trtcKey, role: isTeller ? 'host' : 'audience' }),
     });
     const json = await res.json().catch(() => null);
     const data = json?.data ?? json;
@@ -195,7 +199,7 @@ export default function LiveRoomPage() {
         userId: String(data.userId),
         userSig: String(data.userSig),
       } as TRTCCredentials,
-      trtcRoomId: String(data.trtcRoomId || data.roomId || sessionId),
+      trtcRoomId: String(data.trtcRoomId || `voice_room_${trtcKey}`),
     };
   }, [sessionId]);
 
@@ -215,7 +219,10 @@ export default function LiveRoomPage() {
     setConnectionStatus('Bağlantı kuruluyor...');
 
     try {
-      const { credentials, trtcRoomId } = await fetchTrtcCredentials(roomInfo.isTeller);
+      const { credentials, trtcRoomId } = await fetchTrtcCredentials(
+        roomInfo.isTeller,
+        (roomInfo as RoomData & { roomId?: string | null }).roomId,
+      );
       selfTrtcUserIdRef.current = credentials.userId;
 
       const trtc = await createTRTCInstance();
