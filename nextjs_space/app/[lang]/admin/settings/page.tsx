@@ -1,6 +1,7 @@
 'use client'
 
 import AdminBackButton from '@/components/admin-back-button'
+import SocialAccountsSettings from '@/components/admin/social-accounts-settings'
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
@@ -654,6 +655,9 @@ export default function AdminSettingsPage() {
             </button>
           </div>
         </motion.div>
+
+        {/* Sosyal medya hesapları */}
+        <SocialAccountsSettings />
 
         {/* OneSignal Push Bildirimleri */}
         <motion.div
