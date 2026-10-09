@@ -12,6 +12,7 @@ type WithdrawalStatus =
   | 'approved'
   | 'rejected'
   | 'completed'
+  | 'cancelled'
 
 interface NotifyArgs {
   userId: string
@@ -33,6 +34,10 @@ const COPY: Record<WithdrawalStatus, { title: string; body: (a: NotifyArgs) => s
   rejected: {
     title: 'Çekim Talebiniz Reddedildi',
     body: (a) => `${a.amount} jeton tutarındaki çekim talebiniz reddedildi.${a.note ? ` Not: ${a.note}` : ''}`,
+  },
+  cancelled: {
+    title: 'Çekim Talebiniz İptal Edildi',
+    body: (a) => `${a.amount} jeton tutarındaki çekim talebiniz iptal edildi. Bakiyenizden jeton düşülmedi.${a.note ? ` Not: ${a.note}` : ''}`,
   },
   completed: {
     title: 'Çekim Ödemeniz Tamamlandı',

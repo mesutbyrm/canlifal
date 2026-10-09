@@ -66,12 +66,12 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { requestId, action, reviewNote } = body
 
-    if (!requestId || !['approve', 'reject'].includes(action)) {
+    if (!requestId || !['approve', 'reject', 'cancel'].includes(action)) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
     }
 
     // Permission check
-    const permKey = action === 'approve' ? 'payment.approve' : 'payment.reject'
+    const permKey = action === 'approve' ? 'payment.approve' : 'payment.reject' // iptal = ret yetkisi
     if (!(await hasPermission(actor.role, permKey, actor.id)))
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
 
@@ -90,23 +90,33 @@ export async function PATCH(request: NextRequest) {
 
     const ip = getAuditIp(request)
 
+    const conflict = () => NextResponse.json(
+      { error: 'Talep bu sırada başka bir işlemle güncellendi; listeyi yenileyin' },
+      { status: 409 },
+    )
+
     if (action === 'approve') {
-      const [updatedRequest] = await prisma.$transaction([
-        prisma.cfcPaymentRequest.update({
-          where: { id: requestId },
+      // Koşullu geçiş: aynı anda iki onay (veya onay + iptal) gelirse yalnızca
+      // biri kazanır; CFC bir kez yüklenir.
+      const updatedRequest = await prisma.$transaction(async (tx: any) => {
+        const moved = await tx.cfcPaymentRequest.updateMany({
+          where: { id: requestId, status: 'pending' },
           data: {
             status: 'approved',
             reviewedBy: actor.id,
             reviewNote: reviewNote || null,
           },
-        }),
-        prisma.user.update({
+        })
+        if (moved.count !== 1) return null
+        await tx.user.update({
           where: { id: paymentRequest.userId },
           data: {
             cfcBalance: { increment: paymentRequest.amount },
           },
-        }),
-      ])
+        })
+        return tx.cfcPaymentRequest.findUnique({ where: { id: requestId } })
+      })
+      if (!updatedRequest) return conflict()
 
       createNotificationWithPush({
         userId: paymentRequest.userId,
@@ -142,15 +152,41 @@ export async function PATCH(request: NextRequest) {
       recordAudit({ actorId: actor.id, action: 'cfc_payment_approve', targetType: 'cfc_payment_request', targetId: requestId, ip, metadata: { amount: paymentRequest.amount, userId: paymentRequest.userId } }).catch(() => {})
 
       return NextResponse.json(updatedRequest)
+    } else if (action === 'cancel') {
+      // Yönetici iptali — yalnızca bekleyen talep; CFC yüklenmemiştir, bakiye hareketi yok.
+      const moved = await prisma.cfcPaymentRequest.updateMany({
+        where: { id: requestId, status: 'pending' },
+        data: {
+          status: 'cancelled',
+          reviewedBy: actor.id,
+          reviewNote: `[İptal — yönetici] ${reviewNote || 'Gerekçe belirtilmedi'}`,
+        },
+      })
+      if (moved.count !== 1) return conflict()
+
+      createNotificationWithPush({
+        userId: paymentRequest.userId,
+        type: 'cfc_payment_cancelled',
+        title: 'CFC Yükleme Talebiniz İptal Edildi',
+        message: `${paymentRequest.amount} CFC yükleme talebiniz iptal edildi.${reviewNote ? ' Sebep: ' + reviewNote : ''}`,
+        targetPath: '/cfc-store',
+        targetId: requestId,
+      }).catch(err => console.error('CFC cancel push error:', err))
+
+      recordAudit({ actorId: actor.id, action: 'cfc_payment_cancel', targetType: 'cfc_payment_request', targetId: requestId, ip, metadata: { amount: paymentRequest.amount, userId: paymentRequest.userId, reason: reviewNote } }).catch(() => {})
+
+      return NextResponse.json(await prisma.cfcPaymentRequest.findUnique({ where: { id: requestId } }))
     } else {
-      const updatedRequest = await prisma.cfcPaymentRequest.update({
-        where: { id: requestId },
+      const moved = await prisma.cfcPaymentRequest.updateMany({
+        where: { id: requestId, status: 'pending' },
         data: {
           status: 'rejected',
           reviewedBy: actor.id,
           reviewNote: reviewNote || null,
         },
       })
+      if (moved.count !== 1) return conflict()
+      const updatedRequest = await prisma.cfcPaymentRequest.findUnique({ where: { id: requestId } })
 
       createNotificationWithPush({
         userId: paymentRequest.userId,

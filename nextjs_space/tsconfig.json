@@ -43,7 +43,8 @@
     ".next/11584b10f7/types/**/*.ts",
     ".next/10b3a67233/types/**/*.ts",
     ".next/f97aa7675/types/**/*.ts",
-    ".next/346d16685/types/**/*.ts"
+    ".next/346d16685/types/**/*.ts",
+    ".next/74ff9d8da/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
