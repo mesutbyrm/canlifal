@@ -9,14 +9,20 @@ import {
   Clock, Send, AlertCircle, Plus, User, SwitchCamera, ChevronUp, ChevronDown, Play, Timer, Gift, Heart, Star, Coins, CheckCircle2
 } from 'lucide-react';
 import {
-  getRTCConfiguration,
-  getMediaConstraints,
-  setPreferredCodec,
-  applyInitialBitrate,
-  AdaptiveBitrateManager,
-  setupConnectionRecovery,
-  type VideoQuality,
-} from '@/lib/webrtc-config';
+  createTRTCInstance,
+  enterRoom as trtcEnterRoom,
+  startLocalAudio,
+  startLocalVideo,
+  startRemoteVideo,
+  stopRemoteVideo,
+  muteLocalAudio,
+  updateLocalVideo,
+  exitRoom as trtcExitRoom,
+  destroyTRTC,
+  getTRTCEvent,
+  type TRTC,
+  type TRTCCredentials,
+} from '@/lib/trtc-client';
 
 interface RoomData {
   id: string;
@@ -102,21 +108,22 @@ export default function LiveRoomPage() {
   const summaryShownRef = useRef(false);
   
   // Refs
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
+  // TRTC görüntü konteynerleri (SDK içine <video> yerleştirir)
+  const localVideoRef = useRef<HTMLDivElement>(null);
+  const remoteVideoRef = useRef<HTMLDivElement>(null);
+  // Mobil uygulama ile aynı TRTC kanalı: POST /api/trtc/token → trtcRoomId
+  const trtcRef = useRef<TRTC | null>(null);
+  const selfTrtcUserIdRef = useRef<string>('');
+  const remoteVideoUserRef = useRef<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const pingRef = useRef<NodeJS.Timeout | null>(null);
-  const signalPollRef = useRef<NodeJS.Timeout | null>(null);
   const messagePollRef = useRef<NodeJS.Timeout | null>(null);
   const completionPollRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageTimeRef = useRef<string | null>(null);
   const messageIdsRef = useRef<Set<string>>(new Set());
   const roomDataRef = useRef<RoomData | null>(null);
   const isInitialized = useRef(false);
-  const hasCreatedOffer = useRef(false);
   const reconnectingRef = useRef(false);
 
   // Update roomDataRef when roomData changes
@@ -166,297 +173,141 @@ export default function LiveRoomPage() {
     }
   }, [sessionId, language]);
 
-  // Create a fresh PeerConnection with media
-  const createPeerConnection = useCallback(async (roomInfo: RoomData): Promise<RTCPeerConnection | null> => {
-    try {
-      setConnectionStatus('Kamera/mikrofon erişimi isteniyor...');
-      
-      // Get media if not already available
-      if (!localStreamRef.current || localStreamRef.current.getTracks().every(t => t.readyState === 'ended')) {
-        const constraints = getMediaConstraints('high', facingMode);
-        let stream: MediaStream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (mediaErr) {
-          console.warn('Yüksek kalite başarısız, medium deneniyor:', mediaErr);
-          const fallback = getMediaConstraints('medium', facingMode);
-          stream = await navigator.mediaDevices.getUserMedia(fallback);
-        }
-        localStreamRef.current = stream;
-      }
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStreamRef.current;
-      }
-
-      setConnectionStatus('Bağlantı kuruluyor...');
-
-      // Close old PC if exists
-      if (peerConnectionRef.current) {
-        try { peerConnectionRef.current.close(); } catch {}
-      }
-
-      const configuration = getRTCConfiguration();
-      const pc = new RTCPeerConnection(configuration);
-      peerConnectionRef.current = pc;
-
-      // Add local tracks
-      localStreamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, localStreamRef.current!);
-      });
-
-      setPreferredCodec(pc, 'video/H264');
-
-      pc.ontrack = (event) => {
-        console.log('Received remote track:', event.track.kind);
-        if (remoteVideoRef.current && event.streams[0]) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-          // Try to play immediately (handles autoplay restrictions)
-          remoteVideoRef.current.play().catch(() => {});
-          setIsConnected(true);
-          setConnectionStatus('');
-        }
-      };
-
-      pc.onicecandidate = async (event) => {
-        if (event.candidate && roomDataRef.current) {
-          await fetch('/api/room/signal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId,
-              receiverId: roomDataRef.current.peerId,
-              signalType: 'ice-candidate',
-              signalData: event.candidate
-            })
-          });
-        }
-      };
-
-      const cleanupRecovery = setupConnectionRecovery(
-        pc,
-        () => setConnectionStatus('Bağlantı kesildi, yeniden bağlanılıyor...'),
-        () => { setIsConnected(true); setConnectionStatus(''); },
-        () => {
-          setConnectionStatus('Bağlantı başarısız, yeniden deneniyor...');
-          // Auto-retry on recovery failure
-          setTimeout(() => reconnect(), 2000);
-        },
-        3
-      );
-
-      pc.oniceconnectionstatechange = () => {
-        console.log('ICE connection state:', pc.iceConnectionState);
-        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-          setIsConnected(true);
-          setConnectionStatus('');
-        }
-      };
-
-      pc.onconnectionstatechange = () => {
-        console.log('Connection state:', pc.connectionState);
-        if (pc.connectionState === 'connected') {
-          setIsConnected(true);
-          setConnectionStatus('');
-          applyInitialBitrate(pc, 'high');
-          const abm = new AdaptiveBitrateManager(pc, (quality) => {
-            console.log('📊 Video kalitesi değişti:', quality);
-          });
-          abm.start(3000);
-          const origClose = pc.close.bind(pc);
-          pc.close = () => { abm.stop(); cleanupRecovery(); origClose(); };
-        } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-          setIsConnected(false);
-          // Auto-reconnect after a short delay
-          if (pc.connectionState === 'failed') {
-            setTimeout(() => reconnect(), 2000);
-          }
-        }
-      };
-
-      return pc;
-    } catch (err) {
-      console.error('WebRTC initialization error:', err);
-      setError('Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.');
-      return null;
+  // ── TRTC (mobil uygulama ile aynı kanal) ──────────────────────────────
+  // Önceden bu sayfa düz WebRTC P2P + /api/room/signal kullanıyordu; mobil
+  // uygulama TRTC kullandığı için web ↔ mobil görüşmede iki taraf hiç
+  // buluşmuyordu (ses/görüntü yok). Artık iki istemci de
+  // POST /api/trtc/token { roomId: sessionId } → `trtcRoomId` kanalına girer.
+  const fetchTrtcCredentials = useCallback(async (isTeller: boolean, roomKey?: string | null) => {
+    // Mobil, seansın `roomId` alanını (`room_<sessionId>`, lib/live-session-lifecycle
+    // roomIdForSession) token'a gönderir → kanal `voice_room_room_<sessionId>`.
+    // Web aynı anahtarı kullanmalı; yoksa iki taraf farklı kanallara düşer.
+    const trtcKey = roomKey?.trim() || `room_${sessionId}`;
+    const res = await fetch('/api/trtc/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomId: trtcKey, role: isTeller ? 'host' : 'audience' }),
+    });
+    const json = await res.json().catch(() => null);
+    const data = json?.data ?? json;
+    if (!res.ok || !data?.userSig || !data?.sdkAppId) {
+      throw new Error(json?.error?.message || 'TRTC kimliği alınamadı');
     }
-  }, [sessionId, facingMode]);
-
-  // Send a fresh offer
-  const sendOffer = useCallback(async (pc: RTCPeerConnection, peerId: string) => {
-    try {
-      hasCreatedOffer.current = true;
-      console.log('Creating and sending offer...');
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true
-      });
-      await pc.setLocalDescription(offer);
-      
-      await fetch('/api/room/signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          receiverId: peerId,
-          signalType: 'offer',
-          signalData: offer
-        })
-      });
-      console.log('Offer sent');
-    } catch (err) {
-      console.error('Error sending offer:', err);
-    }
+    return {
+      credentials: {
+        sdkAppId: Number(data.sdkAppId),
+        userId: String(data.userId),
+        userSig: String(data.userSig),
+      } as TRTCCredentials,
+      trtcRoomId: String(data.trtcRoomId || `voice_room_${trtcKey}`),
+    };
   }, [sessionId]);
 
-  // Reconnect function - clears signals and re-establishes connection
-  const reconnect = useCallback(async () => {
-    if (reconnectingRef.current) return;
-    reconnectingRef.current = true;
-    
-    const currentRoom = roomDataRef.current;
-    if (!currentRoom) { reconnectingRef.current = false; return; }
+  const teardownRtc = useCallback(async () => {
+    const trtc = trtcRef.current;
+    trtcRef.current = null;
+    remoteVideoUserRef.current = null;
+    if (!trtc) return;
+    try { await trtcExitRoom(trtc); } catch { /* zaten çıkmış olabilir */ }
+    try { await destroyTRTC(trtc); } catch { /* yok say */ }
+  }, []);
 
-    console.log('🔄 Reconnecting WebRTC...');
+  const initializeRtc = useCallback(async (roomInfo: RoomData) => {
+    if (isInitialized.current) return trtcRef.current;
+    isInitialized.current = true;
     setIsConnected(false);
-    setConnectionStatus('Yeniden bağlanılıyor...');
+    setConnectionStatus('Bağlantı kuruluyor...');
 
     try {
-      // Clear old signals
-      await fetch(`/api/room/signal?sessionId=${sessionId}`, { method: 'DELETE' });
-      
-      // Create new peer connection
-      const pc = await createPeerConnection(currentRoom);
-      if (!pc) { reconnectingRef.current = false; return; }
+      const { credentials, trtcRoomId } = await fetchTrtcCredentials(
+        roomInfo.isTeller,
+        (roomInfo as RoomData & { roomId?: string | null }).roomId,
+      );
+      selfTrtcUserIdRef.current = credentials.userId;
 
-      // User always creates offer, teller sends need-offer signal
-      if (currentRoom.isUser) {
-        await sendOffer(pc, currentRoom.peerId);
-      } else {
-        // Teller: send need-offer signal to tell user to re-send offer
-        await fetch('/api/room/signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            receiverId: currentRoom.peerId,
-            signalType: 'need-offer',
-            signalData: { reconnect: true }
-          })
-        });
+      const trtc = await createTRTCInstance();
+      trtcRef.current = trtc;
+      const EVENT = await getTRTCEvent();
+
+      trtc.on(EVENT.REMOTE_USER_ENTER, (event: any) => {
+        if (event?.userId === selfTrtcUserIdRef.current) return;
+        setIsConnected(true);
+        setConnectionStatus('');
+      });
+      trtc.on(EVENT.REMOTE_USER_EXIT, (event: any) => {
+        if (event?.userId === selfTrtcUserIdRef.current) return;
+        if (remoteVideoUserRef.current === event?.userId) remoteVideoUserRef.current = null;
+        setIsConnected(false);
+        setConnectionStatus('Karşı tarafın bağlantısı koptu, bekleniyor...');
+      });
+      trtc.on(EVENT.REMOTE_VIDEO_AVAILABLE, async (event: any) => {
+        const userId = event?.userId;
+        if (!userId || userId === selfTrtcUserIdRef.current) return;
+        const view = remoteVideoRef.current;
+        if (!view) return;
+        try {
+          await startRemoteVideo(trtc, userId, view, event?.streamType === 'sub' ? 'sub' : 'main');
+          remoteVideoUserRef.current = userId;
+          setIsConnected(true);
+          setConnectionStatus('');
+        } catch (err) {
+          console.error('[canli-oda] remote video error:', err);
+        }
+      });
+      trtc.on(EVENT.REMOTE_VIDEO_UNAVAILABLE, async (event: any) => {
+        const userId = event?.userId;
+        if (!userId || userId === selfTrtcUserIdRef.current) return;
+        try {
+          await stopRemoteVideo(trtc, userId, event?.streamType === 'sub' ? 'sub' : 'main');
+        } catch { /* yok say */ }
+      });
+      trtc.on(EVENT.CONNECTION_STATE_CHANGED, (event: any) => {
+        if (event?.state === 'DISCONNECTED' || event?.state === 'RECONNECTING') {
+          setConnectionStatus('Bağlantı kesildi, yeniden bağlanılıyor...');
+        }
+      });
+      trtc.on(EVENT.KICKED_OUT, () => {
+        setIsConnected(false);
+        setConnectionStatus('Görüşme bağlantısı sonlandı');
+      });
+
+      setConnectionStatus('Kamera/mikrofon erişimi isteniyor...');
+      // 1:1 görüşme: iki taraf da yayıncı (rtc sahnesi)
+      await trtcEnterRoom(trtc, credentials, trtcRoomId, 'host', 'rtc');
+      await startLocalAudio(trtc);
+      if (localVideoRef.current) {
+        await startLocalVideo(trtc, localVideoRef.current, facingMode === 'user');
       }
+      setIsAudioEnabled(true);
+      setIsVideoEnabled(true);
+      setConnectionStatus('Diğer tarafın odaya girmesi bekleniyor...');
+      return trtc;
     } catch (err) {
-      console.error('Reconnect error:', err);
+      console.error('[canli-oda] TRTC initialization error:', err);
+      isInitialized.current = false;
+      await teardownRtc();
+      setError('Kamera/mikrofon veya görüntülü bağlantı başlatılamadı. Lütfen izinleri kontrol edip yeniden deneyin.');
+      return null;
+    }
+  }, [fetchTrtcCredentials, teardownRtc, facingMode]);
+
+  // Yeniden bağlan: kanaldan çık, aynı kanala tekrar gir
+  const reconnect = useCallback(async () => {
+    if (reconnectingRef.current) return;
+    const currentRoom = roomDataRef.current;
+    if (!currentRoom) return;
+    reconnectingRef.current = true;
+    setIsConnected(false);
+    setConnectionStatus('Yeniden bağlanılıyor...');
+    try {
+      await teardownRtc();
+      isInitialized.current = false;
+      setError('');
+      await initializeRtc(currentRoom);
     } finally {
       reconnectingRef.current = false;
     }
-  }, [sessionId, createPeerConnection, sendOffer]);
-
-  // Initialize WebRTC
-  const initializeWebRTC = useCallback(async (roomInfo: RoomData) => {
-    if (isInitialized.current) return peerConnectionRef.current;
-    isInitialized.current = true;
-    
-    try {
-      // Clear old signals first (handles page refresh scenario)
-      await fetch(`/api/room/signal?sessionId=${sessionId}`, { method: 'DELETE' });
-      
-      const pc = await createPeerConnection(roomInfo);
-      if (!pc) { isInitialized.current = false; return null; }
-
-      // User creates offer, teller sends need-offer
-      if (roomInfo.isUser) {
-        await sendOffer(pc, roomInfo.peerId);
-      } else {
-        // Teller: signal the user to send a fresh offer
-        await fetch('/api/room/signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            receiverId: roomInfo.peerId,
-            signalType: 'need-offer',
-            signalData: { reconnect: true }
-          })
-        });
-      }
-
-      return pc;
-    } catch (err) {
-      console.error('WebRTC initialization error:', err);
-      isInitialized.current = false;
-      setError('Kamera/mikrofon erişimi alınamadı. Lütfen izinleri kontrol edin.');
-      return null;
-    }
-  }, [sessionId, createPeerConnection, sendOffer]);
-
-  // Poll for WebRTC signals
-  const pollSignals = useCallback(async () => {
-    const pc = peerConnectionRef.current;
-    const currentRoomData = roomDataRef.current;
-    
-    if (!pc || !currentRoomData) return;
-
-    try {
-      const res = await fetch(`/api/room/signal?sessionId=${sessionId}`);
-      if (!res.ok) return;
-      
-      const signals = await res.json();
-
-      for (const signal of signals) {
-        console.log('Processing signal:', signal.signalType);
-        
-        if (signal.signalType === 'need-offer') {
-          // Other party needs a fresh offer (they refreshed/reconnected)
-          if (currentRoomData.isUser) {
-            console.log('Received need-offer, creating fresh offer...');
-            // Clear old signals and send fresh offer
-            await fetch(`/api/room/signal?sessionId=${sessionId}`, { method: 'DELETE' });
-            await sendOffer(pc, currentRoomData.peerId);
-          }
-          continue;
-        }
-        
-        if (signal.signalType === 'offer') {
-          // Accept offer even if not in stable state (handle reconnection)
-          if (pc.signalingState !== 'stable') {
-            // Force rollback for reconnection scenario
-            try {
-              await pc.setLocalDescription({ type: 'rollback' } as RTCSessionDescriptionInit);
-            } catch { /* ignore rollback errors */ }
-          }
-          await pc.setRemoteDescription(new RTCSessionDescription(signal.signalData));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          
-          await fetch('/api/room/signal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId,
-              receiverId: currentRoomData.peerId,
-              signalType: 'answer',
-              signalData: answer
-            })
-          });
-          console.log('Answer sent');
-        } else if (signal.signalType === 'answer') {
-          if (pc.signalingState !== 'have-local-offer') {
-            console.log('Ignoring answer, not in have-local-offer state');
-            continue;
-          }
-          await pc.setRemoteDescription(new RTCSessionDescription(signal.signalData));
-          console.log('Answer received and set');
-        } else if (signal.signalType === 'ice-candidate') {
-          if (pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(signal.signalData));
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Signal polling error:', err);
-    }
-  }, [sessionId, sendOffer]);
+  }, [teardownRtc, initializeRtc]);
 
   // Fetch messages - fixed to avoid duplicates
   const fetchMessages = useCallback(async () => {
@@ -683,68 +534,38 @@ export default function LiveRoomPage() {
   };
 
   // Toggle video
-  const toggleVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoEnabled(videoTrack.enabled);
-      }
+  const toggleVideo = async () => {
+    const trtc = trtcRef.current;
+    if (!trtc) return;
+    const next = !isVideoEnabled;
+    try {
+      await trtc.updateLocalVideo({ mute: !next } as any);
+      setIsVideoEnabled(next);
+    } catch (err) {
+      console.error('Error toggling video:', err);
     }
   };
 
   // Toggle audio
-  const toggleAudio = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsAudioEnabled(audioTrack.enabled);
-      }
+  const toggleAudio = async () => {
+    const trtc = trtcRef.current;
+    if (!trtc) return;
+    const next = !isAudioEnabled;
+    try {
+      await muteLocalAudio(trtc, !next);
+      setIsAudioEnabled(next);
+    } catch (err) {
+      console.error('Error toggling audio:', err);
     }
   };
 
   // Switch camera (front/back)
   const switchCamera = async () => {
-    if (!localStreamRef.current || !peerConnectionRef.current) return;
-    
+    const trtc = trtcRef.current;
+    if (!trtc) return;
     const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
-    
     try {
-      // Stop current video track
-      const currentVideoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (currentVideoTrack) {
-        currentVideoTrack.stop();
-      }
-      
-      // Optimize edilmiş kamera değiştirme
-      const switchConstraints = getMediaConstraints('high', newFacingMode);
-      // Sadece video al, audio mevcut olanı kullan
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: (switchConstraints.video as MediaTrackConstraints),
-        audio: false
-      });
-      
-      const newVideoTrack = newStream.getVideoTracks()[0];
-      
-      // Replace track in local stream
-      if (currentVideoTrack) {
-        localStreamRef.current.removeTrack(currentVideoTrack);
-      }
-      localStreamRef.current.addTrack(newVideoTrack);
-      
-      // Update local video element
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStreamRef.current;
-      }
-      
-      // Replace track in peer connection
-      const senders = peerConnectionRef.current.getSenders();
-      const videoSender = senders.find(s => s.track?.kind === 'video');
-      if (videoSender) {
-        await videoSender.replaceTrack(newVideoTrack);
-      }
-      
+      await updateLocalVideo(trtc, { useFrontCamera: newFacingMode === 'user' });
       setFacingMode(newFacingMode);
     } catch (err) {
       console.error('Error switching camera:', err);
@@ -755,18 +576,10 @@ export default function LiveRoomPage() {
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (pingRef.current) clearInterval(pingRef.current);
-    if (signalPollRef.current) clearInterval(signalPollRef.current);
     if (messagePollRef.current) clearInterval(messagePollRef.current);
     if (completionPollRef.current) clearInterval(completionPollRef.current);
-    
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-    }
-    
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-    }
-  }, []);
+    void teardownRtc();
+  }, [teardownRtc]);
 
   // Fetch the end-of-session summary from the server and show the summary modal.
   // Works identically for teller (earnings) and client/danışan (spend + review).
@@ -865,7 +678,7 @@ export default function LiveRoomPage() {
       
       const roomInfo = await fetchRoomData();
       if (roomInfo && roomInfo.status === 'active') {
-        await initializeWebRTC(roomInfo);
+        await initializeRtc(roomInfo);
         
         // Set up timers - use server-calculated elapsed time
         const maxSeconds = roomInfo.maxMinutes * 60;
@@ -908,9 +721,6 @@ export default function LiveRoomPage() {
         // Ping server every 15 seconds for timer sync
         pingRef.current = setInterval(pingServer, 15000);
         
-        // Poll for signals every 3 seconds
-        signalPollRef.current = setInterval(pollSignals, 3000);
-        
         // Poll for messages every 8 seconds
         messagePollRef.current = setInterval(fetchMessages, 8000);
         
@@ -924,22 +734,11 @@ export default function LiveRoomPage() {
 
     init();
 
-    // Handle page visibility change (tab switch, minimize)
+    // Sekme geri gelince TRTC kanalı yoksa yeniden gir (SDK kendi yeniden
+    // bağlanmayı yönetir; burada yalnız tamamen düşmüş oturumu toparlarız).
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Page became visible - check connection
-        const pc = peerConnectionRef.current;
-        if (pc) {
-          const state = pc.connectionState;
-          if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-            reconnect();
-          } else {
-            // Try to play remote video again (autoplay restrictions)
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.play().catch(() => {});
-            }
-          }
-        }
+      if (document.visibilityState === 'visible' && !trtcRef.current && roomDataRef.current?.status === 'active') {
+        reconnect();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -1201,21 +1000,16 @@ export default function LiveRoomPage() {
       {/* Main video area - fullscreen */}
       <div className={`flex-1 relative ${isChatExpanded ? 'pb-[140px]' : 'pb-[40px]'}`}>
         {/* Remote video (full size) */}
-        <video
+        <div
           ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="absolute inset-0 w-full h-full object-contain bg-black"
+          className="absolute inset-0 w-full h-full bg-black [&_video]:object-contain"
         />
 
         {/* Local video (picture-in-picture) - draggable position */}
         <div className="absolute top-16 right-3 w-28 h-40 sm:w-36 sm:h-48 bg-gray-900 rounded-xl overflow-hidden border-2 border-purple-500 shadow-2xl z-10">
-          <video
+          <div
             ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className={`w-full h-full object-cover bg-black ${!isVideoEnabled ? 'hidden' : ''}`}
+            className={`w-full h-full bg-black [&_video]:object-cover ${!isVideoEnabled ? 'hidden' : ''}`}
           />
           {!isVideoEnabled && (
             <div className="w-full h-full flex items-center justify-center bg-gray-800">
