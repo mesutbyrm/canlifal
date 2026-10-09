@@ -5,10 +5,11 @@ import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { requireConfirmation } from '@/lib/critical-confirm'
 import { transferToUser, getOrCreateWallet } from '@/lib/agency-wallet'
 import { createNotificationWithPush } from '@/lib/notify'
+import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 export const dynamic = 'force-dynamic'
 
-/** §15 — Ajans sahibinin üyesine jeton göndermesi. */
+/** §15 — Ajans sahibinin/yöneticisinin bir kullanıcıya cüzdandan jeton yüklemesi. */
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
@@ -45,15 +46,40 @@ export async function POST(req: NextRequest) {
   })
   if (confirmBlock) return confirmBlock
 
-  const res = await transferToUser({
-    agencyId, targetUserId, amount,
-    actorId: user.id, actorName: user.name || user.email || 'Ajans',
-    actorRole: user.role, reason,
-    idempotencyKey: body.idempotencyKey ? String(body.idempotencyKey) : undefined,
-    useKey: 'transfer_member',
+  if (!target) {
+    return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Kullanıcı bulunamadı' } }, { status: 404 })
+  }
+
+  // Kendi üyesi → transfer_member; diğer herkes → transfer_any_user (admin kapatabilir).
+  const targetMembership = await prisma.agencyUser.findUnique({
+    where: { userId: targetUserId },
+    select: { agencyId: true, isActive: true },
   })
+  const useKey = targetMembership?.isActive && targetMembership.agencyId === agencyId
+    ? 'transfer_member'
+    : 'transfer_any_user'
+
+  // Aynı Idempotency-Key ile tekrarlanan istek ikinci kez jeton aktarmaz
+  // (DB tabanlı kayıt; eşzamanlı ikinci istek 409 alır).
+  const idem = await beginIdempotent(req, 'agency_wallet_transfer', user.id)
+  if (idem.response) return idem.response
+
+  let res
+  try {
+    res = await transferToUser({
+      agencyId, targetUserId, amount,
+      actorId: user.id, actorName: user.name || user.email || 'Ajans',
+      actorRole: user.role, reason,
+      idempotencyKey: body.idempotencyKey ? String(body.idempotencyKey) : undefined,
+      useKey,
+    })
+  } catch (e) {
+    await releaseIdempotent(idem.record)
+    throw e
+  }
 
   if (!res.ok) {
+    await releaseIdempotent(idem.record)
     const err = res as any
     const status = err.code === 'NOT_FOUND' ? 404 : (err.code === 'USE_NOT_ALLOWED' || err.code === 'WALLET_LOCKED' || err.code === 'DISABLED') ? 403 : 400
     return NextResponse.json({ success: false, error: { code: err.code, message: err.message } }, { status })
@@ -72,9 +98,11 @@ export async function POST(req: NextRequest) {
   } as any).catch(() => {})
 
   const wallet = await getOrCreateWallet(agencyId)
-  return NextResponse.json({
+  const payload = {
     success: true,
     message: `${amount} jeton gönderildi`,
     data: { ...(res as any), walletBalance: wallet.jetonBalance },
-  })
+  }
+  await completeIdempotent(idem.record, 200, payload)
+  return NextResponse.json(payload)
 }

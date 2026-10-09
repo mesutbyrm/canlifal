@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { requirePermission } from '@/lib/rbac'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { AGENCY_COMMISSION_SOURCES, getCommissionRules } from '@/lib/agency-wallet'
+import { getAgencyPurchaseDiscount, setAgencyPurchaseDiscount } from '@/lib/agency-purchase'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,8 @@ export async function GET(req: NextRequest, { params }: { params: { agencyId: st
   if (!agency) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Ajans bulunamadı' } }, { status: 404 })
 
   const rules = await getCommissionRules(params.agencyId)
-  return NextResponse.json({ success: true, data: { agency, rules, catalog: AGENCY_COMMISSION_SOURCES } })
+  const purchaseDiscount = await getAgencyPurchaseDiscount(params.agencyId)
+  return NextResponse.json({ success: true, data: { agency, rules, catalog: AGENCY_COMMISSION_SOURCES, purchaseDiscount } })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { agencyId: string } }) {
@@ -42,6 +44,20 @@ export async function PUT(req: NextRequest, { params }: { params: { agencyId: st
     }
   }
 
+  // Toplu Jeton satın alma indirimi (%) — `null`/'' ⇒ ajansa özel ayar kaldırılır (global geçerli).
+  if (body.purchaseDiscountPercent !== undefined) {
+    const raw = body.purchaseDiscountPercent
+    if (raw === null || raw === '') {
+      await setAgencyPurchaseDiscount(agency.id, null)
+      changed.push('purchaseDiscount:inherit')
+    } else {
+      const v = parseFloat(raw)
+      if (!isNaN(v)) {
+        await setAgencyPurchaseDiscount(agency.id, Math.max(0, Math.min(90, v)))
+        changed.push('purchaseDiscount')
+      }
+    }
+  }
   if (Array.isArray(body.rules)) {
     for (const r of body.rules) {
       const sourceType = String(r.sourceType || '')

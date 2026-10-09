@@ -81,9 +81,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Talep bulunamadı veya zaten işlenmiş' }, { status: 404 });
     }
 
+    // Koşullu geçiş: kullanıcı aynı anda iptal ettiyse ya da başka bir yönetici
+    // işlediyse üzerine yazılmaz.
+    let moved
     if (action === 'approve') {
-      await prisma.withdrawalRequest.update({
-        where: { id: requestId },
+      moved = await prisma.withdrawalRequest.updateMany({
+        where: { id: requestId, status: 'pending' },
         data: {
           status: 'agency_approved',
           agencyApprovedBy: authUser.id,
@@ -92,8 +95,8 @@ export async function POST(request: NextRequest) {
         },
       });
     } else {
-      await prisma.withdrawalRequest.update({
-        where: { id: requestId },
+      moved = await prisma.withdrawalRequest.updateMany({
+        where: { id: requestId, status: 'pending' },
         data: {
           status: 'rejected',
           agencyNote: note || 'Ajans tarafından reddedildi',
@@ -101,6 +104,9 @@ export async function POST(request: NextRequest) {
           agencyApprovedAt: new Date(),
         },
       });
+    }
+    if (moved.count !== 1) {
+      return NextResponse.json({ error: 'Talep bu sırada başka bir işlemle güncellendi' }, { status: 409 });
     }
 
     // Kullanıcıya durum bildirimi (uygulama içi + push + e-posta)

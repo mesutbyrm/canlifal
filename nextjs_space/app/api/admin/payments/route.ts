@@ -10,6 +10,8 @@ import { createNotificationWithPush } from '@/lib/notify'
 import { awardTopupCommissions } from '@/lib/referral-commission'
 import { applyTopupBonus } from '@/lib/currency-branding'
 import { decoratePaymentNotification } from '@/lib/payment-status'
+import { topUpWallet } from '@/lib/agency-wallet'
+import { AGENCY_JETON_PRODUCT, agencyIdFromNotes } from '@/lib/agency-purchase'
 import {
   computeJetonPrice,
   getJetonUnitPrice,
@@ -232,6 +234,12 @@ export async function POST(req: NextRequest) {
           return err(`Bu bildirim "${pn.status}" durumunda, onaylanamaz`)
         if (pn.creditApplied)
           return err('Bu ödeme için bakiye zaten yüklenmiş (idempotency)', 409)
+        if (pn.productType === AGENCY_JETON_PRODUCT) {
+          const aid = agencyIdFromNotes(pn.notes)
+          const ag = aid ? await prisma.agency.findUnique({ where: { id: aid }, select: { ownerId: true, status: true } }) : null
+          if (!ag || ag.ownerId !== pn.userId || ag.status !== 'approved')
+            return err('Ajans bulunamadı, onaylı değil veya talep sahibi artık ajans sahibi değil', 400)
+        }
 
         // Determine amount to load
         const effectiveAmount = loadAmount
@@ -266,8 +274,9 @@ export async function POST(req: NextRequest) {
 
         // ── ATOMİK ÇİFT-ONAY KORUMASI (§12) ──
         // creditApplied bayrağını koşullu olarak sahiplen; ikinci istek 0 satır günceller.
+        // Durum da koşulda: aynı anda ret/iptal edilen bildirime bakiye yüklenmez.
         const claim = await prisma.paymentNotification.updateMany({
-          where: { id: notificationId, creditApplied: false },
+          where: { id: notificationId, creditApplied: false, status: { in: ['pending', 'corrected'] } },
           data: { creditApplied: true, creditAppliedAt: new Date() },
         })
         if (claim.count === 0)
@@ -288,7 +297,7 @@ export async function POST(req: NextRequest) {
           const after = before + effectiveAmount
 
           await prisma.$transaction([
-            prisma.user.update({ where: { id: pn.userId }, data: { jetonBalance: after } }),
+            prisma.user.update({ where: { id: pn.userId }, data: { jetonBalance: { increment: effectiveAmount } } }), // mutlak değer değil: eşzamanlı harcama kaybolmasın
             prisma.jetonTransaction.create({
               data: {
                 userId: pn.userId,
@@ -340,7 +349,7 @@ export async function POST(req: NextRequest) {
           const after = before + effectiveAmount
 
           await prisma.$transaction([
-            prisma.user.update({ where: { id: pn.userId }, data: { cfcBalance: after } }),
+            prisma.user.update({ where: { id: pn.userId }, data: { cfcBalance: { increment: effectiveAmount } } }), // mutlak değer değil
             prisma.paymentNotification.update({
               where: { id: notificationId },
               data: {
@@ -375,6 +384,42 @@ export async function POST(req: NextRequest) {
             })
             .catch(() => {})
 
+        } else if (pn.productType === AGENCY_JETON_PRODUCT) {
+          // Ajans toplu Jeton satın alma: kişisel bakiyeye DEĞİL ajans cüzdanına.
+          // İndirim satın alırken uygulandı → seviye bonusu eklenmez.
+          const agencyId = agencyIdFromNotes(pn.notes)
+          const agency = agencyId
+            ? await prisma.agency.findUnique({ where: { id: agencyId }, select: { id: true, ownerId: true, status: true, name: true } })
+            : null
+          if (!agency || agency.ownerId !== pn.userId || agency.status !== 'approved') {
+            throw new Error('AGENCY_INVALID')
+          }
+          const res = await topUpWallet({
+            agencyId: agency.id,
+            jetonAmount: effectiveAmount,
+            actorId: actor.id,
+            actorName: adminUser?.name || 'Admin',
+            actorRole: actor.role,
+            reason: `Toplu Jeton satın alma (${pn.amount} TL, ${pn.paymentMethod})`,
+            idempotencyKey: `payment_notification:${notificationId}`,
+            applyLevelBonus: false,
+            referenceType: 'payment_notification',
+            referenceId: notificationId,
+          })
+          if (!res.ok) throw new Error('AGENCY_TOPUP_FAILED')
+          await prisma.paymentNotification.update({
+            where: { id: notificationId },
+            data: {
+              status: 'approved',
+              jetonLoaded: effectiveAmount,
+              processedBy: actor.id,
+              processedByName: adminUser?.name || 'Admin',
+              processedAt: new Date(),
+              adminNote: adminNote || null,
+              creditApplied: true,
+              creditAppliedAt: new Date(),
+            },
+          })
         } else if (pn.productType === 'gold') {
           const goldDays = pn.requestedGoldDays || 30
           const goldType = pn.requestedGoldType || 'gold'
@@ -408,7 +453,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Notify user
-        const productLabel = pn.productType === 'jeton' ? 'Jeton' : pn.productType === 'cfc' ? 'CFC' : 'Gold'
+        const productLabel = pn.productType === 'jeton' ? 'Jeton' : pn.productType === 'cfc' ? 'CFC' : pn.productType === AGENCY_JETON_PRODUCT ? 'Ajans Jetonu' : 'Gold'
         createNotificationWithPush({
           userId: pn.userId,
           type: 'payment_approved',
@@ -438,8 +483,10 @@ export async function POST(req: NextRequest) {
 
         const adminUser = await prisma.user.findUnique({ where: { id: actor.id }, select: { name: true } })
 
-        await prisma.paymentNotification.update({
-          where: { id: notificationId },
+        // Koşullu geçiş: onay bakiyeyi sahiplendiyse (creditApplied) veya durum
+        // değiştiyse bu işlem uygulanmaz → onay ile rejected aynı anda kazanamaz.
+        const moved = await prisma.paymentNotification.updateMany({
+          where: { id: notificationId, status: pn.status, creditApplied: false },
           data: {
             status: 'rejected',
             processedBy: actor.id,
@@ -448,6 +495,7 @@ export async function POST(req: NextRequest) {
             adminNote: adminNote || null,
           },
         })
+        if (moved.count !== 1) return err('Bildirim bu sırada başka bir işlemle güncellendi; listeyi yenileyin', 409)
 
         createNotificationWithPush({
           userId: pn.userId,
@@ -512,8 +560,10 @@ export async function POST(req: NextRequest) {
 
         const adminUser = await prisma.user.findUnique({ where: { id: actor.id }, select: { name: true } })
 
-        await prisma.paymentNotification.update({
-          where: { id: notificationId },
+        // Koşullu geçiş: onay bakiyeyi sahiplendiyse (creditApplied) veya durum
+        // değiştiyse bu işlem uygulanmaz → onay ile cancelled aynı anda kazanamaz.
+        const moved = await prisma.paymentNotification.updateMany({
+          where: { id: notificationId, status: pn.status, creditApplied: false },
           data: {
             status: 'cancelled',
             processedBy: actor.id,
@@ -522,6 +572,7 @@ export async function POST(req: NextRequest) {
             adminNote: adminNote || null,
           },
         })
+        if (moved.count !== 1) return err('Bildirim bu sırada başka bir işlemle güncellendi; listeyi yenileyin', 409)
 
         recordAudit({ actorId: actor.id, action: 'payment_cancel', targetType: 'payment_notification', targetId: notificationId, ip, metadata: { amountTRY: pn.amount } }).catch(() => {})
 

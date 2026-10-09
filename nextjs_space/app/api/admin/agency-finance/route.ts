@@ -8,6 +8,7 @@ import {
   invalidateAgencySettingsCache,
 } from '@/lib/agency-wallet'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { AGENCY_PURCHASE_KEYS } from '@/lib/agency-purchase'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,11 @@ export async function GET(req: NextRequest) {
     getCachedPlatformSetting(AGENCY_SETTING_KEYS.walletEnabled, 'true'),
     getCachedPlatformSetting(AGENCY_SETTING_KEYS.minTopUpTl, '0'),
     getCachedPlatformSetting(AGENCY_SETTING_KEYS.maxTransferPerTxn, '0'),
+  ])
+  const [purchaseDiscount, purchaseMin, purchaseEnabled] = await Promise.all([
+    getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.defaultDiscountPct, '0'),
+    getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.minJeton, '1000'),
+    getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.enabled, 'true'),
   ])
 
   const agencies = await prisma.agency.findMany({
@@ -53,6 +59,9 @@ export async function GET(req: NextRequest) {
         min_topup_tl: parseFloat(minTopUp) || 0,
         max_transfer_per_txn: parseFloat(maxTransfer) || 0,
         allowed_uses: allowedUses,
+        purchase_discount_pct: parseFloat(purchaseDiscount) || 0,
+        purchase_min_jeton: parseFloat(purchaseMin) || 1000,
+        purchase_enabled: purchaseEnabled !== 'false',
       },
       catalog: {
         uses: AGENCY_WALLET_USES,
@@ -100,6 +109,17 @@ export async function PUT(req: NextRequest) {
     }
     if (s.max_transfer_per_txn !== undefined) {
       await setSetting(AGENCY_SETTING_KEYS.maxTransferPerTxn, String(parseFloat(s.max_transfer_per_txn) || 0), 'Tek işlemde maksimum ajans transferi')
+    }
+    if (s.purchase_discount_pct !== undefined) {
+      const v = Math.max(0, Math.min(90, parseFloat(s.purchase_discount_pct) || 0))
+      await setSetting(AGENCY_PURCHASE_KEYS.defaultDiscountPct, String(v), 'Ajans toplu Jeton alım indirimi — varsayılan (%)')
+    }
+    if (s.purchase_min_jeton !== undefined) {
+      const v = Math.max(1, Math.floor(parseFloat(s.purchase_min_jeton) || 1000))
+      await setSetting(AGENCY_PURCHASE_KEYS.minJeton, String(v), 'Ajans toplu Jeton alımı — en az Jeton')
+    }
+    if (s.purchase_enabled !== undefined) {
+      await setSetting(AGENCY_PURCHASE_KEYS.enabled, s.purchase_enabled ? 'true' : 'false', 'Ajans toplu Jeton alımı açık/kapalı')
     }
     if (Array.isArray(s.allowed_uses)) {
       const valid: string[] = AGENCY_WALLET_USES.map((u) => String(u.key))
