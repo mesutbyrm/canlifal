@@ -31,6 +31,9 @@ interface PlatformSettings {
   stream_gift_commission: string
   direct_gift_commission: string
   jeton_transfer_commission: string
+  cfc_transfer_commission: string
+  jeton_transfer_min: string
+  cfc_transfer_min: string
   default_agency_commission: string
   min_withdrawal: string
   referral_bonus: string
@@ -105,6 +108,9 @@ export default function AdminSettingsPage() {
     stream_gift_commission: '30',
     direct_gift_commission: '0',
     jeton_transfer_commission: '0',
+    cfc_transfer_commission: '0',
+    jeton_transfer_min: '100',
+    cfc_transfer_min: '100',
     default_agency_commission: '5',
     min_withdrawal: '100',
     referral_bonus: '50',
@@ -304,6 +310,30 @@ export default function AdminSettingsPage() {
       icon: Percent,
       min: 0,
       max: 100
+    },
+    {
+      key: 'cfc_transfer_commission',
+      label: 'CFC Transfer Komisyonu (%)',
+      description: 'Kullanıcılar arası CFC transferinden (Hediye Yolla) kesilecek komisyon oranı',
+      icon: Percent,
+      min: 0,
+      max: 100
+    },
+    {
+      key: 'jeton_transfer_min',
+      label: 'En Az Jeton Transferi',
+      description: 'Hediye Yolla ile gönderilebilecek en düşük jeton miktarı',
+      icon: Percent,
+      min: 1,
+      max: 100000
+    },
+    {
+      key: 'cfc_transfer_min',
+      label: 'En Az CFC Transferi',
+      description: 'Hediye Yolla ile gönderilebilecek en düşük CFC miktarı',
+      icon: Percent,
+      min: 1,
+      max: 100000
     },
     {
       key: 'default_agency_commission',
