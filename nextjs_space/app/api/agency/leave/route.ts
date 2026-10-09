@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { recordMembershipLeave } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
 
         if (targetMember && targetMember.agencyId === myMembership.agencyId) {
           await prisma.agencyUser.delete({ where: { id: targetMember.id } })
+          await recordMembershipLeave({ agencyId: targetMember.agencyId, userId: targetMember.userId, endedBy: 'user', reason: leaveReq.reason ?? null, actorId: authUser.id, joinedAt: targetMember.joinedAt, role: targetMember.role })
           await prisma.agency.update({
             where: { id: myMembership.agencyId },
             data: {

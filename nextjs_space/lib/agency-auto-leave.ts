@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { recordMembershipLeave } from '@/lib/agency-membership-history'
 import { createNotificationWithPush } from '@/lib/notify'
 
 /**
@@ -42,6 +43,7 @@ export async function processExpiredLeaveRequests(agencyId?: string): Promise<Au
 
   for (const req of expired) {
     try {
+      let removed: { joinedAt: Date; role: string } | null = null
       await prisma.$transaction(async (tx) => {
         // Talebi tekrar kilitli oku — yarış koşulunu önle
         const fresh = await tx.agencyLeaveRequest.findUnique({ where: { id: req.id } })
@@ -62,6 +64,7 @@ export async function processExpiredLeaveRequests(agencyId?: string): Promise<Au
         const member = await tx.agencyUser.findUnique({ where: { userId: req.userId } })
         if (member && member.agencyId === req.agencyId && req.userId !== req.agency.ownerId) {
           await tx.agencyUser.delete({ where: { id: member.id } })
+          removed = { joinedAt: member.joinedAt, role: member.role }
           await tx.agency.update({
             where: { id: req.agencyId },
             data: {
@@ -72,6 +75,10 @@ export async function processExpiredLeaveRequests(agencyId?: string): Promise<Au
           removedUserIds.push(req.userId)
         }
       })
+      const gone = removed as { joinedAt: Date; role: string } | null
+      if (gone) {
+        await recordMembershipLeave({ agencyId: req.agencyId, userId: req.userId, endedBy: 'auto', reason: req.reason ?? null, joinedAt: gone.joinedAt, role: gone.role })
+      }
 
       // Bildirim (transaction dışında)
       await createNotificationWithPush({

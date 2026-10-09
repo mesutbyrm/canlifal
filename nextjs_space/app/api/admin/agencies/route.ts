@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { recordMembershipJoin, recordMembershipLeave } from '@/lib/agency-membership-history'
 import { resolveUser, isAdminRole, type ResolvedUser } from '@/lib/rbac'
 import { hasPermission } from '@/lib/permissions'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
@@ -212,6 +213,7 @@ export async function POST(req: NextRequest) {
       data: { agencyId: agency.id, userId: ownerId, role: 'owner', joinedVia: 'direct' },
     })
     await prisma.agency.update({ where: { id: agency.id }, data: { totalMembers: 1, activeMembers: 1 } })
+    await recordMembershipJoin({ agencyId: agency.id, userId: ownerId, role: 'owner', via: 'direct', actorId: admin.id })
 
     recordAudit({ actorId: admin.id, action: 'agency_create', targetType: 'agency', targetId: agency.id, metadata: { name }, ip }).catch(() => {})
 
@@ -237,6 +239,7 @@ export async function POST(req: NextRequest) {
     await prisma.agencyUser.create({
       data: { agencyId, userId, role: memberRole || 'member', joinedVia: 'admin' },
     })
+    await recordMembershipJoin({ agencyId, userId, role: memberRole || 'member', via: 'admin', actorId: admin.id })
 
     await prisma.agency.update({
       where: { id: agencyId },
@@ -264,6 +267,7 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.agencyUser.delete({ where: { id: membership.id } })
+    await recordMembershipLeave({ agencyId, userId, endedBy: 'admin', actorId: admin.id, joinedAt: membership.joinedAt, role: membership.role })
     await prisma.agency.update({
       where: { id: agencyId },
       data: {
@@ -325,6 +329,9 @@ export async function POST(req: NextRequest) {
       prisma.agency.update({ where: { id: toAgencyId }, data: { totalMembers: { increment: 1 }, activeMembers: { increment: membership.isActive ? 1 : 0 } } }),
     ])
 
+    await recordMembershipLeave({ agencyId: fromAgencyId, userId, endedBy: 'transfer', actorId: admin.id, joinedAt: membership.joinedAt, role: membership.role })
+    await recordMembershipJoin({ agencyId: toAgencyId, userId, role: 'member', via: 'admin_transfer', actorId: admin.id })
+
     recordAudit({ actorId: admin.id, action: 'agency_transfer_member', targetType: 'agency', targetId: toAgencyId, metadata: { userId, fromAgencyId, toAgencyId }, ip }).catch(() => {})
 
     return NextResponse.json({ success: true, message: 'Üye transfer edildi' })
@@ -351,6 +358,7 @@ export async function POST(req: NextRequest) {
       await prisma.agencyUser.update({ where: { id: newOwnerMembership.id }, data: { role: 'owner' } })
     } else {
       await prisma.agencyUser.create({ data: { agencyId: chAgencyId, userId: newOwnerId, role: 'owner', joinedVia: 'admin' } })
+      await recordMembershipJoin({ agencyId: chAgencyId, userId: newOwnerId, role: 'owner', via: 'admin', actorId: admin.id })
       await prisma.agency.update({ where: { id: chAgencyId }, data: { totalMembers: { increment: 1 }, activeMembers: { increment: 1 } } })
     }
     await prisma.agency.update({ where: { id: chAgencyId }, data: { ownerId: newOwnerId, ownerName: newOwner.username || newOwner.name || 'Bilinmeyen' } })
@@ -393,6 +401,7 @@ export async function PATCH(req: NextRequest) {
     if (!existingMembership) {
       await prisma.agencyUser.create({ data: { agencyId, userId: agency.ownerId, role: 'owner', joinedVia: 'direct' } })
       await prisma.agency.update({ where: { id: agencyId }, data: { totalMembers: 1, activeMembers: 1 } })
+      await recordMembershipJoin({ agencyId, userId: agency.ownerId, role: 'owner', via: 'direct', actorId: admin.id })
     }
     recordAudit({ actorId: admin.id, action: 'agency_approve', targetType: 'agency', targetId: agencyId, ip }).catch(() => {})
     return NextResponse.json({ success: true, message: 'Ajans onaylandı' })
