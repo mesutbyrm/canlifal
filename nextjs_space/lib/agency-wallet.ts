@@ -24,7 +24,9 @@ export const AGENCY_SETTING_KEYS = {
 
 export const AGENCY_WALLET_USES = [
   { key: 'transfer_member', label: 'Ajans üyesine jeton gönder', defaultOn: true },
-  { key: 'transfer_any_user', label: 'Diğer kullanıcılara jeton aktar', defaultOn: false },
+  // Ürün kararı (2026-10): ajans bakiyesi kadar herhangi bir kullanıcıya yükleyebilir;
+  // admin bu kullanımı ayarlardan kapatabilir.
+  { key: 'transfer_any_user', label: 'Diğer kullanıcılara jeton aktar', defaultOn: true },
   { key: 'gift', label: 'Hediye olarak kullan', defaultOn: false },
 ] as const
 
@@ -133,6 +135,10 @@ export async function topUpWallet(params: {
   actorRole?: string
   reason: string
   idempotencyKey?: string
+  /** false → seviye bonusu eklenmez (indirimli satın almada; iki avantaj olmaz). */
+  applyLevelBonus?: boolean
+  referenceType?: string
+  referenceId?: string
 }): Promise<WalletMoveResult> {
   const agency = await prisma.agency.findUnique({
     where: { id: params.agencyId },
@@ -160,15 +166,26 @@ export async function topUpWallet(params: {
   }
   if (baseJeton <= 0) return { ok: false, code: 'BAD_REQUEST', message: 'Geçersiz yükleme tutarı' }
 
-  const bonusRate = await getBonusRateForLevel(agency.level || 'bronze')
+  const bonusRate = params.applyLevelBonus === false ? 0 : await getBonusRateForLevel(agency.level || 'bronze')
   const bonusJeton = Math.floor((baseJeton * bonusRate) / 100)
 
-  const wallet = await getOrCreateWallet(params.agencyId)
-  const before = wallet.jetonBalance
-  const afterBase = before + baseJeton
-  const afterAll = afterBase + bonusJeton
+  await getOrCreateWallet(params.agencyId)
 
+  // Bakiye ARTIRILARAK güncellenir (mutlak değer yazılmaz): aynı anda yapılan
+  // aktarımlar kaybolmaz; önce/sonra değerleri güncellemeden sonra okunur.
   const result = await prisma.$transaction(async (tx: any) => {
+    const w = await tx.agencyWallet.update({
+      where: { agencyId: params.agencyId },
+      data: {
+        jetonBalance: { increment: baseJeton + bonusJeton },
+        totalTopUp: { increment: baseJeton },
+        totalBonus: { increment: bonusJeton },
+      },
+      select: { jetonBalance: true },
+    })
+    const afterAll = w.jetonBalance
+    const afterBase = afterAll - bonusJeton
+    const before = afterBase - baseJeton
     const topupTxn = await tx.agencyWalletTransaction.create({
       data: {
         agencyId: params.agencyId, type: 'topup', direction: 'credit',
@@ -176,6 +193,7 @@ export async function topUpWallet(params: {
         tlAmount, rateUsed: tlAmount ? rate : null,
         actorId: params.actorId, actorName: params.actorName, actorRole: params.actorRole,
         reason: params.reason, idempotencyKey: params.idempotencyKey || null,
+        referenceType: params.referenceType || null, referenceId: params.referenceId || null,
       },
     })
     if (bonusJeton > 0) {
@@ -189,15 +207,7 @@ export async function topUpWallet(params: {
         },
       })
     }
-    await tx.agencyWallet.update({
-      where: { agencyId: params.agencyId },
-      data: {
-        jetonBalance: afterAll,
-        totalTopUp: { increment: baseJeton },
-        totalBonus: { increment: bonusJeton },
-      },
-    })
-    return topupTxn
+    return { txn: topupTxn, before, afterAll }
   })
 
   recordLedger({
@@ -208,15 +218,26 @@ export async function topUpWallet(params: {
     currency: 'jeton',
     actorId: params.actorId,
     referenceType: 'agency_wallet_txn',
-    referenceId: result.id,
+    referenceId: result.txn.id,
     metadata: { baseJeton, bonusJeton, bonusRate, tlAmount, rate },
   }).catch(() => {})
 
-  return { ok: true, txnId: result.id, balanceBefore: before, balanceAfter: afterAll, bonus: bonusJeton }
+  return { ok: true, txnId: result.txn.id, balanceBefore: result.before, balanceAfter: result.afterAll, bonus: bonusJeton }
+}
+
+/** Yetersiz bakiye: kaç jeton eksik olduğunu söyler (ör. 10.001 ↔ 10.000 → "1 jeton eksik"). */
+function insufficient(amount: number, balance: number): WalletMoveResult {
+  const missing = Math.max(1, Math.ceil(amount - balance))
+  return {
+    ok: false,
+    code: 'INSUFFICIENT_BALANCE',
+    message: `Ajans bakiyesi yetersiz: ${missing.toLocaleString('tr-TR')} jeton eksik`,
+  }
 }
 
 /**
- * Ajans → kullanıcı jeton aktarımı (§15).
+ * Ajans → kullanıcı jeton aktarımı (§15). Yüklenen miktar kadar düşer;
+ * aktarımda komisyon kesilmez (ajans indirimi satın almada alınır).
  */
 export async function transferToUser(params: {
   agencyId: string
@@ -256,7 +277,7 @@ export async function transferToUser(params: {
 
   const target = await prisma.user.findUnique({
     where: { id: params.targetUserId },
-    select: { id: true, name: true, jetonBalance: true },
+    select: { id: true, name: true },
   })
   if (!target) return { ok: false, code: 'NOT_FOUND', message: 'Hedef kullanıcı bulunamadı' }
 
@@ -270,15 +291,10 @@ export async function transferToUser(params: {
 
   const wallet = await getOrCreateWallet(params.agencyId)
   if (wallet.isLocked) return { ok: false, code: 'WALLET_LOCKED', message: 'Ajans cüzdanı kilitli' }
-  if (wallet.jetonBalance < amount) {
-    return { ok: false, code: 'INSUFFICIENT_BALANCE', message: 'Ajans bakiyesi yetersiz' }
-  }
+  if (wallet.jetonBalance < amount) return insufficient(amount, wallet.jetonBalance)
 
-  const before = wallet.jetonBalance
-  const after = before - amount
-  const userBefore = target.jetonBalance ?? 0
-  const userAfter = userBefore + amount
-
+  // Önce/sonra bakiyeler transaction İÇİNDE güncellemeden sonra okunur;
+  // eşzamanlı işlemlerde ledger satırları doğru kalır.
   const txn = await prisma.$transaction(async (tx: any) => {
     // Yarış koşulu koruması: bakiye hâlâ yeterliyse düş
     const updated = await tx.agencyWallet.updateMany({
@@ -289,11 +305,20 @@ export async function transferToUser(params: {
       },
     })
     if (updated.count === 0) throw new Error('INSUFFICIENT_BALANCE')
+    const w = await tx.agencyWallet.findUnique({
+      where: { agencyId: params.agencyId },
+      select: { jetonBalance: true },
+    })
+    const after = w.jetonBalance
+    const before = after + amount
 
-    await tx.user.update({
+    const u = await tx.user.update({
       where: { id: params.targetUserId },
       data: { jetonBalance: { increment: amount } },
+      select: { jetonBalance: true },
     })
+    const userAfter = u.jetonBalance ?? amount
+    const userBefore = userAfter - amount
     await tx.jetonTransaction.create({
       data: {
         userId: params.targetUserId,
@@ -319,7 +344,13 @@ export async function transferToUser(params: {
     throw e
   })
 
-  if (!txn) return { ok: false, code: 'INSUFFICIENT_BALANCE', message: 'Ajans bakiyesi yetersiz' }
+  if (!txn) {
+    const fresh = await prisma.agencyWallet.findUnique({
+      where: { agencyId: params.agencyId },
+      select: { jetonBalance: true },
+    })
+    return insufficient(amount, fresh?.jetonBalance ?? 0)
+  }
 
   recordLedger({
     debit: { accountType: 'agency_jeton' as any, accountId: params.agencyId },
@@ -333,7 +364,7 @@ export async function transferToUser(params: {
     metadata: { useKey, reason: params.reason },
   }).catch(() => {})
 
-  return { ok: true, txnId: txn.id, balanceBefore: before, balanceAfter: after }
+  return { ok: true, txnId: txn.id, balanceBefore: txn.balanceBefore, balanceAfter: txn.balanceAfter }
 }
 
 /**
@@ -350,16 +381,20 @@ export async function adjustWallet(params: {
   const amount = Math.floor(params.amount)
   if (!amount) return { ok: false, code: 'BAD_REQUEST', message: 'Geçersiz miktar' }
 
-  const wallet = await getOrCreateWallet(params.agencyId)
-  const before = wallet.jetonBalance
-  const after = before + amount
-  if (after < 0) return { ok: false, code: 'BAD_REQUEST', message: 'Bakiye negatife düşemez' }
+  await getOrCreateWallet(params.agencyId)
 
+  // Artırma/azaltma (mutlak değer yazılmaz); düşümde bakiye koşullu → negatife inmez.
   const txn = await prisma.$transaction(async (tx: any) => {
-    await tx.agencyWallet.update({
-      where: { agencyId: params.agencyId },
-      data: { jetonBalance: after, totalAdjusted: { increment: amount } },
+    const moved = await tx.agencyWallet.updateMany({
+      where: amount < 0
+        ? { agencyId: params.agencyId, jetonBalance: { gte: -amount } }
+        : { agencyId: params.agencyId },
+      data: { jetonBalance: { increment: amount }, totalAdjusted: { increment: amount } },
     })
+    if (moved.count !== 1) throw new Error('NEGATIVE_BALANCE')
+    const w = await tx.agencyWallet.findUnique({ where: { agencyId: params.agencyId }, select: { jetonBalance: true } })
+    const after = w.jetonBalance
+    const before = after - amount
     return tx.agencyWalletTransaction.create({
       data: {
         agencyId: params.agencyId,
@@ -370,7 +405,11 @@ export async function adjustWallet(params: {
         reason: params.reason,
       },
     })
+  }).catch((e: any) => {
+    if (String(e?.message).includes('NEGATIVE_BALANCE')) return null
+    throw e
   })
+  if (!txn) return { ok: false, code: 'BAD_REQUEST', message: 'Bakiye negatife düşemez' }
 
   recordLedger({
     debit: amount > 0
@@ -388,7 +427,7 @@ export async function adjustWallet(params: {
     metadata: { reason: params.reason },
   }).catch(() => {})
 
-  return { ok: true, txnId: txn.id, balanceBefore: before, balanceAfter: after }
+  return { ok: true, txnId: txn.id, balanceBefore: txn.balanceBefore, balanceAfter: txn.balanceAfter }
 }
 
 // ── Komisyon kuralları (§18) ───────────────────────────────

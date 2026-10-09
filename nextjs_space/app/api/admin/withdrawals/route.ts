@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Admin approve, reject, or complete a withdrawal request
+// POST: Admin approve, reject, cancel, or complete a withdrawal request
 export async function POST(request: NextRequest) {
   try {
     const session = await getStaffSession();
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const { requestId, action, adminNote } = await request.json();
 
-    if (!requestId || !['approve', 'reject', 'complete'].includes(action)) {
+    if (!requestId || !['approve', 'reject', 'complete', 'cancel'].includes(action)) {
       return NextResponse.json({ error: 'Geçersiz parametreler' }, { status: 400 });
     }
 
@@ -74,62 +74,81 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Talep bulunamadı' }, { status: 404 });
     }
 
+    // Durum geçişleri transaction içinde KOŞULLU yapılır: aynı anda gelen iki
+    // onay ya da onay+ret yarışında yalnızca biri kazanır; jeton bir kez düşer.
+    const actorId = session.user.id
+    const now = new Date()
+    const conflict = () => NextResponse.json(
+      { error: 'Talep bu sırada başka bir işlemle güncellendi; listeyi yenileyin' },
+      { status: 409 },
+    )
+    let outcome: 'ok' | 'conflict' | 'insufficient' = 'ok'
+
     if (action === 'approve') {
       // Admin can approve from agency_approved status (or pending if no agency)
       if (!['agency_approved', 'pending'].includes(wr.status)) {
         return NextResponse.json({ error: 'Bu talep onaylanamaz (mevcut durum: ' + wr.status + ')' }, { status: 400 });
       }
-      // Deduct jetons on admin approval
-      const user = await prisma.user.findUnique({ where: { id: wr.userId }, select: { jetonBalance: true } });
-      if (!user || user.jetonBalance < wr.amount) {
+      outcome = await prisma.$transaction(async (tx: any) => {
+        const moved = await tx.withdrawalRequest.updateMany({
+          where: { id: requestId, status: { in: ['agency_approved', 'pending'] } },
+          data: { status: 'approved', adminNote: adminNote || null, processedBy: actorId, processedAt: now },
+        })
+        if (moved.count !== 1) throw new Error('CONFLICT')
+        // Deduct jetons on admin approval — yalnızca bakiye yeterliyse.
+        const debited = await tx.user.updateMany({
+          where: { id: wr.userId, jetonBalance: { gte: wr.amount } },
+          data: { jetonBalance: { decrement: wr.amount } },
+        })
+        if (debited.count !== 1) throw new Error('INSUFFICIENT')
+        return 'ok' as const
+      }).catch((e: any) => {
+        const m = String(e?.message)
+        if (m.includes('CONFLICT')) return 'conflict' as const
+        if (m.includes('INSUFFICIENT')) return 'insufficient' as const
+        throw e
+      })
+      if (outcome === 'insufficient') {
         return NextResponse.json({ error: 'Kullanıcının yeterli jetonu yok' }, { status: 400 });
       }
-
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: wr.userId },
-          data: { jetonBalance: { decrement: wr.amount } },
-        }),
-        prisma.withdrawalRequest.update({
-          where: { id: requestId },
-          data: {
-            status: 'approved',
-            adminNote: adminNote || null,
-            processedBy: session.user.id,
-            processedAt: new Date(),
-          },
-        }),
-      ]);
-    } else if (action === 'reject') {
-      if (['completed', 'rejected'].includes(wr.status)) {
-        return NextResponse.json({ error: 'Bu talep zaten işlenmiş' }, { status: 400 });
+    } else if (action === 'reject' || action === 'cancel') {
+      // Ret/iptal yalnızca jeton henüz düşülmemiş (bekleyen) taleplerde.
+      // Onaylanmış talebin jetonu düşmüştür; onu iptal etmek ikinci bir
+      // bakiye hareketi gerektirir → bu akışta izin verilmez.
+      if (!['pending', 'agency_approved'].includes(wr.status)) {
+        return NextResponse.json({ error: 'Yalnızca bekleyen talepler ' + (action === 'cancel' ? 'iptal edilebilir' : 'reddedilebilir') + ' (mevcut durum: ' + wr.status + ')' }, { status: 400 });
       }
-      await prisma.withdrawalRequest.update({
-        where: { id: requestId },
+      const moved = await prisma.withdrawalRequest.updateMany({
+        where: { id: requestId, status: { in: ['pending', 'agency_approved'] } },
         data: {
-          status: 'rejected',
-          adminNote: adminNote || null,
-          processedBy: session.user.id,
-          processedAt: new Date(),
+          status: action === 'cancel' ? 'cancelled' : 'rejected',
+          adminNote: action === 'cancel'
+            ? `[İptal — yönetici] ${adminNote || 'Gerekçe belirtilmedi'}`
+            : (adminNote || null),
+          processedBy: actorId,
+          processedAt: now,
         },
-      });
+      })
+      if (moved.count !== 1) outcome = 'conflict'
     } else if (action === 'complete') {
       if (wr.status !== 'approved') {
         return NextResponse.json({ error: 'Yalnızca onaylanmış talepler tamamlanabilir' }, { status: 400 });
       }
-      await prisma.withdrawalRequest.update({
-        where: { id: requestId },
+      const moved = await prisma.withdrawalRequest.updateMany({
+        where: { id: requestId, status: 'approved' },
         data: {
           status: 'completed',
           adminNote: adminNote || wr.adminNote,
-          processedBy: session.user.id,
-          processedAt: new Date(),
+          processedBy: actorId,
+          processedAt: now,
         },
-      });
+      })
+      if (moved.count !== 1) outcome = 'conflict'
     }
+    if (outcome === 'conflict') return conflict()
 
     // Kullanıcıya durum bildirimi (uygulama içi + push + e-posta)
-    const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed'
+    const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : action === 'cancel' ? 'cancelled' : 'completed'
     notifyWithdrawalStatus({
       userId: wr.userId,
       status: newStatus as any,
@@ -146,7 +165,7 @@ export async function POST(request: NextRequest) {
       targetType: 'WithdrawalRequest',
       targetId: requestId,
       before: { status: wr.status },
-      after: { status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed', adminNote },
+      after: { status: newStatus, adminNote },
       description: `Çekim talebi ${action}: ${wr.amount} jeton (${wr.amountTL} TL)`,
     }).catch(e => console.error('[Audit] withdrawal action error:', e))
 

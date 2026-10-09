@@ -19,6 +19,9 @@ export default function AjansFinansPage() {
   const [walletEnabled, setWalletEnabled] = useState(true)
   const [minTopUp, setMinTopUp] = useState('0')
   const [maxTransfer, setMaxTransfer] = useState('0')
+  const [purchaseDiscount, setPurchaseDiscount] = useState('0')
+  const [purchaseMin, setPurchaseMin] = useState('1000')
+  const [purchaseEnabled, setPurchaseEnabled] = useState(true)
   const [uses, setUses] = useState<string[]>([])
   const [bonus, setBonus] = useState<any[]>([])
   const [globalRules, setGlobalRules] = useState<Rule[]>([])
@@ -39,6 +42,9 @@ export default function AjansFinansPage() {
       setWalletEnabled(j.data.settings.wallet_enabled)
       setMinTopUp(String(j.data.settings.min_topup_tl))
       setMaxTransfer(String(j.data.settings.max_transfer_per_txn))
+      setPurchaseDiscount(String(j.data.settings.purchase_discount_pct ?? 0))
+      setPurchaseMin(String(j.data.settings.purchase_min_jeton ?? 1000))
+      setPurchaseEnabled(j.data.settings.purchase_enabled !== false)
       setUses(j.data.settings.allowed_uses || [])
       setBonus(j.data.bonus_rules || [])
       setGlobalRules(j.data.global_commission_rules || [])
@@ -56,6 +62,7 @@ export default function AjansFinansPage() {
           settings: {
             tl_to_jeton_rate: rate, wallet_enabled: walletEnabled,
             min_topup_tl: minTopUp, max_transfer_per_txn: maxTransfer, allowed_uses: uses,
+            purchase_discount_pct: purchaseDiscount, purchase_min_jeton: purchaseMin, purchase_enabled: purchaseEnabled,
           },
           bonus_rules: bonus,
           global_commission_rules: globalRules,
@@ -159,6 +166,21 @@ export default function AjansFinansPage() {
               <label className="flex items-center gap-2 text-sm text-gray-300 mt-6">
                 <input type="checkbox" checked={walletEnabled} onChange={(e) => setWalletEnabled(e.target.checked)} />
                 Ajans cüzdanı aktif
+              </label>
+              <label className="text-sm text-gray-300">
+                Toplu Jeton alım indirimi — varsayılan (%)
+                <input value={purchaseDiscount} onChange={(e) => setPurchaseDiscount(e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100" />
+                <span className="block text-xs text-gray-500 mt-1">Ajansa özel oran yoksa geçerli. Ajans, normal fiyatın bu kadar altında öder; cüzdana aldığı Jetonun tamamı yüklenir (bonus eklenmez).</span>
+              </label>
+              <label className="text-sm text-gray-300">
+                Toplu alımda en az Jeton
+                <input value={purchaseMin} onChange={(e) => setPurchaseMin(e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100" />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 mt-6">
+                <input type="checkbox" checked={purchaseEnabled} onChange={(e) => setPurchaseEnabled(e.target.checked)} />
+                Ajans toplu Jeton alımı açık
               </label>
             </div>
             <div>
@@ -325,6 +347,8 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
   const [agencyId, setAgencyId] = useState('')
   const [rules, setRules] = useState<Rule[]>([])
   const [base, setBase] = useState('')
+  const [discount, setDiscount] = useState('')
+  const [discountScope, setDiscountScope] = useState('')
   const [busy, setBusy] = useState(false)
 
   const load = async (id: string) => {
@@ -332,7 +356,12 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
     if (!id) return
     const r = await fetch(`/api/admin/agencies/${id}/commission`, { cache: 'no-store' })
     const j = await r.json()
-    if (j.success) { setRules(j.data.rules); setBase(String(j.data.agency.commissionRate)) }
+    if (j.success) {
+      setRules(j.data.rules); setBase(String(j.data.agency.commissionRate))
+      const pd = j.data.purchaseDiscount
+      setDiscountScope(pd?.scope || '')
+      setDiscount(pd?.scope === 'agency' ? String(pd.percent) : '')
+    }
   }
 
   const save = async () => {
@@ -340,7 +369,7 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
     try {
       const r = await fetch(`/api/admin/agencies/${agencyId}/commission`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseCommissionRate: base, rules }),
+        body: JSON.stringify({ baseCommissionRate: base, rules, purchaseDiscountPercent: discount }),
       })
       const j = await r.json()
       onMsg(j.success ? 'Komisyon kuralları kaydedildi' : (j?.error?.message || 'Hata'))
@@ -358,6 +387,12 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
 
       {agencyId && (
         <>
+          <label className="block text-sm text-gray-300">
+            Toplu Jeton alım indirimi (%) — boş bırakılırsa varsayılan
+            <input value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="varsayılan"
+              className="mt-1 w-32 rounded bg-gray-950 border border-gray-700 px-2 py-1 text-gray-100" />
+            <span className="ml-2 text-xs text-gray-500">şu an: {discountScope === 'agency' ? 'ajansa özel' : 'varsayılan'}</span>
+          </label>
           <label className="block text-sm text-gray-300">
             Ajansın temel komisyon oranı (%)
             <input value={base} onChange={(e) => setBase(e.target.value)}
