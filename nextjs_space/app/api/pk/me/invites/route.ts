@@ -21,9 +21,11 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     let userId: string | null = null
+    // authenticateRequest kullanıcıyı doğrudan döndürür ({ id, ... }); önceki
+    // `mobile.user.id` her zaman undefined olduğundan mobil JWT ile 401 dönüyordu.
     const mobile = await authenticateRequest(req).catch(() => null)
-    if (mobile?.user?.id) {
-      userId = mobile.user.id
+    if (mobile?.id) {
+      userId = mobile.id
     } else {
       const session = await getServerSession(authOptions).catch(() => null)
       userId = (session?.user as any)?.id || null
