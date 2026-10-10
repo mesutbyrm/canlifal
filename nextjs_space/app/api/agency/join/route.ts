@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { BLOCKED_MESSAGE, isBlockedByAgency } from '@/lib/agency-access'
 import { recordMembershipJoin } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { requireFeature } from '@/lib/check-feature'
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest) {
 
     if (!code || !code.isActive) {
       return NextResponse.json({ error: 'Geçersiz veya süresi dolmuş davet kodu' }, { status: 400 })
+    }
+
+    if (await isBlockedByAgency(code.agencyId, authUser.id)) {
+      return NextResponse.json({ error: BLOCKED_MESSAGE }, { status: 403 })
     }
 
     if (code.agency.status !== 'approved') {

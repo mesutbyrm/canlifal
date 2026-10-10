@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { requireAgencyPanel } from '@/lib/agency-access'
+import { isBlockedByAgency, requireAgencyPanel } from '@/lib/agency-access'
 import { recordMembershipJoin } from '@/lib/agency-membership-history'
 import { createNotificationWithPush } from '@/lib/notify'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
@@ -61,6 +61,8 @@ export async function POST(req: NextRequest) {
     }).catch(() => {})
     return NextResponse.json({ success: true, message: 'Başvuru reddedildi' })
   }
+
+  if (await isBlockedByAgency(access.agency.id, jr.userId)) return err(400, 'Bu kullanıcıyı engellediniz; kabul için önce engeli kaldırın')
 
   // KABUL — tek aktif ajans: AgencyUser.userId benzersiz; yarışta ikinci kabul düşer.
   try {

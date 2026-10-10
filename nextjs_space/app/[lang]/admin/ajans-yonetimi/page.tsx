@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-type Tab = 'promises' | 'alerts' | 'reports' | 'settings'
+type Tab = 'promises' | 'performance' | 'alerts' | 'reports' | 'settings'
 
 const input = 'mt-1 w-full rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100'
 const card = 'rounded-xl border border-gray-800 bg-gray-900 p-5'
@@ -28,7 +28,7 @@ export default function AjansYonetimiPage() {
       </div>
       {msg && <div className="rounded-lg border border-amber-700/40 bg-amber-900/20 px-4 py-2 text-sm text-amber-300">{msg}</div>}
       <div className="flex gap-2 border-b border-gray-800">
-        {([['promises', 'Vaat Onayı'], ['alerts', 'Şüpheli İşlemler'], ['reports', 'Raporlar (CSV)'], ['settings', 'Ayarlar']] as const).map(([k, l]) => (
+        {([['promises', 'Vaat Onayı'], ['performance', 'Performans'], ['alerts', 'Şüpheli İşlemler'], ['reports', 'Raporlar (CSV)'], ['settings', 'Ayarlar']] as const).map(([k, l]) => (
           <button key={k} onClick={() => { setTab(k); setMsg('') }}
             className={`px-4 py-2 text-sm font-medium border-b-2 ${tab === k ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {l}
@@ -36,6 +36,7 @@ export default function AjansYonetimiPage() {
         ))}
       </div>
       {tab === 'promises' && <PromisesTab onMsg={setMsg} />}
+      {tab === 'performance' && <PerformanceTab />}
       {tab === 'alerts' && <AlertsTab />}
       {tab === 'reports' && <ReportsTab />}
       {tab === 'settings' && <SettingsTab onMsg={setMsg} />}
@@ -104,6 +105,64 @@ function PromisesTab({ onMsg }: { onMsg: (m: string) => void }) {
         </div>
       ))}
       <p className="text-xs text-gray-500">Onaylanan sürüm değiştirilemez. Ajans yeni şart için yeni sürüm gönderir; önceki kabul kayıtları saklanır. Vaatlerin hukuki bağlayıcılığı ayrıca hukuk incelemesi gerektirir.</p>
+    </div>
+  )
+}
+
+function PerformanceTab() {
+  const [agencies, setAgencies] = useState<any[]>([])
+  const [agencyId, setAgencyId] = useState('')
+  const [period, setPeriod] = useState('weekly')
+  const [rows, setRows] = useState<any[] | null>(null)
+  const [err, setErr] = useState('')
+  useEffect(() => {
+    api('/api/agencies?limit=50&sort=hours').then((j) => setAgencies(j.data.agencies)).catch(() => setAgencies([]))
+  }, [])
+  const load = useCallback(async () => {
+    if (!agencyId) return
+    setErr(''); setRows(null)
+    try {
+      const j = await api(`/api/admin/agency-management/reports?type=performance&format=json&agencyId=${agencyId}&period=${period}`)
+      setRows(j.data.rows)
+    } catch (e: any) { setErr(e.message) }
+  }, [agencyId, period])
+  useEffect(() => { load() }, [load])
+  const total = (rows ?? []).reduce((s, r) => s + (r.dogrulanmis_dakika || 0), 0)
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <select value={agencyId} onChange={(e) => setAgencyId(e.target.value)} className="rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100">
+          <option value="">Ajans seçin…</option>
+          {agencies.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.verifiedHours30d} sa/30g</option>)}
+        </select>
+        <select value={period} onChange={(e) => setPeriod(e.target.value)} className="rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100">
+          <option value="daily">Bugün</option><option value="weekly">Bu hafta</option><option value="monthly">Bu ay</option>
+        </select>
+      </div>
+      {!agencyId && <p className="text-sm text-gray-400">Doğrulanmış video yayın süresini görmek için ajans seçin.</p>}
+      {err && <p className="text-red-400 text-sm">{err}</p>}
+      {agencyId && !rows && !err && <p className="text-gray-400 text-sm">Hesaplanıyor…</p>}
+      {rows && (
+        <div className={card}>
+          <div className="text-sm text-gray-300 mb-3">Toplam: {Math.floor(total / 60)} sa {total % 60} dk · {rows.length} üye</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-gray-200">
+              <thead className="text-gray-400 text-xs"><tr>
+                {['Kullanıcı', 'Rol', 'Aktif', 'Saat', 'Gün', 'Oturum', 'Kesinti', 'Hediye (Jeton)'].map((h) => <th key={h} className="text-left py-2 pr-4">{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {[...rows].sort((a, b) => b.dogrulanmis_dakika - a.dogrulanmis_dakika).map((r, i) => (
+                  <tr key={i} className="border-t border-gray-800">
+                    <td className="py-2 pr-4">@{r.kullanici}</td><td className="pr-4">{r.rol}</td><td className="pr-4">{r.aktif}</td>
+                    <td className="pr-4">{r.dogrulanmis_saat}</td><td className="pr-4">{r.aktif_gun}</td><td className="pr-4">{r.oturum}</td>
+                    <td className="pr-4">{r.kesintili_oturum}</td><td className="pr-4">{r.hediye_jeton}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

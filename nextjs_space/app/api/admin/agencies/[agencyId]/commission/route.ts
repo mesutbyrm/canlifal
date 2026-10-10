@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requirePermission } from '@/lib/rbac'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
-import { AGENCY_COMMISSION_SOURCES, getCommissionRules } from '@/lib/agency-wallet'
+import { AGENCY_COMMISSION_SOURCES, getCommissionRules, getDailyTransferLimit, setDailyTransferLimit } from '@/lib/agency-wallet'
 import { getAgencyPurchaseDiscount, setAgencyPurchaseDiscount } from '@/lib/agency-purchase'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +20,8 @@ export async function GET(req: NextRequest, { params }: { params: { agencyId: st
 
   const rules = await getCommissionRules(params.agencyId)
   const purchaseDiscount = await getAgencyPurchaseDiscount(params.agencyId)
-  return NextResponse.json({ success: true, data: { agency, rules, catalog: AGENCY_COMMISSION_SOURCES, purchaseDiscount } })
+  const dailyTransferLimit = await getDailyTransferLimit(params.agencyId)
+  return NextResponse.json({ success: true, data: { agency, rules, catalog: AGENCY_COMMISSION_SOURCES, purchaseDiscount, dailyTransferLimit } })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { agencyId: string } }) {
@@ -55,6 +56,20 @@ export async function PUT(req: NextRequest, { params }: { params: { agencyId: st
       if (!isNaN(v)) {
         await setAgencyPurchaseDiscount(agency.id, Math.max(0, Math.min(90, v)))
         changed.push('purchaseDiscount')
+      }
+    }
+  }
+  // Günlük aktarım limiti — `null`/'' ⇒ ajansa özel ayar kaldırılır (global geçerli).
+  if (body.dailyTransferLimit !== undefined) {
+    const raw = body.dailyTransferLimit
+    if (raw === null || raw === '') {
+      await setDailyTransferLimit(agency.id, null)
+      changed.push('dailyTransferLimit:inherit')
+    } else {
+      const v = parseFloat(raw)
+      if (!isNaN(v)) {
+        await setDailyTransferLimit(agency.id, Math.max(0, v))
+        changed.push('dailyTransferLimit')
       }
     }
   }
