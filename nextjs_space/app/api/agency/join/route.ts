@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { recordMembershipJoin } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
@@ -72,6 +73,8 @@ export async function POST(req: NextRequest) {
         joinIp: ip,
       }
     })
+
+    await recordMembershipJoin({ agencyId: code.agencyId, userId: authUser.id, role: 'member', via: 'invite_code', actorId: authUser.id })
 
     // Increment invite code usage and agency member count
     await prisma.inviteCode.update({

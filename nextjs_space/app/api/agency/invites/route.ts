@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { recordMembershipJoin } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
         data: { status: 'cancelled', respondedAt: new Date() },
       })
     })
+    await recordMembershipJoin({ agencyId: invite.agencyId, userId: authUser.id, role: 'member', via: 'invite', actorId: invite.invitedById })
 
     await createNotificationWithPush({
       userId: invite.invitedById,

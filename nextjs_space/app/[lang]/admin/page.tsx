@@ -186,6 +186,7 @@ const MANAGEMENT_GROUPS: ManagementGroup[] = [
     links: [
       { href: `/admin/ajanslar`, icon: Shield, trLabel: 'Ajans Yönetimi', enLabel: 'Agency Management', emoji: '🏢', desc: 'Ajansları yönet' },
       { href: `/admin/ajans-finans`, icon: BarChart3, trLabel: 'Ajans Finans Merkezi', enLabel: 'Agency Finance', emoji: '💼', desc: 'Cüzdan, bonus ve komisyon kuralları' },
+      { href: `/admin/ajans-yonetimi`, icon: BarChart3, trLabel: 'Ajans Yönetimi', enLabel: 'Agency Management', emoji: '🏢', desc: 'Vaat onayı, şüpheli işlemler, CSV raporlar' },
       { href: `/admin/live-tellers`, icon: Video, trLabel: 'Canlı Falcı Yönetimi', enLabel: 'Live Teller Mgmt', emoji: '🎯', desc: 'Falcı onay & düzenleme' },
       { href: `/admin/falci-performans`, icon: BarChart3, trLabel: 'Falcı Performansı', enLabel: 'Teller Performance', emoji: '📈', desc: 'Falcı kazanç & seans tablosu' },
       { href: `/admin/verification`, icon: Shield, trLabel: 'Doğrulama Talepleri', enLabel: 'Verification Requests', emoji: '✅', desc: 'Kimlik & yayıncı doğrulama' },

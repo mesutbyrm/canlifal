@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { recordMembershipJoin, recordMembershipLeave } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
@@ -225,6 +226,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.agencyUser.delete({ where: { id: memberId } })
+    await recordMembershipLeave({ agencyId: targetMember.agencyId, userId: targetMember.userId, endedBy: 'agency', actorId: authUser.id, joinedAt: targetMember.joinedAt, role: targetMember.role })
 
     await prisma.agency.update({
       where: { id: myMembership.agencyId },
