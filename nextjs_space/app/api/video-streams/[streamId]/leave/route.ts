@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { onUserLeave } from '@/lib/girlive-public-bot'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +60,8 @@ export async function POST(
       viewerCount: activeCount,
       viewers: activeCount,
     })
+
+    if (viewerId) void onUserLeave('live_stream', params.streamId, viewerId)
 
     return NextResponse.json({ left: true, viewerCount: activeCount })
   } catch (error) {

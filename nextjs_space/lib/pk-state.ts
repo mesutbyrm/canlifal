@@ -19,6 +19,7 @@ import prisma from '@/lib/db'
 import { emitChatEvent } from '@/lib/chat-events'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { getCachedPlatformSetting } from '@/lib/cache'
+import { onPkStart, onPkEnd } from '@/lib/girlive-public-bot'
 
 export type PkStatus =
   | 'pending'
@@ -121,6 +122,40 @@ type BattleRow = {
   score2: number
 }
 
+/** PK başlangıç / bitiş mesajını herkese açık sohbete yazar (fire-and-forget). */
+async function notifyPkBot(
+  battle: BattleRow,
+  action: 'start' | 'end',
+  extra?: { winnerId: string | null; winnerScore: number; loserScore: number; isDraw: boolean },
+) {
+  try {
+    const users = await prisma.user.findMany({
+      where: { id: { in: [battle.user1Id, battle.user2Id] } },
+      select: { id: true, name: true, username: true },
+    })
+    const nameOf = (id: string) => {
+      const u = users.find(x => x.id === id)
+      return u?.name || (u?.username ? `@${u.username}` : '?')
+    }
+    const sideIds = Array.from(new Set([battle.stream1Id, battle.stream2Id]))
+    const rooms = await prisma.chatRoom.findMany({
+      where: { id: { in: sideIds } },
+      select: { id: true },
+    })
+    const roomIds = new Set(rooms.map((r: any) => r.id))
+    for (const scopeId of sideIds) {
+      const scope = roomIds.has(scopeId) ? 'voice_room' as const : 'live_stream' as const
+      if (action === 'start') {
+        await onPkStart(scope, scopeId, nameOf(battle.user1Id), nameOf(battle.user2Id))
+      } else if (extra) {
+        await onPkEnd(scope, scopeId, extra.winnerId ? nameOf(extra.winnerId) : null, extra.winnerScore, extra.loserScore, extra.isDraw)
+      }
+    }
+  } catch (e) {
+    console.error('[GirLive] PK bot notify error:', e)
+  }
+}
+
 /**
  * Aktif bir PK'yı bitirir. Yalnızca `active` durumundakiler etkilenir
  * (optimistic lock ile yarış koşulu engellenir).
@@ -159,6 +194,9 @@ export async function finishPkBattle(battle: BattleRow, reason: string) {
       isDraw: outcome.isDraw,
       status: 'completed',
     })
+    const ws = outcome.winnerSide === 1 ? updated.score1 : outcome.winnerSide === 2 ? updated.score2 : updated.score1
+    const ls = outcome.winnerSide === 1 ? updated.score2 : outcome.winnerSide === 2 ? updated.score1 : updated.score2
+    void notifyPkBot(battle, 'end', { winnerId: outcome.winnerId, winnerScore: ws, loserScore: ls, isDraw: outcome.isDraw })
     return updated
   } catch {
     // Başka bir istek bitirmiş olabilir — sessizce geç.
@@ -494,6 +532,7 @@ export async function startPkBattle(battle: BattleRow & { duration?: number | nu
     endTime: endsAt.toISOString(),
     serverNow: now.toISOString(),
   })
+  void notifyPkBot(battle, 'start')
   return updated
 }
 

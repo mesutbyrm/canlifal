@@ -9,6 +9,7 @@ import { logActivity } from '@/lib/activity-logger'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getMaxUsersForRoomType } from '@/lib/voice-room-revenue'
 import { emitUserJoined, emitUserLeft, emitSeatChanged, emitHostChanged } from '@/lib/voice-room-events'
+import { onUserLeave } from '@/lib/girlive-public-bot'
 import { getReceivedJetonTotals } from '@/lib/voice-room-gifts'
 import { seatStaleThreshold } from '@/lib/voice-room-constants'
 import { resolveRoomSeatCount, findFirstFreeSeatFor, canSitOnSeat, seatKind, type SeatUserContext } from '@/lib/voice-room-seats'
@@ -268,6 +269,7 @@ export async function POST(
           })
           // Broadcast the leave (web + Flutter via SSE)
           emitUserLeft(roomId, userId, displayName)
+          void onUserLeave('voice_room', roomId, userId)
         }
       } catch { /* ignore */ }
       return NextResponse.json({ success: true })
@@ -760,6 +762,7 @@ export async function DELETE(
       })
       // Broadcast the leave (web + Flutter via SSE)
       emitUserLeft(roomId, delUserId, displayName)
+      void onUserLeave('voice_room', roomId, delUserId)
     }
     
     let onlineCount = 0
