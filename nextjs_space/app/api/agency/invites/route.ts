@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { BLOCKED_MESSAGE, isBlockedByAgency } from '@/lib/agency-access'
 import { recordMembershipJoin } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
@@ -75,6 +76,9 @@ export async function POST(req: NextRequest) {
     }
 
     // KABUL ET
+    if (await isBlockedByAgency(invite.agencyId, authUser.id)) {
+      return NextResponse.json({ error: BLOCKED_MESSAGE }, { status: 403 })
+    }
     if (invite.agency.status !== 'approved') {
       return NextResponse.json({ error: 'Ajans artık davet kabul edemiyor' }, { status: 403 })
     }

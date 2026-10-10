@@ -5,6 +5,7 @@ import { periodRange, computeMembersPerformance, targetProgress } from '@/lib/ag
 import { userMembershipHistory } from '@/lib/agency-membership-history'
 import { publishedPromises, versionView } from '@/lib/agency-promises'
 import { AUTO_LEAVE_DAYS } from '@/lib/agency-auto-leave'
+import { autoClosePeriods } from '@/lib/agency-accruals'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,6 +74,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: { membership: null, ...base } })
   }
   const agencyId = membership.agency.id
+  await autoClosePeriods(agencyId).catch(() => null)
 
   const [published, acceptances, targets, announcements, pendingLeave] = await Promise.all([
     publishedPromises(agencyId),

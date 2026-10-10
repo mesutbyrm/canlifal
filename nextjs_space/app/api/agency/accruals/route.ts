@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { requireAgencyPanel } from '@/lib/agency-access'
-import { closePeriod, payAccrual } from '@/lib/agency-accruals'
+import { autoClosePeriods, closePeriod, payAccrual } from '@/lib/agency-accruals'
 import { createNotificationWithPush } from '@/lib/notify'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
@@ -12,6 +12,8 @@ const err = (status: number, error: string) => NextResponse.json({ success: fals
 export async function GET(req: NextRequest) {
   const gate = await requireAgencyPanel(req, 'reports')
   if (gate instanceof NextResponse) return gate
+  // Kapanmış dönemleri kendiliğinden değerlendir (ajans başına 10 dk'da bir).
+  await autoClosePeriods(gate.access.agency.id).catch(() => null)
   const sp = new URL(req.url).searchParams
   const status = sp.get('status')
   const userId = sp.get('userId')

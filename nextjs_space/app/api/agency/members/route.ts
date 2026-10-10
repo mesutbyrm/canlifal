@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { BLOCKED_MESSAGE, isBlockedByAgency } from '@/lib/agency-access'
 import { recordMembershipJoin, recordMembershipLeave } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
@@ -143,6 +144,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Zaten bekleyen bir davet var mı?
+    if (await isBlockedByAgency(membership.agencyId, targetUser.id)) {
+      return NextResponse.json({ error: 'Bu kullanıcıyı engellediniz; davet için önce engeli kaldırın' }, { status: 400 })
+    }
+
     const existingInvite = await prisma.agencyMemberInvite.findFirst({
       where: { agencyId: membership.agencyId, userId: targetUser.id, status: 'pending' },
     })

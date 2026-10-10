@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { periodRange } from '@/lib/agency-performance'
 import { getCachedPlatformSetting, invalidateCache } from '@/lib/cache'
 import { recordLedger } from '@/lib/ledger'
 
@@ -20,7 +21,40 @@ export const AGENCY_SETTING_KEYS = {
   minTopUpTl: 'agency.wallet.min_topup_tl',
   maxTransferPerTxn: 'agency.wallet.max_transfer_per_txn',
   walletEnabled: 'agency.wallet.enabled',
+  /** Günlük toplam aktarım üst sınırı (Jeton, 0 = sınırsız). Ajansa özel: `<key>.<agencyId>` */
+  dailyTransferLimit: 'agency.wallet.daily_transfer_limit',
 } as const
+
+/** Ajansın günlük aktarım limiti (0 = sınırsız). Ajansa özel ayar > global. */
+export async function getDailyTransferLimit(agencyId: string): Promise<{ limit: number; scope: 'agency' | 'global' }> {
+  const own = await prisma.platformSettings.findUnique({
+    where: { key: `${AGENCY_SETTING_KEYS.dailyTransferLimit}.${agencyId}` },
+    select: { value: true },
+  })
+  if (own && own.value !== '') return { limit: Math.max(0, Math.floor(parseFloat(own.value) || 0)), scope: 'agency' }
+  const g = await getCachedPlatformSetting(AGENCY_SETTING_KEYS.dailyTransferLimit, '0')
+  return { limit: Math.max(0, Math.floor(parseFloat(g) || 0)), scope: 'global' }
+}
+
+export async function setDailyTransferLimit(agencyId: string, limit: number | null): Promise<void> {
+  const key = `${AGENCY_SETTING_KEYS.dailyTransferLimit}.${agencyId}`
+  if (limit === null) {
+    await prisma.platformSettings.deleteMany({ where: { key } })
+    return
+  }
+  const value = String(Math.max(0, Math.floor(limit)))
+  await prisma.platformSettings.upsert({ where: { key }, update: { value }, create: { key, value } })
+}
+
+/** Bugün (Türkiye saati) ajansın kullanıcılara aktardığı toplam Jeton. */
+export async function todayTransferredJeton(agencyId: string): Promise<number> {
+  const day = periodRange('daily')
+  const agg = await prisma.agencyWalletTransaction.aggregate({
+    where: { agencyId, type: 'transfer', direction: 'debit', createdAt: { gte: day.start, lt: day.end } },
+    _sum: { amount: true },
+  })
+  return Math.round(agg._sum.amount ?? 0)
+}
 
 export const AGENCY_WALLET_USES = [
   { key: 'transfer_member', label: 'Ajans üyesine jeton gönder', defaultOn: true },
@@ -273,6 +307,16 @@ export async function transferToUser(params: {
       where: { agencyId: params.agencyId, idempotencyKey: params.idempotencyKey },
     })
     if (dup) return { ok: true, txnId: dup.id, balanceBefore: dup.balanceBefore, balanceAfter: dup.balanceAfter }
+  }
+
+  // Günlük toplam aktarım limiti (admin ayarı; 0 = sınırsız).
+  const daily = await getDailyTransferLimit(params.agencyId)
+  if (daily.limit > 0) {
+    const used = await todayTransferredJeton(params.agencyId)
+    if (used + amount > daily.limit) {
+      const left = Math.max(0, daily.limit - used)
+      return { ok: false, code: 'DAILY_LIMIT', message: `Günlük aktarım limiti aşılıyor: bugün en fazla ${left} jeton daha aktarabilirsiniz` }
+    }
   }
 
   const target = await prisma.user.findUnique({

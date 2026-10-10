@@ -26,10 +26,12 @@ export async function GET(req: NextRequest) {
     getCachedPlatformSetting(AGENCY_SETTING_KEYS.minTopUpTl, '0'),
     getCachedPlatformSetting(AGENCY_SETTING_KEYS.maxTransferPerTxn, '0'),
   ])
-  const [purchaseDiscount, purchaseMin, purchaseEnabled] = await Promise.all([
+  const [purchaseDiscount, purchaseMin, purchaseEnabled, purchaseDailyMax, dailyTransfer] = await Promise.all([
     getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.defaultDiscountPct, '0'),
     getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.minJeton, '1000'),
     getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.enabled, 'true'),
+    getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.dailyMaxJeton, '0'),
+    getCachedPlatformSetting(AGENCY_SETTING_KEYS.dailyTransferLimit, '0'),
   ])
 
   const agencies = await prisma.agency.findMany({
@@ -61,6 +63,8 @@ export async function GET(req: NextRequest) {
         allowed_uses: allowedUses,
         purchase_discount_pct: parseFloat(purchaseDiscount) || 0,
         purchase_min_jeton: parseFloat(purchaseMin) || 1000,
+        purchase_daily_max_jeton: parseFloat(purchaseDailyMax) || 0,
+        daily_transfer_limit: parseFloat(dailyTransfer) || 0,
         purchase_enabled: purchaseEnabled !== 'false',
       },
       catalog: {
@@ -117,6 +121,14 @@ export async function PUT(req: NextRequest) {
     if (s.purchase_min_jeton !== undefined) {
       const v = Math.max(1, Math.floor(parseFloat(s.purchase_min_jeton) || 1000))
       await setSetting(AGENCY_PURCHASE_KEYS.minJeton, String(v), 'Ajans toplu Jeton alımı — en az Jeton')
+    }
+    if (s.purchase_daily_max_jeton !== undefined) {
+      const v = Math.max(0, Math.floor(parseFloat(s.purchase_daily_max_jeton) || 0))
+      await setSetting(AGENCY_PURCHASE_KEYS.dailyMaxJeton, String(v), 'Ajans toplu Jeton alımı — günlük en fazla Jeton (0 = sınırsız)')
+    }
+    if (s.daily_transfer_limit !== undefined) {
+      const v = Math.max(0, Math.floor(parseFloat(s.daily_transfer_limit) || 0))
+      await setSetting(AGENCY_SETTING_KEYS.dailyTransferLimit, String(v), 'Ajans → kullanıcı günlük toplam aktarım limiti (0 = sınırsız)')
     }
     if (s.purchase_enabled !== undefined) {
       await setSetting(AGENCY_PURCHASE_KEYS.enabled, s.purchase_enabled ? 'true' : 'false', 'Ajans toplu Jeton alımı açık/kapalı')

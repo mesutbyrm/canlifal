@@ -11,6 +11,7 @@ import {
   getAgencyPurchaseLimits,
   quoteAgencyPurchase,
 } from '@/lib/agency-purchase'
+import { periodRange } from '@/lib/agency-performance'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,6 +89,28 @@ export async function POST(req: NextRequest) {
   }
   if (limits.maxJeton > 0 && jeton > limits.maxJeton) {
     return NextResponse.json({ success: false, error: `Tek siparişte en fazla ${limits.maxJeton.toLocaleString('tr-TR')} Jeton alınabilir` }, { status: 400 })
+  }
+
+  if (limits.dailyMaxJeton > 0) {
+    // Bugünkü (TR) iptal/ret edilmemiş siparişlerin toplamı.
+    const day = periodRange('daily')
+    const today = await prisma.paymentNotification.aggregate({
+      where: {
+        userId: user.id,
+        productType: AGENCY_JETON_PRODUCT,
+        status: { notIn: ['cancelled', 'rejected'] },
+        createdAt: { gte: day.start, lt: day.end },
+      },
+      _sum: { requestedAmount: true },
+    })
+    const used = today._sum.requestedAmount ?? 0
+    if (used + jeton > limits.dailyMaxJeton) {
+      const left = Math.max(0, limits.dailyMaxJeton - used)
+      return NextResponse.json(
+        { success: false, error: `Günlük alım limiti aşılıyor: bugün en fazla ${left.toLocaleString('tr-TR')} Jeton daha sipariş edebilirsiniz` },
+        { status: 400 },
+      )
+    }
   }
 
   const pending = await prisma.paymentNotification.count({

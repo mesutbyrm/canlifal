@@ -596,74 +596,76 @@ export async function POST(req: NextRequest) {
         if (!pn.creditApplied)
           return err('Bakiye yüklenmemiş, iade gerekmez')
 
-        const targetUser = await prisma.user.findUnique({
-          where: { id: pn.userId },
-          select: { jetonBalance: true, cfcBalance: true, membership: true },
-        })
-        if (!targetUser) return err('Kullanıcı bulunamadı', 404)
-
         const adminUser = await prisma.user.findUnique({ where: { id: actor.id }, select: { name: true } })
-        const ops: any[] = []
 
-        if (pn.productType === 'jeton' && pn.jetonLoaded) {
-          const before = targetUser.jetonBalance || 0
-          const after = Math.max(0, before - pn.jetonLoaded)
-          ops.push(
-            prisma.user.update({ where: { id: pn.userId }, data: { jetonBalance: after } }),
-            prisma.jetonTransaction.create({
+        // Yarış koruması: durum geçişi koşullu (approved → refunded, tek kez);
+        // bakiye mutlak değerle değil, işlem İÇİNDE okunan değerden koşullu düşümle.
+        // Kullanıcı yüklenen Jetonu kısmen harcadıysa en fazla kalan bakiye kadar düşülür
+        // (önceki davranış: Math.max(0, …)).
+        let refunded: { kind: 'jeton' | 'cfc' | null; amount: number; before: number; after: number }
+        try {
+          refunded = await prisma.$transaction(async (tx: any) => {
+            const claimed = await tx.paymentNotification.updateMany({
+              where: { id: notificationId, status: 'approved', creditApplied: true },
               data: {
-                userId: pn.userId,
-                amount: -pn.jetonLoaded,
-                type: 'admin_refund',
-                description: `Ödeme iadesi - Ref: ${notificationId.slice(-8)}`,
-                balanceBefore: before,
-                balanceAfter: after,
+                status: 'refunded',
+                processedBy: actor.id,
+                processedByName: adminUser?.name || 'Admin',
+                processedAt: new Date(),
+                adminNote: adminNote ? `[İade] ${adminNote}` : '[İade]',
               },
-            }),
-          )
+            })
+            if (claimed.count !== 1) throw new Error('REFUND_CONFLICT')
+
+            const field = pn.productType === 'jeton' && pn.jetonLoaded ? 'jetonBalance'
+              : pn.productType === 'cfc' && pn.cfcLoaded ? 'cfcBalance' : null
+            if (!field) return { kind: null as 'jeton' | 'cfc' | null, amount: 0, before: 0, after: 0 }
+            const loaded = field === 'jetonBalance' ? pn.jetonLoaded! : pn.cfcLoaded!
+            const cur = await tx.user.findUnique({ where: { id: pn.userId }, select: { [field]: true } })
+            if (!cur) throw new Error('USER_NOT_FOUND')
+            const balance = Number((cur as any)[field] || 0)
+            const deduct = Math.min(balance, loaded)
+            if (deduct > 0) {
+              const dec = await tx.user.updateMany({
+                where: { id: pn.userId, [field]: { gte: deduct } },
+                data: { [field]: { decrement: deduct } },
+              })
+              if (dec.count !== 1) throw new Error('REFUND_CONFLICT')
+            }
+            const after = balance - deduct
+            if (field === 'jetonBalance') {
+              await tx.jetonTransaction.create({
+                data: {
+                  userId: pn.userId,
+                  amount: -deduct,
+                  type: 'admin_refund',
+                  description: `Ödeme iadesi - Ref: ${notificationId.slice(-8)}${deduct < loaded ? ` (yüklenen ${loaded}, kalan bakiye kadar düşüldü)` : ''}`,
+                  balanceBefore: balance,
+                  balanceAfter: after,
+                },
+              })
+            }
+            return { kind: (field === 'jetonBalance' ? 'jeton' : 'cfc') as 'jeton' | 'cfc' | null, amount: deduct, before: balance, after }
+          })
+        } catch (e: any) {
+          if (e?.message === 'REFUND_CONFLICT') return err('Bildirim aynı anda başka bir işlemle değişti; sayfayı yenileyip tekrar deneyin', 409)
+          if (e?.message === 'USER_NOT_FOUND') return err('Kullanıcı bulunamadı', 404)
+          throw e
+        }
+
+        if (refunded.kind && refunded.amount > 0) {
           recordLedger({
-            debit: { accountType: 'user_jeton', accountId: pn.userId },
-            credit: { accountType: 'platform_jeton', accountId: 'platform' },
-            amount: pn.jetonLoaded,
+            debit: { accountType: refunded.kind === 'jeton' ? 'user_jeton' : 'user_cfc', accountId: pn.userId },
+            credit: { accountType: refunded.kind === 'jeton' ? 'platform_jeton' : 'platform_cfc', accountId: 'platform' },
+            amount: refunded.amount,
             category: 'refund',
-            currency: 'jeton',
-            description: `Ödeme iadesi`,
-            referenceType: 'payment_notification',
-            referenceId: notificationId,
-          }).catch(() => {})
-        } else if (pn.productType === 'cfc' && pn.cfcLoaded) {
-          const before = targetUser.cfcBalance || 0
-          const after = Math.max(0, before - pn.cfcLoaded)
-          ops.push(
-            prisma.user.update({ where: { id: pn.userId }, data: { cfcBalance: after } }),
-          )
-          recordLedger({
-            debit: { accountType: 'user_cfc', accountId: pn.userId },
-            credit: { accountType: 'platform_cfc', accountId: 'platform' },
-            amount: pn.cfcLoaded,
-            category: 'refund',
-            currency: 'cfc',
-            description: `CFC ödeme iadesi`,
+            currency: refunded.kind,
+            description: refunded.kind === 'jeton' ? 'Ödeme iadesi' : 'CFC ödeme iadesi',
             referenceType: 'payment_notification',
             referenceId: notificationId,
           }).catch(() => {})
         }
-        // Gold refund: just mark refunded; admin manually revokes gold if needed
-
-        ops.push(
-          prisma.paymentNotification.update({
-            where: { id: notificationId },
-            data: {
-              status: 'refunded',
-              processedBy: actor.id,
-              processedByName: adminUser?.name || 'Admin',
-              processedAt: new Date(),
-              adminNote: adminNote ? `[İade] ${adminNote}` : '[İade]',
-            },
-          }),
-        )
-
-        await prisma.$transaction(ops)
+        // Gold iadesi: yalnız durum işaretlenir; üyeliği admin elle geri alır.
 
         createNotificationWithPush({
           userId: pn.userId,
@@ -699,49 +701,57 @@ export async function POST(req: NextRequest) {
         })
         if (!targetUser) return err('Kullanıcı bulunamadı', 404)
 
-        if (productType === 'jeton') {
-          const before = targetUser.jetonBalance || 0
-          const after = Math.max(0, before + amount)
-          if (amount < 0 && before + amount < 0) return err(`Yetersiz bakiye: kullanıcıda ${before} jeton var`)
-          await prisma.$transaction([
-            prisma.user.update({ where: { id: targetUserId }, data: { jetonBalance: after } }),
-            prisma.jetonTransaction.create({
-              data: {
-                userId: targetUserId,
-                amount,
-                type: amount > 0 ? 'admin_load' : 'admin_deduct',
-                description: reason || `Admin tarafından yüklendi`,
-                balanceBefore: before,
-                balanceAfter: after,
-              },
-            }),
-          ])
-          recordLedger({
-            debit: { accountType: 'platform_jeton', accountId: 'platform' },
-            credit: { accountType: 'user_jeton', accountId: targetUserId, balanceBefore: before, balanceAfter: after },
-            amount: Math.abs(amount),
-            category: 'admin_adjust',
-            currency: 'jeton',
-            description: reason || 'Admin manual jeton load',
-            referenceType: 'admin_manual',
-          }).catch(() => {})
-        } else {
-          const before = targetUser.cfcBalance || 0
-          const after = Math.max(0, before + amount)
-          if (amount < 0 && before + amount < 0) return err(`Yetersiz bakiye: kullanıcıda ${before} CFC var`)
-          await prisma.$transaction([
-            prisma.user.update({ where: { id: targetUserId }, data: { cfcBalance: after } }),
-          ])
-          recordLedger({
-            debit: { accountType: 'platform_cfc', accountId: 'platform' },
-            credit: { accountType: 'user_cfc', accountId: targetUserId, balanceBefore: before, balanceAfter: after },
-            amount: Math.abs(amount),
-            category: 'admin_adjust',
-            currency: 'cfc',
-            description: reason || 'Admin manual CFC load',
-            referenceType: 'admin_manual',
-          }).catch(() => {})
+        // Bakiye mutlak değerle yazılmaz: artış increment, düşüm koşullu decrement
+        // (bakiye yetmezse işlem reddedilir). Önce/sonra değerler işlem içinde okunur.
+        const field = productType === 'jeton' ? 'jetonBalance' : 'cfcBalance'
+        const unit = productType === 'jeton' ? 'jeton' : 'CFC'
+        let before = 0
+        let after = 0
+        try {
+          const res = await prisma.$transaction(async (tx: any) => {
+            if (amount > 0) {
+              await tx.user.update({ where: { id: targetUserId }, data: { [field]: { increment: amount } } })
+            } else {
+              const dec = await tx.user.updateMany({
+                where: { id: targetUserId, [field]: { gte: -amount } },
+                data: { [field]: { decrement: -amount } },
+              })
+              if (dec.count !== 1) throw new Error('INSUFFICIENT')
+            }
+            const cur = await tx.user.findUnique({ where: { id: targetUserId }, select: { [field]: true } })
+            const a2 = Number((cur as any)?.[field] || 0)
+            const b2 = a2 - amount
+            if (productType === 'jeton') {
+              await tx.jetonTransaction.create({
+                data: {
+                  userId: targetUserId,
+                  amount,
+                  type: amount > 0 ? 'admin_load' : 'admin_deduct',
+                  description: reason || `Admin tarafından yüklendi`,
+                  balanceBefore: b2,
+                  balanceAfter: a2,
+                },
+              })
+            }
+            return { b2, a2 }
+          })
+          before = res.b2
+          after = res.a2
+        } catch (e: any) {
+          if (e?.message === 'INSUFFICIENT') {
+            return err(`Yetersiz bakiye: kullanıcıda ${Number((targetUser as any)[field] || 0)} ${unit} var`)
+          }
+          throw e
         }
+        recordLedger({
+          debit: { accountType: productType === 'jeton' ? 'platform_jeton' : 'platform_cfc', accountId: 'platform' },
+          credit: { accountType: productType === 'jeton' ? 'user_jeton' : 'user_cfc', accountId: targetUserId, balanceBefore: before, balanceAfter: after },
+          amount: Math.abs(amount),
+          category: 'admin_adjust',
+          currency: productType === 'jeton' ? 'jeton' : 'cfc',
+          description: reason || (productType === 'jeton' ? 'Admin manual jeton load' : 'Admin manual CFC load'),
+          referenceType: 'admin_manual',
+        }).catch(() => {})
 
         createNotificationWithPush({
           userId: targetUserId,
