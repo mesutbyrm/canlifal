@@ -6124,3 +6124,17 @@ model BroadcasterAccrual {
   @@index([userId, periodStart])
   @@map("broadcaster_accruals")
 }
+
+/// Ajansın engellediği kullanıcı — başvuru, davet ve davet koduyla katılım reddedilir.
+model AgencyMemberBlock {
+  id          String   @id @default(cuid())
+  agencyId    String
+  userId      String
+  reason      String?
+  blockedById String
+  createdAt   DateTime @default(now())
+
+  @@unique([agencyId, userId])
+  @@index([userId])
+  @@map("agency_member_blocks")
+}

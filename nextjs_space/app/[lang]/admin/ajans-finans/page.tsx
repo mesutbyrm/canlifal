@@ -21,6 +21,8 @@ export default function AjansFinansPage() {
   const [maxTransfer, setMaxTransfer] = useState('0')
   const [purchaseDiscount, setPurchaseDiscount] = useState('0')
   const [purchaseMin, setPurchaseMin] = useState('1000')
+  const [purchaseDailyMax, setPurchaseDailyMax] = useState('0')
+  const [dailyTransfer, setDailyTransfer] = useState('0')
   const [purchaseEnabled, setPurchaseEnabled] = useState(true)
   const [uses, setUses] = useState<string[]>([])
   const [bonus, setBonus] = useState<any[]>([])
@@ -44,6 +46,8 @@ export default function AjansFinansPage() {
       setMaxTransfer(String(j.data.settings.max_transfer_per_txn))
       setPurchaseDiscount(String(j.data.settings.purchase_discount_pct ?? 0))
       setPurchaseMin(String(j.data.settings.purchase_min_jeton ?? 1000))
+      setPurchaseDailyMax(String(j.data.settings.purchase_daily_max_jeton ?? 0))
+      setDailyTransfer(String(j.data.settings.daily_transfer_limit ?? 0))
       setPurchaseEnabled(j.data.settings.purchase_enabled !== false)
       setUses(j.data.settings.allowed_uses || [])
       setBonus(j.data.bonus_rules || [])
@@ -63,6 +67,7 @@ export default function AjansFinansPage() {
             tl_to_jeton_rate: rate, wallet_enabled: walletEnabled,
             min_topup_tl: minTopUp, max_transfer_per_txn: maxTransfer, allowed_uses: uses,
             purchase_discount_pct: purchaseDiscount, purchase_min_jeton: purchaseMin, purchase_enabled: purchaseEnabled,
+            purchase_daily_max_jeton: purchaseDailyMax, daily_transfer_limit: dailyTransfer,
           },
           bonus_rules: bonus,
           global_commission_rules: globalRules,
@@ -177,6 +182,17 @@ export default function AjansFinansPage() {
                 Toplu alımda en az Jeton
                 <input value={purchaseMin} onChange={(e) => setPurchaseMin(e.target.value)}
                   className="mt-1 w-full rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100" />
+              </label>
+              <label className="text-sm text-gray-300">
+                Toplu alım — ajans başına günlük en fazla Jeton (0 = sınırsız)
+                <input value={purchaseDailyMax} onChange={(e) => setPurchaseDailyMax(e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100" />
+              </label>
+              <label className="text-sm text-gray-300">
+                Ajans → kullanıcı günlük toplam aktarım (Jeton, 0 = sınırsız)
+                <input value={dailyTransfer} onChange={(e) => setDailyTransfer(e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-gray-950 border border-gray-700 px-3 py-2 text-gray-100" />
+                <span className="block text-xs text-gray-500 mt-1">Ajansa özel değer Komisyon sekmesinden verilebilir.</span>
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-300 mt-6">
                 <input type="checkbox" checked={purchaseEnabled} onChange={(e) => setPurchaseEnabled(e.target.checked)} />
@@ -349,6 +365,8 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
   const [base, setBase] = useState('')
   const [discount, setDiscount] = useState('')
   const [discountScope, setDiscountScope] = useState('')
+  const [dailyLimit, setDailyLimit] = useState('')
+  const [dailyScope, setDailyScope] = useState('')
   const [busy, setBusy] = useState(false)
 
   const load = async (id: string) => {
@@ -361,6 +379,9 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
       const pd = j.data.purchaseDiscount
       setDiscountScope(pd?.scope || '')
       setDiscount(pd?.scope === 'agency' ? String(pd.percent) : '')
+      const dl = j.data.dailyTransferLimit
+      setDailyScope(dl?.scope || '')
+      setDailyLimit(dl?.scope === 'agency' ? String(dl.limit) : '')
     }
   }
 
@@ -369,7 +390,7 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
     try {
       const r = await fetch(`/api/admin/agencies/${agencyId}/commission`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseCommissionRate: base, rules, purchaseDiscountPercent: discount }),
+        body: JSON.stringify({ baseCommissionRate: base, rules, purchaseDiscountPercent: discount, dailyTransferLimit: dailyLimit }),
       })
       const j = await r.json()
       onMsg(j.success ? 'Komisyon kuralları kaydedildi' : (j?.error?.message || 'Hata'))
@@ -392,6 +413,12 @@ function AgencyCommissionTab({ agencies, catalog, onMsg }: { agencies: any[]; ca
             <input value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="varsayılan"
               className="mt-1 w-32 rounded bg-gray-950 border border-gray-700 px-2 py-1 text-gray-100" />
             <span className="ml-2 text-xs text-gray-500">şu an: {discountScope === 'agency' ? 'ajansa özel' : 'varsayılan'}</span>
+          </label>
+          <label className="block text-sm text-gray-300">
+            Günlük aktarım limiti (Jeton, 0 = sınırsız) — boş bırakılırsa varsayılan
+            <input value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} placeholder="varsayılan"
+              className="mt-1 w-32 rounded bg-gray-950 border border-gray-700 px-2 py-1 text-gray-100" />
+            <span className="ml-2 text-xs text-gray-500">şu an: {dailyScope === 'agency' ? 'ajansa özel' : 'varsayılan'}</span>
           </label>
           <label className="block text-sm text-gray-300">
             Ajansın temel komisyon oranı (%)

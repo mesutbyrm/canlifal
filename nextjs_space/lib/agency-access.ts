@@ -92,3 +92,18 @@ export async function requireAgencyPanel(
   }
   return { user, access }
 }
+
+/** Kullanıcı bu ajans tarafından engellenmiş mi? (Tablo yoksa engel yok sayılır.) */
+export async function isBlockedByAgency(agencyId: string, userId: string): Promise<boolean> {
+  try {
+    const row = await prisma.agencyMemberBlock.findUnique({
+      where: { agencyId_userId: { agencyId, userId } },
+      select: { id: true },
+    })
+    return !!row
+  } catch {
+    return false
+  }
+}
+
+export const BLOCKED_MESSAGE = 'Bu ajans tarafından engellendiğiniz için katılamazsınız'

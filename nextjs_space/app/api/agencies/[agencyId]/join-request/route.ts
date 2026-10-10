@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { BLOCKED_MESSAGE, isBlockedByAgency } from '@/lib/agency-access'
 import { requireAuth } from '@/lib/rbac'
 import { createNotificationWithPush } from '@/lib/notify'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { agencyId: s
   if (!agency || agency.status !== 'approved') return err(404, 'Ajans bulunamadı')
   if (agency.invitesDisabled) return err(400, 'Bu ajans şu anda yeni üye kabul etmiyor')
   if (agency.ownerId === user.id) return err(400, 'Kendi ajansınıza başvuramazsınız')
+  if (await isBlockedByAgency(agency.id, user.id)) return err(403, BLOCKED_MESSAGE)
 
   const membership = await prisma.agencyUser.findUnique({ where: { userId: user.id }, select: { agencyId: true } })
   if (membership) {

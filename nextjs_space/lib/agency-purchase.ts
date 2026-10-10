@@ -26,6 +26,8 @@ export const AGENCY_PURCHASE_KEYS = {
   maxJeton: 'agency.purchase.max_jeton',
   /** Satın alma açık mı. */
   enabled: 'agency.purchase.enabled',
+  /** Bir ajansın bir günde sipariş edebileceği toplam Jeton (0 = sınırsız). */
+  dailyMaxJeton: 'agency.purchase.daily_max_jeton',
 } as const
 
 export const AGENCY_JETON_PRODUCT = 'agency_jeton'
@@ -98,16 +100,18 @@ export async function quoteAgencyPurchase(agencyId: string, jetonAmount: number)
   }
 }
 
-export async function getAgencyPurchaseLimits(): Promise<{ enabled: boolean; minJeton: number; maxJeton: number }> {
-  const [en, mn, mx] = await Promise.all([
+export async function getAgencyPurchaseLimits(): Promise<{ enabled: boolean; minJeton: number; maxJeton: number; dailyMaxJeton: number }> {
+  const [en, mn, mx, dm] = await Promise.all([
     getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.enabled, 'true'),
     getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.minJeton, '1000'),
     getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.maxJeton, '0'),
+    getCachedPlatformSetting(AGENCY_PURCHASE_KEYS.dailyMaxJeton, '0'),
   ])
   return {
     enabled: en !== 'false',
     minJeton: Math.max(1, Math.floor(parseFloat(mn) || 1000)),
     maxJeton: Math.max(0, Math.floor(parseFloat(mx) || 0)),
+    dailyMaxJeton: Math.max(0, Math.floor(parseFloat(dm) || 0)),
   }
 }
 
