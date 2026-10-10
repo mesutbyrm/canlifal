@@ -107,6 +107,7 @@ Kurallar:
       message: dream.title,
       url: `${baseUrl}/ruya/${dream.slug}`,
       targetType: 'all',
+      type: 'new_dream',
     }).catch((err) => console.error('OneSignal dream notification error:', err))
 
     return NextResponse.json({ dream })

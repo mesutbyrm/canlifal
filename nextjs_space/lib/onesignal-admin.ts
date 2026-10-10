@@ -1,4 +1,9 @@
 // OneSignal Admin API helpers for notification management panel
+//
+// `sendNotification` artık `PUSH_PROVIDER`'a göre yönlenir: varsayılan FCM
+// (lib/fcm). OneSignal yalnız PUSH_PROVIDER=onesignal ile (acil geri dönüş).
+import { pushProvider } from '@/lib/push'
+import { sendFcmToAllDevices, sendFcmToUsers } from '@/lib/fcm'
 
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || ''
 const REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY || ''
@@ -19,6 +24,8 @@ export interface SendNotificationParams {
   targetType: 'all' | 'segment' | 'tag' | 'player_id'
   targetValue?: string
   scheduledAt?: string // ISO date string
+  /** Bildirim türü (Android kanalı için). Varsayılan: admin_announcement */
+  type?: string
 }
 
 export interface OneSignalSendResult {
@@ -31,7 +38,49 @@ export interface OneSignalSendResult {
 /**
  * Send a notification via OneSignal REST API with various targeting options.
  */
+function toAppPath(url?: string): string {
+  if (!url) return ''
+  try {
+    if (url.startsWith('http')) {
+      const u = new URL(url)
+      return `${u.pathname}${u.search}`
+    }
+  } catch {}
+  return url.startsWith('/') ? url : `/${url}`
+}
+
+/** FCM ile toplu/hedefli gönderim (OneSignal segment/etiket kavramı yok). */
+async function sendNotificationFcm(params: SendNotificationParams): Promise<OneSignalSendResult> {
+  if (params.scheduledAt) {
+    return { success: false, error: 'Zamanlanmış gönderim FCM ile desteklenmiyor — şimdi gönderin' }
+  }
+  const payload = {
+    title: params.title,
+    body: params.message,
+    type: params.type || 'admin_announcement',
+    targetPath: toAppPath(params.url),
+    data: params.imageUrl ? { imageUrl: params.imageUrl } : undefined,
+  }
+  let summary
+  if (params.targetType === 'all' || (params.targetType === 'segment' && (!params.targetValue || params.targetValue === 'All'))) {
+    summary = await sendFcmToAllDevices(payload)
+  } else if (params.targetType === 'player_id' && params.targetValue) {
+    summary = await sendFcmToUsers(params.targetValue.split(',').map(id => id.trim()).filter(Boolean), payload)
+  } else {
+    return { success: false, error: 'FCM ile segment/etiket hedefleme yok — "Tümü" veya kullanıcı kimliği seçin' }
+  }
+  if (!summary.configured) return { success: false, error: 'FCM sunucuda yapılandırılmamış' }
+  return {
+    success: summary.sent > 0,
+    recipientCount: summary.sent,
+    error: summary.sent > 0 ? undefined : `Gönderilemedi (${summary.devices} cihaz): ${JSON.stringify(summary.errors)}`,
+  }
+}
+
 export async function sendNotification(params: SendNotificationParams): Promise<OneSignalSendResult> {
+  const provider = pushProvider()
+  if (provider === 'off') return { success: false, error: 'Push sunucuda kapalı (PUSH_PROVIDER=off)' }
+  if (provider === 'fcm') return sendNotificationFcm(params)
   if (!APP_ID || !REST_API_KEY) {
     return { success: false, error: 'OneSignal yapılandırması eksik' }
   }

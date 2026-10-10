@@ -244,8 +244,10 @@ export async function POST(
       fromUserId: currentUserId,
       fromUserName: auth.name || 'Birisi',
       data: JSON.stringify({ senderId: currentUserId }),
-      targetPath: `/chat/${otherUserId}`,
-      targetId: otherUserId,
+      // Alıcı bildirime dokununca GÖNDERENLE sohbet açılmalı (eskiden kendi
+      // kimliğine, yani kendisiyle sohbete gidiyordu).
+      targetPath: `/chat/${currentUserId}`,
+      targetId: currentUserId,
       urgent: true,
     }).catch((err: any) => console.error('Message notification error:', err))
 

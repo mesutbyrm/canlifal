@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       message: randomMsg.message,
       url: `${baseUrl}/ruya-takvimi`,
       targetType: 'all',
+      type: 'dream_reminder',
     })
 
     return NextResponse.json({

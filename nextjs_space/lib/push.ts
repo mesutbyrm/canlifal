@@ -1,23 +1,19 @@
-// Unified Push Abstraction (Phase 7 - §52 consolidation)
+// Unified Push — TEK YETKİLİ GÖNDERİM NOKTASI.
 //
-// SINGLE SOURCE OF TRUTH for outbound push delivery.
+// Kanal `PUSH_PROVIDER` ortam değişkeniyle seçilir:
+//   fcm        (varsayılan) — Firebase Cloud Messaging HTTP v1, `user_devices` tokenları
+//   onesignal  — yalnızca acil geri dönüş için eski kanal (normalde kapalı)
+//   off        — hiç push gönderilmez (uygulama içi bildirim kaydı sürer)
 //
-// Background: the platform previously appeared to have two push providers:
-//   1. OneSignal (lib/onesignal.ts)  → the ONLY channel that actually delivers.
-//      Flutter calls OneSignal.login(userId); server targets external_id.
-//   2. /api/devices/fcm            → only STORES FCM/APNs tokens in UserDevice.
-//      Nothing server-side ever sends to those raw tokens.
-//
-// So there was never true dual delivery — OneSignal is canonical. This module
-// is the unified entry point every feature should call, so the delivery
-// provider can be swapped in ONE place. /api/devices/fcm is retained only for
-// backward-compatible token capture (mobile clients still call it); the stored
-// tokens are a fallback inventory, not a second live channel.
+// Aynı olay için iki kanaldan birden gönderim YAPILMAZ: her çağrı yalnız seçili
+// kanala gider. Uygulama içi bildirim kaydı (Notification tablosu), SSE ve
+// polling bu modülden bağımsızdır ve etkilenmez.
 
 import {
   sendPushToUser as oneSignalSendToUser,
   sendPushToMultipleUsers as oneSignalSendToMany,
 } from '@/lib/onesignal'
+import { sendFcmToUsers, sendFcmToAllDevices, type FcmSendSummary } from '@/lib/fcm'
 
 export interface UnifiedPushPayload {
   title: string
@@ -26,34 +22,51 @@ export interface UnifiedPushPayload {
   targetPath?: string
   targetId?: string
   urgent?: boolean
+  notificationId?: string
+  data?: Record<string, unknown>
 }
 
-/** Canonical push provider name (for logging / future switching). */
-export const PUSH_PROVIDER = 'onesignal' as const
+export type PushProvider = 'fcm' | 'onesignal' | 'off'
 
-/**
- * Send a push to a single user through the canonical provider.
- * Fire-and-forget friendly: never throws.
- */
+export function pushProvider(env: NodeJS.ProcessEnv = process.env): PushProvider {
+  const v = (env.PUSH_PROVIDER || 'fcm').trim().toLowerCase()
+  return v === 'onesignal' || v === 'off' ? v : 'fcm'
+}
+
+/** Geriye dönük uyumluluk için (log / tanılama). */
+export const PUSH_PROVIDER = pushProvider()
+
+/** Tek kullanıcıya push. Asla fırlatmaz. */
 export async function sendPush(userId: string, payload: UnifiedPushPayload): Promise<boolean> {
+  return sendPushBulk([userId], payload)
+}
+
+/** Birden çok kullanıcıya push. Asla fırlatmaz. */
+export async function sendPushBulk(userIds: string[], payload: UnifiedPushPayload): Promise<boolean> {
+  const ids = userIds.filter(Boolean)
+  if (!ids.length) return false
+  const provider = pushProvider()
   try {
-    return await oneSignalSendToUser(userId, payload)
+    if (provider === 'off') return false
+    if (provider === 'onesignal') {
+      return ids.length === 1
+        ? await oneSignalSendToUser(ids[0], payload)
+        : await oneSignalSendToMany(ids, payload)
+    }
+    const summary = await sendFcmToUsers(ids, payload)
+    return summary.sent > 0
   } catch (err) {
-    console.error('[push] sendPush failed (non-blocking):', err)
+    console.error('[push] gönderim hatası (engellemez):', (err as Error)?.message)
     return false
   }
 }
 
-/**
- * Send a push to many users through the canonical provider.
- * Fire-and-forget friendly: never throws.
- */
-export async function sendPushBulk(userIds: string[], payload: UnifiedPushPayload): Promise<boolean> {
-  if (!userIds.length) return false
-  try {
-    return await oneSignalSendToMany(userIds, payload)
-  } catch (err) {
-    console.error('[push] sendPushBulk failed (non-blocking):', err)
-    return false
-  }
+/** Ayrıntılı FCM sonucu (tanılama / admin duyurusu). */
+export async function sendPushDetailed(userIds: string[], payload: UnifiedPushPayload): Promise<FcmSendSummary> {
+  return sendFcmToUsers(userIds, payload)
+}
+
+/** Kayıtlı tüm cihazlara (yönetici duyurusu). */
+export async function sendPushToAll(payload: UnifiedPushPayload): Promise<FcmSendSummary> {
+  return sendFcmToAllDevices(payload)
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { notifyFollowersLiveStart } from '@/lib/live-start-notify'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { logActivity } from '@/lib/activity-logger'
@@ -163,26 +164,9 @@ export async function POST(request: NextRequest) {
 }
 
 /** Notify followers that a user went live */
+// Eskiden Notification modelinde olmayan `targetPath`/`targetId` alanlarını
+// createMany'ye yazdığı için Prisma çağrıyı reddediyor, takipçilere hiç
+// bildirim gitmiyordu. Ortak yardımcıya bağlandı (kayıt + push + tekilleştirme).
 async function notifyFollowers(userId: string, userName: string, streamId: string, streamTitle?: string) {
-  const followers = await prisma.follow.findMany({
-    where: { followingId: userId },
-    select: { followerId: true },
-    take: 500,
-  })
-  if (followers.length === 0) return
-
-  const followerIds = followers.map((f: any) => f.followerId)
-  await prisma.notification.createMany({
-    data: followerIds.map((fId: any) => ({
-      userId: fId,
-      type: 'live_stream',
-      title: `${userName} canlı yayında`,
-      message: streamTitle || 'Canlı Fal',
-      data: JSON.stringify({ streamId }),
-      targetPath: 'stream',
-      targetId: streamId,
-      fromUserId: userId,
-      fromUserName: userName,
-    }))
-  })
+  await notifyFollowersLiveStart({ streamerId: userId, streamerName: userName, streamId, streamTitle })
 }

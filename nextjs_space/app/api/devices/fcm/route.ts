@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { token, platform, appVersion } = body
+    const { token, platform, appVersion, previousToken } = body
 
     if (!token || typeof token !== 'string' || token.length < 10) {
       return NextResponse.json(
@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Hesap değişimi: bir cihaz token'ı aynı anda yalnız TEK hesaba bağlı olur.
+    // Aynı telefonda önce A sonra B oturum açarsa A'nın kaydı silinir; böylece
+    // A'ya ait bildirimler B'nin cihazına düşmez.
+    await prisma.userDevice.deleteMany({ where: { token, userId: { not: userId } } })
 
     // Upsert: aynı user+token varsa güncelle, yoksa oluştur
     const device = await prisma.userDevice.upsert({
@@ -55,6 +60,11 @@ export async function POST(req: NextRequest) {
         appVersion: appVersion || null,
       },
     })
+
+    // Token yenilendiyse eski token bu hesaptan kaldırılır (çift teslimat olmasın).
+    if (typeof previousToken === 'string' && previousToken && previousToken !== token) {
+      await prisma.userDevice.deleteMany({ where: { userId, token: previousToken } })
+    }
 
     return NextResponse.json({
       success: true,

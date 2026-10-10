@@ -1,5 +1,6 @@
 import prisma from '@/lib/db'
-import { sendPushToUser, sendPushToMultipleUsers, getNotificationTitle } from '@/lib/onesignal'
+import { getNotificationTitle } from '@/lib/onesignal'
+import { sendPush, sendPushBulk } from '@/lib/push'
 import { buildDeepLink, type DeepLinkType } from '@/lib/deeplink'
 
 interface NotifyParams {
@@ -105,8 +106,32 @@ export function resolveNotificationDeepLink(params: {
   }
 }
 
+/** Bildirimin `data` JSON'unu ve kimlik alanlarını push `data`sına taşır (dokunma yönlendirmesi). */
+export function pushDataFor(params: {
+  data?: string | null
+  postId?: string | null
+  fromUserId?: string | null
+  fromUserName?: string | null
+  deepLink?: string | null
+}): Record<string, unknown> {
+  let parsed: Record<string, unknown> = {}
+  if (params.data) {
+    try {
+      const j = JSON.parse(params.data)
+      if (j && typeof j === 'object' && !Array.isArray(j)) parsed = j
+    } catch {}
+  }
+  return {
+    ...parsed,
+    ...(params.postId ? { postId: params.postId } : {}),
+    ...(params.fromUserId ? { fromUserId: params.fromUserId, senderId: (parsed as any).senderId ?? params.fromUserId } : {}),
+    ...(params.fromUserName ? { senderName: params.fromUserName } : {}),
+    ...(params.deepLink ? { deepLink: params.deepLink } : {}),
+  }
+}
+
 /**
- * Create a DB notification AND send a OneSignal push notification.
+ * Create a DB notification AND send a push (tek kanal: lib/push → FCM).
  * Push is fire-and-forget: errors logged but never block the response.
  */
 export async function createNotificationWithPush(params: NotifyParams) {
@@ -158,20 +183,22 @@ export async function createNotificationWithPush(params: NotifyParams) {
       }
     })
 
-    // 2. Send OneSignal push (fire and forget)
+    // 2. Push (tek kanal, fire and forget). Prisma middleware artık push atmaz.
     const pushTitle = params.title || getNotificationTitle(params.type)
     const pushBody = params.fromUserName
       ? `${params.fromUserName} ${params.message}`
       : params.message
 
-    sendPushToUser(params.userId, {
+    sendPush(params.userId, {
       title: pushTitle,
       body: pushBody.slice(0, 200),
       type: params.type,
       targetPath: params.targetPath || '',
       targetId: params.targetId || '',
       urgent: params.urgent || false,
-    }).catch(err => console.error('OneSignal push failed (non-blocking):', err))
+      notificationId: notification.id,
+      data: pushDataFor({ ...params, deepLink }),
+    }).catch(err => console.error('Push failed (non-blocking):', err))
 
     return notification
   } catch (error) {
@@ -252,15 +279,16 @@ export async function createBulkNotificationsWithPush(params: {
       })),
     })
 
-    // 2. Send batch push (fire and forget)
-    sendPushToMultipleUsers(targetUserIds, {
+    // 2. Toplu push (tek kanal, fire and forget)
+    sendPushBulk(targetUserIds, {
       title: params.title,
       body: params.message.slice(0, 200),
       type: params.type,
       targetPath: params.targetPath || '',
       targetId: params.targetId || '',
       urgent: params.urgent || false,
-    }).catch(err => console.error('OneSignal bulk push failed (non-blocking):', err))
+      data: pushDataFor({ ...params, deepLink }),
+    }).catch(err => console.error('Bulk push failed (non-blocking):', err))
   } catch (error) {
     console.error('createBulkNotificationsWithPush error:', error)
   }

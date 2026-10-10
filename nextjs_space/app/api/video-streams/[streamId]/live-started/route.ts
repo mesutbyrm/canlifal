@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
-import { sendPushToMultipleUsers } from '@/lib/onesignal'
+import { notifyFollowersLiveStart } from '@/lib/live-start-notify'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,44 +40,15 @@ export async function POST(
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
-    // Get followers (max 500)
-    const followers = await prisma.follow.findMany({
-      where: { followingId: authUser.id },
-      select: { followerId: true },
-      take: 500,
+    // Yayın oluşturulurken bildirim zaten gittiyse ortak dedupeKey ikinci kez göndermez.
+    const notifiedCount = await notifyFollowersLiveStart({
+      streamerId: authUser.id,
+      streamerName: stream.user.name || authUser.name || 'Falcı',
+      streamId: stream.id,
+      streamTitle: stream.title,
     })
 
-    if (followers.length > 0) {
-      const followerIds = followers.map((f: any) => f.followerId)
-      const userName = stream.user.name || authUser.name || 'Falcı'
-      const title = `${userName} canlı yayında`
-      const body = stream.title || 'Canlı Fal'
-
-      // Create in-app notifications
-      await prisma.notification.createMany({
-        data: followerIds.map((fId: string) => ({
-          userId: fId,
-          type: 'stream_live',
-          title: `🔴 ${title}`,
-          message: body,
-          fromUserId: authUser.id,
-          fromUserName: userName,
-          data: JSON.stringify({ streamId: stream.id }),
-        })),
-      })
-
-      // Send push to followers
-      sendPushToMultipleUsers(followerIds, {
-        title: `🔴 ${title}`,
-        body,
-        type: 'live',
-        targetPath: '/live',
-        targetId: stream.id,
-        urgent: true,
-      }).catch(err => console.error('live-started push error:', err))
-    }
-
-    return NextResponse.json({ success: true, notifiedCount: followers.length })
+    return NextResponse.json({ success: true, notifiedCount })
   } catch (error) {
     console.error('live-started error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

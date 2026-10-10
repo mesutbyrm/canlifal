@@ -116,6 +116,7 @@ Kategori seçenekleri (sadece bunlardan birini yaz): genel, hayvanlar, doga, ins
       message: dream.title,
       url: `${baseUrl}/ruya/${dream.slug}`,
       targetType: 'all',
+      type: 'new_dream',
     }).catch((err) => console.error('OneSignal dream notification error:', err))
 
     return NextResponse.json({ dream, generated: true })
