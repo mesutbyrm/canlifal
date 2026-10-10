@@ -5,6 +5,7 @@ import { requireFullAdmin } from '@/lib/rbac'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getGirLiveConfig, saveGirLiveConfig } from '@/lib/girlive-bot'
 import { DEFAULT_BANNED_WORDS, DEFAULT_SEVERITY_ACTIONS } from '@/lib/girlive-moderation-core'
+import { getPublicBotConfig, savePublicBotConfig } from '@/lib/girlive-public-bot'
 import { recordAudit } from '@/lib/audit-log'
 
 /**
@@ -16,10 +17,12 @@ export async function GET(req: NextRequest) {
   const denied = await requireFullAdmin(req)
   if (denied) return denied
   const config = await getGirLiveConfig()
+  const publicConfig = await getPublicBotConfig()
   return NextResponse.json({
     success: true,
     data: {
       config,
+      publicMessages: publicConfig,
       defaults: { actions: DEFAULT_SEVERITY_ACTIONS, wordCount: DEFAULT_BANNED_WORDS.length },
     },
   })
@@ -37,6 +40,10 @@ export async function PUT(req: NextRequest) {
     if (body.actions && typeof body.actions === 'object') patch.actions = body.actions
     if (Array.isArray(body.words)) patch.words = body.words
     if (Array.isArray(body.whitelist)) patch.whitelist = body.whitelist
+    // Public bot config (Jeton, PK, selam/çıkış)
+    if (body.publicMessages && typeof body.publicMessages === 'object') {
+      await savePublicBotConfig(body.publicMessages)
+    }
     const config = await saveGirLiveConfig(patch)
     const actor = await authenticateRequest(req)
     if (actor) {
