@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
-import { invalidateCache } from '@/lib/cache';
+import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
@@ -214,6 +214,8 @@ export async function POST(request: NextRequest) {
     });
 
     await invalidateCache('gifts:active');
+    invalidateCache('gifts:version-check');
+    invalidateCachePrefix('gifts:catalog:');
 
     recordAudit({ actorId: (session.user as any).id, action: 'gift.create', targetType: 'gift_type', targetId: gift.id, after: { name: gift.name, price: gift.price } }).catch(() => {});
     return NextResponse.json(serializeGiftMedia(gift), { status: 201 });

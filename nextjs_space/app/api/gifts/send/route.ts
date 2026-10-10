@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
-    const { recipientUsername, giftTypeId, jetonAmount, type, jetonSource } = await req.json()
+    const { recipientUsername, giftTypeId, jetonAmount, type, jetonSource, clientPrice } = await req.json()
     // type: 'gift' or 'jeton'
 
     if (!recipientUsername) {
@@ -144,6 +144,15 @@ export async function POST(req: NextRequest) {
       const senderJetons = sender.jetonBalance ?? 0
       if (!isStaff && senderJetons < giftType.price) {
         return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
+      }
+
+      // §6 Client price validation — istemci eski/sahte fiyat gönderemez
+      if (typeof clientPrice === 'number' && clientPrice !== giftType.price) {
+        return NextResponse.json(
+          { error: 'PRICE_MISMATCH', serverPrice: giftType.price, clientPrice,
+            message: 'Hediye fiyatı değişti, lütfen katalog bilgisini güncelleyin' },
+          { status: 409 }
+        )
       }
 
       // Get configurable commission for direct gifts (default 0% - no commission on direct gifts)

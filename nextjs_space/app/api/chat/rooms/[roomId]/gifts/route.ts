@@ -98,6 +98,16 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     const unitPrice = giftType.price
     const price = unitPrice * quantity
+
+    // §6 Client price validation — istemci eski/sahte fiyat gönderemez
+    if (typeof body.clientPrice === 'number' && body.clientPrice !== unitPrice) {
+      return NextResponse.json(
+        { error: 'PRICE_MISMATCH', serverPrice: unitPrice, clientPrice: body.clientPrice,
+          message: 'Hediye fiyatı değişti, lütfen katalog bilgisini güncelleyin' },
+        { status: 409 }
+      )
+    }
+
     // Sahte/gerçek jeton seçimi (istemci `jetonSource` gönderir)
     const spendPlan = await resolveJetonSpend(sender.id, price, parseJetonSource(body.jetonSource))
     const isStaff = spendPlan.skipDeduction

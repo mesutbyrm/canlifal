@@ -122,7 +122,7 @@ export async function POST(
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
-    const { giftTypeId, quantity = 1, jetonSource } = await request.json()
+    const { giftTypeId, quantity = 1, jetonSource, clientPrice } = await request.json()
 
     if (!giftTypeId) {
       return NextResponse.json({ error: 'giftTypeId required' }, { status: 400 })
@@ -138,6 +138,15 @@ export async function POST(
     }
 
     const totalPrice = giftType.price * quantity
+
+    // §6 Client price validation — istemci eski/sahte fiyat gönderemez
+    if (typeof clientPrice === 'number' && clientPrice !== giftType.price) {
+      return NextResponse.json(
+        { error: 'PRICE_MISMATCH', serverPrice: giftType.price, clientPrice,
+          message: 'Hediye fiyatı değişti, lütfen katalog bilgisini güncelleyin' },
+        { status: 409 }
+      )
+    }
 
     // Check user jeton balance (stream gifts require jetons)
     const user = await prisma.user.findUnique({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
-import { invalidateCache } from '@/lib/cache';
+import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 import { recordAudit, getAuditIp } from '@/lib/audit-log';
 import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
@@ -160,6 +160,8 @@ export async function PATCH(
     });
 
     await invalidateCache('gifts:active');
+    invalidateCache('gifts:version-check');
+    invalidateCachePrefix('gifts:catalog:');
 
     recordAudit({
       action: 'gift_update',
@@ -194,6 +196,8 @@ export async function DELETE(
     });
 
     await invalidateCache('gifts:active');
+    invalidateCache('gifts:version-check');
+    invalidateCachePrefix('gifts:catalog:');
 
     recordAudit({
       action: 'gift_delete',
