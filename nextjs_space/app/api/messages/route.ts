@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
+import { getPeerPresence } from '@/lib/peer-presence'
 
 // GET conversations list or unread count
 export async function GET(request: NextRequest) {
@@ -59,15 +60,21 @@ export async function GET(request: NextRequest) {
       const unreadMapC = new Map<string, number>(
         unreadGroupsC.map((g: { senderId: string; _count: { _all: number } }) => [g.senderId, g._count._all])
       )
+      const presenceC = await getPeerPresence(
+        items.map((conv: any) => (conv.user1Id === userId ? conv.user2Id : conv.user1Id))
+      ).catch(() => new Map())
       return apiPaginated(
         items.map((conv: any) => {
           const other = conv.user1Id === userId ? conv.user2 : conv.user1
+          const pres = presenceC.get(other.id)
           return {
             id: conv.id,
             user: other,
             lastMessage: conv.lastMessageText,
             lastMessageAt: conv.lastMessageAt,
             unreadCount: unreadMapC.get(other.id) ?? 0,
+            isOnline: pres?.isOnline ?? false,
+            lastSeenAt: pres?.lastSeenAt ?? null,
           }
         }),
         meta
@@ -108,6 +115,10 @@ export async function GET(request: NextRequest) {
       unreadGroups.map((g: { senderId: string; _count: { _all: number } }) => [g.senderId, g._count._all])
     )
 
+    const presence = await getPeerPresence(
+      conversations.map((c: { user1Id: string; user2Id: string }) => (c.user1Id === userId ? c.user2Id : c.user1Id))
+    ).catch(() => new Map())
+
     const conversationsWithUnread = conversations.map((conv: { id: string; user1Id: string; user2Id: string; user1: { id: string; name: string | null; username: string | null; image: string | null }; user2: { id: string; name: string | null; username: string | null; image: string | null }; lastMessageText: string | null; lastMessageAt: Date | null }) => {
       const otherUser = conv.user1Id === userId ? conv.user2 : conv.user1
       return {
@@ -116,6 +127,8 @@ export async function GET(request: NextRequest) {
         lastMessage: conv.lastMessageText,
         lastMessageAt: conv.lastMessageAt,
         unreadCount: unreadBySender.get(otherUser.id) ?? 0,
+        isOnline: presence.get(otherUser.id)?.isOnline ?? false,
+        lastSeenAt: presence.get(otherUser.id)?.lastSeenAt ?? null,
       }
     })
 
