@@ -39,6 +39,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { visitorId, path, isNewSession } = body;
 
+    // Uygulama arka plana/çıkışa geçince çevrimiçi durumu hemen düşer (2 dk beklemeden).
+    // Yalnız oturum sahibinin kendi kaydı silinir; lastActiveAt "son görülme" olarak kalır.
+    if (body?.action === 'leave') {
+      if (!authUser?.id) return NextResponse.json({ ok: true });
+      await prisma.sitePresence.deleteMany({
+        where: visitorId ? { visitorId, userId: authUser.id } : { userId: authUser.id },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     if (!visitorId) {
       return NextResponse.json({ error: 'visitorId required' }, { status: 400 });
     }
