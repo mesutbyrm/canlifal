@@ -98,11 +98,15 @@ check('JWT kapsam/hedef/süre', [claims.scope, claims.aud, claims.exp - claims.i
   3600,
 ])
 
-// 6) Kanal seçimi: varsayılan FCM; OneSignal yalnız açıkça seçilirse
-check('varsayılan fcm', pushProvider({} as any), 'fcm')
-check('onesignal geri dönüş', pushProvider({ PUSH_PROVIDER: 'onesignal' } as any), 'onesignal')
-check('kapalı', pushProvider({ PUSH_PROVIDER: 'off' } as any), 'off')
-check('bilinmeyen → fcm', pushProvider({ PUSH_PROVIDER: 'xyz' } as any), 'fcm')
+// 6) Kanal seçimi: açık değer her zaman kazanır; tanımsızsa FCM hazırsa fcm
+const yes = () => true
+const no = () => false
+check('açık fcm', pushProvider({ PUSH_PROVIDER: 'fcm' } as any, no), 'fcm')
+check('açık onesignal', pushProvider({ PUSH_PROVIDER: 'onesignal' } as any, yes), 'onesignal')
+check('kapalı', pushProvider({ PUSH_PROVIDER: 'off' } as any, yes), 'off')
+check('tanımsız + FCM hazır → fcm', pushProvider({} as any, yes), 'fcm')
+check('tanımsız + FCM yok → geçici onesignal', pushProvider({} as any, no), 'onesignal')
+check('bilinmeyen + FCM hazır → fcm', pushProvider({ PUSH_PROVIDER: 'xyz' } as any, yes), 'fcm')
 
 console.log(`\n${pass} geçti, ${fail} kaldı`)
 process.exit(fail ? 1 : 0)

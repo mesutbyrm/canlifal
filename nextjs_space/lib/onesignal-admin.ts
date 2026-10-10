@@ -1,6 +1,6 @@
 // OneSignal Admin API helpers for notification management panel
 //
-// `sendNotification` artık `PUSH_PROVIDER`'a göre yönlenir: varsayılan FCM
+// `sendNotification` artık `PUSH_PROVIDER`'a göre yönlenir (lib/push → pushProvider)
 // (lib/fcm). OneSignal yalnız PUSH_PROVIDER=onesignal ile (acil geri dönüş).
 import { pushProvider } from '@/lib/push'
 import { sendFcmToAllDevices, sendFcmToUsers } from '@/lib/fcm'

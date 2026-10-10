@@ -1,7 +1,7 @@
 // Unified Push — TEK YETKİLİ GÖNDERİM NOKTASI.
 //
 // Kanal `PUSH_PROVIDER` ortam değişkeniyle seçilir:
-//   fcm        (varsayılan) — Firebase Cloud Messaging HTTP v1, `user_devices` tokenları
+//   fcm        — Firebase Cloud Messaging HTTP v1, `user_devices` tokenları (hedef)
 //   onesignal  — yalnızca acil geri dönüş için eski kanal (normalde kapalı)
 //   off        — hiç push gönderilmez (uygulama içi bildirim kaydı sürer)
 //
@@ -13,7 +13,7 @@ import {
   sendPushToUser as oneSignalSendToUser,
   sendPushToMultipleUsers as oneSignalSendToMany,
 } from '@/lib/onesignal'
-import { sendFcmToUsers, sendFcmToAllDevices, type FcmSendSummary } from '@/lib/fcm'
+import { isFcmConfigured, sendFcmToUsers, sendFcmToAllDevices, type FcmSendSummary } from '@/lib/fcm'
 
 export interface UnifiedPushPayload {
   title: string
@@ -28,13 +28,27 @@ export interface UnifiedPushPayload {
 
 export type PushProvider = 'fcm' | 'onesignal' | 'off'
 
-export function pushProvider(env: NodeJS.ProcessEnv = process.env): PushProvider {
-  const v = (env.PUSH_PROVIDER || 'fcm').trim().toLowerCase()
-  return v === 'onesignal' || v === 'off' ? v : 'fcm'
+/**
+ * Seçili kanal. Açıkça `PUSH_PROVIDER=fcm|onesignal|off` verilirse o kullanılır.
+ * Hiç verilmemişse: FCM kimlik bilgisi varsa `fcm`; yoksa (kod, yapılandırma
+ * yapılmadan yayına alınırsa push tamamen kesilmesin diye) eski `onesignal`
+ * kanalı uyarı loguyla sürer. Deploy talimatı `PUSH_PROVIDER=fcm` ayarlar.
+ */
+export function pushProvider(
+  env: NodeJS.ProcessEnv = process.env,
+  fcmConfigured: () => boolean = isFcmConfigured
+): PushProvider {
+  const v = (env.PUSH_PROVIDER || '').trim().toLowerCase()
+  if (v === 'fcm' || v === 'onesignal' || v === 'off') return v
+  if (fcmConfigured()) return 'fcm'
+  if (!warnedUnset) {
+    warnedUnset = true
+    console.warn('[push] PUSH_PROVIDER tanımsız ve FCM yapılandırılmamış — geçici olarak OneSignal kullanılıyor')
+  }
+  return 'onesignal'
 }
+let warnedUnset = false
 
-/** Geriye dönük uyumluluk için (log / tanılama). */
-export const PUSH_PROVIDER = pushProvider()
 
 /** Tek kullanıcıya push. Asla fırlatmaz. */
 export async function sendPush(userId: string, payload: UnifiedPushPayload): Promise<boolean> {
