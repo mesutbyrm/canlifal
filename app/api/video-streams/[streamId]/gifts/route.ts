@@ -9,6 +9,7 @@ import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { createNotificationWithPush } from '@/lib/notify'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
+import { calculateGiftDistribution } from '@/lib/voice-room-revenue'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitStreamEvent } from '@/lib/stream-events'
@@ -202,10 +203,10 @@ export async function POST(
 
     // Sadece normal kullanıcıların hediyeleri yayıncıya bakiye olarak yansır
     if (!senderExcluded) {
-      // Get configurable commission rate from platform settings (default 30%)
-      const streamCommissionStr = await getPlatformSetting('stream_gift_commission', '30')
-      const streamCommissionPercent = Math.min(100, Math.max(0, parseInt(streamCommissionStr) || 30))
-      const recipientAmount = Math.floor(totalPrice * (100 - streamCommissionPercent) / 100)
+      // Unified gift distribution — same model as voice rooms (2026-10 rev.)
+      // Stream gifts always go to broadcaster (owner), so isRecipientOwner = true
+      const dist = await calculateGiftDistribution(totalPrice, 'NORMAL', true)
+      const recipientAmount = dist.ownerNet
       ledgerRecipientAmount = recipientAmount
 
       if (recipientAmount > 0) {
