@@ -116,7 +116,7 @@ export default function AgencyPanelPage() {
   const [wdActionLoading, setWdActionLoading] = useState<string | null>(null)
   const [wdNoteMap, setWdNoteMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'invites' | 'earnings' | 'wallet' | 'live' | 'growth' | 'withdrawals'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'invites' | 'earnings' | 'wallet' | 'buy' | 'live' | 'growth' | 'withdrawals'>('overview')
   const [creating, setCreating] = useState(false)
   const [newCodeMaxUses, setNewCodeMaxUses] = useState(0)
   const [newCodeDays, setNewCodeDays] = useState(7)
@@ -150,6 +150,18 @@ export default function AgencyPanelPage() {
   const [trAmount, setTrAmount] = useState('')
   const [trReason, setTrReason] = useState('')
   const [trSending, setTrSending] = useState(false)
+
+  // İndirimli Jeton satın alma (yalnızca ajans sahibi)
+  const [buyJeton, setBuyJeton] = useState('')
+  const [buyMethod, setBuyMethod] = useState('bank_transfer')
+  const [buyQuote, setBuyQuote] = useState<any>(null)
+  const [buyLimits, setBuyLimits] = useState<{ enabled: boolean; minJeton: number; maxJeton: number } | null>(null)
+  const [buyOrders, setBuyOrders] = useState<any[]>([])
+  const [buyQuoteLoading, setBuyQuoteLoading] = useState(false)
+  const [buySubmitting, setBuySubmitting] = useState(false)
+  const [buyTxnId, setBuyTxnId] = useState('')
+  const [buySenderName, setBuySenderName] = useState('')
+  const [buyNotes, setBuyNotes] = useState('')
 
   const [leaveRequests, setLeaveRequests] = useState<any[]>([])
   const [leaveActionLoading, setLeaveActionLoading] = useState<string | null>(null)
@@ -258,6 +270,55 @@ export default function AgencyPanelPage() {
     } catch { alert('Hata oluştu') } finally { setTrSending(false) }
   }
 
+  // İndirimli Jeton: limit + teklif + sipariş geçmişi
+  const fetchPurchaseInfo = async (jetonAmount?: number) => {
+    try {
+      setBuyQuoteLoading(true)
+      const q = jetonAmount && jetonAmount > 0 ? `?jeton=${jetonAmount}` : ''
+      const res = await fetch('/api/agency/purchase' + q)
+      const d = await res.json()
+      if (res.ok && d.success) {
+        setBuyQuote(d.data.quote || null)
+        setBuyLimits(d.data.limits || null)
+        setBuyOrders(d.data.orders || [])
+      }
+    } catch (e) { console.error(e) } finally { setBuyQuoteLoading(false) }
+  }
+
+  const handlePurchase = async () => {
+    const amt = Math.floor(Number(buyJeton || 0))
+    if (!amt || amt <= 0) { alert('Geçerli bir jeton miktarı girin'); return }
+    if (buyLimits && amt < buyLimits.minJeton) { alert(`En az ${buyLimits.minJeton.toLocaleString('tr-TR')} jeton alınabilir`); return }
+    if (buyLimits && buyLimits.maxJeton > 0 && amt > buyLimits.maxJeton) { alert(`Tek siparişte en fazla ${buyLimits.maxJeton.toLocaleString('tr-TR')} jeton alınabilir`); return }
+    setBuySubmitting(true)
+    try {
+      const res = await fetch('/api/agency/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jeton: amt, paymentMethod: buyMethod, transactionId: buyTxnId || undefined, senderName: buySenderName || undefined, notes: buyNotes || undefined }),
+      })
+      const d = await res.json()
+      if (res.ok && d.success) {
+        alert('Sipariş oluşturuldu. Ödemeniz yönetici tarafından onaylandığında jeton ajans cüzdanınıza eklenecek.')
+        setBuyJeton(''); setBuyTxnId(''); setBuySenderName(''); setBuyNotes('')
+        fetchPurchaseInfo()
+        fetchWallet()
+      } else {
+        alert(d?.error || 'Sipariş oluşturulamadı')
+      }
+    } catch { alert('Hata oluştu') } finally { setBuySubmitting(false) }
+  }
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) return
+    try {
+      const res = await fetch(`/api/payments/notify/${orderId}/cancel`, { method: 'POST' })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok && (d.success ?? true)) { fetchPurchaseInfo() }
+      else alert(d?.error || 'İptal edilemedi')
+    } catch { alert('Hata oluştu') }
+  }
+
   const fetchWithdrawals = async () => {
     try {
       const res = await fetch('/api/agency/withdrawals')
@@ -292,8 +353,18 @@ export default function AgencyPanelPage() {
       fetchWallet()
       fetchLiveStatus()
       fetchGrowth()
+      if (info?.isOwner) fetchPurchaseInfo()
     }
   }, [info])
+
+  // Jeton miktarı değiştikçe sunucudan güncel teklif al (debounce)
+  useEffect(() => {
+    if (!info?.isOwner || activeTab !== 'buy') return
+    const amt = Math.floor(Number(buyJeton || 0))
+    if (!amt || amt <= 0) return
+    const t = setTimeout(() => { fetchPurchaseInfo(amt) }, 450)
+    return () => clearTimeout(t)
+  }, [buyJeton, activeTab, info])
 
   const createInviteCode = async () => {
     setCreating(true)
@@ -608,8 +679,8 @@ export default function AgencyPanelPage() {
       {/* Tabs */}
       {isManager && (
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
-          {(['overview', 'members', 'invites', 'earnings', 'wallet', 'live', 'growth', 'withdrawals'] as const).map(tab => {
-            const labels: Record<string, string> = { overview: 'Genel', members: 'Üyeler', invites: 'Davet Kodları', earnings: 'Kazançlar', wallet: 'Cüzdan', live: 'Canlı Takip', growth: 'Gelişim', withdrawals: 'Çekim Talepleri' }
+          {((['overview', 'members', 'invites', 'earnings', 'wallet', ...(info?.isOwner ? (['buy'] as const) : []), 'live', 'growth', 'withdrawals'] as const) as readonly (typeof activeTab)[]).map(tab => {
+            const labels: Record<string, string> = { overview: 'Genel', members: 'Üyeler', invites: 'Davet Kodları', earnings: 'Kazançlar', wallet: 'Cüzdan', buy: 'Jeton Al', live: 'Canlı Takip', growth: 'Gelişim', withdrawals: 'Çekim Talepleri' }
             const pendingWd = withdrawals.filter(w => w.status === 'pending').length
             return (
               <button
@@ -1293,6 +1364,114 @@ export default function AgencyPanelPage() {
                           <div className="text-right flex-shrink-0">
                             <div className={`text-xs font-bold ${plus ? 'text-green-400' : 'text-red-400'}`}>{plus ? '+' : '-'}{t.amount} J</div>
                             <div className={`text-[10px] ${textSecondary}`}>Bakiye: {t.balanceAfter}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* İndirimli Jeton Al — yalnızca ajans sahibi */}
+      {activeTab === 'buy' && info?.isOwner && (
+        <div className="space-y-4">
+          {buyLimits && !buyLimits.enabled ? (
+            <div className={`${cardBg} rounded-xl p-6 text-center text-sm ${textSecondary}`}>
+              <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-orange-400" />
+              İndirimli jeton alımı şu anda kapalı. Lütfen daha sonra tekrar deneyin.
+            </div>
+          ) : (
+            <>
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-1 flex items-center gap-2`}>
+                  <DollarSign className={`w-4 h-4 ${accentColor}`} /> İndirimli Jeton Al
+                </h3>
+                <p className={`text-[11px] ${textSecondary} mb-3`}>
+                  Ajansınıza özel indirimli fiyattan toplu jeton satın alın. Ödemeniz yönetici onayından sonra ajans cüzdanınıza eklenir.
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <label className={`text-[11px] ${textSecondary}`}>Jeton Miktarı</label>
+                    <input type="number" min={buyLimits?.minJeton || 1} value={buyJeton} onChange={e => setBuyJeton(e.target.value)} placeholder={`Örn. ${(buyLimits?.minJeton || 10000).toLocaleString('tr-TR')}`} className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+                    {buyLimits && (
+                      <div className={`text-[10px] ${textSecondary} mt-1`}>
+                        En az: {buyLimits.minJeton.toLocaleString('tr-TR')} J{buyLimits.maxJeton > 0 ? ` • En fazla: ${buyLimits.maxJeton.toLocaleString('tr-TR')} J` : ''}
+                      </div>
+                    )}
+                  </div>
+
+                  {buyQuoteLoading ? (
+                    <div className="flex justify-center py-3"><Loader2 className={`w-5 h-5 animate-spin ${accentColor}`} /></div>
+                  ) : buyQuote && Number(buyJeton) > 0 ? (
+                    <div className="rounded-lg bg-black/20 p-3 text-xs space-y-1.5">
+                      <div className="flex justify-between"><span className={textSecondary}>Jeton</span><span className={textPrimary}>{Number(buyQuote.jetonAmount || 0).toLocaleString('tr-TR')} J</span></div>
+                      <div className="flex justify-between"><span className={textSecondary}>Normal fiyat</span><span className="line-through text-gray-500">{Number(buyQuote.normalPriceTl || 0).toFixed(2)} ₺</span></div>
+                      <div className="flex justify-between"><span className={textSecondary}>İndirim</span><span className="text-green-400">%{buyQuote.discountPercent}{buyQuote.discountScope === 'agency' ? ' (ajansa özel)' : ''}</span></div>
+                      <div className="flex justify-between"><span className={textSecondary}>Kazancınız</span><span className="text-green-400">-{Number(buyQuote.savedTl || 0).toFixed(2)} ₺</span></div>
+                      <div className="flex justify-between border-t border-white/10 pt-1.5 mt-1.5"><span className={`font-medium ${textPrimary}`}>Ödenecek tutar</span><span className={`font-bold ${accentColor}`}>{Number(buyQuote.finalPriceTl || 0).toFixed(2)} ₺</span></div>
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <label className={`text-[11px] ${textSecondary}`}>Ödeme Yöntemi</label>
+                    <select value={buyMethod} onChange={e => setBuyMethod(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`}>
+                      <option value="bank_transfer">Banka Havalesi / EFT</option>
+                      <option value="papara">Papara</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="other">Diğer</option>
+                    </select>
+                  </div>
+                  <input type="text" value={buySenderName} onChange={e => setBuySenderName(e.target.value)} placeholder="Gönderen ad soyad (opsiyonel)" className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+                  <input type="text" value={buyTxnId} onChange={e => setBuyTxnId(e.target.value)} placeholder="Dekont / işlem no (opsiyonel)" className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+                  <input type="text" value={buyNotes} onChange={e => setBuyNotes(e.target.value)} placeholder="Not (opsiyonel)" className={`w-full px-3 py-2 rounded-lg border text-sm ${inputBg}`} />
+
+                  <button
+                    onClick={handlePurchase}
+                    disabled={buySubmitting || !(Number(buyJeton) > 0)}
+                    className={`w-full px-4 py-2 rounded-lg ${btnPrimary} text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-50`}
+                  >
+                    {buySubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                    Sipariş Oluştur
+                  </button>
+                  <p className={`text-[10px] ${textSecondary} flex items-start gap-1`}>
+                    <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0 text-orange-400" />
+                    Sipariş oluşturduktan sonra ödemenizi yapın. Yönetici onayından sonra jeton ajans cüzdanınıza eklenir. Aynı anda en fazla 3 bekleyen siparişiniz olabilir.
+                  </p>
+                </div>
+              </div>
+
+              {/* Jeton alım siparişleri */}
+              <div className={`${cardBg} rounded-xl p-4`}>
+                <h3 className={`font-medium ${textPrimary} text-sm mb-3 flex items-center gap-2`}>
+                  <Clock className={`w-4 h-4 ${accentColor}`} /> Jeton Alım Siparişleri
+                </h3>
+                {buyOrders.length === 0 ? (
+                  <div className={`text-xs ${textSecondary} text-center py-4`}>Henüz sipariş yok.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {buyOrders.map((o: any) => {
+                      const stLabels: Record<string, string> = { pending: 'Beklemede', corrected: 'Düzeltildi', approved: 'Onaylandı', completed: 'Tamamlandı', rejected: 'Reddedildi', cancelled: 'İptal edildi' }
+                      const stColor: Record<string, string> = { pending: 'text-yellow-400', corrected: 'text-blue-400', approved: 'text-green-400', completed: 'text-green-400', rejected: 'text-red-400', cancelled: 'text-gray-400' }
+                      const canCancel = o.status === 'pending' || o.status === 'corrected'
+                      return (
+                        <div key={o.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-black/20">
+                          <div className="min-w-0">
+                            <div className={`text-xs font-medium ${textPrimary}`}>{Number(o.requestedAmount ?? 0).toLocaleString('tr-TR')} J • {Number(o.amount ?? 0).toFixed(2)} ₺</div>
+                            <div className={`text-[10px] ${textSecondary} overflow-hidden text-ellipsis whitespace-nowrap`}>
+                              {new Date(o.createdAt).toLocaleString('tr-TR')}
+                              {o.jetonLoaded ? ' • Yüklendi' : ''}
+                              {o.adminNote ? ` • ${o.adminNote}` : ''}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0 flex items-center gap-2">
+                            <span className={`text-[11px] font-medium ${stColor[o.status] || textSecondary}`}>{stLabels[o.status] || o.status}</span>
+                            {canCancel && (
+                              <button onClick={() => handleCancelOrder(o.id)} className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5"><X className="w-3 h-3" /> İptal</button>
+                            )}
                           </div>
                         </div>
                       )
