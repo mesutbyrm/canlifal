@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "canlifal-backend": {
+      "command": "node",
+      "args": [
+        "/ABSOLUTE/PATH/TO/fortune_telling_platform/mcp-server/index.mjs"
+      ]
+    }
+  }
+}

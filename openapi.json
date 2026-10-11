@@ -1,0 +1,596 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CanLıFal API",
+    "description": "CanLıFal mobil uygulama (Flutter) ve web backend API dokümantasyonu",
+    "version": "1.0.0",
+    "contact": { "name": "CanLıFal Dev Team" }
+  },
+  "servers": [
+    { "url": "https://canlifal.com/api", "description": "Production" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Mobile JWT token. Access token: 7 gün, Refresh token: 30 gün. Header: Authorization: Bearer <accessToken>"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "name": { "type": "string" },
+          "username": { "type": "string" },
+          "phone": { "type": "string" },
+          "image": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["user", "admin", "yonetici", "moderator", "falci", "finans"] },
+          "credits": { "type": "integer" },
+          "jetonBalance": { "type": "integer" },
+          "cfcBalance": { "type": "integer" },
+          "membership": { "type": "string", "nullable": true },
+          "membershipExpiresAt": { "type": "string", "format": "date-time", "nullable": true },
+          "preferredLanguage": { "type": "string" },
+          "bio": { "type": "string", "nullable": true },
+          "birthDate": { "type": "string", "format": "date-time", "nullable": true },
+          "birthTime": { "type": "string", "nullable": true },
+          "zodiacSign": { "type": "string", "nullable": true },
+          "risingSign": { "type": "string", "nullable": true },
+          "favoriteTeam": { "type": "string", "nullable": true },
+          "level": { "type": "integer" },
+          "xp": { "type": "integer" },
+          "loginStreak": { "type": "integer" },
+          "referralCode": { "type": "string" },
+          "referralCreditsEarned": { "type": "integer" },
+          "totalTimeSpentMinutes": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "specialBadges": { "type": "array", "items": { "type": "string" } },
+          "profileEffect": { "type": "string", "nullable": true },
+          "withdrawalLimit": { "type": "number" },
+          "followersCount": { "type": "integer" },
+          "followingCount": { "type": "integer" }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "VideoStream": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "streamId": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "type": "string", "enum": ["live", "ended"] },
+          "isLive": { "type": "boolean" },
+          "category": { "type": "string" },
+          "viewers": { "type": "integer" },
+          "watching": { "type": "integer" },
+          "viewerCount": { "type": "integer" },
+          "likeCount": { "type": "integer" },
+          "broadcasterId": { "type": "string" },
+          "hostUserId": { "type": "string" },
+          "streamerName": { "type": "string" },
+          "thumbnailUrl": { "type": "string", "nullable": true },
+          "coverUrl": { "type": "string", "nullable": true },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "image": { "type": "string" }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "GiftType": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "icon": { "type": "string" },
+          "price": { "type": "integer" },
+          "animationUrl": { "type": "string", "nullable": true },
+          "category": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "sortOrder": { "type": "integer" }
+        }
+      },
+      "MembershipPackage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "tier": { "type": "string" },
+          "priceType": { "type": "string" },
+          "price": { "type": "number" },
+          "currency": { "type": "string" },
+          "durationDays": { "type": "integer" },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "bonusJetons": { "type": "integer" },
+          "discountPercent": { "type": "number" },
+          "prioritySupport": { "type": "boolean" },
+          "exclusiveBadge": { "type": "string", "nullable": true },
+          "isFeatured": { "type": "boolean" },
+          "sortOrder": { "type": "integer" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "description": "Hata mesajı (Türkçe)" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/mobile-login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "E-posta ile giriş",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Başarılı", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokens" } } } },
+          "401": { "description": "Hatalı şifre" },
+          "429": { "description": "Rate limit" }
+        }
+      }
+    },
+    "/auth/mobile-register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Yeni hesap oluştur",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "name", "username", "birthDate", "birthTime"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "name": { "type": "string" },
+                  "username": { "type": "string" },
+                  "birthDate": { "type": "string", "format": "date" },
+                  "birthTime": { "type": "string", "example": "14:30" },
+                  "referralCode": { "type": "string" },
+                  "preferredLanguage": { "type": "string", "default": "tr" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Hesap oluşturuldu", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokens" } } } },
+          "400": { "description": "Geçersiz veri veya mevcut hesap" }
+        }
+      }
+    },
+    "/auth/mobile-google": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Google ile giriş/kayıt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["idToken"],
+                "properties": {
+                  "idToken": { "type": "string", "description": "Google Sign-In ID token" },
+                  "referralCode": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Başarılı", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/AuthTokens" }, { "type": "object", "properties": { "isNewUser": { "type": "boolean" } } }] } } } }
+        }
+      }
+    },
+    "/auth/mobile-tiktok": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "TikTok ile giriş/kayıt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": { "type": "string" },
+                  "redirectUri": { "type": "string" },
+                  "referralCode": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Başarılı" } }
+      }
+    },
+    "/auth/mobile-refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Token yenile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Yeni token çifti", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokens" } } } },
+          "401": { "description": "Geçersiz refresh token" }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Kendi profilim (kapsamlı)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "Auth gerekli" }
+        }
+      },
+      "patch": {
+        "tags": ["User"],
+        "summary": "Profil güncelle",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "username": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "bio": { "type": "string" },
+                  "birthDate": { "type": "string" },
+                  "birthTime": { "type": "string" },
+                  "zodiacSign": { "type": "string" },
+                  "favoriteTeam": { "type": "string" },
+                  "preferredLanguage": { "type": "string" },
+                  "image": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Güncellendi" } }
+      }
+    },
+    "/video-streams": {
+      "get": {
+        "tags": ["Video Streams"],
+        "summary": "Canlı yayın listesi",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 30, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "streams": { "type": "array", "items": { "$ref": "#/components/schemas/VideoStream" } },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "total": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Video Streams"],
+        "summary": "Yeni yayın başlat",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "category": { "type": "string" },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "thumbnailUrl": { "type": "string" },
+                  "coverUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Yayın oluşturuldu" } }
+      }
+    },
+    "/video-streams/{streamId}/stream": {
+      "get": {
+        "tags": ["SSE / Real-Time"],
+        "summary": "Canlı yayın SSE event stream",
+        "description": "text/event-stream döner. Events: streamMessage, viewerCount, gift, streamEnded, djEvent",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "streamId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "SSE stream", "content": { "text/event-stream": {} } }
+        }
+      }
+    },
+    "/chat/rooms/{roomId}/stream": {
+      "get": {
+        "tags": ["SSE / Real-Time"],
+        "summary": "Sohbet odası SSE event stream",
+        "description": "text/event-stream döner. Events: message, typing, presence, gift, songRequest, djEvent",
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "SSE stream" } }
+      }
+    },
+    "/devices/fcm": {
+      "post": {
+        "tags": ["Push Notification"],
+        "summary": "FCM push token kaydet",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token"],
+                "properties": {
+                  "token": { "type": "string", "description": "Firebase messaging token" },
+                  "platform": { "type": "string", "enum": ["android", "ios", "web"] },
+                  "appVersion": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "deviceId": { "type": "string" } } } } } }
+        }
+      },
+      "delete": {
+        "tags": ["Push Notification"],
+        "summary": "FCM push token sil (logout)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "required": ["token"], "properties": { "token": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Silindi" } }
+      }
+    },
+    "/upload/presigned": {
+      "post": {
+        "tags": ["File Upload"],
+        "summary": "S3 presigned upload URL al",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fileName", "contentType"],
+                "properties": {
+                  "fileName": { "type": "string" },
+                  "contentType": { "type": "string" },
+                  "isPublic": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadUrl": { "type": "string", "description": "PUT ile dosya yüklenecek URL" },
+                    "cloud_storage_path": { "type": "string", "description": "DB'ye kaydedilecek dosya yolu" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agora/token": {
+      "post": {
+        "tags": ["WebRTC"],
+        "summary": "Agora RTC token al",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["channelName"],
+                "properties": {
+                  "channelName": { "type": "string" },
+                  "role": { "type": "string", "enum": ["host", "audience"] },
+                  "uid": { "type": "integer", "default": 0 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" },
+                    "uid": { "type": "integer" },
+                    "channelName": { "type": "string" },
+                    "appId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trtc/usersig": {
+      "post": {
+        "tags": ["WebRTC"],
+        "summary": "TRTC UserSig al",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": { "type": "string" },
+                  "roomId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sdkAppId": { "type": "integer" },
+                    "userId": { "type": "string" },
+                    "userSig": { "type": "string" },
+                    "roomId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/membership/packages": {
+      "get": {
+        "tags": ["Membership"],
+        "summary": "Üyelik paketleri",
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MembershipPackage" } } } } }
+        }
+      }
+    },
+    "/gifts/types": {
+      "get": {
+        "tags": ["Gifts"],
+        "summary": "Hediye türleri",
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/GiftType" } } } } } }
+      }
+    },
+    "/credit-packages": {
+      "get": {
+        "tags": ["Payment"],
+        "summary": "Kredi paketleri",
+        "responses": { "200": { "description": "Kredi paketleri listesi" } }
+      }
+    },
+    "/payment-methods": {
+      "get": {
+        "tags": ["Payment"],
+        "summary": "Ödeme yöntemleri",
+        "responses": { "200": { "description": "Aktif ödeme yöntemleri" } }
+      }
+    },
+    "/fortune-tellers": {
+      "get": {
+        "tags": ["Fortune Tellers"],
+        "summary": "Falcı listesi",
+        "responses": { "200": { "description": "Falcı listesi" } }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Bildirimler",
+        "security": [{ "BearerAuth": [] }],
+        "responses": { "200": { "description": "Bildirim listesi" } }
+      }
+    },
+    "/chat/rooms": {
+      "get": {
+        "tags": ["Chat Rooms"],
+        "summary": "Sohbet odaları listesi",
+        "responses": { "200": { "description": "Oda listesi" } }
+      }
+    },
+    "/daily-login": {
+      "get": {
+        "tags": ["Rewards"],
+        "summary": "Günlük giriş durumu",
+        "security": [{ "BearerAuth": [] }],
+        "responses": { "200": { "description": "Giriş ödülü bilgisi" } }
+      },
+      "post": {
+        "tags": ["Rewards"],
+        "summary": "Günlük giriş ödülü al",
+        "security": [{ "BearerAuth": [] }],
+        "responses": { "200": { "description": "Ödül alındı" } }
+      }
+    }
+  }
+}

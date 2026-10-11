@@ -1,0 +1,267 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
+import { createNotificationWithPush } from '@/lib/notify';
+import { triggerEventAnnouncement } from '@/lib/event-announcement';
+import { getCachedPlatformSetting } from '@/lib/cache';
+import { emitTellerEvent, emitRoomEvent } from '@/lib/room-events';
+import { processAgencyCommission } from '@/lib/agency-commission';
+import { roomIdForSession, transitionLiveSession, pendingCutoff } from '@/lib/live-session-lifecycle';
+
+export const dynamic = 'force-dynamic';
+
+// Update session status (accept, complete, cancel)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { sessionId: string } }
+) {
+  try {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { action } = body;
+
+    if (!['accept', 'complete', 'cancel', 'reject'].includes(action)) {
+      return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 });
+    }
+
+    // Get the session
+    const liveSession = await prisma.liveSession.findUnique({
+      where: { id: params.sessionId },
+      include: {
+        teller: true,
+        user: { select: { id: true, name: true, credits: true, role: true } }
+      }
+    });
+
+    if (!liveSession) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    // Falcı tüm işlemleri yapar. Danışan yalnız kendi BEKLEYEN isteğini iptal
+    // edebilir (mobil bekleme ekranı süre dolunca / vazgeçince) — önceden 403
+    // dönüyordu, istek `pending` kalıp jeton iade edilmiyordu (FORTUNE-002).
+    const isTeller = liveSession.teller.userId === authUser.id;
+    const isClientCancel =
+      liveSession.userId === authUser.id && action === 'cancel';
+    if (!isTeller && !isClientCancel) {
+      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
+    }
+    if (isClientCancel && !isTeller && liveSession.status !== 'pending') {
+      return NextResponse.json({ error: 'Session is not pending' }, { status: 409 });
+    }
+
+    let updateData: Record<string, unknown> = {};
+    let notificationMessage = '';
+
+    switch (action) {
+      case 'accept':
+        if (liveSession.status === 'active' && liveSession.roomId) {
+          // İdempotent: aynı falcının tekrar kabulü aynı oda ile döner.
+          return NextResponse.json(liveSession);
+        }
+        if (liveSession.status !== 'pending') {
+          return NextResponse.json({ error: 'Session is not pending' }, { status: 409 });
+        }
+        if (liveSession.createdAt < pendingCutoff()) {
+          return NextResponse.json({ error: 'Session request expired' }, { status: 410 });
+        }
+        
+        // Get session duration settings (cached)
+        const durationStr = await getCachedPlatformSetting('session_duration_minutes', '5');
+        const defaultDuration = parseInt(durationStr);
+        
+        // Get credits per minute (cached)
+        const cpmStr = await getCachedPlatformSetting('credits_per_minute', '10');
+        const creditsPerMinute = parseInt(cpmStr);
+        
+        // Deterministik oda kimliği — çift kabulde iki ayrı oda oluşmaz.
+        const roomId = roomIdForSession(liveSession.id);
+        
+        updateData = {
+          status: 'active',
+          startedAt: new Date(),
+          roomId,
+          maxMinutes: defaultDuration,
+          creditsPerMinute,
+          lastPingAt: new Date()
+        };
+        
+        notificationMessage = `${liveSession.teller.displayName} randevu talebinizi kabul etti! Canlı sohbet odasına girin.`;
+        break;
+
+      case 'complete':
+        if (liveSession.status !== 'active') {
+          return NextResponse.json({ error: 'Session is not active' }, { status: 400 });
+        }
+        updateData = {
+          status: 'completed',
+          endedAt: new Date()
+        };
+        if (!(await transitionLiveSession({
+          sessionId: liveSession.id,
+          from: ['active'],
+          data: updateData,
+        }))) {
+          return NextResponse.json({ error: 'Session is not active' }, { status: 409 });
+        }
+        
+        // Get commission rate from settings
+        const commRateStr = await getCachedPlatformSetting('commission_rate', '20');
+        const commissionRate = parseInt(commRateStr);
+        const commissionAmount = Math.floor(liveSession.creditsCharged * commissionRate / 100);
+        const tellerEarnings = liveSession.creditsCharged - commissionAmount;
+        
+        // Update teller's total sessions and earnings (after commission)
+        await prisma.liveFortuneTeller.update({
+          where: { id: liveSession.tellerId },
+          data: {
+            totalSessions: { increment: 1 },
+            totalEarnings: { increment: tellerEarnings }
+          }
+        });
+        
+        // BÖLÜM 21 / A3 §18 — falcı geliri ajans komisyonu.
+        // Kural varsayılan olarak KAPALI; admin açmadıkça hiçbir kesinti olmaz.
+        processAgencyCommission({
+          userId: liveSession.teller.userId,
+          earnedAmount: tellerEarnings,
+          sourceType: 'fortune',
+          sourceId: liveSession.id,
+        }).catch(() => {})
+
+        // Close chat session
+        await prisma.tellerChatSession.updateMany({
+          where: { liveSessionId: liveSession.id },
+          data: { status: 'closed', closedAt: new Date() }
+        });
+        
+        notificationMessage = `${liveSession.teller.displayName} ile seansınız tamamlandı. Değerlendirmenizi bekliyoruz!`;
+        
+        // Trigger fortune reading event announcement
+        {
+          const userName = (liveSession.user as any)?.displayName || (liveSession.user as any)?.name || 'Bir kullanıcı'
+          const fortuneType = liveSession.fortuneType || 'fal'
+          triggerEventAnnouncement('fortune_reading', { user: userName, fortune: fortuneType }, (liveSession.user as any)?.id, userName, (liveSession.user as any)?.role || 'free').catch(() => {})
+        }
+        break;
+
+      case 'cancel':
+      case 'reject':
+        if (liveSession.status === 'completed') {
+          return NextResponse.json({ error: 'Cannot cancel completed session' }, { status: 400 });
+        }
+        updateData = {
+          status: 'cancelled',
+          endedAt: new Date()
+        };
+        
+        // Atomik iptal + iade: yalnız geçişi yapan çağrı iade eder (önceden
+        // iki iptal / iptal edilmişi tekrar iptal = çift iade).
+        if (!(await transitionLiveSession({
+          sessionId: liveSession.id,
+          from: ['pending', 'active'],
+          data: updateData,
+          refundTo: liveSession.userId,
+          refundAmount: liveSession.creditsCharged,
+        }))) {
+          return NextResponse.json({ error: 'Session already closed' }, { status: 409 });
+        }
+        
+        notificationMessage = action === 'reject'
+          ? `${liveSession.teller.displayName} randevu talebinizi reddetti. Jetonlarınız iade edildi.`
+          : `${liveSession.teller.displayName} randevu talebinizi iptal etti. Jetonlarınız iade edildi.`;
+        break;
+    }
+
+    if (action === 'accept') {
+      const accepted = await transitionLiveSession({
+        sessionId: liveSession.id,
+        from: ['pending'],
+        data: updateData,
+      });
+      if (!accepted) {
+        const current = await prisma.liveSession.findUnique({ where: { id: liveSession.id } });
+        if (current?.status === 'active' && current.roomId) {
+          return NextResponse.json(current);
+        }
+        return NextResponse.json({ error: 'Session is not pending' }, { status: 409 });
+      }
+      // Sohbet oturumu — tekrar denemede benzersiz kısıtı patlamasın.
+      await prisma.tellerChatSession.upsert({
+        where: { liveSessionId: liveSession.id },
+        create: {
+          liveSessionId: liveSession.id,
+          userId: liveSession.userId,
+          tellerId: liveSession.tellerId,
+          status: 'active'
+        },
+        update: { status: 'active' }
+      });
+    }
+
+    // Geçiş yukarıda atomik yapıldı; güncel kaydı döndür.
+    const updatedSession = await prisma.liveSession.findUnique({
+      where: { id: params.sessionId }
+    });
+
+    // Kullanıcının oda akışına (SSE) gerçek zamanlı durum olayı gönder.
+    // Kabul anında olay yayınlanmadığı için kullanıcı tarafı seansın
+    // başladığını geç öğreniyordu.
+    if (action === 'accept') {
+      emitRoomEvent(params.sessionId, 'system', {
+        type: 'session_started',
+        status: 'active',
+        sessionId: liveSession.id,
+        roomId: (updateData as any).roomId,
+        maxMinutes: (updateData as any).maxMinutes,
+        creditsPerMinute: (updateData as any).creditsPerMinute
+      })
+    } else if (action === 'complete' || action === 'cancel' || action === 'reject') {
+      emitRoomEvent(params.sessionId, 'session_ended', {
+        type: 'session_ended',
+        status: action === 'complete' ? 'completed' : 'cancelled',
+        sessionId: liveSession.id,
+        reason: action
+      })
+    }
+
+    // Emit SSE event for teller's stream (cancel/reject removes from pending list)
+    if (action === 'cancel' || action === 'reject') {
+      emitTellerEvent(liveSession.tellerId, 'session_cancelled', {
+        sessionId: liveSession.id,
+        action
+      });
+    }
+
+    // Send notification to the user
+    // Kabul yanıtı push/DB bildirimini beklemesin.
+    // Danışan kendi isteğini iptal ettiyse kendisine "falcı iptal etti" gitmez.
+    if (!(isClientCancel && !isTeller)) void createNotificationWithPush({
+      userId: liveSession.userId,
+      type: 'session_update',
+      title: action === 'accept' ? 'Randevu Kabul Edildi' 
+           : action === 'complete' ? 'Seans Tamamlandı'
+           : action === 'reject' ? 'Randevu Reddedildi'
+           : 'Randevu İptal Edildi',
+      message: notificationMessage,
+      fromUserId: authUser.id,
+      fromUserName: liveSession.teller.displayName,
+      data: JSON.stringify({
+        sessionId: liveSession.id,
+        tellerId: liveSession.tellerId,
+        action
+      })
+    }).catch((e) => console.error('[session PATCH] notify error:', e));
+
+    return NextResponse.json(updatedSession);
+  } catch (error) {
+    console.error('Session action error:', error);
+    return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
+  }
+}

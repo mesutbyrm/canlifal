@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="CFC">
+  <defs>
+    <linearGradient id="cfcRim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D9C6FF"/>
+      <stop offset="45%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#5B21B6"/>
+    </linearGradient>
+    <linearGradient id="cfcFace" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#3B1D6E"/>
+      <stop offset="55%" stop-color="#2A1050"/>
+      <stop offset="100%" stop-color="#170632"/>
+    </linearGradient>
+    <radialGradient id="cfcGlow" cx="0.35" cy="0.28" r="0.72">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="32" cy="32" r="30" fill="url(#cfcRim)"/>
+  <circle cx="32" cy="32" r="25" fill="url(#cfcFace)"/>
+  <circle cx="32" cy="32" r="25" fill="none" stroke="#C4B5FD" stroke-width="1" stroke-opacity="0.6"/>
+
+  <g fill="#E9D5FF">
+    <circle cx="18.5" cy="19.5" r="1.1"/>
+    <circle cx="45.5" cy="20.5" r="0.9"/>
+    <circle cx="16.5" cy="41" r="0.9"/>
+    <circle cx="47" cy="43" r="1.1"/>
+    <circle cx="32" cy="14.5" r="0.8"/>
+  </g>
+
+  <path d="M32 12.5 L33.9 22.4 L42.2 17.8 L37.6 26.1 L47.5 28 L37.6 29.9 L42.2 38.2 L33.9 33.6 L32 43.5 L30.1 33.6 L21.8 38.2 L26.4 29.9 L16.5 28 L26.4 26.1 L21.8 17.8 L30.1 22.4 Z"
+        fill="#A78BFA" fill-opacity="0.22"/>
+
+  <path d="M24 44 A 13 13 0 1 1 42 30" fill="none" stroke="#F5C542" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.85"/>
+  <path d="M40.5 22.5 A 12 12 0 0 0 24.5 22.5 A 14.5 14.5 0 0 1 40.5 22.5 Z" fill="#F5C542" fill-opacity="0.25"/>
+
+  <g transform="translate(0,1)">
+    <path d="M27.8 25.6 a7.2 7.2 0 1 0 0 12.8" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M31.6 26 h7.4 M31.6 32 h5.8" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M31.6 26 v12.4" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="32" cy="32" r="30" fill="url(#cfcGlow)"/>
+</svg>

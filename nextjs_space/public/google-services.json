@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "24667749197",
+    "project_id": "canlifal-android",
+    "storage_bucket": "canlifal-android.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:24667749197:android:e220e714f4c5ff0aae1504",
+        "android_client_info": {
+          "package_name": "com.mesutbyrm.canlifal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-750KWT8pIvF5P0DdVfDmRCMQM90zssM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

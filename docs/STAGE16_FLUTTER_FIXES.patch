@@ -1,0 +1,1548 @@
+diff --git a/lib/core/network/api_backend_router.dart b/lib/core/network/api_backend_router.dart
+--- a/lib/core/network/api_backend_router.dart
++++ b/lib/core/network/api_backend_router.dart
+@@ -14,7 +14,6 @@
+   static ApiBackendKind resolve(String path, {String method = 'GET'}) {
+     final p = _normalizePath(path);
+     if (_isPkBackendPath(p)) return ApiBackendKind.game;
+-    if (_isVoiceRoomPkBackendPath(p)) return ApiBackendKind.game;
+     if (_isGiftBattleBackendPath(p)) return ApiBackendKind.game;
+     if (_isMembershipBackendPath(p)) return ApiBackendKind.game;
+     if (_isLiveGamesBackendPath(p)) return ApiBackendKind.game;
+@@ -33,12 +32,13 @@
+   /// Birleşik PK sistemi (Faz 1–3) — `canlifalapi.abacusai.app`.
+   static bool _isPkBackendPath(String path) => path.startsWith('/api/pk');
+ 
+-  /// Sesli oda PK'sı (`/api/chat/rooms/{id}/pk[...]`) yalnızca abacus'ta
+-  /// gerçek (canlifal.com null stub döndürüyor). Odanın kendisi (mesaj,
+-  /// katılımcı, hediye) ana sitede kalır — sadece `/pk` alt yolu yönlendirilir.
+-  static final RegExp _voicePkRe = RegExp(r'^/api/chat/rooms/[^/]+/pk(/|$)');
+-  static bool _isVoiceRoomPkBackendPath(String path) =>
+-      _voicePkRe.hasMatch(path);
++  // NOT: Sesli oda PK'sı (`/api/chat/rooms/{id}/pk[...]`) ANA backend'de
++  // çalışır. Production doğrulaması: canlifal.com `GET /api/chat/rooms/{id}/pk`
++  // → 200, `POST /api/chat/rooms/{id}/pk/score` → 405 (route mevcut, POST
++  // bekliyor); oyun backend'inde `/pk/score` → 404. Ayrıca SSE kanalı daima
++  // ana backend'e bağlandığı için PK olayları yalnızca ana backend'de
++  // üretildiğinde karşı tarafa ulaşır. Bu nedenle yönlendirme kuralı
++  // kaldırılmıştır.
+ 
+   /// Hediye savaşı / hedefi (`/api/gifts/battles`, `/api/gifts/goals`) yalnızca
+   /// abacus'ta var (canlifal.com 404). Hediye gönderimi katalog ana sitede.
+@@ -52,10 +52,12 @@
+   static bool _isMembershipBackendPath(String path) =>
+       path.startsWith('/api/membership');
+ 
+-  /// Üyelik planları + satın alma (`/api/membership/plans`, `/purchase`) modern
++  /// Yalnızca oyun backend'inde bulunan canlı yayın uçları.
++  /// `/api/live/pk` ve `/api/live/pk/score` ANA backend'dedir (oyun
++  /// backend'inde 404) — bu yüzden burada yer almaz. `/api/live/pk/active`
++  /// yalnızca oyun backend'inde 200 döner, `/api/live/guest/*` de öyle.
+   static bool _isLiveGamesBackendPath(String path) =>
+-      path == '/api/live/pk' ||
+-      path.startsWith('/api/live/pk/') ||
++      path.startsWith('/api/live/pk/active') ||
+       path.startsWith('/api/live/guest/');
+ 
+   /// Oyun **odası** uçları — Redis backend (Backend-2).
+diff --git a/lib/core/network/api_endpoints.dart b/lib/core/network/api_endpoints.dart
+--- a/lib/core/network/api_endpoints.dart
++++ b/lib/core/network/api_endpoints.dart
+@@ -362,9 +362,10 @@
+   static String chatRoomSongRequest(String roomId) =>
+       '/api/chat/rooms/$roomId/song-request';
+ 
+-  /// SongQueueService — şu an çalan şarkı.
+-  static String chatRoomCurrentSong(String roomId) =>
+-      '/api/chat/rooms/$roomId/current-song';
++  /// Şu an çalan şarkı — üretimde ayrı bir `current-song` ucu YOK (404).
++  /// Canonical kaynak `GET /api/chat/rooms/{roomId}/music` yanıtındaki
++  /// `nowPlaying` / düz `videoId` alanlarıdır.
++  static String chatRoomCurrentSong(String roomId) => chatRoomMusic(roomId);
+ 
+   /// SongQueueService — FIFO kuyruk.
+   static String chatRoomSongQueue(String roomId) =>
+@@ -522,7 +523,6 @@
+ 
+   /// Canlı PK (prod `/api/live/pk/*`) — games backend; `/api/pk/active` yedeği.
+   static const livePkActive = '/api/live/pk/active';
+-  static const livePkSweep = '/api/live/pk/sweep';
+ 
+   /// Çoklu yayın misafir listesi (public) — `?streamId=` opsiyonel.
+   static const liveGuestList = '/api/live/guest/list';
+@@ -568,9 +568,6 @@
+ 
+   static const musicSearch = '/api/music/search';
+ 
+-  static String chatRoomMusicStream(String roomId) =>
+-      '/api/chat/rooms/$roomId/music-stream';
+-
+   static const chatYoutubeStream = '/api/chat/youtube-stream';
+ 
+   /// Oturumlu kullanıcı profili (takipçi, bio, görsel — NextAuth çerezi).
+diff --git a/lib/core/network/dio_provider.dart b/lib/core/network/dio_provider.dart
+--- a/lib/core/network/dio_provider.dart
++++ b/lib/core/network/dio_provider.dart
+@@ -106,7 +106,15 @@
+       onError: (e, handler) async {
+         final refreshPath = _refreshPath();
+         final already = e.requestOptions.extra['_authRetry'] == true;
++        // Yalnızca ANA backend'den gelen 401'ler token yenilemeyi tetikler.
++        // Games origin ayrı bir kimlik doğrulama alanıdır; oradan gelen 401
++        // ana oturumun geçersiz olduğu anlamına gelmez (gereksiz refresh +
++        // oturum sıfırlanma riski).
++        final mainHost = Uri.parse(Env.apiBaseUrl).host;
++        final reqHost = e.requestOptions.uri.host;
++        final isMainOrigin = reqHost.isEmpty || reqHost == mainHost;
+         if (!already &&
++            isMainOrigin &&
+             e.response?.statusCode == 401 &&
+             e.requestOptions.path != refreshPath &&
+             e.requestOptions.path != ApiEndpoints.authLogout) {
+diff --git a/lib/features/live/data/datasources/live_api_remote_datasource.dart b/lib/features/live/data/datasources/live_api_remote_datasource.dart
+--- a/lib/features/live/data/datasources/live_api_remote_datasource.dart
++++ b/lib/features/live/data/datasources/live_api_remote_datasource.dart
+@@ -39,20 +39,6 @@
+     return const LiveGuestListSnapshot();
+   }
+ 
+-  /// `POST /api/live/pk/sweep` — zamanlanmış görev / admin; `x-cron-key` header.
+-  Future<bool> sweepPk({required String cronKey}) async {
+-    final key = cronKey.trim();
+-    if (key.isEmpty) {
+-      throw const ApiException('Cron anahtarı gerekli.');
+-    }
+-    final res = await _dio.safePost<dynamic>(
+-      ApiEndpoints.livePkSweep,
+-      data: const {},
+-      options: Options(headers: {'x-cron-key': key}),
+-    );
+-    final body = res.data;
+-    if (body is Map && body['ok'] == true) return true;
+-    if (body is Map && body['success'] == true) return true;
+-    return res.statusCode != null && res.statusCode! >= 200 && res.statusCode! < 300;
+-  }
++  // NOT: `POST /api/live/pk/sweep` her iki origin'de de 404 döndüğü için
++  // `sweepPk` istemciden kaldırıldı (sunucu tarafı zamanlanmış görev işi).
+ }
+diff --git a/lib/features/live/data/services/live_gift_socket_bridge.dart b/lib/features/live/data/services/live_gift_socket_bridge.dart
+--- a/lib/features/live/data/services/live_gift_socket_bridge.dart
++++ b/lib/features/live/data/services/live_gift_socket_bridge.dart
+@@ -1,134 +0,0 @@
+-import 'package:flutter/foundation.dart';
+-import 'package:socket_io_client/socket_io_client.dart' as io;
+-
+-import '../../../../core/config/env.dart';
+-import '../../../../core/network/live_debug_log.dart';
+-import '../../../gifts/domain/gift_payload_util.dart';
+-import '../../domain/entities/live_gift_event.dart';
+-import '../../domain/entities/live_stream_chat_message.dart';
+-import '../datasources/live_gifts_remote_datasource.dart';
+-
+-/// Socket.IO — canlı yayın: hediye, sohbet, izleyici, yayın sonu.
+-class LiveGiftSocketBridge {
+-  LiveGiftSocketBridge(this._remote);
+-
+-  final LiveGiftsRemoteDataSource _remote;
+-  io.Socket? _socket;
+-  String? _streamId;
+-
+-  bool get connected => _socket?.connected ?? false;
+-
+-  void connect({
+-    required String streamId,
+-    void Function(LiveGiftEvent event)? onEvent,
+-    void Function(LiveStreamChatMessage message)? onChat,
+-    void Function(int viewerCount)? onViewerCount,
+-    VoidCallback? onStreamEnded,
+-    void Function(Map<String, dynamic> battle)? onPkBattle,
+-  }) {
+-    _streamId = streamId;
+-    Future.microtask(() {
+-      try {
+-        _socket?.dispose();
+-        _socket = io.io(
+-          Env.siteOrigin,
+-          io.OptionBuilder()
+-              .setTransports(['websocket', 'polling'])
+-              .disableAutoConnect()
+-              .setTimeout(5000)
+-              .build(),
+-        );
+-        _socket!
+-          ..onConnect((_) {
+-            LiveDebugLog.log('socket.stream.join', {'streamId': streamId});
+-            _socket?.emit('joinStream', {'streamId': streamId});
+-          })
+-          ..onDisconnect((_) {
+-            LiveDebugLog.log('socket.stream.disconnect', {'streamId': streamId});
+-          })
+-          ..onReconnect((_) {
+-            LiveDebugLog.log('socket.stream.rejoin', {'streamId': streamId});
+-            _socket?.emit('joinStream', {'streamId': streamId});
+-          })
+-          ..on('gift', (data) => _emitGift(data, streamId, onEvent))
+-          ..on('giftSent', (data) => _emitGift(data, streamId, onEvent))
+-          ..on('streamMessage', (data) => _emitChat(data, onChat))
+-          ..on('chatMessage', (data) => _emitChat(data, onChat))
+-          ..on('message', (data) => _emitChat(data, onChat))
+-          ..on('viewerCount', (data) => _emitViewers(data, onViewerCount))
+-          ..on('viewerCountUpdated', (data) => _emitViewers(data, onViewerCount))
+-          ..on('streamEnded', (_) {
+-            LiveDebugLog.log('socket.stream.ended', {'streamId': streamId});
+-            onStreamEnded?.call();
+-          })
+-          ..on('STREAM_ENDED', (_) => onStreamEnded?.call())
+-          ..on('pkBattle', (data) => _emitPk(data, onPkBattle))
+-          ..on('pkBattleUpdated', (data) => _emitPk(data, onPkBattle))
+-          ..on('PK_UPDATED', (data) => _emitPk(data, onPkBattle))
+-          ..on('pk:score-update', (data) => _emitPk(data, onPkBattle))
+-          ..on('pk:end', (data) => _emitPk(data, onPkBattle))
+-          ..on('pk:winner', (data) => _emitPk(data, onPkBattle))
+-          ..connect();
+-      } catch (e) {
+-        debugPrint('Gift socket: $e');
+-      }
+-    });
+-  }
+-
+-  void _emitGift(
+-    dynamic data,
+-    String streamId,
+-    void Function(LiveGiftEvent event)? onEvent,
+-  ) {
+-    if (onEvent == null || data is! Map) return;
+-    final payload = GiftPayloadUtil.unwrap(Map<String, dynamic>.from(data));
+-    final ev = _remote.parseGiftEvent(payload, streamId: streamId);
+-    if (ev != null) onEvent(ev);
+-  }
+-
+-  void _emitChat(
+-    dynamic data,
+-    void Function(LiveStreamChatMessage message)? onChat,
+-  ) {
+-    if (onChat == null || data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    final raw = map['message'] is Map ? map['message'] : map;
+-    if (raw is! Map) return;
+-    final msg = LiveStreamChatMessage.fromJson(
+-      Map<String, dynamic>.from(raw),
+-    );
+-    if (msg.content.isNotEmpty) onChat(msg);
+-  }
+-
+-  void _emitPk(
+-    dynamic data,
+-    void Function(Map<String, dynamic> battle)? onPkBattle,
+-  ) {
+-    if (onPkBattle == null || data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    final raw = map['battle'] ?? map['pk'] ?? map;
+-    if (raw is Map) {
+-      onPkBattle(Map<String, dynamic>.from(raw));
+-    }
+-  }
+-
+-  void _emitViewers(
+-    dynamic data,
+-    void Function(int viewerCount)? onViewerCount,
+-  ) {
+-    if (onViewerCount == null || data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    final count = map['viewerCount'] ?? map['viewers'] ?? map['watching'];
+-    if (count is num) onViewerCount(count.round());
+-  }
+-
+-  void disconnect() {
+-    final id = _streamId;
+-    if (id != null && _socket?.connected == true) {
+-      _socket?.emit('leaveStream', {'streamId': id});
+-    }
+-    _socket?.dispose();
+-    _socket = null;
+-    _streamId = null;
+-  }
+-}
+diff --git a/lib/features/live/presentation/gifts/providers/live_gift_providers.dart b/lib/features/live/presentation/gifts/providers/live_gift_providers.dart
+--- a/lib/features/live/presentation/gifts/providers/live_gift_providers.dart
++++ b/lib/features/live/presentation/gifts/providers/live_gift_providers.dart
+@@ -4,7 +4,6 @@
+ import '../../../../gifts/presentation/providers/gift_providers.dart';
+ import '../../../data/datasources/live_gifts_remote_datasource.dart';
+ import '../../../data/services/live_gift_realtime_service.dart';
+-import '../../../data/services/live_gift_socket_bridge.dart';
+ import '../../../domain/entities/live_gift_type.dart';
+ import '../live_gift_controller.dart';
+ 
+@@ -12,10 +11,6 @@
+   return LiveGiftsRemoteDataSource(ref.watch(dioProvider));
+ });
+ 
+-final liveGiftSocketBridgeProvider = Provider<LiveGiftSocketBridge>((ref) {
+-  return LiveGiftSocketBridge(ref.watch(liveGiftsRemoteProvider));
+-});
+-
+ final liveGiftRealtimeProvider = Provider<LiveGiftRealtimeService>((ref) {
+   final svc = LiveGiftRealtimeService(ref.watch(liveGiftsRemoteProvider));
+   ref.onDispose(svc.dispose);
+diff --git a/lib/features/live/presentation/pages/live_pk_battle_page.dart b/lib/features/live/presentation/pages/live_pk_battle_page.dart
+--- a/lib/features/live/presentation/pages/live_pk_battle_page.dart
++++ b/lib/features/live/presentation/pages/live_pk_battle_page.dart
+@@ -78,19 +78,6 @@
+     } else {
+       await remote.loadStreamBattle(streamId);
+     }
+-    remote.connectSocket(streamId: streamId, battleId: ref.read(pkBattleRemoteProvider)?.id);
+-
+-    ref.read(liveGiftSocketBridgeProvider).connect(
+-      streamId: streamId,
+-      onEvent: _onGift,
+-      onPkBattle: (battle) {
+-        final parsed = PkBattleRemote.fromJson(battle);
+-        if (parsed.id.isEmpty) return;
+-        ref.read(pkBattleRemoteProvider.notifier).ingestSseBattle(parsed);
+-        ref.read(pkBattleProvider.notifier).applyRemoteBattle(parsed);
+-      },
+-    );
+-
+     ref.read(liveGiftControllerProvider).attach(
+       streamId: streamId,
+       receiverName: widget.session.streamerName ?? 'Yayıncı',
+@@ -109,7 +96,9 @@
+ 
+   void _pollPk() {
+     _pkPollTimer?.cancel();
+-    _pkPollTimer = Timer.periodic(const Duration(seconds: 3), (t) async {
++    // PK durumu birincil olarak SSE `pk` olayı ile gelir; bu zamanlayıcı
++    // yalnızca yedektir. 3 sn → 8 sn (gereksiz istek yükü azaltıldı).
++    _pkPollTimer = Timer.periodic(const Duration(seconds: 8), (t) async {
+       if (!mounted) {
+         t.cancel();
+         return;
+@@ -133,8 +122,6 @@
+   void dispose() {
+     _pkPollTimer?.cancel();
+     ref.read(liveGiftControllerProvider).detach();
+-    ref.read(liveGiftSocketBridgeProvider).disconnect();
+-    ref.read(pkBattleRemoteProvider.notifier).disconnectSocket();
+     _trtc.dispose();
+     super.dispose();
+   }
+diff --git a/lib/features/live/presentation/providers/live_room_providers.dart b/lib/features/live/presentation/providers/live_room_providers.dart
+--- a/lib/features/live/presentation/providers/live_room_providers.dart
++++ b/lib/features/live/presentation/providers/live_room_providers.dart
+@@ -104,7 +104,6 @@
+       _poll?.cancel();
+       _liveSocket?.disconnect();
+       _liveSocket = null;
+-      ref.read(liveGiftSocketBridgeProvider).disconnect();
+       ref.read(liveGiftRealtimeProvider).setSseActive(false);
+       ref.read(sseConnectionHubProvider).releaseVideoStream(streamId);
+       unawaited(ref.read(liveRemoteProvider).leaveVideoStream(streamId));
+@@ -300,13 +299,6 @@
+     );
+ 
+     _startLiveNamespaceSocket(streamId);
+-    ref.read(liveGiftSocketBridgeProvider).connect(
+-          streamId: streamId,
+-          onEvent: (ev) {
+-            GiftSyncLog.broadcast(streamId, 'socket', ev.id);
+-            ref.read(liveGiftRealtimeProvider).publishRemote(ev);
+-          },
+-        );
+   }
+ 
+   void _startLiveNamespaceSocket(String streamId) {
+diff --git a/lib/features/live_psychics/data/repositories/live_psychics_remote_datasource.dart b/lib/features/live_psychics/data/repositories/live_psychics_remote_datasource.dart
+--- a/lib/features/live_psychics/data/repositories/live_psychics_remote_datasource.dart
++++ b/lib/features/live_psychics/data/repositories/live_psychics_remote_datasource.dart
+@@ -570,11 +570,11 @@
+     final merged = <PsychicRequestEntity>[];
+     final seen = <String>{};
+     // Üretim kılavuz §9: GET /api/fortune-tellers/sessions (incoming yalnızca yerel ayna).
++    // NOT: `liveFalPending` ve `fortuneTellerIncomingSessions` uçları üretimde
++    // 404 döndüğü için listeden çıkarıldı (gereksiz istek + gecikme).
+     for (final path in [
+       ApiEndpoints.fortuneTellerSessionsWithStatus('pending'),
+       ApiEndpoints.fortuneTellerSessions,
+-      ApiEndpoints.liveFalPending,
+-      ApiEndpoints.fortuneTellerIncomingSessions,
+     ]) {
+       try {
+         final res = await _dio.safeGet<dynamic>(path);
+diff --git a/lib/features/voice_hub/data/datasources/chat_room_remote_datasource.dart b/lib/features/voice_hub/data/datasources/chat_room_remote_datasource.dart
+--- a/lib/features/voice_hub/data/datasources/chat_room_remote_datasource.dart
++++ b/lib/features/voice_hub/data/datasources/chat_room_remote_datasource.dart
+@@ -2123,9 +2123,11 @@
+       if (userId != null && userId.isNotEmpty) 'userId': userId,
+     };
+     await _withRoomKeyFallback(roomKey, alternateKey, (key) async {
++      // Üretimde `join-seat` ucu yok (404); canonical uç `seats` POST'udur.
++      // `join-seat` yalnızca eski sürüm uyumluluğu için geride tutulur.
+       for (final path in [
+-        ApiEndpoints.chatRoomJoinSeat(key),
+         seatsPath(key),
++        ApiEndpoints.chatRoomJoinSeat(key),
+       ]) {
+         try {
+           await _dio.safePost<dynamic>(path, data: body);
+diff --git a/lib/features/voice_hub/data/datasources/pk_battle_remote_datasource.dart b/lib/features/voice_hub/data/datasources/pk_battle_remote_datasource.dart
+--- a/lib/features/voice_hub/data/datasources/pk_battle_remote_datasource.dart
++++ b/lib/features/voice_hub/data/datasources/pk_battle_remote_datasource.dart
+@@ -5,7 +5,6 @@
+ import '../../../../core/network/api_exception.dart';
+ import '../../../../core/network/dio_provider.dart';
+ import '../../../../core/util/json_util.dart';
+-import '../../../live/data/datasources/live_field/live_field_api_remote_datasource.dart';
+ import '../../domain/pk/pk_battle_remote_models.dart';
+ 
+ class PkBattleRemoteDataSource {
+@@ -127,7 +126,10 @@
+     return const [];
+   }
+ 
+-  /// `POST /api/chat/rooms/{myRoomId}/pk` — kılavuz §9.3: `{ guestUserId, durationSec }`.
++  /// `POST /api/chat/rooms/{myRoomId}/pk`
++  /// Production contract: `{ action: 'create', targetRoomId, duration }`
++  /// (`duration` saniye cinsinden; sunucu varsayılanı 180).
++  /// Yanıt düz PKBattle nesnesidir.
+   Future<PkBattleRemote?> inviteVoiceRoom({
+     required String roomId,
+     String? alternateRoomId,
+@@ -135,110 +137,49 @@
+     String? opponentRoomId,
+     int durationSeconds = 180,
+   }) async {
+-    final guest = guestUserId.trim();
+     final oppRoom = opponentRoomId?.trim() ?? '';
+     if (oppRoom.isEmpty) {
+       throw const ApiException('PK daveti için rakip oda seçilmeli');
+     }
+     final duration = durationSeconds.clamp(60, 3600);
+ 
+-    // 1) Canonical chat-room PK (§9.3)
+-    final canonicalBodies = <Map<String, dynamic>>[
+-      if (guest.isNotEmpty)
+-        {
+-          'guestUserId': guest,
+-          'durationSec': duration,
+-        },
+-      {
+-        'guestUserId': guest.isNotEmpty ? guest : oppRoom,
+-        'durationSec': duration,
++    return _postPkAction(
++      roomId: roomId,
++      alternateRoomId: alternateRoomId,
++      body: {
++        'action': 'create',
+         'targetRoomId': oppRoom,
++        'duration': duration,
+       },
+-    ];
++    );
++  }
+ 
++  /// Tüm sesli oda PK aksiyonları tek uca gider:
++  /// `POST /api/chat/rooms/{roomId}/pk`.
++  /// Yalnızca 404/405 durumunda alternatif oda anahtarı denenir; iş kuralı
++  /// hataları (400/403) doğrudan yukarı fırlatılır — böylece "zaten aktif PK"
++  /// gibi meşru hatalarda gereksiz ikinci istek atılmaz.
++  Future<PkBattleRemote?> _postPkAction({
++    required String roomId,
++    String? alternateRoomId,
++    required Map<String, dynamic> body,
++  }) async {
+     ApiException? lastError;
+     for (final key in _roomKeyCandidates(roomId, alternateRoomId)) {
+-      for (final body in canonicalBodies) {
+-        try {
+-          final res = await _dio.safePost<dynamic>(
+-            ApiEndpoints.chatRoomPk(key),
+-            data: body,
+-          );
+-          final battle = _parseBattle(res.data);
+-          if (battle != null) return battle;
+-        } on ApiException catch (e) {
+-          lastError = e;
+-          if (e.statusCode == 404 || e.statusCode == 405) break;
+-          if (e.statusCode == 400 || e.statusCode == 422) continue;
+-          rethrow;
+-        }
+-      }
+-    }
+-
+-    // 2) Games backend yedek: POST /api/live/pk
+-    try {
+-      for (final key in _roomKeyCandidates(roomId, alternateRoomId)) {
+-        final liveBattle = await LiveFieldApiRemoteDataSource(_dio).pk.pkAction(
+-          action: 'create',
+-          roomId: key,
+-          targetRoomId: oppRoom,
+-          guestUserId: guest.isNotEmpty ? guest : null,
+-          durationSeconds: duration,
++      try {
++        final res = await _dio.safePost<dynamic>(
++          ApiEndpoints.chatRoomPk(key),
++          data: body,
+         );
+-        if (liveBattle != null && liveBattle.id.isNotEmpty) {
+-          final parsed = _parseBattle({
+-            'battle': {
+-              'id': liveBattle.id,
+-              'status': liveBattle.status ?? 'pending',
+-              'challengerScore': liveBattle.room1Score,
+-              'opponentScore': liveBattle.room2Score,
+-              'durationSeconds': liveBattle.durationSeconds ?? duration,
+-              'opponentVoiceRoomId': oppRoom,
+-              if (guest.isNotEmpty) 'opponentId': guest,
+-            },
+-          });
+-          if (parsed != null) return parsed;
+-        }
+-      }
+-    } on ApiException catch (e) {
+-      lastError = e;
+-    } catch (_) {}
+-
+-    // 3) Eski action:create gövdeleri (son çare)
+-    final durationStr = '$duration';
+-    final legacyBodies = <Map<String, dynamic>>[
+-      {
+-        'action': 'create',
+-        'targetRoomId': oppRoom,
+-        'durationSec': duration,
+-      },
+-      if (guest.isNotEmpty)
+-        {
+-          'action': 'create',
+-          'targetRoomId': oppRoom,
+-          'duration': durationStr,
+-          'guestUserId': guest,
+-        },
+-    ];
+-
+-    for (final key in _roomKeyCandidates(roomId, alternateRoomId)) {
+-      for (final body in legacyBodies) {
+-        try {
+-          final res = await _dio.safePost<dynamic>(
+-            ApiEndpoints.chatRoomPk(key),
+-            data: body,
+-          );
+-          final battle = _parseBattle(res.data);
+-          if (battle != null) return battle;
+-        } on ApiException catch (e) {
++        return _parseBattle(res.data);
++      } on ApiException catch (e) {
++        if (e.statusCode == 404 || e.statusCode == 405) {
+           lastError = e;
+-          if (e.statusCode == 404 || e.statusCode == 405) break;
+-          if (e.statusCode == 400 || e.statusCode == 422) continue;
+-          rethrow;
++          continue;
+         }
++        rethrow;
+       }
+     }
+-
+     if (lastError != null) throw lastError;
+     return null;
+   }
+@@ -255,8 +196,7 @@
+     return keys;
+   }
+ 
+-  /// `POST /api/chat/rooms/{roomId}/pk/{inviteId}/respond` — `{ action:"accept" }`.
+-  /// Kabulde `{ status:"accepted", battle:{...} }` döner.
++  /// `POST /api/chat/rooms/{roomId}/pk` — `{ action:'accept', battleId }`.
+   Future<PkBattleRemote?> acceptBattle(
+     String inviteId, {
+     required String roomId,
+@@ -269,7 +209,7 @@
+         action: 'accept',
+       );
+ 
+-  /// `POST /api/chat/rooms/{roomId}/pk/{inviteId}/respond` — `{ action:"reject" }`.
++  /// `POST /api/chat/rooms/{roomId}/pk` — `{ action:'reject', battleId }`.
+   Future<PkBattleRemote?> rejectBattle(
+     String inviteId, {
+     required String roomId,
+@@ -289,50 +229,45 @@
+     required String action,
+   }) async {
+     final synthesizedStatus = action == 'accept' ? 'active' : 'rejected';
+-    for (final key in _roomKeyCandidates(roomId, alternateRoomId)) {
+-      try {
+-        final res = await _dio.safePost<dynamic>(
+-          ApiEndpoints.chatRoomPkRespond(key, inviteId),
+-          data: {'action': action},
+-        );
+-        final battle = _parseBattle(res.data);
+-        if (battle != null) return battle;
+-        // Sunucu yalnızca { success: true } dönerse yerel durum üret.
+-        return PkBattleRemote.fromJson({
+-          'id': inviteId,
+-          'inviteId': inviteId,
+-          'status': synthesizedStatus,
+-          'battleType': 'voice_room',
+-          'voiceRoomId': key,
+-        });
+-      } on ApiException catch (e) {
+-        if (e.statusCode == 404 || e.statusCode == 405) continue;
+-        rethrow;
+-      }
+-    }
+-    return null;
++    final battle = await _postPkAction(
++      roomId: roomId,
++      alternateRoomId: alternateRoomId,
++      body: {'action': action, 'battleId': inviteId},
++    );
++    if (battle != null) return battle;
++    // Sunucu yalnızca { success: true } dönerse yerel durum üret.
++    return PkBattleRemote.fromJson({
++      'id': inviteId,
++      'inviteId': inviteId,
++      'status': synthesizedStatus,
++      'battleType': 'voice_room',
++      'voiceRoomId': roomId,
++    });
+   }
+ 
+-  /// `POST /api/chat/rooms/{roomId}/pk/{battleId}/end` — savaşı erken bitir.
++  /// `POST /api/chat/rooms/{roomId}/pk` — `{ action:'end', battleId }`.
+   Future<PkBattleRemote?> endBattle(
+     String battleId, {
+     required String roomId,
+     String? alternateRoomId,
+-  }) async {
+-    for (final key in _roomKeyCandidates(roomId, alternateRoomId)) {
+-      try {
+-        final res = await _dio.safePost<dynamic>(
+-          ApiEndpoints.chatRoomPkEnd(key, battleId),
+-        );
+-        final battle = _parseBattle(res.data);
+-        if (battle != null) return battle;
+-      } on ApiException catch (e) {
+-        if (e.statusCode == 404 || e.statusCode == 405) continue;
+-        rethrow;
+-      }
+-    }
+-    return null;
+-  }
++  }) =>
++      _postPkAction(
++        roomId: roomId,
++        alternateRoomId: alternateRoomId,
++        body: {'action': 'end', 'battleId': battleId},
++      );
++
++  /// `POST /api/chat/rooms/{roomId}/pk` — `{ action:'cancel', battleId }`.
++  Future<PkBattleRemote?> cancelBattle(
++    String battleId, {
++    required String roomId,
++    String? alternateRoomId,
++  }) =>
++      _postPkAction(
++        roomId: roomId,
++        alternateRoomId: alternateRoomId,
++        body: {'action': 'cancel', 'battleId': battleId},
++      );
+ 
+   Future<PkBattleRemote?> streamPkAction({
+     required String streamId,
+diff --git a/lib/features/voice_hub/data/services/pk_battle_socket_service.dart b/lib/features/voice_hub/data/services/pk_battle_socket_service.dart
+--- a/lib/features/voice_hub/data/services/pk_battle_socket_service.dart
++++ b/lib/features/voice_hub/data/services/pk_battle_socket_service.dart
+@@ -1,138 +0,0 @@
+-import 'package:flutter/foundation.dart';
+-import 'package:socket_io_client/socket_io_client.dart' as io;
+-
+-import '../../../../core/config/env.dart';
+-import '../../domain/pk/pk_battle_remote_models.dart';
+-import 'voice_room_socket_helper.dart';
+-
+-/// PK socket — pk:invite, pk:score-update, pk:end, …
+-class PkBattleSocketService {
+-  io.Socket? _socket;
+-  void Function(PkBattleRemote battle, String event)? _onUpdate;
+-  List<String> _roomKeys = const [];
+-  String? _streamId;
+-  String? _battleId;
+-
+-  void connect({
+-    String? roomId,
+-    String? alternateRoomId,
+-    List<String>? roomKeys,
+-    String? streamId,
+-    String? battleId,
+-    required void Function(PkBattleRemote battle, String event) onUpdate,
+-    Future<String?> Function()? accessToken,
+-  }) {
+-    _onUpdate = onUpdate;
+-    _streamId = streamId;
+-    _battleId = battleId;
+-    if (roomKeys != null && roomKeys.isNotEmpty) {
+-      _roomKeys = roomKeys
+-          .map((k) => k.trim())
+-          .where((k) => k.isNotEmpty)
+-          .toSet()
+-          .toList(growable: false);
+-    } else {
+-      _roomKeys = roomId == null
+-          ? const []
+-          : VoiceRoomSocketHelper.joinKeys(
+-              primary: roomId,
+-              alternate: alternateRoomId,
+-            );
+-    }
+-
+-    Future.microtask(() async {
+-      try {
+-        final token = accessToken != null ? await accessToken() : null;
+-        _socket?.dispose();
+-        _socket = io.io(
+-          Env.siteOrigin,
+-          VoiceRoomSocketHelper.baseOptions(bearerToken: token).build(),
+-        );
+-
+-        void bind(String name) {
+-          _socket!.on(name, (data) => _handleEvent(name, data));
+-        }
+-
+-        for (final ev in const [
+-          'pk:invite',
+-          'pk_invite',
+-          'PK_INVITE',
+-          'pkInvite',
+-          'pk:accept',
+-          'pk:reject',
+-          'pk:start',
+-          'pk:score-update',
+-          'pk:gift',
+-          'pk:end',
+-          'pk:winner',
+-          'pkBattle',
+-          'pkBattleUpdated',
+-          'PK_UPDATED',
+-        ]) {
+-          bind(ev);
+-        }
+-
+-        _socket!
+-          ..onConnect((_) => _joinChannels())
+-          ..onReconnect((_) => _joinChannels())
+-          ..connect();
+-      } catch (e) {
+-        debugPrint('PK socket: $e');
+-      }
+-    });
+-  }
+-
+-  void _joinChannels() {
+-    VoiceRoomSocketHelper.emitJoinRooms(_socket, _roomKeys);
+-    final sid = _streamId?.trim();
+-    if (sid != null && sid.isNotEmpty) {
+-      _socket?.emit('joinStream', {'streamId': sid});
+-    }
+-    final bid = _battleId?.trim();
+-    if (bid != null && bid.isNotEmpty) {
+-      _socket?.emit('joinPk', {'battleId': bid});
+-    }
+-  }
+-
+-  void _handleEvent(String eventName, dynamic data) {
+-    if (data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    final raw = map['battle'] ??
+-        map['pk'] ??
+-        map['invite'] ??
+-        map['pendingInvite'] ??
+-        map;
+-    PkBattleRemote? battle;
+-    if (raw is Map) {
+-      battle = PkBattleRemote.fromJson(Map<String, dynamic>.from(raw));
+-    }
+-    if (battle == null || battle.effectiveId.isEmpty) {
+-      battle = PkBattleRemote.fromJson(map);
+-    }
+-    if (battle.effectiveId.isEmpty) return;
+-    _battleId = battle.id;
+-    _onUpdate?.call(battle, map['event']?.toString() ?? eventName);
+-  }
+-
+-  void disconnect() {
+-    for (final roomId in _roomKeys) {
+-      if (_socket?.connected == true) {
+-        _socket?.emit('leaveRoom', {'roomId': roomId});
+-      }
+-    }
+-    final sid = _streamId?.trim();
+-    if (sid != null && sid.isNotEmpty && _socket?.connected == true) {
+-      _socket?.emit('leaveStream', {'streamId': sid});
+-    }
+-    final bid = _battleId?.trim();
+-    if (bid != null && bid.isNotEmpty && _socket?.connected == true) {
+-      _socket?.emit('leavePk', {'battleId': bid});
+-    }
+-    _socket?.dispose();
+-    _socket = null;
+-    _onUpdate = null;
+-    _roomKeys = const [];
+-    _streamId = null;
+-    _battleId = null;
+-  }
+-}
+diff --git a/lib/features/voice_hub/data/services/voice_room_gift_socket.dart b/lib/features/voice_hub/data/services/voice_room_gift_socket.dart
+--- a/lib/features/voice_hub/data/services/voice_room_gift_socket.dart
++++ b/lib/features/voice_hub/data/services/voice_room_gift_socket.dart
+@@ -1,230 +0,0 @@
+-import 'package:flutter/foundation.dart';
+-import 'package:socket_io_client/socket_io_client.dart' as io;
+-
+-import '../../../../core/config/env.dart';
+-import '../../domain/entities/chat_room_message.dart';
+-import '../../domain/entities/chat_room_presence.dart';
+-import '../../../gifts/domain/gift_payload_util.dart';
+-import '../../../live/data/datasources/live_gifts_remote_datasource.dart';
+-import '../../../live/domain/entities/live_gift_event.dart';
+-import 'voice_room_debug_log.dart';
+-import 'voice_room_socket_helper.dart';
+-
+-/// Üretim `ChatPresenceRow` — Flutter domain karşılığı.
+-typedef ChatPresenceRow = ChatRoomPresence;
+-
+-/// Sesli oda hediye + presence socket — `joinRoom` + olay dinleyicileri.
+-class VoiceRoomGiftSocket {
+-  VoiceRoomGiftSocket(this._remote);
+-
+-  final LiveGiftsRemoteDataSource _remote;
+-  io.Socket? _socket;
+-  void Function(LiveGiftEvent)? _onEvent;
+-  void Function(Map<String, dynamic> payload)? _onDjUpdate;
+-  void Function(ChatRoomMessage message)? _onMessage;
+-  void Function(List<ChatRoomPresence> users)? _onPresence;
+-  void Function(List<ChatPresenceRow> previous, List<ChatPresenceRow> current)?
+-      _onPresenceSnapshot;
+-  void Function(bool connected)? _onConnectionChanged;
+-  List<String> _joinKeys = const [];
+-  List<ChatPresenceRow> _lastPresence = const [];
+-  var _loggedPresencePayloadShape = false;
+-
+-  void connect({
+-    required String roomId,
+-    String? alternateRoomId,
+-    required void Function(LiveGiftEvent event) onEvent,
+-    void Function(Map<String, dynamic> payload)? onDjUpdate,
+-    void Function(ChatRoomMessage message)? onMessage,
+-    void Function(List<ChatRoomPresence> users)? onPresence,
+-    void Function(List<ChatPresenceRow> previous, List<ChatPresenceRow> current)?
+-        onPresenceSnapshot,
+-    void Function(bool connected)? onConnectionChanged,
+-    Future<String?> Function()? accessToken,
+-  }) {
+-    _onEvent = onEvent;
+-    _onDjUpdate = onDjUpdate;
+-    _onMessage = onMessage;
+-    _onPresence = onPresence;
+-    _onPresenceSnapshot = onPresenceSnapshot;
+-    _onConnectionChanged = onConnectionChanged;
+-    _lastPresence = const [];
+-    _loggedPresencePayloadShape = false;
+-    _joinKeys = VoiceRoomSocketHelper.joinKeys(
+-      primary: roomId,
+-      alternate: alternateRoomId,
+-    );
+-    Future.microtask(() async {
+-      try {
+-        final token = accessToken != null ? await accessToken() : null;
+-        _socket?.dispose();
+-        _socket = io.io(
+-          Env.siteOrigin,
+-          VoiceRoomSocketHelper.baseOptions(bearerToken: token).build(),
+-        );
+-        _socket!
+-          ..onConnect((_) {
+-            VoiceRoomDebugLog.log('socket.connect', {
+-              'rooms': _joinKeys.join(','),
+-              'kind': 'gift',
+-            });
+-            _onConnectionChanged?.call(true);
+-            VoiceRoomSocketHelper.emitJoinRooms(_socket, _joinKeys);
+-          })
+-          ..onDisconnect((_) {
+-            VoiceRoomDebugLog.log('socket.disconnect', {'kind': 'gift'});
+-            _onConnectionChanged?.call(false);
+-          })
+-          ..onReconnect((_) {
+-            VoiceRoomDebugLog.log('socket.reconnect', {'kind': 'gift'});
+-            _onConnectionChanged?.call(true);
+-            VoiceRoomSocketHelper.emitJoinRooms(_socket, _joinKeys);
+-          })
+-          ..on('gift', (data) => _emit(data, roomId))
+-          ..on('giftSent', (data) => _emit(data, roomId))
+-          ..on('chatMessage', (data) => _emitMessage(data))
+-          ..on('message', (data) => _emitMessage(data))
+-          ..on('roomMessage', (data) => _emitMessage(data))
+-          ..on('roomUsers', (data) => _emitPresenceSnapshot(data, 'roomUsers'))
+-          ..on(
+-            'presenceUpdated',
+-            (data) => _emitPresenceSnapshot(data, 'presenceUpdated'),
+-          )
+-          ..on('userJoined', (data) => _emitPresenceSnapshot(data, 'userJoined'))
+-          ..on('userLeft', (data) => _emitPresenceSnapshot(data, 'userLeft'))
+-          ..on('dj', (data) => _emitDj(data))
+-          ..on('music', (data) => _emitDj(data))
+-          ..on('roomVideo', (data) => _emitDj(data))
+-          ..on('QUEUE_UPDATED', (data) => _emitDj(data))
+-          ..on('CURRENT_SONG_CHANGED', (data) => _emitDj(data))
+-          ..connect();
+-        VoiceRoomDebugLog.log('socket.connecting', {
+-          'origin': Env.siteOrigin,
+-          'kind': 'gift',
+-        });
+-      } catch (e) {
+-        VoiceRoomDebugLog.log('socket.error', {
+-          'error': e.toString(),
+-          'kind': 'gift',
+-        });
+-        debugPrint('Voice gift socket: $e');
+-      }
+-    });
+-  }
+-
+-  void _emit(dynamic data, String roomId) {
+-    if (data is! Map) return;
+-    final payload = GiftPayloadUtil.unwrap(Map<String, dynamic>.from(data));
+-    final ev = _remote.parseGiftEvent(payload, streamId: roomId);
+-    if (ev != null) _onEvent?.call(ev);
+-  }
+-
+-  void _emitMessage(dynamic data) {
+-    if (data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    final raw = map['message'] is Map ? map['message'] : map;
+-    if (raw is! Map) return;
+-    final msg = ChatRoomMessage.fromJson(Map<String, dynamic>.from(raw));
+-    if (msg.content.isEmpty) return;
+-    VoiceRoomDebugLog.log('socket.message.recv', {'id': msg.id});
+-    _onMessage?.call(msg);
+-  }
+-
+-  void _emitPresenceSnapshot(dynamic data, String eventName) {
+-    if (data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    if (!_loggedPresencePayloadShape) {
+-      _loggedPresencePayloadShape = true;
+-      debugPrint(
+-        '[VoiceRoom] presence snapshot payload ($eventName): keys=${map.keys.toList()}',
+-      );
+-    }
+-    final next = _parsePresenceList(map, eventName: eventName);
+-    if (next == null) return;
+-    final previous = List<ChatPresenceRow>.from(_lastPresence);
+-    VoiceRoomDebugLog.log('socket.presence.snapshot', {
+-      'event': eventName,
+-      'prev': previous.length,
+-      'next': next.length,
+-    });
+-    _onPresenceSnapshot?.call(previous, next);
+-    _onPresence?.call(next);
+-    _lastPresence = next;
+-  }
+-
+-  /// `giftHub.ts` emit şekilleri: tam liste veya delta + users.
+-  List<ChatPresenceRow>? _parsePresenceList(
+-    Map<String, dynamic> map, {
+-    required String eventName,
+-  }) {
+-    final fromUsers = _rowsFromRawList(map['users'] ?? map['presence'] ?? map['members']);
+-    if (fromUsers != null && fromUsers.isNotEmpty) {
+-      return fromUsers;
+-    }
+-
+-    if (eventName == 'userJoined') {
+-      final joined = map['user'];
+-      if (joined is Map) {
+-        final row = ChatPresenceRow.fromJson(Map<String, dynamic>.from(joined));
+-        if (row.id.isEmpty) return null;
+-        final list = List<ChatPresenceRow>.from(_lastPresence);
+-        final idx = list.indexWhere((p) => p.id == row.id);
+-        if (idx >= 0) {
+-          list[idx] = row;
+-        } else {
+-          list.add(row);
+-        }
+-        return list;
+-      }
+-    }
+-
+-    if (eventName == 'userLeft') {
+-      final leftId = map['userId']?.toString();
+-      if (leftId != null && leftId.isNotEmpty) {
+-        return _lastPresence.where((p) => p.id != leftId).toList();
+-      }
+-    }
+-
+-    return fromUsers;
+-  }
+-
+-  List<ChatPresenceRow>? _rowsFromRawList(dynamic raw) {
+-    if (raw is! List) return null;
+-    final users = raw
+-        .whereType<Map>()
+-        .map((e) => ChatPresenceRow.fromJson(Map<String, dynamic>.from(e)))
+-        .where((u) => u.id.isNotEmpty)
+-        .toList();
+-    return users.isEmpty ? null : users;
+-  }
+-
+-  void _emitDj(dynamic data) {
+-    if (data is! Map) return;
+-    final map = Map<String, dynamic>.from(data);
+-    VoiceRoomDebugLog.log('socket.dj.recv', {
+-      'playing': map['playing'],
+-      'hasUrl': map['musicUrl'] != null,
+-      'type': map['type'],
+-    });
+-    _onDjUpdate?.call(map);
+-  }
+-
+-  void disconnect() {
+-    for (final roomId in _joinKeys) {
+-      if (_socket?.connected == true) {
+-        _socket?.emit('leaveRoom', {'roomId': roomId});
+-      }
+-    }
+-    _socket?.dispose();
+-    _socket = null;
+-    _onEvent = null;
+-    _onDjUpdate = null;
+-    _onMessage = null;
+-    _onPresence = null;
+-    _onPresenceSnapshot = null;
+-    _onConnectionChanged = null;
+-    _joinKeys = const [];
+-    _lastPresence = const [];
+-    _loggedPresencePayloadShape = false;
+-  }
+-}
+diff --git a/lib/features/voice_hub/music/data/datasources/room_music_remote_datasource.dart b/lib/features/voice_hub/music/data/datasources/room_music_remote_datasource.dart
+--- a/lib/features/voice_hub/music/data/datasources/room_music_remote_datasource.dart
++++ b/lib/features/voice_hub/music/data/datasources/room_music_remote_datasource.dart
+@@ -54,38 +54,9 @@
+     required String roomId,
+     required String videoId,
+   }) async {
++    // NOT: `POST /api/chat/rooms/{roomId}/music-stream` üretimde YOK (404).
++    // Tek gerçek kaynak `GET /api/chat/youtube-stream`.
+     String? raw;
+-    VoiceRoomMusicPipelineLog.apiResponse(
+-      endpoint: ApiEndpoints.chatRoomMusicStream(roomId),
+-      method: 'POST',
+-      caller: 'resolveStreamUrl',
+-      videoId: videoId,
+-    );
+-    try {
+-      final res = await _dio.post<dynamic>(
+-        ApiEndpoints.chatRoomMusicStream(roomId),
+-        data: {'videoId': videoId},
+-      );
+-      final data = res.data;
+-      if (data is Map) {
+-        raw = data['streamUrl']?.toString() ?? data['url']?.toString();
+-      }
+-      VoiceRoomMusicPipelineLog.apiResponse(
+-        endpoint: ApiEndpoints.chatRoomMusicStream(roomId),
+-        method: 'POST',
+-        caller: 'resolveStreamUrl.ok',
+-        statusCode: res.statusCode,
+-        musicUrl: raw,
+-        videoId: videoId,
+-      );
+-    } catch (e, st) {
+-      VoiceRoomMusicPipelineLog.justAudioError(
+-        e,
+-        st,
+-        phase: 'resolveStreamUrl.music-stream',
+-        url: videoId,
+-      );
+-    }
+     if (raw == null || !raw.startsWith('http')) {
+       try {
+         final res = await _dio.get<dynamic>(
+diff --git a/lib/features/voice_hub/presentation/basic/voice_room_basic_premium_section.dart b/lib/features/voice_hub/presentation/basic/voice_room_basic_premium_section.dart
+--- a/lib/features/voice_hub/presentation/basic/voice_room_basic_premium_section.dart
++++ b/lib/features/voice_hub/presentation/basic/voice_room_basic_premium_section.dart
+@@ -618,11 +618,6 @@
+       return;
+     }
+   }
+-  remote.connectSocket(
+-    roomId: roomKey,
+-    alternateRoomId: room.slug != roomKey ? room.slug : null,
+-    battleId: battle.id,
+-  );
+ }
+ 
+ Future<void> showVoiceRoomBasicIncomingPkInvite({
+diff --git a/lib/features/voice_hub/presentation/pages/pk_invite_page.dart b/lib/features/voice_hub/presentation/pages/pk_invite_page.dart
+--- a/lib/features/voice_hub/presentation/pages/pk_invite_page.dart
++++ b/lib/features/voice_hub/presentation/pages/pk_invite_page.dart
+@@ -125,11 +125,6 @@
+         return;
+       }
+       PkEventLog.requestSuccess(battleId: battle.id);
+-      remote.connectSocket(
+-        roomId: _roomKey,
+-        alternateRoomId: _altRoomKey,
+-        battleId: battle.id,
+-      );
+       if (!mounted) return;
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(
+diff --git a/lib/features/voice_hub/presentation/pages/voice_pk_battle_page.dart b/lib/features/voice_hub/presentation/pages/voice_pk_battle_page.dart
+--- a/lib/features/voice_hub/presentation/pages/voice_pk_battle_page.dart
++++ b/lib/features/voice_hub/presentation/pages/voice_pk_battle_page.dart
+@@ -105,11 +105,6 @@
+       }
+     }
+ 
+-    remote.connectSocket(
+-      roomId: roomKey,
+-      alternateRoomId: r.slug != roomKey ? r.slug : null,
+-      battleId: battle.id,
+-    );
+   }
+ 
+   void _startGiftRealtime() {
+@@ -154,7 +149,6 @@
+   @override
+   void dispose() {
+     _giftSub?.cancel();
+-    ref.read(pkBattleRemoteProvider.notifier).disconnectSocket();
+     super.dispose();
+   }
+ 
+diff --git a/lib/features/voice_hub/presentation/providers/chat_room_providers.dart b/lib/features/voice_hub/presentation/providers/chat_room_providers.dart
+--- a/lib/features/voice_hub/presentation/providers/chat_room_providers.dart
++++ b/lib/features/voice_hub/presentation/providers/chat_room_providers.dart
+@@ -23,7 +23,6 @@
+ import '../../data/services/voice_room_debug_log.dart';
+ import '../../data/services/voice_room_music_pipeline_log.dart';
+ import '../../data/services/chat_room_sse_service.dart';
+-import '../../data/services/voice_room_gift_socket.dart';
+ import '../../data/services/voice_seat_rest_service.dart';
+ import 'voice_gift_providers.dart';
+ import 'voice_room_audio_providers.dart';
+@@ -549,7 +548,6 @@
+         unawaited(_leavePresenceWithSeatClear());
+         unawaited(_stopTyping());
+         ref.read(sseConnectionHubProvider).releaseVoiceRoom(_roomKey);
+-        ref.read(voiceRoomGiftSocketProvider).disconnect();
+         ref.read(voiceRoomGiftRealtimeProvider).stop();
+         ref.read(pkBattleRemoteProvider.notifier).clear();
+       }
+@@ -762,12 +760,10 @@
+ 
+     // SSE, hediye, PK — anında kes.
+     ref.read(sseConnectionHubProvider).releaseVoiceRoom(_roomKey);
+-    ref.read(voiceRoomGiftSocketProvider).disconnect();
+     ref.read(voiceRoomGiftRealtimeProvider).stop();
+     ref.read(voiceRoomGiftRealtimeProvider).setSseActive(false);
+     ref.read(voiceRoomGiftRealtimeProvider).resetDedupeState();
+     ref.read(pkBattleRemoteProvider.notifier).clear();
+-    ref.read(pkBattleRemoteProvider.notifier).disconnectSocket();
+     ref.read(voiceRoomDiagnosticProvider.notifier).resetForRoom(_roomKey);
+     unawaited(_stopTyping());
+ 
+@@ -1203,8 +1199,8 @@
+ 
+   /// Sunucu presence snapshot diff — koltuk / konuşma / rol (`roomUsers` vb.).
+   void applyPresenceSnapshot(
+-    List<ChatPresenceRow> previous,
+-    List<ChatPresenceRow> current,
++    List<ChatRoomPresence> previous,
++    List<ChatRoomPresence> current,
+   ) {
+     final prevById = {for (final p in previous) p.id: p};
+     for (final row in current) {
+diff --git a/lib/features/voice_hub/presentation/providers/chat_room_providers_entry.dart b/lib/features/voice_hub/presentation/providers/chat_room_providers_entry.dart
+--- a/lib/features/voice_hub/presentation/providers/chat_room_providers_entry.dart
++++ b/lib/features/voice_hub/presentation/providers/chat_room_providers_entry.dart
+@@ -37,11 +37,6 @@
+       _startSse();
+       _schedulePoll(sseConnected: false);
+ 
+-      ref.read(pkBattleRemoteProvider.notifier).connectSocket(
+-            roomId: _roomKey,
+-            alternateRoomId: _musicAlternateKey,
+-          );
+-
+       await _loadBackendSnapshot();
+       await Future.wait<void>([
+         _loadInitialMessages(),
+@@ -182,14 +177,10 @@
+         player.onTrackComplete = () => unawaited(_onDjTrackComplete());
+         _wireMusicControls();
+       }
+-      if (VoiceRoomBasicMode.premiumEnabled) {
+-        _startGiftSocket();
+-      }
+       unawaited(_loadGiftLeaderboard());
+       return;
+     }
+ 
+-    _startGiftSocket();
+     final player = ref.read(voiceRoomDjPlayerProvider);
+     player.onTrackComplete = () => unawaited(_onDjTrackComplete());
+     _wireMusicControls();
+diff --git a/lib/features/voice_hub/presentation/providers/chat_room_providers_gift.dart b/lib/features/voice_hub/presentation/providers/chat_room_providers_gift.dart
+--- a/lib/features/voice_hub/presentation/providers/chat_room_providers_gift.dart
++++ b/lib/features/voice_hub/presentation/providers/chat_room_providers_gift.dart
+@@ -62,52 +62,4 @@
+     } catch (_) {}
+   }
+ 
+-  void _startGiftSocket() {
+-    if (_roomKey.isEmpty) return;
+-    if (state.sseConnected) {
+-      VoiceRoomDebugLog.log('socket.subscribe.skip', {
+-        'roomId': _roomKey,
+-        'reason': 'sse_active',
+-      });
+-      return;
+-    }
+-    if (_giftSocketStarted) {
+-      VoiceRoomDebugLog.log('socket.subscribe.skip', {'roomId': _roomKey});
+-      return;
+-    }
+-    _giftSocketStarted = true;
+-    final storage = ref.read(tokenStorageProvider);
+-    final alt = _roomMeta.slug.trim();
+-    ref.read(voiceRoomGiftSocketProvider).connect(
+-          roomId: _roomKey,
+-          alternateRoomId: alt.isNotEmpty ? alt : null,
+-          accessToken: storage.readAccess,
+-          onEvent: (ev) {
+-            ref.read(voiceRoomGiftRealtimeProvider).publishRemote(ev);
+-            if (!state.sseConnected) {
+-              ref.read(voiceRoomGiftRealtimeProvider).setSocketPreferred(true);
+-            }
+-          },
+-          onPresenceSnapshot: applyPresenceSnapshot,
+-          onDjUpdate: (payload) {
+-            // SSE bağlıyken DJ olayları yalnızca SSE'den işlenir (çift oynatma önlenir).
+-            if (state.sseConnected || payload.isEmpty) return;
+-            _applyRoomVideoPayload(payload);
+-            unawaited(_applyDjRealtimePayload(payload));
+-          },
+-          onMessage: (msg) {
+-            if (state.sseConnected) return;
+-            final exists = state.messages.any((m) => m.id == msg.id);
+-            if (exists) return;
+-            state = state.copyWith(messages: [...state.messages, msg]);
+-          },
+-          onConnectionChanged: (connected) {
+-            ref.read(voiceRoomDiagnosticProvider.notifier).setSocket(connected);
+-            if (connected && !state.sseConnected) {
+-              ref.read(voiceRoomGiftRealtimeProvider).setSocketPreferred(true);
+-            }
+-          },
+-        );
+-    VoiceRoomDebugLog.log('socket.subscribe', {'roomId': _roomKey});
+-  }
+ }
+diff --git a/lib/features/voice_hub/presentation/providers/chat_room_providers_sse.dart b/lib/features/voice_hub/presentation/providers/chat_room_providers_sse.dart
+--- a/lib/features/voice_hub/presentation/providers/chat_room_providers_sse.dart
++++ b/lib/features/voice_hub/presentation/providers/chat_room_providers_sse.dart
+@@ -45,8 +45,6 @@
+               state = state.copyWith(sseConnected: true, clearError: true);
+             }
+             ref.read(voiceRoomGiftRealtimeProvider).setSseActive(true);
+-            ref.read(voiceRoomGiftSocketProvider).disconnect();
+-            _sse._giftSocketStarted = false;
+             if (!state.selfInRoom || !_sse._presenceJoined) {
+               unawaited(_sse._joinPresence());
+             }
+diff --git a/lib/features/voice_hub/presentation/providers/pk_battle_remote_provider.dart b/lib/features/voice_hub/presentation/providers/pk_battle_remote_provider.dart
+--- a/lib/features/voice_hub/presentation/providers/pk_battle_remote_provider.dart
++++ b/lib/features/voice_hub/presentation/providers/pk_battle_remote_provider.dart
+@@ -2,11 +2,9 @@
+ 
+ import '../../../../core/network/dio_provider.dart';
+ import '../../../../core/network/pk_event_log.dart';
+-import '../../../../core/network/token_storage.dart';
+ import '../../../live/domain/pk/pk_session_phase.dart';
+ import '../../../live/presentation/providers/pk_session_phase_provider.dart';
+ import '../../data/datasources/pk_battle_remote_datasource.dart';
+-import '../../data/services/pk_battle_socket_service.dart';
+ import '../../domain/pk/pk_battle_remote_models.dart';
+ import '../../domain/pk/pk_duration_options.dart';
+ import 'pk_battle_provider.dart';
+@@ -15,21 +13,14 @@
+   return PkBattleRemoteDataSource(ref.watch(dioProvider));
+ });
+ 
+-/// Sunucu PK senkronu — REST + Socket.IO yedek; odadayken SSE birincil.
++/// Sunucu PK senkronu — REST + SSE. Ana backend Socket.IO sunmuyor
++/// (production `/socket.io/` → HTML sayfa), bu yüzden PK olayları yalnızca
++/// SSE (`text/event-stream`) ve REST üzerinden taşınır.
+ class PkBattleRemoteController extends Notifier<PkBattleRemote?> {
+   PkBattleRemoteDataSource get _api => ref.read(pkBattleRemoteDataSourceProvider);
+ 
+-  PkBattleSocketService? _socket;
+-  PkBattleSocketService? _ownedRoomsSocket;
+-
+   @override
+-  PkBattleRemote? build() {
+-    ref.onDispose(() {
+-      disconnectSocket();
+-      disconnectOwnedRoomsSocket();
+-    });
+-    return null;
+-  }
++  PkBattleRemote? build() => null;
+ 
+   Future<PkBattleRemote?> loadRoomBattle(String roomId, {String? alternateRoomId}) async {
+     final battle = await _api.fetchRoomBattle(
+@@ -213,59 +204,7 @@
+     return battle;
+   }
+ 
+-  /// Sahip olunan odalar için global PK socket — polling yerine anlık davet.
+-  void connectOwnedRooms(List<String> roomKeys) {
+-    final keys = roomKeys
+-        .map((k) => k.trim())
+-        .where((k) => k.isNotEmpty)
+-        .toSet()
+-        .toList(growable: false);
+-    if (keys.isEmpty) return;
+-
+-    _ownedRoomsSocket ??= PkBattleSocketService();
+-    final storage = ref.read(tokenStorageProvider);
+-    _ownedRoomsSocket!.connect(
+-      roomKeys: keys,
+-      onUpdate: (battle, event) => _apply(battle, event),
+-      accessToken: storage.readAccess,
+-    );
+-  }
+-
+-  void disconnectOwnedRoomsSocket() {
+-    _ownedRoomsSocket?.disconnect();
+-    _ownedRoomsSocket = null;
+-  }
+-
+-  /// Socket.IO PK kanalı — web ile aynı olaylar; SSE yedek / oda dışı skor.
+-  void connectSocket({
+-    String? roomId,
+-    String? alternateRoomId,
+-    String? streamId,
+-    String? battleId,
+-  }) {
+-    final hasRoom = roomId != null && roomId.trim().isNotEmpty;
+-    final hasStream = streamId != null && streamId.trim().isNotEmpty;
+-    if (!hasRoom && !hasStream) return;
+-
+-    _socket ??= PkBattleSocketService();
+-    final storage = ref.read(tokenStorageProvider);
+-    _socket!.connect(
+-      roomId: roomId,
+-      alternateRoomId: alternateRoomId,
+-      streamId: streamId,
+-      battleId: battleId,
+-      onUpdate: (battle, event) => _apply(battle, event),
+-      accessToken: storage.readAccess,
+-    );
+-  }
+-
+-  /// Socket.IO bağlantısını kapat.
+-  void disconnectSocket() {
+-    _socket?.disconnect();
+-    _socket = null;
+-  }
+-
+-  /// Oda SSE üzerinden gelen PK güncellemesi — socket bağlantısı gerekmez.
++  /// Oda / yayın SSE'sinden gelen PK güncellemesi.
+   void ingestSseBattle(PkBattleRemote battle) {
+     _apply(battle, 'sse:pk');
+   }
+diff --git a/lib/features/voice_hub/presentation/providers/voice_gift_providers.dart b/lib/features/voice_hub/presentation/providers/voice_gift_providers.dart
+--- a/lib/features/voice_hub/presentation/providers/voice_gift_providers.dart
++++ b/lib/features/voice_hub/presentation/providers/voice_gift_providers.dart
+@@ -5,7 +5,6 @@
+ import '../../../live/domain/entities/live_gift_event.dart';
+ import '../../data/datasources/chat_room_gifts_remote_datasource.dart';
+ import '../../data/services/voice_room_gift_realtime_service.dart';
+-import '../../data/services/voice_room_gift_socket.dart';
+ import '../../../live/presentation/gifts/providers/live_gift_providers.dart';
+ 
+ final chatRoomGiftsRemoteProvider = Provider<ChatRoomGiftsRemoteDataSource>((ref) {
+@@ -29,12 +28,6 @@
+   return service;
+ });
+ 
+-final voiceRoomGiftSocketProvider = Provider<VoiceRoomGiftSocket>((ref) {
+-  final socket = VoiceRoomGiftSocket(ref.watch(liveGiftsRemoteProvider));
+-  ref.onDispose(socket.disconnect);
+-  return socket;
+-});
+-
+ /// Uçan hediye kuyruğu — odada gösterilecek olaylar.
+ class VoiceGiftFlightQueue extends Notifier<List<LiveGiftEvent>> {
+   @override
+diff --git a/lib/features/voice_hub/presentation/providers/voice_pk_owned_rooms_socket_provider.dart b/lib/features/voice_hub/presentation/providers/voice_pk_owned_rooms_socket_provider.dart
+--- a/lib/features/voice_hub/presentation/providers/voice_pk_owned_rooms_socket_provider.dart
++++ b/lib/features/voice_hub/presentation/providers/voice_pk_owned_rooms_socket_provider.dart
+@@ -1,66 +0,0 @@
+-import 'package:flutter_riverpod/flutter_riverpod.dart';
+-
+-import '../../../auth/presentation/providers/auth_providers.dart';
+-import '../../../live/domain/entities/voice_room_entity.dart';
+-import '../../../live/presentation/providers/live_providers.dart';
+-import '../../data/services/voice_room_socket_helper.dart';
+-import 'pk_battle_remote_provider.dart';
+-import 'voice_room_session_registry.dart';
+-
+-/// Sahip olunan sesli odalar için global PK socket — HTTP polling yok.
+-final voicePkOwnedRoomsSocketProvider = Provider<void>((ref) {
+-  void sync() {
+-    final user = ref.read(authControllerProvider).valueOrNull;
+-    if (user == null) {
+-      ref.read(pkBattleRemoteProvider.notifier).disconnectOwnedRoomsSocket();
+-      return;
+-    }
+-    final rooms = ref.read(voiceRoomsProvider).valueOrNull ?? const [];
+-    final active = ref.read(voiceRoomActiveLiveKeyProvider);
+-    final keys = ownedAndActiveRoomKeys(rooms, user.id, activeLiveKey: active);
+-    if (keys.isEmpty) {
+-      ref.read(pkBattleRemoteProvider.notifier).disconnectOwnedRoomsSocket();
+-      return;
+-    }
+-    ref.read(pkBattleRemoteProvider.notifier).connectOwnedRooms(keys);
+-  }
+-
+-  ref.listen(voiceRoomsProvider, (_, __) => sync());
+-  ref.listen(authControllerProvider, (_, __) => sync());
+-  ref.listen(voiceRoomActiveLiveKeyProvider, (_, __) => sync());
+-  ref.onDispose(() {
+-    ref.read(pkBattleRemoteProvider.notifier).disconnectOwnedRoomsSocket();
+-  });
+-  Future.microtask(sync);
+-});
+-
+-List<String> _ownedRoomKeys(List<VoiceRoomEntity> rooms, String userId) {
+-  if (userId.isEmpty) return const [];
+-  final out = <String>[];
+-  for (final room in rooms) {
+-    if ((room.ownerId?.trim() ?? '') != userId) continue;
+-    final primary =
+-        room.apiRoomKey.isNotEmpty ? room.apiRoomKey : room.id.trim();
+-    if (primary.isEmpty) continue;
+-    for (final k in VoiceRoomSocketHelper.joinKeys(
+-      primary: primary,
+-      alternate: room.slug,
+-    )) {
+-      if (!out.contains(k)) out.add(k);
+-    }
+-  }
+-  return out;
+-}
+-
+-List<String> ownedAndActiveRoomKeys(
+-  List<VoiceRoomEntity> rooms,
+-  String userId, {
+-  String? activeLiveKey,
+-}) {
+-  final keys = _ownedRoomKeys(rooms, userId).toList();
+-  final active = activeLiveKey?.trim() ?? '';
+-  if (active.isNotEmpty && !keys.contains(active)) {
+-    keys.add(active);
+-  }
+-  return keys;
+-}
+diff --git a/lib/features/voice_hub/presentation/widgets/voice_pk_invite_listener.dart b/lib/features/voice_hub/presentation/widgets/voice_pk_invite_listener.dart
+--- a/lib/features/voice_hub/presentation/widgets/voice_pk_invite_listener.dart
++++ b/lib/features/voice_hub/presentation/widgets/voice_pk_invite_listener.dart
+@@ -8,10 +8,12 @@
+ import '../../../live/domain/entities/voice_room_entity.dart';
+ import '../../domain/pk/pk_battle_remote_models.dart';
+ import '../providers/pk_battle_remote_provider.dart';
+-import '../providers/voice_pk_owned_rooms_socket_provider.dart';
+ import '../utils/pk_invite_dialog_helper.dart';
+ 
+-/// Sesli oda PK davetleri — Socket.IO + REST poll; hedef odada popup.
++/// Sesli oda PK davetleri — REST poll; hedef odada popup.
++/// Ana backend Socket.IO sunmadığı için ölü socket köprüsü kaldırıldı;
++/// poll aralığı 3 sn → 10 sn'ye çıkarıldı (oda içindeyken PK olayları zaten
++/// SSE ile anında geliyor).
+ class VoicePkInviteListener extends ConsumerStatefulWidget {
+   const VoicePkInviteListener({super.key, required this.child});
+ 
+@@ -30,7 +32,7 @@
+   @override
+   void initState() {
+     super.initState();
+-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
++    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+       unawaited(_pollPendingInvites());
+     });
+     Future.microtask(_pollPendingInvites);
+@@ -105,7 +107,6 @@
+ 
+   @override
+   Widget build(BuildContext context) {
+-    ref.watch(voicePkOwnedRoomsSocketProvider);
+     ref.listen<PkBattleRemote?>(pkBattleRemoteProvider, (_, next) {
+       _onBattleUpdate(next);
+     });
+diff --git a/test/core/network/api_backend_router_test.dart b/test/core/network/api_backend_router_test.dart
+--- a/test/core/network/api_backend_router_test.dart
++++ b/test/core/network/api_backend_router_test.dart
+@@ -75,9 +75,11 @@
+         ApiBackendRouter.resolve('/api/live/pk/active'),
+         ApiBackendKind.game,
+       );
++      // NOT: `/api/live/pk` (aktif maç sorgusu) yalnızca ANA backend'de var
++      // (games origin 404). Yalnızca `/api/live/pk/active` games backend'de.
+       expect(
+-        ApiBackendRouter.resolve('/api/live/pk/sweep', method: 'POST'),
+-        ApiBackendKind.game,
++        ApiBackendRouter.resolve('/api/live/pk?roomId=abc'),
++        ApiBackendKind.main,
+       );
+       expect(
+         ApiBackendRouter.resolve('/api/live/guest/list'),
+@@ -120,26 +122,27 @@
+       );
+     });
+ 
+-    test('sesli oda PK uçları Game backend', () {
++    // Sesli oda PK'sı SSE ile aynı kaynağa yazılmalı: ANA backend.
++    test('sesli oda PK uçları ana backend', () {
+       expect(
+         ApiBackendRouter.resolve(
+           '/api/chat/rooms/cm123/pk',
+         ),
+-        ApiBackendKind.game,
++        ApiBackendKind.main,
+       );
+       expect(
+         ApiBackendRouter.resolve(
+-          '/api/chat/rooms/cm123/pk/inv-1/respond',
++          '/api/chat/rooms/cm123/pk',
+           method: 'POST',
+         ),
+-        ApiBackendKind.game,
++        ApiBackendKind.main,
+       );
+       expect(
+         ApiBackendRouter.resolve(
+-          '/api/chat/rooms/cm123/pk/battle-1/end',
++          '/api/chat/rooms/cm123/pk/score',
+           method: 'POST',
+         ),
+-        ApiBackendKind.game,
++        ApiBackendKind.main,
+       );
+       expect(
+         ApiBackendRouter.resolve('/api/chat/rooms/cm123/messages'),
