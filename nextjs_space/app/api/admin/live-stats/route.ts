@@ -51,7 +51,9 @@ export async function GET(req: NextRequest) {
       `,
     ])
 
-    const byDay = new Map(perDay.map((r) => [r.day, Number(r.viewers)]))
+    const byDay = new Map<string, number>(
+      perDay.map((r): [string, number] => [r.day, Number(r.viewers)])
+    )
     const series: { date: string; viewers: number }[] = []
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
