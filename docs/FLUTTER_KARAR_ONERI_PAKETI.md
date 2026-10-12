@@ -6,38 +6,16 @@ Kaynak: `mesutbyrm/Cursor-Flutter-` → `mobile/lib/core/network/api_endpoints.d
 
 ---
 
-## 1. Cosmetic envanteri (`/api/user/cosmetics*`)
+## 1. Cosmetic envanteri — GERÇEK BOŞLUK DEĞİL (karar kapatıldı)
 
-**Flutter:** envanter listesi, `equip`, `loadout` ve `profile/cosmetics/equip` uçları bekleniyor.
+**Doğrulama:** `user/cosmetics*` uçları Flutter kodunda hiç çağrılmıyor. Flutter'da eşleşen tek şeyler uygulama içi UI rotaları (`/profile/cosmetics`). Önceki "eksik" tespiti bir yol taramasından gelen yanlış pozitifti.
 
-**Backend'deki durum:**
-- `User` üzerinde yalnızca **seçim** alanları var: `nameEffect`, `entranceEffectId`, `profileFrameId`. Sahiplik (kullanıcının neye sahip olduğu) hiçbir yerde tutulmuyor.
-- Katalog modelleri mevcut: `avatar-accessories`, `name-effects`, `profile-frames`, `chat-bubbles`, `mic-frames`, `entrance-effects`.
+**Mevcut çalışan model:**
+- Cosmetic kataloğu: `profile-frames`, `mic-frames`, `chat-bubbles`, `name-effects`, `entrance-effects`, `avatar-accessories` (`lib/cosmetics.ts`). Her biri `tier` ile erişim denetler (free / gold / admin_only).
+- Seçim: `GET` katalog + seçili öğe; `POST` seçimi kullanıcı alanına (`userField`) yazar ve tier erişimini kontrol eder.
+- Flutter cosmetic ekranı (`cosmetics_equip_remote_datasource.dart`) bu uçları kullanıyor.
 
-**Risk:** Sahiplik kontrolü olmadan "equip" yazmak, kullanıcının sahip olmadığı bir cosmetic'i takmasına izin verir.
-
-**Öneri (onay gerekli):**
-```
-model UserCosmetic {
-  id        String   @id @default(cuid())
-  userId    String
-  kind      String   // profile_frame | name_effect | entrance_effect | chat_bubble | mic_frame | avatar_accessory
-  itemId    String   // ilgili katalog kaydının id/key'i
-  source    String   // purchase | admin_grant | event
-  grantedById String?
-  createdAt DateTime @default(now())
-  @@unique([userId, kind, itemId])
-  @@index([userId])
-  @@map("user_cosmetics")
-}
-```
-- `equip` yalnızca `UserCosmetic` kaydı olan öğeyi kabul eder; aksi halde 403.
-- Mevcut seçim alanları korunur; equip bunları günceller.
-- Yeni tablo, üretim veritabanında **migrasyon** gerektirir.
-
-**Karar:** Yeni tablo + migrasyon onaylansın mı? (Alternatif: yalnızca seçim uçları, sahiplik kontrolü olmadan — önerilmez.)
-
----
+**Sonuç:** Yeni `UserCosmetic` tablosu ve üretim migrasyonu **gereksiz**; yapılmadı.
 
 ## 2. Cüzdan transferi (`POST /api/wallet/transfer`)
 
@@ -132,5 +110,5 @@ model UserCosmetic {
 | 6 | Üyelik hibesi | Orta | Alias |
 | 7 | Rol yetkileri | Çok yüksek | Ayrı PR, güçlü kısıt |
 | 2 | Cüzdan transferi | Çok yüksek | Ayrı PR, ledger ile |
-| 1 | Cosmetic envanteri | Orta (migrasyon) | Şema onayı |
+| 1 | Cosmetic envanteri | — | Gerçek boşluk değil; kapatıldı |
 | 8 | Sosyal hesaplar | Bilinmiyor | Ürün kararı |
