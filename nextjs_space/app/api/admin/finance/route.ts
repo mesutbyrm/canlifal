@@ -71,6 +71,16 @@ export async function GET(request: NextRequest) {
         where: { status: 'completed', ...dateFilter },
         _sum: { amount: true, creditsAwarded: true },
       })
+      const revenueTransactionCount = await prisma.payment.count({
+        where: { status: 'completed', ...dateFilter },
+      })
+
+      // Tamamlanmış çekimler (TL) — dönem filtresiyle
+      const withdrawalsAgg = await prisma.withdrawalRequest.aggregate({
+        where: { status: 'completed', ...dateFilter },
+        _sum: { amountTL: true, netAmountTL: true },
+        _count: { _all: true },
+      })
 
       // Total gifts sent (StreamGift + ChatRoomGift + TellerGift) - filtered, admin/yönetici hariç
       const streamGiftTotal = await prisma.streamGift.aggregate({
@@ -196,6 +206,12 @@ export async function GET(request: NextRequest) {
         totalCfc: totals._sum.credits || 0,
         totalJeton: totals._sum.jetonBalance || 0,
         totalRevenue,
+        revenueTransactionCount,
+        withdrawals: {
+          totalTL: withdrawalsAgg._sum.amountTL || 0,
+          netTL: withdrawalsAgg._sum.netAmountTL || 0,
+          count: withdrawalsAgg._count._all || 0,
+        },
         totalTellerEarnings,
         totalGiftSpent,
         totalSessionSpent,
