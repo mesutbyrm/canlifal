@@ -6195,3 +6195,26 @@ model RoomActivitySpan {
   @@index([userId, startedAt])
   @@map("room_activity_spans")
 }
+
+// ─── Durable Event Outbox ─────────────────────────────────────────────────────
+// Kritik olaylar (hediye SSE, push bildirimi) işlem içinde bu tabloya yazılır.
+// Arka plan işlemci bunları tüketerek teslim eder; sunucu çökmesi durumunda
+// olaylar kaybolmaz.
+model EventOutbox {
+  id          String   @id @default(cuid())
+  channel     String   // sse_room | sse_stream | push | notification
+  scope       String   // roomId / streamId / userId
+  eventType   String   // gift, pk, session_ended, …
+  payload     String   @db.Text
+  status      String   @default("pending") // pending | delivered | failed
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  lastError   String?  @db.Text
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  nextRetryAt DateTime @default(now())
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@map("event_outbox")
+}
