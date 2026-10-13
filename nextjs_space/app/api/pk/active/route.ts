@@ -1,3 +1,4 @@
+import { finalizeExpiredActivePKs } from '@/lib/pk-state'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { serializePkMatches } from '@/lib/pk-match'
@@ -15,11 +16,12 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     await expireAllStalePKs()
+    await finalizeExpiredActivePKs()
 
     const includePending = ['1', 'true'].includes(
       (req.nextUrl.searchParams.get('includePending') || '').toLowerCase(),
     )
-    const statuses = includePending ? ['active', 'pending'] : ['active']
+    const statuses = includePending ? ['pending', 'starting', 'active', 'paused'] : ['active', 'paused']
 
     const battles = await prisma.pKBattle.findMany({
       where: { status: { in: statuses } },

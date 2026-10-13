@@ -1,4 +1,4 @@
-import { finishPkBattle } from '@/lib/pk-state'
+import { finishPkBattle, finalizeExpiredActivePKs, PK_LIVE_STATUSES } from '@/lib/pk-state'
 import { parseTargetArrows, pkSeriesFields } from '@/lib/pk-series'
 export const dynamic = 'force-dynamic'
 
@@ -29,13 +29,14 @@ export async function GET(
 
     // Expire stale pending PKs
     await expireAllStalePKs()
+    await finalizeExpiredActivePKs([streamId])
 
     const battle = await prisma.pKBattle.findFirst({
       where: {
         AND: [
           { OR: [{ stream1Id: streamId }, { stream2Id: streamId }] },
           { OR: [
-            { status: { in: ['pending', 'active'] } },
+            { status: { in: PK_LIVE_STATUSES } },
             { status: { in: ['completed', 'expired'] }, endedAt: { gte: fiveMinAgo } }
           ]}
         ]
@@ -103,7 +104,7 @@ export async function POST(
             { stream1Id: { in: [sid1, sid2] } },
             { stream2Id: { in: [sid1, sid2] } }
           ],
-          status: { in: ['pending', 'active'] }
+          status: { in: PK_LIVE_STATUSES }
         }
       })
 

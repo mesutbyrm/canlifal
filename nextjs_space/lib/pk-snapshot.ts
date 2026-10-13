@@ -1,4 +1,5 @@
 import { pkSeriesFields } from '@/lib/pk-series'
+import { finalizeExpiredActivePKs } from '@/lib/pk-state'
 import prisma from '@/lib/db'
 import { expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 
@@ -16,6 +17,7 @@ import { expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 export async function getPkSnapshotEvent(sideId: string): Promise<Record<string, any> | null> {
   try {
     await expireAllStalePKs()
+    await finalizeExpiredActivePKs([sideId])
 
     const battle = await prisma.pKBattle.findFirst({
       where: {

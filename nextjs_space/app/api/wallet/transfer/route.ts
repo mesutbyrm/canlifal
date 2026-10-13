@@ -1,13 +1,14 @@
 export const dynamic = 'force-dynamic'
 
+import { lockGiftBalances } from '@/lib/gift-recipient'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { getPlatformSetting } from '@/lib/agency-commission'
 import { heavyLimiter } from '@/lib/rate-limiter'
-import { recordLedger } from '@/lib/ledger'
+import { recordMultiLeg } from '@/lib/ledger'
 import { createNotificationWithPush } from '@/lib/notify'
-import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
+import { beginIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 /**
  * POST /api/wallet/transfer — kullanıcıdan kullanıcıya Jeton veya CFC hediyesi.
@@ -22,6 +23,7 @@ import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/id
  */
 export async function POST(req: NextRequest) {
   let record: string | null = null
+  let committedPayload: any = null
   try {
     const authUser = await authenticateRequest(req)
     if (!authUser) {
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Çok hızlı işlem yapıyorsunuz. Biraz bekleyin.' }, { status: 429 })
     }
 
-    const replay = await beginIdempotent(req, 'wallet_transfer', senderId)
+    const replay = await beginIdempotent(req, 'wallet_transfer', senderId, { strict: true })
     if (replay.response) return replay.response
     record = replay.record
 
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
       body = {}
     }
     const currency = body?.currency === 'cfc' ? 'cfc' : body?.currency === 'jeton' ? 'jeton' : null
-    const amount = Math.trunc(Number(body?.amount))
+    const amount = Number(body?.amount)
     const recipientKey = (body?.recipient ?? '').toString().trim()
 
     const fail = async (status: number, error: string) => {
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     const minStr = await getPlatformSetting(`${currency}_transfer_min`, '100')
     const minAmount = Math.max(1, parseInt(minStr) || 100)
-    if (!Number.isFinite(amount) || amount < minAmount) {
+    if (!Number.isSafeInteger(amount) || amount > 2147483647 || amount < minAmount) {
       return fail(400, `En az ${minAmount} ${currency === 'cfc' ? 'CFC' : 'jeton'} gönderebilirsiniz`)
     }
 
@@ -80,7 +82,10 @@ export async function POST(req: NextRequest) {
     let before = 0
     let after = 0
     try {
-      await prisma.$transaction(async (tx: any) => {
+      committedPayload = await prisma.$transaction(async (tx: any) => {
+        await lockGiftBalances(tx, [senderId, recipient.id])
+        const receiver = await tx.user.findUniqueOrThrow({ where: { id: recipient.id }, select: { [field]: true } })
+        const receiverBefore = receiver[field] as number
         const sender = await tx.user.findUnique({ where: { id: senderId }, select: { [field]: true } })
         before = (sender?.[field] as number) ?? 0
         const debit = await tx.user.updateMany({
@@ -109,42 +114,36 @@ export async function POST(req: NextRequest) {
               amount: net,
               type: 'transfer_received',
               description: `${authUser.name || 'Bir kullanıcı'} kişisinden ${net} jeton hediye`,
-              balanceBefore: 0,
-              balanceAfter: 0,
+              balanceBefore: receiverBefore,
+              balanceAfter: receiverBefore + net,
             },
           })
         }
+        const acct = currency === 'cfc' ? 'user_cfc' : 'user_jeton'
+        const platformAcct = currency === 'cfc' ? 'platform_cfc' : 'platform_jeton'
+        await recordMultiLeg({
+          legs: [
+            { accountType: acct, accountId: senderId, direction: 'debit', amount, balanceBefore: before, balanceAfter: after },
+            { accountType: acct, accountId: recipient.id, direction: 'credit', amount: net, balanceBefore: receiverBefore, balanceAfter: receiverBefore + net },
+            { accountType: platformAcct, accountId: 'PLATFORM', direction: 'credit', amount: commission },
+          ], currency, category: 'gift_send', referenceType: 'wallet_transfer',
+          referenceId: record || undefined, actorId: senderId,
+          description: `Kullanıcı transferi (${currency})`, metadata: { commissionPercent: commPercent },
+        }, { client: tx, strict: true })
+        const payload = { success: true, data: {
+          currency, amount, commission, commissionPercent: commPercent, received: net, balance: after,
+          recipient: { id: recipient.id, name: recipient.name, username: recipient.username },
+        } }
+        if (record) await tx.idempotencyRecord.update({ where: { id: record }, data: {
+          status: 'completed', responseStatus: 200, responseBody: payload,
+        } })
+        return payload
       })
     } catch (e: any) {
       if (String(e?.message || '').includes('INSUFFICIENT_BALANCE')) {
         return fail(400, `Yetersiz ${currency === 'cfc' ? 'CFC' : 'jeton'} bakiyesi`)
       }
       throw e
-    }
-
-    const acct = currency === 'cfc' ? 'user_cfc' : 'user_jeton'
-    const platformAcct = currency === 'cfc' ? 'platform_cfc' : 'platform_jeton'
-    recordLedger({
-      debit: { accountType: acct as any, accountId: senderId, balanceBefore: before, balanceAfter: after },
-      credit: { accountType: acct as any, accountId: recipient.id },
-      amount: net,
-      currency,
-      category: 'gift_send',
-      description: `Kullanıcı transferi (${currency})`,
-      referenceType: 'wallet_transfer',
-      actorId: senderId,
-    }).catch(() => {})
-    if (commission > 0) {
-      recordLedger({
-        debit: { accountType: acct as any, accountId: senderId },
-        credit: { accountType: platformAcct as any, accountId: 'PLATFORM' },
-        amount: commission,
-        currency,
-        category: 'commission',
-        description: `Transfer komisyonu %${commPercent}`,
-        referenceType: 'wallet_transfer',
-        actorId: senderId,
-      }).catch(() => {})
     }
 
     const label = currency === 'cfc' ? 'CFC' : 'jeton'
@@ -158,22 +157,10 @@ export async function POST(req: NextRequest) {
       data: JSON.stringify({ type: `${currency}_transfer`, amount: net, senderId }),
     } as any).catch(() => {})
 
-    const payload = {
-      success: true,
-      data: {
-        currency,
-        amount,
-        commission,
-        commissionPercent: commPercent,
-        received: net,
-        balance: after,
-        recipient: { id: recipient.id, name: recipient.name, username: recipient.username },
-      },
-    }
-    await completeIdempotent(record, 200, payload)
-    return NextResponse.json(payload)
+    return NextResponse.json(committedPayload)
   } catch (error) {
     console.error('[wallet/transfer] error:', error)
+    if (committedPayload) return NextResponse.json(committedPayload)
     await releaseIdempotent(record).catch(() => {})
     return NextResponse.json({ success: false, error: 'İşlem tamamlanamadı' }, { status: 500 })
   }

@@ -1,4 +1,4 @@
-import { finishPkBattle } from '@/lib/pk-state'
+import { finishPkBattle, finalizeExpiredActivePKs, PK_LIVE_STATUSES } from '@/lib/pk-state'
 import { parseTargetArrows, pkSeriesFields } from '@/lib/pk-series'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     await expireAllStalePKs()
+    await finalizeExpiredActivePKs([roomId])
 
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
     const battle = await prisma.pKBattle.findFirst({
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
         AND: [
           { OR: [{ stream1Id: roomId }, { stream2Id: roomId }] },
           { OR: [
-            { status: { in: ['pending', 'active'] } },
+            { status: { in: PK_LIVE_STATUSES } },
             { status: { in: ['completed', 'expired'] }, endedAt: { gte: fiveMinAgo } }
           ]}
         ]
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
             { stream1Id: { in: [roomId, targetRoomId] } },
             { stream2Id: { in: [roomId, targetRoomId] } }
           ],
-          status: { in: ['pending', 'active'] }
+          status: { in: PK_LIVE_STATUSES }
         }
       })
       if (existingPK) return NextResponse.json({ success: false, error: { code: 'PK_EXISTS', message: 'Zaten aktif bir PK mevcut' } }, { status: 409 })

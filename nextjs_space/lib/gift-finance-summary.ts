@@ -11,13 +11,13 @@ export async function giftFinanceSummary(userId: string, balance: number, rate: 
       prisma.chatRoomGift.aggregate({ where: { recipientId: userId }, _sum: { totalPrice: true, receiverAmount: true, commissionAmount: true } }),
       prisma.streamGift.aggregate({ where: { OR: [{ recipientId: userId }, { recipientId: null, stream: { userId } }] }, _sum: { totalPrice: true, receiverAmount: true, siteAmount: true } }),
       prisma.giftHistory.aggregate({ where: { receiverId: userId, context: 'profile' }, _sum: { coinAmount: true } }),
-      prisma.withdrawalRequest.groupBy({ by: ['status'], where: { userId }, _sum: { amount: true, amountTL: true, netAmountTL: true, taxAmount: true }, _count: true }),
+      prisma.withdrawalRequest.groupBy({ by: ['status'], where: { userId }, _sum: { amount: true, amountTL: true, netAmountTL: true, taxAmount: true }, _count: { _all: true, netAmountTL: true } }),
     ])
     const totals = (statuses: string[]) => withdrawals.filter(x => statuses.includes(x.status)).reduce((a,x) => ({
       jeton: a.jeton + (x._sum.amount || 0), grossTL: round2(a.grossTL + (x._sum.amountTL || 0)),
       // Legacy null net is not silently presented as a known payout.
-      recordedNetTL: round2(a.recordedNetTL + (x._sum.netAmountTL || 0)), count: a.count + x._count,
-    }), { jeton: 0, grossTL: 0, recordedNetTL: 0, count: 0 })
+      recordedNetTL: round2(a.recordedNetTL + (x._sum.netAmountTL || 0)), count: a.count + x._count._all, unknownNetCount: a.unknownNetCount + x._count._all - x._count.netAmountTL,
+    }), { jeton: 0, grossTL: 0, recordedNetTL: 0, count: 0, unknownNetCount: 0 })
     return { giftSpentJeton: Math.abs(sent._sum.amount || 0),
       giftGrossReceivedJeton: (chat._sum.totalPrice || 0) + (streams._sum.totalPrice || 0) + (direct._sum.coinAmount || 0),
       giftNetEarnedJeton: earned._sum.amount || 0,

@@ -45,7 +45,13 @@ export async function GET(
   const scope = url.searchParams.get('scope') || 'session'
   const sessionId = url.searchParams.get('sessionId') || null
 
-  const report = await buildVoiceRoomReport(roomId, room.ownerId!, scope, sessionId)
-
-  return NextResponse.json({ success: true, report })
+  if (!['session','day','week','month'].includes(scope)) return NextResponse.json({ error: 'Geçersiz rapor dönemi' }, { status: 400 })
+  try {
+    const report = await buildVoiceRoomReport(roomId, room.ownerId!, scope, sessionId)
+    const sessions = await prisma.roomActivitySession.findMany({ where: { roomId }, orderBy: { startedAt: 'desc' }, take: 20, select: { id: true, startedAt: true, endedAt: true } })
+    return NextResponse.json({ success: true, report, sessions })
+  } catch (error) {
+    console.error('[publisher-report]', error)
+    return NextResponse.json({ error: 'Faaliyet oturumu bulunamadı veya rapor alınamadı' }, { status: error instanceof Error && error.message === 'Faaliyet oturumu bulunamadı' ? 404 : 500 })
+  }
 }

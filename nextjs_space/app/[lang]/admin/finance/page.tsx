@@ -74,10 +74,14 @@ interface HolderUser {
 
 interface GiftHistoryItem {
   id: string
-  type: 'chat_room' | 'stream' | 'teller'
+  type: 'chat_room' | 'stream' | 'teller' | 'profile'
   amount: number
   quantity: number
-  commission: number
+  commission: number | null
+  pointAmount?: number
+  jetonSource?: string | null
+  receiverAmount?: number | null
+  ownerAmount?: number | null
   createdAt: string
   giftName: string
   giftIcon: string
@@ -113,6 +117,11 @@ export default function AdminFinancePage() {
   const [rankedUsers, setRankedUsers] = useState<RankedUser[]>([])
   const [holders, setHolders] = useState<HolderUser[]>([])
   const [giftHistory, setGiftHistory] = useState<GiftHistoryItem[]>([])
+  const [giftPage, setGiftPage] = useState(1)
+  const [giftPages, setGiftPages] = useState(0)
+  const [giftFilters, setGiftFilters] = useState({ userId: '', roomId: '', streamId: '', tellerId: '', context: 'all', jetonSource: 'all' })
+  const [reportError, setReportError] = useState<string | null>(null)
+  const [giftCoverage, setGiftCoverage] = useState('')
 
   type PeriodType = 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'
   const [period, setPeriod] = useState<PeriodType>('all')
@@ -158,18 +167,23 @@ export default function AdminFinancePage() {
       return
     }
     fetchData(activeTab)
-  }, [session, status, activeTab, period, customFrom, customTo])
+  }, [session, status, activeTab, period, customFrom, customTo, giftPage, giftFilters])
 
   const fetchData = useCallback(async (tab: ActiveTab) => {
     setLoading(true)
+    setReportError(null)
     try {
       let url = `/api/admin/finance?section=${tab}&period=${period}`
       if (period === 'custom' && customFrom) {
         url += `&from=${customFrom}`
         if (customTo) url += `&to=${customTo}`
       }
+      if (tab === 'gift-history') {
+        url += `&page=${giftPage}&${new URLSearchParams(giftFilters)}`
+      }
       const res = await fetch(url)
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Rapor alınamadı')
 
       if (tab === 'overview') {
         setOverview(data)
@@ -181,12 +195,12 @@ export default function AdminFinancePage() {
         } catch (e) { console.error('Chart fetch error:', e) }
       }
       else if (tab === 'commission-settings') setCommissionSettings(data)
-      else if (tab === 'gift-history') setGiftHistory(data.gifts || [])
+      else if (tab === 'gift-history') { setGiftHistory(data.gifts || []); setGiftPages(data.totalPages || 0); setGiftCoverage(data.coverage || '') }
       else if (tab === 'top-jeton-holders' || tab === 'top-cfc-holders') setHolders(data)
       else setRankedUsers(data)
-    } catch (err) { console.error('Fetch error:', err) }
+    } catch (err) { console.error('Fetch error:', err); setReportError(err instanceof Error ? err.message : 'Rapor alınamadı') }
     finally { setLoading(false) }
-  }, [period, customFrom, customTo])
+  }, [period, customFrom, customTo, giftPage, giftFilters])
 
   const openUserProfile = async (userId: string) => {
     setUserProfileLoading(true)
@@ -304,6 +318,7 @@ export default function AdminFinancePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">💰 Finans Yönetimi</h1>
+          <a href="/admin/activity-reports" className="text-sm text-purple-300 underline">Oda, koltuk ve seans süre raporları</a>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowProfitAdjust(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-600 rounded-xl hover:from-amber-500 hover:to-yellow-500 transition-all text-sm font-medium">
               <DollarSign className="w-4 h-4" /> Kâr/Zarar Düzenle
@@ -361,6 +376,16 @@ export default function AdminFinancePage() {
           </div>
         )}
 
+        {activeTab === 'gift-history' && <div className="rounded-xl bg-white/5 p-4 mb-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {([['userId','Gönderen / alıcı kullanıcı ID'],['roomId','Oda ID'],['streamId','Yayın ID'],['tellerId','Falcı ID']] as const).map(([key,label]) => <label key={key} className="text-xs text-gray-200">{label}<input value={giftFilters[key]} onChange={e => { setGiftFilters(f => ({ ...f, [key]: e.target.value.trim() })); setGiftPage(1) }} className="block w-full mt-1 rounded-lg p-2 bg-[#1a0a2e] text-white" /></label>)}
+            <label className="text-xs text-gray-200">Hediye alanı<select value={giftFilters.context} onChange={e => { setGiftFilters(f => ({...f, context: e.target.value})); setGiftPage(1) }} className="block w-full mt-1 rounded-lg p-2 bg-[#1a0a2e] text-white"><option value="all">Tümü</option><option value="chat_room">Oda</option><option value="stream">Yayın</option><option value="teller">Falcı</option><option value="profile">Profil / doğrudan</option></select></label>
+            <label className="text-xs text-gray-200">Jeton kaynağı<select value={giftFilters.jetonSource} onChange={e => { setGiftFilters(f => ({...f, jetonSource: e.target.value})); setGiftPage(1) }} className="block w-full mt-1 rounded-lg p-2 bg-[#1a0a2e] text-white"><option value="all">Tümü</option><option value="real">Gerçek</option><option value="fake">Sahte</option><option value="legacy">Eski / kaynak kayıtsız</option></select></label>
+          </div>
+          <p className="text-xs text-gray-200">{giftCoverage}</p>
+          <div className="flex justify-between text-sm text-white"><button disabled={giftPage <= 1 || loading} onClick={() => setGiftPage(p => p - 1)} className="disabled:opacity-40">Önceki</button><span>Sayfa {giftPage} / {Math.max(1,giftPages)}</span><button disabled={giftPage >= giftPages || loading} onClick={() => setGiftPage(p => p + 1)} className="disabled:opacity-40">Sonraki</button></div>
+        </div>}
+        {reportError && <p role="alert" className="text-red-300 mb-4">{reportError} Önceki sonuçlar güncel filtreyi yansıtmayabilir.</p>}
         {/* Content */}
         {loading ? (
           <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-purple-400" /></div>
@@ -826,6 +851,7 @@ function GiftHistorySection({ gifts, formatNumber, formatDate, ClickableUser }: 
   ClickableUser: React.ComponentType<{ user: any; showImage?: boolean }>
 }) {
   const sourceLabel = (type: string) => {
+    if (type === 'profile') return { icon: <Gift className="w-3 h-3" />, label: 'Doğrudan hediye', color: 'text-amber-300' }
     if (type === 'chat_room') return { icon: <MessageSquare className="w-3 h-3" />, label: 'Sohbet Odası', color: 'text-blue-400' }
     if (type === 'stream') return { icon: <Video className="w-3 h-3" />, label: 'Canlı Yayın', color: 'text-pink-400' }
     return { icon: <Star className="w-3 h-3" />, label: 'Canlı Falcı', color: 'text-purple-400' }
@@ -863,7 +889,9 @@ function GiftHistorySection({ gifts, formatNumber, formatDate, ClickableUser }: 
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-yellow-400">{formatNumber(gift.amount)} jeton</p>
-                    {gift.commission > 0 && <p className="text-[10px] text-green-400/70">Komisyon: {formatNumber(gift.commission)}</p>}
+                    <p className="text-xs text-gray-200">{gift.jetonSource === 'real' ? 'Gerçek' : gift.jetonSource === 'fake' ? 'Sahte' : 'Kaynak kayıtsız'} · {formatNumber(gift.pointAmount ?? gift.amount)} puan</p>
+                    <p className="text-xs text-green-300">Komisyon: {gift.commission == null ? 'kayıtlı değil' : formatNumber(gift.commission)}</p>
+                    <p className="text-xs text-gray-200">Alıcı net: {gift.receiverAmount == null ? 'kayıtlı değil' : formatNumber(gift.receiverAmount)} · Oda sahibi: {gift.ownerAmount == null ? 'kayıtlı değil' : formatNumber(gift.ownerAmount)}</p>
                     <p className="text-[10px] text-gray-500">{gift.quantity}x {gift.giftName}</p>
                   </div>
                 </div>

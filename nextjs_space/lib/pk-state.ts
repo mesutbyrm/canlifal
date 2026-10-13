@@ -223,11 +223,12 @@ const BATTLE_SELECT = {
  * Süresi dolmuş aktif PK'ları backend tarafında bitirir.
  * İstemcinin "end" çağırmasına gerek kalmaz; sayaç sunucu saatiyle kanoniktir.
  */
-export async function finalizeExpiredActivePKs(): Promise<number> {
+export async function finalizeExpiredActivePKs(sideIds?: string[]): Promise<number> {
   try {
     const now = new Date()
     const stale = await prisma.pKBattle.findMany({
       where: {
+        ...(sideIds?.length ? { AND: [{ OR: [{ stream1Id: { in: sideIds } }, { stream2Id: { in: sideIds } }] }] } : {}),
         status: 'active',
         OR: [
           { endsAt: { not: null, lte: now } },

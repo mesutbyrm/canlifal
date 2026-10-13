@@ -1,3 +1,5 @@
+import { syncRoomActivity, ROOM_ACTIVITY_COVERAGE } from '@/lib/room-activity'
+import { activityTotals } from '@/lib/room-activity-math'
 import { giftPointAmount } from '@/lib/gift-points'
 /**
  * GirLive Yayıncı Asistanı — oturum raporu üretimi.
@@ -47,6 +49,11 @@ export interface PublisherReport {
   pkWon: number
   pkLost: number
   pkDraw: number
+  pkUnfinished?: number
+  activityCoverage?: string
+  seatSeconds?: number
+  seatDurations?: Record<string, number>
+  closureReport?: unknown
   tips: string[]
   comparePrevious: ComparePrevious | null
 }
@@ -61,7 +68,8 @@ function scopeRange(scope: string, sessionId?: string | null): { gte: Date; lte:
   const start = new Date(now)
   switch (scope) {
     case 'day':
-      start.setHours(0, 0, 0, 0)
+      const turkeyDay = new Date(now.getTime() + 10800000).toISOString().slice(0,10)
+      start.setTime(new Date(`${turkeyDay}T00:00:00+03:00`).getTime())
       break
     case 'week':
       start.setDate(start.getDate() - 7)
@@ -85,7 +93,16 @@ export async function buildVoiceRoomReport(
   scope: string,
   sessionId?: string | null,
 ): Promise<PublisherReport> {
+  await syncRoomActivity(roomId)
+  const activitySession = scope === 'session' ? await prisma.roomActivitySession.findFirst({
+    where: { roomId, ...(sessionId ? { id: sessionId } : {}) }, orderBy: { startedAt: 'desc' },
+  }) : null
+  if (scope === 'session' && sessionId && !activitySession) throw new Error('Faaliyet oturumu bulunamadı')
   const range = scopeRange(scope, sessionId)
+  if (scope === 'session') {
+    range.gte = activitySession?.startedAt || range.lte
+    range.lte = activitySession?.endedAt || range.lte
+  }
 
   // Hediyeler
   const gifts = await prisma.chatRoomGift.findMany({
@@ -129,28 +146,27 @@ export async function buildVoiceRoomReport(
   }
   const topGifters = [...gifterMap.values()].sort((a, b) => b.jetonTotal - a.jetonTotal).slice(0, 5)
 
-  // Ziyaretçiler (ChatPresence verisi — şu an aktif olanlar + geçmiş log yoksa 0)
-  const presences = await prisma.chatPresence.findMany({
-    where: { roomId },
-    select: { userId: true },
+  const activitySpans = await prisma.roomActivitySpan.findMany({
+    where: { roomId, ...(activitySession ? { sessionId: activitySession.id } : {}), startedAt: { lte: range.lte }, OR: [{ endedAt: null }, { endedAt: { gte: range.gte } }] },
   })
-  const uniqueVisitors = presences.length
-  const totalVisits = uniqueVisitors // gerçek giriş logu yoksa eşit
-  const returnVisitors = 0 // return bilgisi log olmadan hesaplanamaz
+  const totals = activityTotals(activitySpans, range.gte, range.lte)
+  const { uniqueVisitors, totalVisits } = totals
+  const returnVisitors = totals.returnVisits
 
   // PK (oda sahibinin yayın ID'si yok — hostUserId veya guestUserId ile bul)
   const pkMatches = await prisma.pKBattle.findMany({
     where: {
       status: 'completed',
       createdAt: { gte: range.gte, lte: range.lte },
-      OR: [{ user1Id: ownerId }, { user2Id: ownerId }],
+      OR: [{ stream1Id: roomId }, { stream2Id: roomId }],
     },
     select: { id: true, winnerId: true, isDraw: true, user1Id: true, user2Id: true },
   })
   const pkCompleted = pkMatches.length
   const pkWon = pkMatches.filter((m: any) => m.winnerId === ownerId).length
   const pkDraw = pkMatches.filter((m: any) => m.isDraw === true).length
-  const pkLost = pkCompleted - pkWon - pkDraw
+  const pkLost = pkMatches.filter((m: any) => m.winnerId && m.winnerId !== ownerId).length
+  const pkUnfinished = pkCompleted - pkWon - pkLost - pkDraw
 
   // İpuçları
   const tips: string[] = []
@@ -167,13 +183,17 @@ export async function buildVoiceRoomReport(
   }
 
   return {
-    sessionId: sessionId || null,
+    sessionId: activitySession?.id || null,
     startedAt: range.gte.toISOString(),
-    endedAt: null,
+    endedAt: activitySession?.endedAt?.toISOString() || null,
+    activityCoverage: ROOM_ACTIVITY_COVERAGE,
+    seatSeconds: totals.seatSeconds,
+    seatDurations: totals.seats,
+    closureReport: activitySession?.closureReport || null,
     totalVisits,
     uniqueVisitors,
     returnVisitors,
-    avgDwellSeconds: null,
+    avgDwellSeconds: totals.avgDwellSeconds,
     peakHourLocal: null,
     giftPointTotal: gifts.reduce((sum: number, gift: any) => sum + giftPointAmount(gift), 0),
     grossGiftJeton,
@@ -185,6 +205,7 @@ export async function buildVoiceRoomReport(
     pkWon,
     pkLost,
     pkDraw,
+    pkUnfinished,
     tips,
     comparePrevious: null,
   }
@@ -255,7 +276,7 @@ export async function buildStreamReport(
 
   // İzleyiciler
   const viewers = await prisma.videoStreamViewer.findMany({
-    where: { streamId },
+    where: { streamId, joinedAt: { lte: range.lte }, OR: [{ leftAt: null }, { leftAt: { gte: range.gte } }] },
     select: { viewerId: true, joinedAt: true, leftAt: true },
   })
   const uniqueIds = new Set(viewers.map((v: any) => v.viewerId).filter(Boolean))
@@ -267,8 +288,8 @@ export async function buildStreamReport(
   let dwellCount = 0
   for (const v of viewers as any[]) {
     if (v.joinedAt) {
-      const end = v.leftAt ? new Date(v.leftAt).getTime() : Date.now()
-      totalDwell += (end - new Date(v.joinedAt).getTime()) / 1000
+      const end = Math.min(v.leftAt ? new Date(v.leftAt).getTime() : range.lte.getTime(), range.lte.getTime(), stream?.endedAt?.getTime() ?? range.lte.getTime())
+      totalDwell += Math.max(0, end - Math.max(new Date(v.joinedAt).getTime(), range.gte.getTime())) / 1000
       dwellCount++
     }
   }
@@ -279,14 +300,15 @@ export async function buildStreamReport(
     where: {
       status: 'completed',
       createdAt: { gte: range.gte, lte: range.lte },
-      OR: [{ user1Id: ownerId }, { user2Id: ownerId }],
+      OR: [{ stream1Id: streamId }, { stream2Id: streamId }],
     },
     select: { id: true, winnerId: true, isDraw: true },
   })
   const pkCompleted = pkMatches.length
   const pkWon = pkMatches.filter((m: any) => m.winnerId === ownerId).length
   const pkDraw = pkMatches.filter((m: any) => m.isDraw === true).length
-  const pkLost = pkCompleted - pkWon - pkDraw
+  const pkLost = pkMatches.filter((m: any) => m.winnerId && m.winnerId !== ownerId).length
+  const pkUnfinished = pkCompleted - pkWon - pkLost - pkDraw
 
   // İpuçları
   const tips: string[] = []
@@ -319,6 +341,7 @@ export async function buildStreamReport(
     pkWon,
     pkLost,
     pkDraw,
+    pkUnfinished,
     tips,
     comparePrevious: null,
   }

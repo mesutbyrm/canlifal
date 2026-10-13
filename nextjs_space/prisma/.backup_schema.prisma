@@ -6159,3 +6159,39 @@ model AgencyMemberBlock {
   @@index([userId])
   @@map("agency_member_blocks")
 }
+
+// Durable activity reports. Historical records are not backfilled or repriced.
+model RoomActivitySession {
+  id             String   @id @default(cuid())
+  roomId         String
+  ownerId        String?
+  openKey        String?  @unique
+  startedAt      DateTime @default(now())
+  endedAt        DateTime?
+  closureReport  Json?
+  spans          RoomActivitySpan[]
+
+  @@index([roomId, startedAt])
+  @@index([ownerId, startedAt])
+  @@map("room_activity_sessions")
+}
+
+model RoomActivitySpan {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     RoomActivitySession @relation(fields: [sessionId], references: [id])
+  roomId      String
+  userId      String
+  visitId     String
+  openKey     String?  @unique
+  seatIndex   Int      @default(-1)
+  startedAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  endedAt     DateTime?
+  endReason   String?
+
+  @@index([roomId, endedAt])
+  @@index([sessionId, startedAt])
+  @@index([userId, startedAt])
+  @@map("room_activity_spans")
+}

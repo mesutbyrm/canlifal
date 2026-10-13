@@ -9,7 +9,7 @@ const db = { idempotencyRecord: {
   findUnique: async () => { if(failure==='offline') throw Error('simulated offline');return existing },
   create: async ({data}) => { if(existing || failure==='race') throw Object.assign(Error('simulated race'),{code:'P2002'}); creates++;existing={id:'key',createdAt:new Date(),...data};return existing },
   update: async ({data}) => {existing={...existing,...data};return existing},
-  delete: async () => {existing=null},
+  deleteMany: async ({where}) => { if(existing?.status === where.status) existing=null; return {count:1} },
 }, ledgerEntry: {createMany: async ({data}) => {if(failure) throw Error('ledger failure');rows=data}} }
 const deps = {'@/lib/db':{__esModule:true,default:db,prisma:db},'next/server':{NextResponse:{json:(body,init={})=>({status:init.status||200,body,headers:init.headers})}},uuid:{v4:()=> 'test-uuid'}}
 function load(file) {

@@ -1,3 +1,4 @@
+import { pkSeriesFields } from '@/lib/pk-series'
 import prisma from '@/lib/db'
 
 /**
@@ -8,7 +9,7 @@ import prisma from '@/lib/db'
  *   stream1/user1 → host   |   stream2/user2 → guest
  */
 
-export type PkMatch = {
+export type PkMatch = ReturnType<typeof pkSeriesFields> & {
   id: string
   hostUserId: string
   hostStreamId: string
@@ -76,16 +77,18 @@ export function serializePkMatch(
   // Son 30 saniyede "final sprint" (çifte puan / vurgulu UI) bayrağı
   const finalSprint =
     battle.status === 'active' && !!endsAt
-      ? new Date(endsAt).getTime() - Date.now() <= 30_000
+      ? new Date(endsAt).getTime() > Date.now() && new Date(endsAt).getTime() - Date.now() <= 30_000
       : false
 
   let result: string | null = null
   if (battle.status === 'completed') {
-    if (battle.isDraw || battle.score1 === battle.score2) result = 'draw'
-    else result = battle.score1 > battle.score2 ? 'host' : 'guest'
+    if (battle.winnerId === battle.user1Id) result = 'host'
+    else if (battle.winnerId === battle.user2Id) result = 'guest'
+    else if (battle.isDraw) result = 'draw'
   }
 
   return {
+    ...pkSeriesFields(battle),
     id: battle.id,
     hostUserId: battle.user1Id,
     hostStreamId: battle.stream1Id,

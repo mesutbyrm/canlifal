@@ -37,6 +37,14 @@ interface WalletTx {
   createdAt: string
 }
 
+interface WithdrawalTotals { jeton: number; grossTL: number; recordedNetTL: number; count: number; unknownNetCount: number }
+interface GiftEarnings {
+  giftSpentJeton: number; giftGrossReceivedJeton: number; giftNetEarnedJeton: number
+  roomStreamPlatformCommissionJeton: number; spendableJeton: number; withdrawableJeton: number
+  estimatedNetEarningsTL: number; estimatedWithdrawableGrossTL: number
+  pending: WithdrawalTotals; approvedNotPaid: WithdrawalTotals; completed: WithdrawalTotals
+  conversion: { rate: number }; note: string; coverage: string
+}
 interface WalletData {
   balances: { cfc: number; jeton: number; legacyCfc: number }
   branding: { jeton: CurrencyBrand; cfc: CurrencyBrand }
@@ -50,6 +58,7 @@ interface WalletData {
     invitedCount: number
     referralCreditsEarned: number
     tellerEarnings: number
+    gifts?: GiftEarnings
   }
   referralCode: string | null
   withdrawal: {
@@ -63,6 +72,8 @@ interface WalletData {
       id: string
       amount: number
       amountTL: number
+      taxAmount: number
+      netAmountTL: number | null
       method: string
       status: string
       adminNote: string | null
@@ -83,6 +94,11 @@ const TX_LABELS: Record<string, string> = {
   agency_invite: 'Ajans komisyonu',
   gift_sent: 'Hediye gönderimi',
   gift_received: 'Hediye geliri',
+  gift_commission: 'Oda sahibi hediye payı',
+  self_gift_sent: 'Kendine hediye',
+  transfer_sent: 'Transfer gönderimi',
+  transfer_received: 'Gelen transfer',
+  tip_sent: 'Falcıya bahşiş',
   fortune: 'Fal / Tarot',
   bana_ozel: 'Bana Özel',
   lucky_gift_bet: 'Şanslı hediye bahsi',
@@ -102,6 +118,7 @@ const WITHDRAWAL_STATUS: Record<string, { label: string; className: string }> = 
   agency_approved: { label: 'Yönetici onayı bekliyor', className: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
   processing: { label: 'İşleniyor', className: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
   approved: { label: 'Onaylandı', className: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+  cancelled: { label: 'İptal edildi', className: 'bg-gray-500/15 text-gray-300 border-gray-500/30' },
   completed: { label: 'Ödendi', className: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
   rejected: { label: 'Reddedildi', className: 'bg-red-500/15 text-red-300 border-red-500/30' },
 }
@@ -114,6 +131,10 @@ export default function KazancPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'cfc' | 'jeton'>('all')
   const [page, setPage] = useState(0)
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [txType, setTxType] = useState('')
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Çekim formu
   const [amount, setAmount] = useState('')
@@ -131,16 +152,22 @@ export default function KazancPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(
-        `/api/user/wallet?currency=${filter}&limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`,
-      )
-      if (res.ok) setData(await res.json())
+      setLoadError(null)
+      const params = new URLSearchParams({ currency: filter, limit: String(PAGE_SIZE), offset: String(page * PAGE_SIZE) })
+      if (fromDate) params.set('from', fromDate)
+      if (toDate) params.set('to', toDate)
+      if (txType) params.set('type', txType)
+      const res = await fetch(`/api/user/wallet?${params}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Cüzdan bilgileri alınamadı')
+      setData(json)
     } catch (e) {
       console.error('[kazanc] load error:', e)
+      setLoadError(e instanceof Error ? e.message : 'Cüzdan bilgileri alınamadı')
     } finally {
       setIsLoading(false)
     }
-  }, [filter, page])
+  }, [filter, page, fromDate, toDate, txType])
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -326,6 +353,33 @@ export default function KazancPage() {
           </div>
         </div>
 
+        {earnings.gifts && (
+          <section className="rounded-2xl p-5 bg-deep-purple-900/40 border border-purple-500/25 mb-8">
+            <h2 className="text-gold-400 font-semibold mb-1">Hediye ve çekim özeti</h2>
+            <p className="text-xs text-deep-purple-200 mb-4">Tüm zamanlar · Gerçek jeton kazançları. Sahte hediye puanları kazanç değildir.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                ['Gönderilen hediye', earnings.gifts.giftSpentJeton],
+                ['Alınan hediye (brüt)', earnings.gifts.giftGrossReceivedJeton],
+                ['Hediye kazancı (net)', earnings.gifts.giftNetEarnedJeton],
+                ['Çekilebilir (ön kontrol)', earnings.gifts.withdrawableJeton],
+              ].map(([label, value]) => <SummaryStat key={String(label)} icon={<Wallet className="w-4 h-4" />} label={`${label} · Jeton`} value={Number(value)} />)}
+            </div>
+            <p className="text-xs text-deep-purple-200 mt-3">Net hediye kazancının güncel kurla karşılığı: {earnings.gifts.estimatedNetEarningsTL.toLocaleString('tr-TR')} ₺ · Çekilebilir brüt karşılık: {earnings.gifts.estimatedWithdrawableGrossTL.toLocaleString('tr-TR')} ₺. Kur: 1 Jeton = {earnings.gifts.conversion.rate.toLocaleString('tr-TR')} ₺. Bu tutarlar ödeme veya vergi sonrası net tutar değildir.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+              {([['Bekleyen talepler', earnings.gifts.pending], ['Onaylı / işleniyor (ödenmedi)', earnings.gifts.approvedNotPaid], ['Ödendi', earnings.gifts.completed]] as [string, WithdrawalTotals][]).map(([label, totals]) => (
+                <div key={label} className="rounded-xl bg-deep-purple-900/60 p-3 text-sm text-white">
+                  <h3 className="text-xs text-gold-300 mb-2">{label} · {totals.count} talep</h3>
+                  <p>{totals.jeton.toLocaleString('tr-TR')} Jeton · {totals.grossTL.toLocaleString('tr-TR')} ₺ brüt</p>
+                  <p className="text-xs text-deep-purple-200 mt-1">Kayıtlı net: {totals.recordedNetTL.toLocaleString('tr-TR')} ₺</p>
+                  {totals.unknownNetCount > 0 && <p className="text-xs text-amber-300 mt-1">{totals.unknownNetCount} eski talepte net tutar kayıtlı değil; net toplam eksiktir.</p>}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-deep-purple-200 mt-3">{earnings.gifts.coverage} {earnings.gifts.note}</p>
+          </section>
+        )}
+
         {/* Para çekme */}
         <div className="rounded-2xl p-5 bg-deep-purple-900/40 border border-purple-500/25 mb-8">
           <h2 className="flex items-center gap-2 text-gold-400 font-semibold mb-1">
@@ -441,7 +495,7 @@ export default function KazancPage() {
                     >
                       <span className="text-white">
                         {w.amount} {branding.jeton.name}
-                        <span className="text-deep-purple-400"> · {w.amountTL.toFixed(2)} ₺</span>
+                        <span className="text-deep-purple-200"> · Brüt {w.amountTL.toFixed(2)} ₺ · Kesinti {w.taxAmount.toFixed(2)} ₺ · Net {w.netAmountTL === null ? 'kayıtlı değil' : `${w.netAmountTL.toFixed(2)} ₺`}</span>
                       </span>
                       <span className={`text-[11px] px-2 py-0.5 rounded-full border ${st.className}`}>{st.label}</span>
                     </div>
@@ -482,6 +536,13 @@ export default function KazancPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+            <label className="text-xs text-deep-purple-200">Başlangıç (Türkiye saati)<input aria-label="Başlangıç tarihi" type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(0) }} className="block w-full mt-1 p-2 rounded-lg bg-deep-purple-900 text-white" /></label>
+            <label className="text-xs text-deep-purple-200">Bitiş (dahil)<input aria-label="Bitiş tarihi" type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(0) }} className="block w-full mt-1 p-2 rounded-lg bg-deep-purple-900 text-white" /></label>
+            <label className="text-xs text-deep-purple-200">İşlem türü<select aria-label="İşlem türü" value={txType} onChange={e => { setTxType(e.target.value); setPage(0) }} className="block w-full mt-1 p-2 rounded-lg bg-deep-purple-900 text-white"><option value="">Tümü</option>{Object.entries(TX_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+          </div>
+          <p className="text-xs text-deep-purple-200 mb-3">Filtreler yalnız işlem geçmişine uygulanır; üstteki özetler tüm zamanları kapsar.</p>
+          {loadError && <p role="alert" className="text-sm text-red-300 mb-3">{loadError} Önceki sonuçlar gösteriliyor.</p>}
           {transactions.length === 0 ? (
             <p className="text-sm text-deep-purple-400 py-6 text-center">Henüz işlem yok.</p>
           ) : (

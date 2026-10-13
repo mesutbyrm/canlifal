@@ -177,7 +177,9 @@ export async function completeIdempotent(
 export async function releaseIdempotent(recordId: string | null): Promise<void> {
   if (!recordId) return
   try {
-    await prisma.idempotencyRecord.delete({ where: { id: recordId } })
+    // A commit may have succeeded even if its acknowledgement was lost.
+    // Never delete the completed receipt on an ambiguous transaction error.
+    await prisma.idempotencyRecord.deleteMany({ where: { id: recordId, status: 'in_flight' } })
   } catch (error) {
     console.error('[idempotency] release failed:', error)
   }

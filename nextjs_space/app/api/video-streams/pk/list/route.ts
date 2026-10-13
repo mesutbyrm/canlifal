@@ -1,3 +1,4 @@
+import { finalizeExpiredActivePKs } from '@/lib/pk-state'
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     // Expire stale pending PKs
     await expireAllStalePKs()
+    await finalizeExpiredActivePKs()
 
     const battles = await prisma.pKBattle.findMany({
       where: { status: 'active' },

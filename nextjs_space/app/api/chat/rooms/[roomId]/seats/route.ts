@@ -1,3 +1,4 @@
+import { observeRoomActivity } from '@/lib/room-activity'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -242,6 +243,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Bu koltuk zaten dolu' }, { status: 409 })
     }
 
+    await observeRoomActivity(roomId)
     // Broadcast the seat change (web + Flutter via SSE)
     emitSeatChanged(roomId, actualTargetId, seatIndex, result.prevSeatIndex, {
       seatKind: seatIndex >= 0 ? seatKind(seatIndex, SEAT_COUNT) : undefined,

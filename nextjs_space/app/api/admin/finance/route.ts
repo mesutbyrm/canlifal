@@ -1,3 +1,5 @@
+import { adminGiftHistory } from '@/lib/admin-gift-history'
+import { parseReportDates } from '@/lib/report-filters'
 import { NextResponse, NextRequest } from 'next/server'
 import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
@@ -433,92 +435,13 @@ export async function GET(request: NextRequest) {
 
     // Gift history with sender, receiver, source
     if (section === 'gift-history') {
-      const page = parseInt(searchParams.get('page') || '1')
-      const limit = 30
-
-      // Chat room gifts
-      const chatGifts = await prisma.chatRoomGift.findMany({
-        where: dateFilter,
-        select: {
-          id: true, totalPrice: true, quantity: true, createdAt: true, commissionAmount: true, pointAmount: true, jetonSource: true, receiverAmount: true, ownerAmount: true, transactionType: true,
-          sender: { select: { id: true, name: true, username: true, image: true } },
-          recipient: { select: { id: true, name: true, username: true, image: true } },
-          giftType: { select: { name: true, icon: true } },
-          room: { select: { nameTr: true, slug: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: (page - 1) * limit,
-      })
-
-      // Stream gifts
-      const streamGifts = await prisma.streamGift.findMany({
-        where: dateFilter,
-        select: {
-          id: true, totalPrice: true, quantity: true, createdAt: true, pointAmount: true, jetonSource: true, recipientId: true, receiverAmount: true, ownerAmount: true, siteAmount: true, transactionType: true,
-          sender: { select: { id: true, name: true, username: true, image: true } },
-          giftType: { select: { name: true, icon: true } },
-          stream: { select: { id: true, title: true, user: { select: { id: true, name: true, username: true, image: true } } } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: (page - 1) * limit,
-      })
-
-      // Teller gifts (no relations in schema, use raw IDs)
-      const tellerGiftsRaw = await prisma.tellerGift.findMany({
-        where: dateFilter,
-        select: {
-          id: true, totalPrice: true, quantity: true, createdAt: true,
-          senderId: true, tellerId: true, giftTypeId: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: (page - 1) * limit,
-      })
-
-      // Resolve teller gift sender/teller info
-      const tellerGiftUserIds = [...new Set(tellerGiftsRaw.map((g: any) => g.senderId))]
-      const tellerGiftTellerIds = [...new Set(tellerGiftsRaw.map((g: any) => g.tellerId))]
-      const tellerGiftTypeIds = [...new Set(tellerGiftsRaw.map((g: any) => g.giftTypeId))]
-      const [tgUsers, tgTellers, tgGiftTypes] = await Promise.all([
-        prisma.user.findMany({ where: { id: { in: tellerGiftUserIds } }, select: { id: true, name: true, username: true, image: true } }),
-        prisma.liveFortuneTeller.findMany({ where: { id: { in: tellerGiftTellerIds } }, select: { id: true, displayName: true, userId: true, user: { select: { id: true, name: true, username: true, image: true } } } }),
-        prisma.giftType.findMany({ where: { id: { in: tellerGiftTypeIds } }, select: { id: true, name: true, icon: true } }),
-      ])
-      const tgUserMap = Object.fromEntries(tgUsers.map((u: any) => [u.id, u]))
-      const tgTellerMap = Object.fromEntries(tgTellers.map((t: any) => [t.id, t]))
-      const tgGiftTypeMap = Object.fromEntries(tgGiftTypes.map((g: any) => [g.id, g]))
-
-      const giftRecipients = await prisma.user.findMany({
-        where: { id: { in: streamGifts.map(g => g.recipientId).filter((id): id is string => !!id) } },
-        select: { id: true, name: true, username: true, image: true },
-      })
-      const giftRecipientMap = new Map(giftRecipients.map(u => [u.id, u]))
-      // Merge and sort by date
-      const allGifts = [
-        ...chatGifts.map((g: any) => ({
-          id: g.id, pointAmount: g.pointAmount ?? g.totalPrice, jetonSource: g.jetonSource, transactionType: g.transactionType, receiverAmount: g.receiverAmount, ownerAmount: g.ownerAmount, type: 'chat_room' as const, amount: g.totalPrice, quantity: g.quantity, commission: g.commissionAmount || 0,
-          createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
-          sender: g.sender, receiver: g.recipient, sourceName: g.room?.nameTr || 'Sohbet Odası', sourceSlug: g.room?.slug,
-        })),
-        ...streamGifts.map((g: any) => ({
-          id: g.id, pointAmount: g.pointAmount ?? g.totalPrice, jetonSource: g.jetonSource, transactionType: g.transactionType, receiverAmount: g.receiverAmount, ownerAmount: g.ownerAmount, type: 'stream' as const, amount: g.totalPrice, quantity: g.quantity, commission: g.siteAmount || 0,
-          createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
-          sender: g.sender, receiver: g.recipientId ? giftRecipientMap.get(g.recipientId) || null : g.stream?.user || null, sourceName: g.stream?.title || 'Canlı Yayın', sourceSlug: null,
-        })),
-        ...tellerGiftsRaw.map((g: any) => {
-          const gt = tgGiftTypeMap[g.giftTypeId]
-          const teller = tgTellerMap[g.tellerId]
-          return {
-            id: g.id, type: 'teller' as const, amount: g.totalPrice, quantity: g.quantity, commission: 0,
-            createdAt: g.createdAt, giftName: gt?.name || 'Hediye', giftIcon: gt?.icon || '🎁',
-            sender: tgUserMap[g.senderId] || null, receiver: teller?.user || null, sourceName: teller?.displayName || 'Falcı', sourceSlug: null,
-          }
-        }),
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit)
-
-      return NextResponse.json({ gifts: allGifts, page })
+      try {
+        const dates = period === 'custom' ? parseReportDates(searchParams) : undefined
+        return NextResponse.json(await adminGiftHistory(searchParams, period === 'custom' ? (dates ? { createdAt: dates } : {}) : dateFilter))
+      } catch (error) {
+        if (error instanceof Error && /Geçersiz|Sayfa|Tarih|tarih|Başlangıç/.test(error.message)) return NextResponse.json({ error: error.message }, { status: 400 })
+        throw error
+      }
     }
 
     // Top earners (users who earned the most from all sources)

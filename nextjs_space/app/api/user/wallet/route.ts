@@ -1,3 +1,4 @@
+import { parseReportDates } from '@/lib/report-filters'
 import { giftFinanceSummary } from '@/lib/gift-finance-summary'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -36,9 +37,20 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '25', 10) || 25, 100)
+    const limit = Math.max(1, Math.min(parseInt(searchParams.get('limit') || '25', 10) || 25, 100))
     const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10) || 0, 0)
     const currencyFilter = searchParams.get('currency') || 'all' // all | cfc | jeton
+
+    if (!['all', 'cfc', 'jeton'].includes(currencyFilter) || offset > 10000) {
+      return NextResponse.json({ error: 'Geçersiz para birimi veya sayfa; tarih filtresini daraltın' }, { status: 400 })
+    }
+    let createdAt
+    try { createdAt = parseReportDates(searchParams) } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 400 })
+    }
+    const type = searchParams.get('type')?.trim()
+    if (type && !/^[a-z_]{1,50}$/.test(type)) return NextResponse.json({ error: 'Geçersiz işlem türü' }, { status: 400 })
+    const transactionWhere = { userId, ...(createdAt ? { createdAt } : {}), ...(type ? { type } : {}) }
 
     const wantCfc = currencyFilter === 'all' || currencyFilter === 'cfc'
     const wantJeton = currencyFilter === 'all' || currencyFilter === 'jeton'
@@ -74,7 +86,7 @@ export async function GET(request: NextRequest) {
       getCommissionSummary(userId),
       wantCfc
         ? prisma.creditTransaction.findMany({
-            where: { userId },
+            where: transactionWhere,
             orderBy: { createdAt: 'desc' },
             take: fetchSize,
             select: {
@@ -89,7 +101,7 @@ export async function GET(request: NextRequest) {
         : Promise.resolve([]),
       wantJeton
         ? prisma.jetonTransaction.findMany({
-            where: { userId },
+            where: transactionWhere,
             orderBy: { createdAt: 'desc' },
             take: fetchSize,
             select: {
@@ -102,8 +114,8 @@ export async function GET(request: NextRequest) {
             },
           })
         : Promise.resolve([]),
-      wantCfc ? prisma.creditTransaction.count({ where: { userId } }) : Promise.resolve(0),
-      wantJeton ? prisma.jetonTransaction.count({ where: { userId } }) : Promise.resolve(0),
+      wantCfc ? prisma.creditTransaction.count({ where: transactionWhere }) : Promise.resolve(0),
+      wantJeton ? prisma.jetonTransaction.count({ where: transactionWhere }) : Promise.resolve(0),
       prisma.withdrawalRequest.findFirst({
         where: { userId, status: { in: ['pending', 'agency_approved', 'processing'] } },
         select: { id: true, amount: true, amountTL: true, status: true, createdAt: true },
@@ -117,6 +129,8 @@ export async function GET(request: NextRequest) {
           amount: true,
           amountTL: true,
           method: true,
+          taxAmount: true,
+          netAmountTL: true,
           status: true,
           adminNote: true,
           createdAt: true,
@@ -189,6 +203,7 @@ export async function GET(request: NextRequest) {
         pending: pendingWithdrawal,
         history: withdrawals,
       },
+      filters: { from: searchParams.get('from'), to: searchParams.get('to'), type: type || null, timeZone: 'Europe/Istanbul', scope: 'transactions_only' },
       transactions: merged,
       total: creditCount + jetonCount,
       limit,

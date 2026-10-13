@@ -1,3 +1,4 @@
+import { observeRoomActivity } from '@/lib/room-activity'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -272,6 +273,7 @@ export async function POST(
           void onUserLeave('voice_room', roomId, userId)
         }
       } catch { /* ignore */ }
+      await observeRoomActivity(roomId, userId)
       return NextResponse.json({ success: true })
     }
 
@@ -490,6 +492,7 @@ export async function POST(
         throw txError
       }
     }
+    await observeRoomActivity(roomId)
     if (seatConflict) {
       // Koltuk doluydu, dinleyici olarak katıldı — hata dönmek yerine devam et;
       // istemci presence yanıtından seatIndex=-1 görüp uygun UI gösterir.
@@ -765,6 +768,7 @@ export async function DELETE(
       void onUserLeave('voice_room', roomId, delUserId)
     }
     
+    await observeRoomActivity(roomId, delUserId)
     let onlineCount = 0
     try {
       onlineCount = await prisma.chatPresence.count({

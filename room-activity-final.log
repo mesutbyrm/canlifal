@@ -1,0 +1,1 @@
+PASS 24 isolated persistent activity lifecycle and duration checks; no production writes or actual lock concurrency.

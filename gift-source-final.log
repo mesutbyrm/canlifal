@@ -1,0 +1,212 @@
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 1000,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 1000,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 0,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 0,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 0,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 1000,
+  requestedAmount: 100
+}
+Chat room gift error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:50:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:119:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+Chat room gift error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:119:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+Chat room gift error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:50:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:119:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+Chat room gift error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:119:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+Error sending gift: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:52:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:177:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+Error sending gift: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:177:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:52:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:123:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:123:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+Error sending gift: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:52:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:177:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+Error sending gift: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:177:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:52:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:123:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:123:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:50:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:196:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:196:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:18:109
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:50:15)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:196:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:146:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:20:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async db_1.prisma.$transaction.timeout (lib/gift-settlement.ts:100:9)
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:29:18)
+    at async settleRoomGift (lib/gift-settlement.ts:14:21)
+    at async Object.POST (app/api/live/gift/send/route.ts:196:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:147:5
+[Gift] post-commit side effect failed: Error: SIMULATED_NOTIFICATION_FAILURE
+    at createNotificationWithPush (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:52:90)
+    at Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:138:55)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:96:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:151:3
+PASS 202 isolated gift scenarios (roles, guest split, self-gift, validation, rollback, receipt). No real database concurrency or device test.

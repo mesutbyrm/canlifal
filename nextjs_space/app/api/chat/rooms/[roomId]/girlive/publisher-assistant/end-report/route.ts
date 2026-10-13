@@ -41,10 +41,14 @@ export async function GET(
   }
 
   const url = new URL(req.url)
-  const sessionId = url.searchParams.get('sessionId') || `end-${roomId}-${new Date().toISOString().slice(0, 10)}`
+  const sessionId = url.searchParams.get('sessionId') || null
 
-  const report = await buildVoiceRoomReport(roomId, room.ownerId!, 'day', sessionId)
-  report.endedAt = new Date().toISOString()
+  let report
+  try { report = await buildVoiceRoomReport(roomId, room.ownerId!, 'session', sessionId) } catch (error) {
+    console.error('[publisher-end-report]', error)
+    return NextResponse.json({ error: 'Faaliyet oturumu bulunamadı veya rapor alınamadı' }, { status: error instanceof Error && error.message === 'Faaliyet oturumu bulunamadı' ? 404 : 500 })
+  }
+  // Reading a report never pretends an active session has ended.
 
   // Yayıncıya özel SSE gönder (herkese açık sohbete yazmıyoruz)
   try {
@@ -53,8 +57,8 @@ export async function GET(
       roomId,
       targetUserId: room.ownerId,
       kind: 'end_report',
-      text: `📊 Gün sonu: ${report.grossGiftJeton} brüt jeton, ${report.uniqueVisitors} ziyaretçi, ${report.pkCompleted} PK`,
-      sessionId,
+      text: `📊 ${report.endedAt ? 'Oturum sonu' : 'Güncel oturum'}: ${report.grossGiftJeton} brüt jeton, ${report.uniqueVisitors} ziyaretçi, ${report.pkCompleted} PK`,
+      sessionId: report.sessionId,
       report,
     })
   } catch (e) {
