@@ -262,3 +262,65 @@ export function getNotificationUrl(type: string, data?: Record<string, any>): st
   }
   return `${baseUrl}/panel`
 }
+
+/**
+ * Tanılama: kendi hesabına test bildirimi gönderir ve OneSignal'in ham yanıtını döner.
+ */
+export async function sendTestPushDetailed(userId: string): Promise<{
+  ok: boolean
+  reason?: string
+  status?: number
+  response?: unknown
+  appIdSuffix?: string
+}> {
+  if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+    return {
+      ok: false,
+      reason: !ONESIGNAL_APP_ID
+        ? 'ONESIGNAL_APP_ID sunucuda tanımlı değil'
+        : 'ONESIGNAL_REST_API_KEY sunucuda tanımlı değil',
+    }
+  }
+  try {
+    const response = await fetch(`${ONESIGNAL_API_URL}/notifications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        target_channel: 'push',
+        include_aliases: { external_id: [userId] },
+        headings: { en: 'Test bildirimi', tr: 'Test bildirimi' },
+        contents: { en: 'Bildirimler çalışıyor 🎉', tr: 'Bildirimler çalışıyor 🎉' },
+        data: {
+          type: 'test',
+          targetPath: '/notifications',
+          targetId: '',
+          title: 'Test bildirimi',
+          body: 'Bildirimler çalışıyor',
+        },
+      }),
+    })
+    const json: Record<string, unknown> = await response.json().catch(() => ({}))
+    const errStr = json?.errors ? JSON.stringify(json.errors) : ''
+    const noSubscriber =
+      !!json?.errors &&
+      (errStr.includes('invalid_aliases') || errStr.includes('not subscribed'))
+    return {
+      ok: response.ok && !!json?.id && !noSubscriber,
+      reason: !response.ok
+        ? `OneSignal HTTP ${response.status}`
+        : noSubscriber
+          ? 'Bu kullanıcı kimliğine abone cihaz yok — OneSignal.login veya izin eksik'
+          : undefined,
+      status: response.status,
+      response: json,
+      appIdSuffix: ONESIGNAL_APP_ID.slice(-6),
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, reason: `İstek hatası: ${msg}` }
+  }
+}
