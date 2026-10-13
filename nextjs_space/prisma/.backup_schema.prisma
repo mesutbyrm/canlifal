@@ -1395,6 +1395,15 @@ model StreamModerator {
 
 // PK Battle between two streamers (TikTok-style)
 model PKBattle {
+  targetArrows     Int? @default(1)
+  arrows1          Int? @default(0)
+  arrows2          Int? @default(0)
+  roundNumber      Int? @default(1)
+  roundStartScore1  Int? @default(0)
+  roundStartScore2  Int? @default(0)
+  roundStartedAt   DateTime?
+  roundHistory     Json?
+  endReason        String?
   id         String    @id @default(cuid())
   stream1Id  String // Challenger stream
   stream2Id  String // Opponent stream

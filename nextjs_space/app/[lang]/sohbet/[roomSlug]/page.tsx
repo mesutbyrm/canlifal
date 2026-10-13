@@ -216,6 +216,7 @@ export default function ChatRoomPage() {
   const [activePKBattle, setActivePKBattle] = useState<any>(null)
   const [incomingPKRequest, setIncomingPKRequest] = useState<any>(null)
   const [pkSendingAction, setPkSendingAction] = useState(false)
+  const [pkTargetArrows, setPkTargetArrows] = useState(1)
   const [pkCandidates, setPkCandidates] = useState<any[]>([])
   const [pkCandidatesLoading, setPkCandidatesLoading] = useState(false)
   const pkDismissedRef = useRef<Set<string>>(new Set())
@@ -2256,7 +2257,7 @@ export default function ChatRoomPage() {
       const res = await fetch(`/api/chat/rooms/${room.id}/pk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', targetRoomId, duration: 180 })
+        body: JSON.stringify({ action: 'create', targetRoomId, duration: 180, targetArrows: pkTargetArrows })
       })
       const data = await res.json()
       if (!res.ok) {
@@ -2268,7 +2269,7 @@ export default function ChatRoomPage() {
       }
     } catch { alert('PK oluşturulurken hata oluştu') }
     finally { setPkSendingAction(false) }
-  }, [room, pkSendingAction])
+  }, [room, pkSendingAction, pkTargetArrows])
 
   const handlePKAccept = useCallback(async (battleId: string) => {
     if (pkSendingAction) return
@@ -2312,12 +2313,12 @@ export default function ChatRoomPage() {
     if (pkSendingAction) return
     setPkSendingAction(true)
     try {
-      await fetch(`/api/chat/rooms/${room?.id || ''}/pk`, {
+      const response = await fetch(`/api/chat/rooms/${room?.id || ''}/pk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'end', battleId })
       })
-      setActivePKBattle(null)
+      if (response.ok) setActivePKBattle(await response.json())
     } catch { /* ignore */ }
     finally { setPkSendingAction(false) }
   }, [room, pkSendingAction])
@@ -4680,6 +4681,7 @@ export default function ChatRoomPage() {
                    commandSubPanel === 'ban' ? '🚫 Kullanıcı Banla' :
                    commandSubPanel === 'unban' ? '✅ Ban Kaldır' :
                    commandSubPanel === 'pk' ? '⚔️ PK Başlat' : 'Oda Komutları'}
+                  {commandSubPanel === 'pk' && <select aria-label="PK ok hedefi" className="bg-gray-900 text-white rounded px-2 py-1" value={pkTargetArrows} onChange={e => setPkTargetArrows(Number(e.target.value))}>{[1,2,3].map(n => <option key={n} value={n}>{n} ok</option>)}</select>}
                 </h3>
                 <button onClick={() => { setShowCommandsPanel(false); setCommandSubPanel(null) }} className="text-purple-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -5165,7 +5167,7 @@ export default function ChatRoomPage() {
                     {incomingPKRequest.room1.icon} {incomingPKRequest.room1.name} odası
                   </p>
                 )}
-                <p className="text-purple-400/60 text-xs mb-6">Süre: {Math.floor((incomingPKRequest.duration || 180) / 60)} dakika</p>
+                <p className="text-purple-400/60 text-xs mb-6">Raund: {Math.floor((incomingPKRequest.duration || 180) / 60)} dakika · Hedef: {incomingPKRequest.targetArrows || 1} ok</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => handlePKReject(incomingPKRequest.id)}
@@ -5193,7 +5195,8 @@ export default function ChatRoomPage() {
         <PKBattleOverlay
           battle={activePKBattle}
           currentStreamId={room.id}
-          onEnd={() => handlePKEnd(activePKBattle.id)}
+          onEnd={session?.user?.id === activePKBattle.user1Id || session?.user?.id === activePKBattle.user2Id ? () => handlePKEnd(activePKBattle.id) : undefined}
+          onRematch={session?.user?.id === activePKBattle.user1Id || session?.user?.id === activePKBattle.user2Id ? () => { setCommandSubPanel('pk'); setShowCommandsPanel(true) } : undefined}
         />
       )}
 

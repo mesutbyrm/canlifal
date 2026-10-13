@@ -1,4 +1,9 @@
 import { prisma } from '@/lib/db'
+import { recordContribution } from '@/lib/supporter-level'
+import { recordTeamPoints } from '@/lib/team-points'
+import { processAgencyCommission } from '@/lib/agency-commission'
+import { incrementLeaderboardScore } from '@/lib/leaderboard-engine'
+import { applyGiftPkScore, publishGiftPkScore } from '@/lib/gift-pk-score'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { atomicDebitJeton } from '@/lib/balance-guard'
 import { assertGiftRecipient, lockGiftBalances, saveGiftReceipt } from '@/lib/gift-recipient'
@@ -9,9 +14,9 @@ export async function settleRoomGift(p: {
   ownerId: string | null; giftTypeId: string; quantity: number; amount: number;
   source: 'real' | 'fake'; skipDeduction: boolean; dist: Distribution;
   idempotencyRecord: string | null; responseStyle: 'chat' | 'stream' | 'unified';
-  giftName: string; giftIcon: string | null;
+  giftName: string; giftIcon: string | null; sideIds?: string[]; battleId?: string | null;
 }) {
-  return prisma.$transaction(async (tx: any) => {
+  const settled = await prisma.$transaction(async (tx: any) => {
     await assertGiftRecipient(tx, p.scope, p.contextId, p.recipientId)
     await lockGiftBalances(tx, [p.senderId, p.recipientId, p.ownerId])
     const sender = await tx.user.findUnique({ where: { id: p.senderId }, select: { jetonBalance: true, fakeJetonBalance: true } })
@@ -70,13 +75,28 @@ export async function settleRoomGift(p: {
     } else {
       await tx.videoStream.update({ where: { id: p.contextId }, data: { lastGiftAt: new Date() } })
     }
+    const options = { client: tx, strict: true }
+    await recordContribution(p.senderId, p.recipientId, p.amount, options)
+    await recordTeamPoints(p.senderId, p.amount, options)
+    await incrementLeaderboardScore(p.scope === 'voice' ? 'voice_room' : 'live_stream', p.recipientId, p.amount, 'gift_received', p.contextId, options)
+    if (finance) {
+      for (const [userId, earnedAmount] of [[p.recipientId, p.dist.receiverNet], [p.ownerId, p.dist.ownerNet]] as const) {
+        if (userId && earnedAmount > 0) await processAgencyCommission({ userId, earnedAmount,
+          sourceType: p.scope === 'voice' ? 'chat_gift' : 'stream_gift', sourceId: gift.id }, options)
+      }
+    }
+    const pkUpdate = await applyGiftPkScore({ sideIds: p.sideIds || [p.contextId], battleId: p.battleId,
+      amount: p.amount, contributorId: p.senderId, receiverId: p.recipientId, giftTypeId: p.giftTypeId,
+      quantity: p.quantity, source: 'gift' }, options)
     const senderAfter = await tx.user.findUnique({ where: { id: p.senderId }, select: { jetonBalance: true, fakeJetonBalance: true } })
     const receiptGift = { ...gift, amount: p.amount, giftId: gift.id, giftName: p.giftName, giftIcon: p.giftIcon, recipientId: p.recipientId }
     const data = { gift: receiptGift, newBalance: senderAfter.jetonBalance, fakeBalance: senderAfter.fakeJetonBalance,
-      jetonSource: p.source, countsAsFinance: finance, pointAmount: p.amount, pkUpdate: null }
+      jetonSource: p.source, countsAsFinance: finance, pointAmount: p.amount, pkUpdate }
     const receipt = p.responseStyle === 'unified' ? { success: true, data } : { success: true, ...data }
     // Receipt and charge commit together. A crash after this point cannot charge again.
     await saveGiftReceipt(tx, p.idempotencyRecord, receipt)
-    return { gift, receipt, newBalance: senderAfter.jetonBalance, senderBalanceBefore: sender.jetonBalance }
-  })
+    return { gift, receipt, pkUpdate, newBalance: senderAfter.jetonBalance, senderBalanceBefore: sender.jetonBalance }
+  }, { timeout: 20000 })
+  publishGiftPkScore(settled.pkUpdate)
+  return settled
 }

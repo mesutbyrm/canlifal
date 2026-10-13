@@ -1,3 +1,5 @@
+import { settleDirectGift } from '@/lib/direct-gift-settlement'
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
@@ -59,6 +61,7 @@ async function createGiftAnnouncement(
 
 export async function POST(req: NextRequest) {
   let _idempotencyRecord: string | null = null
+  let committedReceipt: any = null
   try {
     const authUser = await authenticateRequest(req)
     if (!authUser) {
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Faz 22 (§71) — idempotency koruması
-    const replay = await beginIdempotent(req, 'gift_send', userId)
+    const replay = await beginIdempotent(req, 'gift_send', userId, { strict: true })
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
@@ -139,7 +142,7 @@ export async function POST(req: NextRequest) {
     if (type === 'gift' && giftTypeId) {
       // Send a gift item
       const giftType = await prisma.giftType.findUnique({ where: { id: giftTypeId } })
-      if (!giftType) {
+      if (!giftType || !giftType.isActive) {
         return NextResponse.json({ error: 'Gift type not found' }, { status: 404 })
       }
 
@@ -163,48 +166,25 @@ export async function POST(req: NextRequest) {
       const commissionAmount = directGiftCommPercent > 0 ? Math.floor(giftType.price * directGiftCommPercent / 100) : 0
       const recipientAmount = giftType.price - commissionAmount
 
-      // Deduct jetons from sender (staff skip)
-      if (!isStaff) {
-        await atomicDebitJeton(prisma, sender.id, giftType.price, spendPlan.source)
-        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
-          data: {
-            userId: sender.id,
-            amount: -giftType.price,
-            type: 'gift_sent',
-            description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi`,
-            balanceBefore: senderJetons,
-            balanceAfter: senderJetons - giftType.price
-          }
-        })
+      const isBigGift = giftType.price >= 1000
+      const giftPayload = {
+        success: true,
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
+        pointAmount: giftType.price,
+        message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
+        bigGift: isBigGift ? {
+          senderName: sender.name,
+          recipientName: recipient.name,
+          giftIcon: giftType.icon,
+          giftType: giftType.name,
+          amount: giftType.price
+        } : null
       }
-
-      // Credit recipient (minus commission) - sadece normal kullanıcılardan
-      if (!senderExcluded && recipientAmount > 0) {
-        const recipientUser = await prisma.user.findUnique({ where: { id: recipient.id }, select: { jetonBalance: true } })
-        const rBefore = recipientUser?.jetonBalance ?? 0
-        await prisma.user.update({
-          where: { id: recipient.id },
-          data: { jetonBalance: { increment: recipientAmount } }
-        })
-        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
-          data: {
-            userId: recipient.id,
-            amount: recipientAmount,
-            type: 'gift_received',
-            description: `${sender.name} tarafından ${giftType.name} hediyesi alındı${commissionAmount > 0 ? ` (%${directGiftCommPercent} komisyon düşüldü)` : ''}`,
-            balanceBefore: rBefore,
-            balanceAfter: rBefore + recipientAmount
-          }
-        })
-
-        // Process agency commission
-        processAgencyCommission({
-          userId: recipient.id,
-          earnedAmount: recipientAmount,
-          sourceType: 'direct_gift',
-        }).catch(err => console.error('[Direct Gift] Agency commission error:', err))
-      }
-
+      committedReceipt = await settleDirectGift({ senderId: sender.id, recipientId: recipient.id,
+        amount: giftType.price, commission: commissionAmount, giftTypeId: giftType.id, name: giftType.name,
+        source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
+        receiptId: _idempotencyRecord, response: giftPayload })
       // Send notification + push to recipient
       createNotificationWithPush({
         userId: recipient.id,
@@ -225,44 +205,12 @@ export async function POST(req: NextRequest) {
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price, giftType.id).catch(err => console.error('Gift announcement error:', err))
 
-      // Ledger: yalnız gerçek jeton.
-      if (spendPlan.countsAsFinance) {
-        recordLedger({
-          debit: { accountType: 'user_jeton', accountId: sender.id, balanceBefore: senderJetons, balanceAfter: senderJetons - giftType.price },
-          credit: { accountType: senderExcluded ? 'platform_jeton' : 'user_jeton', accountId: senderExcluded ? 'PLATFORM' : recipient.id },
-          amount: giftType.price,
-          category: 'gift_send',
-          referenceType: 'GiftType',
-          referenceId: giftType.id,
-          actorId: sender.id,
-          metadata: { giftName: giftType.name, recipientId: recipient.id, commission: commissionAmount },
-        }).catch(e => console.error('[Ledger] gift send error:', e))
-      }
-
-      recordContribution(sender.id, recipient.id, giftType.price).catch(() => {})
-      recordTeamPoints(sender.id, giftType.price).catch(() => {})
-      const isBigGift = giftType.price >= 1000
-      const giftPayload = {
-        success: true,
-        jetonSource: spendPlan.source,
-        countsAsFinance: spendPlan.countsAsFinance,
-        pointAmount: giftType.price,
-        message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
-        bigGift: isBigGift ? {
-          senderName: sender.name,
-          recipientName: recipient.name,
-          giftIcon: giftType.icon,
-          giftType: giftType.name,
-          amount: giftType.price
-        } : null
-      }
-      await completeIdempotent(replay.record, 200, giftPayload)
-      return NextResponse.json(giftPayload)
+      return NextResponse.json(committedReceipt)
 
     } else if (type === 'jeton' && jetonAmount) {
       // Send jetons
-      const amount = parseInt(jetonAmount)
-      if (isNaN(amount) || amount < 1) {
+      const amount = Number(jetonAmount)
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 2147483647) {
         return NextResponse.json({ error: 'Invalid jeton amount' }, { status: 400 })
       }
 
@@ -287,51 +235,25 @@ export async function POST(req: NextRequest) {
       const jetonCommission = jetonTransferCommPercent > 0 ? Math.floor(amount * jetonTransferCommPercent / 100) : 0
       const jetonRecipientAmount = amount - jetonCommission
 
-      if (!isStaff) {
-        // Deduct from sender
-        await atomicDebitJeton(prisma, sender.id, amount, spendPlan.source)
-        // Record sender transaction
-        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
-          data: {
-            userId: sender.id,
-            amount: -amount,
-            type: 'spend',
-            description: `${recipient.name} kişisine ${amount} jeton gönderildi`,
-            balanceBefore: sender.jetonBalance,
-            balanceAfter: (sender.jetonBalance ?? 0) - amount
-          }
-        })
+      const isBigJetonGift = amount >= 1000
+      const jetonPayload = {
+        success: true,
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
+        pointAmount: amount,
+        message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,
+        bigGift: isBigJetonGift ? {
+          senderName: sender.name,
+          recipientName: recipient.name,
+          giftIcon: '🪙',
+          giftType: 'Jeton',
+          amount
+        } : null
       }
-
-      // Add to recipient - sadece normal kullanıcılardan
-      if (!senderExcluded && jetonRecipientAmount > 0) {
-        await prisma.user.update({
-          where: { id: recipient.id },
-          data: { jetonBalance: { increment: jetonRecipientAmount } }
-        })
-
-        // Process agency commission
-        processAgencyCommission({
-          userId: recipient.id,
-          earnedAmount: jetonRecipientAmount,
-          sourceType: 'direct_gift',
-        }).catch(err => console.error('[Jeton Transfer] Agency commission error:', err))
-      }
-
-      // Record recipient transaction (only if not excluded)
-      if (!senderExcluded) {
-        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
-          data: {
-            userId: recipient.id,
-            amount: amount,
-            type: 'purchase',
-            description: `${sender.name} kişisinden ${amount} jeton hediye alındı`,
-            balanceBefore: 0,
-            balanceAfter: 0
-          }
-        })
-      }
-
+      committedReceipt = await settleDirectGift({ senderId: sender.id, recipientId: recipient.id,
+        amount: amount, commission: jetonCommission, giftTypeId: undefined, name: 'Jeton',
+        source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
+        receiptId: _idempotencyRecord, response: jetonPayload })
       // Send notification
       createNotificationWithPush({
         userId: recipient.id,
@@ -350,46 +272,19 @@ export async function POST(req: NextRequest) {
 
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, '🪙', 'Jeton', amount).catch(err => console.error('Jeton gift announcement error:', err))
-      // Ledger: yalnız gerçek jeton.
-      if (spendPlan.countsAsFinance) {
-        recordLedger({
-          debit: { accountType: 'user_jeton', accountId: sender.id, balanceBefore: senderJetonBalance, balanceAfter: senderJetonBalance - amount },
-          credit: { accountType: senderExcluded ? 'platform_jeton' : 'user_jeton', accountId: senderExcluded ? 'PLATFORM' : recipient.id },
-          amount,
-          category: 'gift_send',
-          actorId: sender.id,
-          metadata: { type: 'jeton_transfer', recipientId: recipient.id, commission: jetonCommission },
-        }).catch(e => console.error('[Ledger] jeton transfer error:', e))
-      }
-
-      recordContribution(sender.id, recipient.id, amount).catch(() => {})
-      recordTeamPoints(sender.id, amount).catch(() => {})
-      const isBigJetonGift = amount >= 1000
-      const jetonPayload = {
-        success: true,
-        jetonSource: spendPlan.source,
-        countsAsFinance: spendPlan.countsAsFinance,
-        pointAmount: amount,
-        message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,
-        bigGift: isBigJetonGift ? {
-          senderName: sender.name,
-          recipientName: recipient.name,
-          giftIcon: '🪙',
-          giftType: 'Jeton',
-          amount
-        } : null
-      }
-      await completeIdempotent(replay.record, 200, jetonPayload)
-      return NextResponse.json(jetonPayload)
+      return NextResponse.json(committedReceipt)
     }
 
     return NextResponse.json({ error: 'Invalid request type' }, { status: 400 })
   } catch (error) {
+    if (committedReceipt) { console.error('[Direct Gift] notification error:', error); return NextResponse.json(committedReceipt) }
     await releaseIdempotent(_idempotencyRecord)
     if (isInsufficientBalanceError(error)) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
     }
     console.error('Gift send error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  } finally {
+    if (!committedReceipt) await releaseIdempotent(_idempotencyRecord)
   }
 }

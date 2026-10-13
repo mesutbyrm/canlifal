@@ -1,3 +1,5 @@
+import { finishPkBattle } from '@/lib/pk-state'
+import { parseTargetArrows, pkSeriesFields } from '@/lib/pk-series'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        id: battle.id || '',
+        id: battle.id || '', ...pkSeriesFields(battle), endsAt: battle.endsAt,
         status: battle.status || '',
         room1Id: battle.stream1Id || '',
         room2Id: battle.stream2Id || '',
@@ -123,6 +125,8 @@ export async function POST(request: NextRequest) {
     _idempotencyRecord = replay.record
 
     const body = await request.json()
+    const targetArrows = parseTargetArrows(body.targetArrows)
+    if (targetArrows === null) return NextResponse.json({ error: 'Ok hedefi 1, 2 veya 3 olmalıdır' }, { status: 400 })
     let { action, roomId, targetRoomId, battleId, duration } = body
 
     // ──────────── CREATE ────────────
@@ -182,6 +186,7 @@ export async function POST(request: NextRequest) {
 
       const battle = await prisma.pKBattle.create({
         data: {
+          targetArrows,
           stream1Id: roomId,
           stream2Id: targetRoomId,
           user1Id: authUser.id,
@@ -210,11 +215,11 @@ export async function POST(request: NextRequest) {
         fromUserName: challenger?.name || undefined,
         targetPath: 'pk',
         targetId: battle.id,
-        data: JSON.stringify({ type: 'pk:invite', battleId: battle.id, challengerRoomId: roomId, opponentRoomId: targetRoomId, challengerRoomName: myRoomName })
+        data: JSON.stringify({ type: 'pk:invite', battleId: battle.id, ...pkSeriesFields(battle), challengerRoomId: roomId, opponentRoomId: targetRoomId, challengerRoomName: myRoomName })
       }).catch(() => {})
 
       // Emit PK event
-      const pkData = { battleId: battle.id, action: 'created', room1Id: roomId, room2Id: targetRoomId, user1Id: authUser.id, user2Id: targetOwnerId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
+      const pkData = { battleId: battle.id, ...pkSeriesFields(battle), action: 'created', room1Id: roomId, room2Id: targetRoomId, user1Id: authUser.id, user2Id: targetOwnerId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
       // Davet adımı da kabul/iptal/bitiş adımlarıyla aynı ortak yayıncıyı kullanır:
       // böylece oda↔oda, yayın↔yayın ve karışık oda↔yayın PK'sında her iki veri yolu da beslenir.
       emitPkToBothSides({ stream1Id: roomId, stream2Id: targetRoomId }, { type: 'pk', ...pkData })
@@ -250,10 +255,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const updated = await prisma.pKBattle.update({ where: { id: battleId }, data: { status: 'active', startedAt: new Date() } })
+      const updated = await prisma.pKBattle.update({ where: { id: battleId, status: 'pending' }, data: { status: 'active', startedAt: new Date(), endsAt: new Date(Date.now() + battle.duration * 1000) } })
       const endTime = new Date(Date.now() + (battle.duration || 180) * 1000)
 
-      const pkStartData = { battleId: battle.id, action: 'started', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: 0, score2: 0, duration: battle.duration, status: 'active', startedAt: updated.startedAt?.toISOString(), endTime: endTime.toISOString() }
+      const pkStartData = { battleId: battle.id, ...pkSeriesFields(battle), action: 'started', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: 0, score2: 0, duration: battle.duration, status: 'active', startedAt: updated.startedAt?.toISOString(), endTime: endTime.toISOString() }
       emitChatEvent(battle.stream1Id, 'pk', pkStartData)
       emitChatEvent(battle.stream2Id, 'pk', pkStartData)
       emitStreamEvent(battle.stream1Id, 'pk', { type: 'pk', ...pkStartData })
@@ -275,9 +280,9 @@ export async function POST(request: NextRequest) {
       }
 
       const newStatus = action === 'reject' ? 'rejected' : 'cancelled'
-      const updated = await prisma.pKBattle.update({ where: { id: battleId }, data: { status: newStatus, endedAt: new Date() } })
+      const updated = await prisma.pKBattle.update({ where: { id: battleId, status: 'pending' }, data: { status: newStatus, endedAt: new Date() } })
 
-      const cancelData = { battleId: battle.id, action: newStatus, room1Id: battle.stream1Id, room2Id: battle.stream2Id, status: newStatus }
+      const cancelData = { battleId: battle.id, ...pkSeriesFields(battle), action: newStatus, room1Id: battle.stream1Id, room2Id: battle.stream2Id, status: newStatus }
       emitChatEvent(battle.stream1Id, 'pk', cancelData)
       emitChatEvent(battle.stream2Id, 'pk', cancelData)
       emitStreamEvent(battle.stream1Id, 'pk', { type: 'pk', ...cancelData })
@@ -287,23 +292,16 @@ export async function POST(request: NextRequest) {
     }
 
     // ──────────── END ────────────
-    if (action === 'end') {
+    if (action === 'end' || action === 'round_end') {
       if (!battleId) return NextResponse.json({ success: false, error: { code: 'MISSING_BATTLE_ID', message: 'battleId gereklidir' } }, { status: 400 })
 
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ success: false, error: { code: 'PK_NOT_FOUND', message: 'PK bulunamadı' } }, { status: 404 })
       if (battle.status !== 'active') return NextResponse.json({ success: false, error: { code: 'PK_NOT_ACTIVE', message: 'PK aktif değil' } }, { status: 400 })
 
-      const winnerId = battle.score1 > battle.score2 ? battle.user1Id : battle.score2 > battle.score1 ? battle.user2Id : null
-      const updated = await prisma.pKBattle.update({ where: { id: battleId }, data: { status: 'completed', endedAt: new Date(), winnerId } })
-
-      const endData = { battleId: battle.id, action: 'completed', room1Id: battle.stream1Id, room2Id: battle.stream2Id, score1: battle.score1, score2: battle.score2, winnerId, status: 'completed' }
-      emitChatEvent(battle.stream1Id, 'pk', endData)
-      emitChatEvent(battle.stream2Id, 'pk', endData)
-      emitStreamEvent(battle.stream1Id, 'pk', { type: 'pk', ...endData })
-      emitStreamEvent(battle.stream2Id, 'pk', { type: 'pk', ...endData })
-
-      return NextResponse.json({ success: true, data: { id: updated.id, status: 'completed', score1: battle.score1, score2: battle.score2, winnerId } })
+      if (battle.user1Id !== authUser.id && battle.user2Id !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      const updated = await finishPkBattle(battle as any, action === 'round_end' ? 'TIME_UP' : 'MANUAL')
+      return NextResponse.json({ success: true, data: updated })
     }
 
     return NextResponse.json(

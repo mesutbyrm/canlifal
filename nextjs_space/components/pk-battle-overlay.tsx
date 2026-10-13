@@ -21,6 +21,12 @@ interface PKBattleData {
   score2: number
   status: string
   duration: number
+  endsAt?: string | null
+  targetArrows?: number | null
+  arrows1?: number | null
+  arrows2?: number | null
+  roundNumber?: number | null
+  endReason?: string | null
   startedAt: string | null
   endedAt: string | null
   winnerId: string | null
@@ -32,9 +38,10 @@ interface PKBattleOverlayProps {
   battle: PKBattleData
   currentStreamId: string
   onEnd?: () => void
+  onRematch?: () => void
 }
 
-export default function PKBattleOverlay({ battle, currentStreamId, onEnd }: PKBattleOverlayProps) {
+export default function PKBattleOverlay({ battle, currentStreamId, onEnd, onRematch }: PKBattleOverlayProps) {
   const [timeLeft, setTimeLeft] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [prevScore1, setPrevScore1] = useState(battle.score1)
@@ -46,16 +53,16 @@ export default function PKBattleOverlay({ battle, currentStreamId, onEnd }: PKBa
   useEffect(() => {
     if (battle.status !== 'active' || !battle.startedAt) return
     const calcTimeLeft = () => {
-      const started = new Date(battle.startedAt!).getTime()
+      const started = battle.endsAt ? new Date(battle.endsAt).getTime() - battle.duration * 1000 : new Date(battle.startedAt!).getTime()
       const elapsed = Math.floor((Date.now() - started) / 1000)
       const remaining = Math.max(0, battle.duration - elapsed)
       setTimeLeft(remaining)
-      if (remaining <= 0 && battle.status === 'active') onEnd?.()
+      // Server polling finalizes elapsed rounds; manual end is a separate action.
     }
     calcTimeLeft()
     timerRef.current = setInterval(calcTimeLeft, 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [battle.startedAt, battle.duration, battle.status, onEnd])
+  }, [battle.startedAt, battle.endsAt, battle.duration, battle.status, onEnd])
 
   useEffect(() => {
     const s1diff = battle.score1 - prevScore1
@@ -96,6 +103,11 @@ export default function PKBattleOverlay({ battle, currentStreamId, onEnd }: PKBa
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-40">
+      <div className="pointer-events-auto bg-black/85 text-white text-xs flex items-center justify-center gap-3 p-2">
+        <span>{battle.arrows1 || 0} ➤ — {battle.arrows2 || 0} ➤ · Hedef {battle.targetArrows || 1} ok · Raund {battle.roundNumber || 1}</span>
+        {battle.status === 'active' && onEnd && <button className="rounded bg-red-700 px-3 py-1" onClick={onEnd}>PK’yi Bitir</button>}
+        {battle.status === 'completed' && onRematch && <button className="rounded bg-purple-700 px-3 py-1" onClick={onRematch}>Tekrar PK</button>}
+      </div>
       {/* PK Header Bar */}
       <div className="pointer-events-auto mx-2 mt-14">
         <div className="relative rounded-2xl bg-black/80 backdrop-blur-lg border border-yellow-500/20 overflow-hidden shadow-lg">

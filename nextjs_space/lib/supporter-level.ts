@@ -32,10 +32,15 @@ export async function recordContribution(
   userId: string,
   broadcasterId: string,
   amount: number,
+  options: { client?: any; strict?: boolean } = {},
 ): Promise<void> {
   if (!userId || !broadcasterId || !amount || amount <= 0) return
   if (userId === broadcasterId) return
   try {
+    const prisma = options.client || (await import('@/lib/db')).prisma
+    // Serializes every contribution for this sender, including legacy callers.
+    const write = async (prisma: any) => {
+    await prisma.$queryRawUnsafe('SELECT "id" FROM "users" WHERE "id" = $1 FOR UPDATE', userId)
     const existing = await prisma.supporterLevel.findUnique({
       where: { userId_broadcasterId: { userId, broadcasterId } },
       select: { totalContributed: true },
@@ -59,7 +64,11 @@ export async function recordContribution(
         lastContributedAt: new Date(),
       },
     })
+    }
+    if (options.client) await write(prisma)
+    else await prisma.$transaction(write)
   } catch (err) {
-    console.error('[supporter-level] recordContribution failed (non-blocking):', err)
+    console.error('[supporter-level] recordContribution failed:', err)
+    if (options.strict) throw err
   }
 }

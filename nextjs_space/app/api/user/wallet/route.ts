@@ -1,3 +1,4 @@
+import { giftFinanceSummary } from '@/lib/gift-finance-summary'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -174,6 +175,7 @@ export async function GET(request: NextRequest) {
       },
       earnings: {
         ...summary,
+        gifts: await giftFinanceSummary(userId, user.jetonBalance || 0, jetonTlRate, Boolean(teller?.canWithdraw), user.withdrawalLimit || 0),
         referralCreditsEarned: user.referralCreditsEarned || 0,
         tellerEarnings: teller?.totalEarnings || 0,
       },

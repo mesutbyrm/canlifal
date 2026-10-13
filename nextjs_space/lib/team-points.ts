@@ -9,11 +9,13 @@ import prisma from '@/lib/db'
  */
 export async function recordTeamPoints(
   userId: string,
-  amount: number
+  amount: number,
+  options: { client?: any; strict?: boolean } = {},
 ): Promise<void> {
   if (!userId || !amount || amount <= 0) return
 
   try {
+    const prisma = options.client || (await import('@/lib/db')).prisma
     // Find the user's active team membership
     const membership = await prisma.teamMember.findFirst({
       where: { userId },
@@ -22,7 +24,7 @@ export async function recordTeamPoints(
     if (!membership) return
 
     // Atomic: increment member points and team totalPoints
-    await prisma.$transaction([
+    const writes = [
       prisma.teamMember.update({
         where: { id: membership.id },
         data: { points: { increment: Math.trunc(amount) } },
@@ -31,9 +33,12 @@ export async function recordTeamPoints(
         where: { id: membership.teamId },
         data: { totalPoints: { increment: Math.trunc(amount) } },
       }),
-    ])
+    ]
+    if (options.client) { for (const write of writes) await write }
+    else await prisma.$transaction(writes)
   } catch (err) {
     // Fire-and-forget — never throw
-    console.error('[team-points] recordTeamPoints failed (non-blocking):', err)
+    console.error('[team-points] recordTeamPoints failed:', err)
+    if (options.strict) throw err
   }
 }

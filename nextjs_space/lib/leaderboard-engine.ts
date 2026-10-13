@@ -109,13 +109,14 @@ export async function getOrCreateCurrentPeriod(
   configId: string,
   scope: string,
   periodType: PeriodType,
+  client: any = prisma,
 ): Promise<{ id: string; periodKey: string; startTime: Date; endTime: Date }> {
   const now = new Date()
   const key = periodKeyFor(periodType, now)
   const { start, end } = periodBounds(periodType, now)
 
   // Upsert — aynı anda iki istek gelirse unique constraint idempotent.
-  const period = await prisma.leaderboardPeriod.upsert({
+  const period = await client.leaderboardPeriod.upsert({
     where: { configId_periodKey: { configId, periodKey: key } },
     create: {
       configId, scope, periodType, periodKey: key,
@@ -145,30 +146,33 @@ export async function incrementLeaderboardScore(
   points: number,
   source: string,
   contextId?: string,
+  options: { client?: any; strict?: boolean } = {},
 ): Promise<void> {
   if (points <= 0) return
 
-  const configs = await getActiveConfigs()
-  const matching = configs.filter(c => c.scope === scope)
+  const client = options.client || prisma
+  const configs = options.client ? await client.leaderboardConfig.findMany({ where: { isEnabled: true } }) : await getActiveConfigs()
+  const matching = configs.filter((c: any) => c.scope === scope)
   if (matching.length === 0) return
 
   // Her config için: scoringRules kontrolü, periyot getir/oluştur, upsert entry
-  const ops = matching.map(async (cfg) => {
+  const ops = matching.map(async (cfg: any) => {
     // Skor kaynağı bu config'de aktif mi?
     if (cfg.scoringRules && !(cfg.scoringRules as any)[source]) return
 
-    const period = await getOrCreateCurrentPeriod(cfg.id, cfg.scope, cfg.periodType as PeriodType)
+    const period = await getOrCreateCurrentPeriod(cfg.id, cfg.scope, cfg.periodType as PeriodType, client)
     // Periyot bitmişse yazma (finalizeExpired sonraki çağrıda halleder)
     if (new Date() >= period.endTime) return
 
-    await prisma.leaderboardEntry.upsert({
+    await client.leaderboardEntry.upsert({
       where: { periodId_userId: { periodId: period.id, userId } },
       create: { periodId: period.id, userId, score: points, contextId },
       update: { score: { increment: points } },
     })
   })
 
-  await Promise.allSettled(ops)
+  if (options.strict) await Promise.all(ops)
+  else await Promise.allSettled(ops)
 
   // Önbelleği invalidate et (realtime için)
   invalidateCache(`lb:top100:${scope}`)

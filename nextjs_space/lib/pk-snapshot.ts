@@ -1,3 +1,4 @@
+import { pkSeriesFields } from '@/lib/pk-series'
 import prisma from '@/lib/db'
 import { expireAllStalePKs, PK_TIMEOUT_MS } from '@/lib/pk-expiry'
 
@@ -19,7 +20,7 @@ export async function getPkSnapshotEvent(sideId: string): Promise<Record<string,
     const battle = await prisma.pKBattle.findFirst({
       where: {
         OR: [{ stream1Id: sideId }, { stream2Id: sideId }],
-        status: { in: ['pending', 'active'] },
+        status: { in: ['pending', 'starting', 'active', 'paused'] },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -41,7 +42,7 @@ export async function getPkSnapshotEvent(sideId: string): Promise<Record<string,
       type: 'pk',
       action: 'snapshot',
       snapshot: true,
-      battleId: battle.id,
+      battleId: battle.id, ...pkSeriesFields(battle),
       status: battle.status,
       room1Id: battle.stream1Id,
       room2Id: battle.stream2Id,

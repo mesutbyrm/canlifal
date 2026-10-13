@@ -1,3 +1,4 @@
+import { giftSenderTotals } from '@/lib/gift-points'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
@@ -128,13 +129,7 @@ async function handleJoinRoom(request: NextRequest) {
       }))
 
       // Top gift senders
-      const topGifts = await prisma.streamGift.groupBy({
-        by: ['senderId'],
-        where: { streamId: stream.id },
-        _sum: { totalPrice: true },
-        orderBy: { _sum: { totalPrice: 'desc' } },
-        take: 10
-      })
+      const topGifts = (await giftSenderTotals('stream', { streamId: stream.id })).slice(0, 10)
 
       if (topGifts.length > 0) {
         const senderIds = topGifts.map((g: any) => g.senderId)
@@ -150,7 +145,7 @@ async function handleJoinRoom(request: NextRequest) {
             userId: g.senderId || '',
             name: sender?.name || 'Anonim',
             image: sender?.image || '',
-            totalAmount: g._sum.totalPrice || 0
+            totalAmount: g.pointAmount || 0
           }
         })
       }
@@ -330,13 +325,7 @@ async function handleJoinRoom(request: NextRequest) {
               select: { userId: true }
             })
           : Promise.resolve([] as { userId: string }[]),
-        prisma.chatRoomGift.groupBy({
-          by: ['senderId'],
-          where: { roomId: room.id },
-          _sum: { totalPrice: true },
-          orderBy: { _sum: { totalPrice: 'desc' } },
-          take: 10
-        })
+        giftSenderTotals('voice', { roomId: room.id }).then(rows => rows.slice(0, 10))
       ])
 
       const roleMap = new Map(chatRoles.map((r: any) => [r.userId, r.role]))
@@ -408,7 +397,7 @@ async function handleJoinRoom(request: NextRequest) {
             userId: g.senderId || '',
             name: sender?.name || 'Anonim',
             image: sender?.image || '',
-            totalAmount: g._sum.totalPrice || 0
+            totalAmount: g.pointAmount || 0
           }
         })
       }

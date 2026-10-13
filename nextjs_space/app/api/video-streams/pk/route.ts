@@ -1,3 +1,4 @@
+import { parseTargetArrows, pkSeriesFields } from '@/lib/pk-series'
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -122,6 +123,8 @@ export async function POST(req: NextRequest) {
     _idempotencyRecord = replay.record
 
     const body = await req.json()
+    const targetArrows = parseTargetArrows(body.targetArrows)
+    if (targetArrows === null) return NextResponse.json({ error: 'Ok hedefi 1, 2 veya 3 olmalıdır' }, { status: 400 })
     const { action, streamId: rawStreamId, targetStreamId: rawTargetStreamId, battleId, duration } = body
     const pkLimits = await getPkLimits()
     const clampedDuration = Math.max(pkLimits.minDuration, Math.min(pkLimits.maxDuration, Math.floor(duration || pkLimits.defaultDuration)))
@@ -175,6 +178,7 @@ export async function POST(req: NextRequest) {
 
       const battle = await prisma.pKBattle.create({
         data: {
+          targetArrows,
           stream1Id: streamId,
           stream2Id: targetStreamId,
           user1Id: currentUserId,
@@ -235,13 +239,13 @@ export async function POST(req: NextRequest) {
         targetId: battle.id,
         data: JSON.stringify({
           type: 'pk:invite',
-          battleId: battle.id,
+          battleId: battle.id, ...pkSeriesFields(battle),
           challengerStreamId: streamId,
           opponentStreamId: targetStreamId,
         })
       }).catch(err => console.error('PK invite push error:', err))
 
-      const pkData = { type: 'pk', battleId: battle.id, action: 'created', room1Id: streamId, room2Id: targetStreamId, user1Id: currentUserId, user2Id: targetStream.userId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
+      const pkData = { type: 'pk', battleId: battle.id, ...pkSeriesFields(battle), action: 'created', room1Id: streamId, room2Id: targetStreamId, user1Id: currentUserId, user2Id: targetStream.userId, challengerName: challenger?.name, duration: battle.duration, status: 'pending', expiresAt: new Date(Date.now() + PK_TIMEOUT_MS).toISOString() }
       // Ortak yayıncı: karışık oda↔yayın PK'sında sohbet veri yolunu dinleyen taraf da daveti alır.
       emitPkToBothSides({ stream1Id: streamId, stream2Id: targetStreamId }, pkData)
       try {
@@ -304,7 +308,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
       }
 
-      const pkStartData = { type: 'pk', battleId: battle.id, action: 'started', eventType: 'PK_STARTED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: updated.score1, score2: updated.score2, duration: battle.duration, status: 'active', startedAt: acceptedAt.toISOString(), acceptedAt: acceptedAt.toISOString(), endsAt: endTime.toISOString(), endTime: endTime.toISOString(), serverNow: new Date().toISOString() }
+      const pkStartData = { type: 'pk', battleId: battle.id, ...pkSeriesFields(battle), action: 'started', eventType: 'PK_STARTED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, score1: updated.score1, score2: updated.score2, duration: battle.duration, status: 'active', startedAt: acceptedAt.toISOString(), acceptedAt: acceptedAt.toISOString(), endsAt: endTime.toISOString(), endTime: endTime.toISOString(), serverNow: new Date().toISOString() }
       emitPkToBothSides(battle, pkStartData)
 
       recordAudit({ actorId: currentUserId, action: 'pk.accept', targetType: 'pk_battle', targetId: battleId, metadata: { endTime: endTime.toISOString() }, ip: getAuditIp(req) }).catch(() => {})
@@ -337,14 +341,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'PK durumu değişti, tekrar deneyin' }, { status: 409 })
       }
 
-      const cancelData = { type: 'pk', battleId: battle.id, action: newStatus, eventType: newStatus === 'rejected' ? 'PK_REQUEST_REJECTED' : 'PK_REQUEST_CANCELLED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, status: newStatus }
+      const cancelData = { type: 'pk', battleId: battle.id, ...pkSeriesFields(battle), action: newStatus, eventType: newStatus === 'rejected' ? 'PK_REQUEST_REJECTED' : 'PK_REQUEST_CANCELLED', room1Id: battle.stream1Id, room2Id: battle.stream2Id, user1Id: battle.user1Id, user2Id: battle.user2Id, status: newStatus }
       emitPkToBothSides(battle, cancelData)
       recordAudit({ actorId: currentUserId, action: 'pk.' + newStatus, targetType: 'pk_battle', targetId: battleId, metadata: { status: newStatus }, ip: getAuditIp(req) }).catch(() => {})
 
       return NextResponse.json(updated)
     }
 
-    if (action === 'end') {
+    if (action === 'end' || action === 'round_end') {
       if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
       
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
@@ -355,7 +359,7 @@ export async function POST(req: NextRequest) {
       const endErr = checkPkTransition(battle.status, 'completed')
       if (endErr) return NextResponse.json({ error: endErr }, { status: 400 })
 
-      const updated = await finishPkBattle(battle as any, 'MANUAL')
+      const updated = await finishPkBattle(battle as any, action === 'round_end' ? 'TIME_UP' : 'MANUAL')
       if (!updated) return NextResponse.json({ error: 'PK zaten bitmiş' }, { status: 409 })
       recordAudit({ actorId: currentUserId, action: 'pk.end', targetType: 'pk_battle', targetId: battleId, metadata: { winner: (updated as any).winner, reason: 'MANUAL' }, ip: getAuditIp(req) }).catch(() => {})
 

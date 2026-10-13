@@ -368,7 +368,7 @@ export default function KazancPage() {
                   {parseInt(amount, 10) > 0 && quote && (
                     <div className="mt-2 rounded-lg border border-purple-500/30 bg-deep-purple-900/40 p-2 space-y-1">
                       <div className="flex justify-between text-[11px] text-deep-purple-300">
-                        <span>Toplam kazandığınız</span>
+                        <span>Çekim tutarı (brüt)</span>
                         <span className="text-white">{quote.grossTL.toFixed(2)} ₺</span>
                       </div>
                       <div className="flex justify-between text-[11px] text-deep-purple-300">

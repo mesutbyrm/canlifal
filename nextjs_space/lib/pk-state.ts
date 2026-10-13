@@ -1,3 +1,4 @@
+import { advancePkRound, pkSeriesFields } from '@/lib/pk-series'
 /**
  * lib/pk-state.ts — PK için tek kanonik durum makinesi ve otomatik kapatma yardımcıları.
  *
@@ -164,44 +165,28 @@ async function notifyPkBot(
  *               CONNECTION_LOST | ADMIN_ENDED | MANUAL
  */
 export async function finishPkBattle(battle: BattleRow, reason: string) {
-  const outcome = computePkOutcome(battle)
-  try {
-    const updated = await prisma.pKBattle.update({
-      where: { id: battle.id, status: { in: ['active', 'paused'] } } as any,
-      data: {
-        status: 'completed',
-        endedAt: new Date(),
-        winnerId: outcome.winnerId,
-        winnerSide: outcome.winnerSide,
-        isDraw: outcome.isDraw,
-      },
-    })
-
-    emitPkToBothSides(battle, {
-      type: 'pk',
-      battleId: battle.id,
-      action: 'completed',
-      eventType: 'PK_ENDED',
-      reason,
-      room1Id: battle.stream1Id,
-      room2Id: battle.stream2Id,
-      user1Id: battle.user1Id,
-      user2Id: battle.user2Id,
-      score1: updated.score1,
-      score2: updated.score2,
-      winnerId: outcome.winnerId,
-      winnerSide: outcome.winnerSide,
-      isDraw: outcome.isDraw,
-      status: 'completed',
-    })
-    const ws = outcome.winnerSide === 1 ? updated.score1 : outcome.winnerSide === 2 ? updated.score2 : updated.score1
-    const ls = outcome.winnerSide === 1 ? updated.score2 : outcome.winnerSide === 2 ? updated.score1 : updated.score2
-    void notifyPkBot(battle, 'end', { winnerId: outcome.winnerId, winnerScore: ws, loserScore: ls, isDraw: outcome.isDraw })
-    return updated
-  } catch {
-    // Başka bir istek bitirmiş olabilir — sessizce geç.
-    return null
-  }
+  const updated = await prisma.$transaction(async tx => {
+    await tx.$queryRawUnsafe('SELECT "id" FROM "pk_battles" WHERE "id" = $1 FOR UPDATE', battle.id)
+    const fresh = await tx.pKBattle.findUnique({ where: { id: battle.id } })
+    if (!fresh || !['active', 'paused'].includes(fresh.status)) return null
+    const now = new Date()
+    // A stale expiry request must not advance the following round again.
+    if (reason === 'TIME_UP' && (fresh.status !== 'active' || (fresh.endsAt && fresh.endsAt > now))) return null
+    return tx.pKBattle.update({ where: { id: battle.id }, data: advancePkRound(fresh, reason, now) })
+  })
+  if (!updated) return null
+  const completed = updated.status === 'completed'
+  emitPkToBothSides(updated, {
+    type: 'pk', battleId: updated.id, action: completed ? 'completed' : 'round_started',
+    eventType: completed ? 'PK_ENDED' : 'PK_ROUND_STARTED', reason,
+    room1Id: updated.stream1Id, room2Id: updated.stream2Id, user1Id: updated.user1Id, user2Id: updated.user2Id,
+    score1: updated.score1, score2: updated.score2, winnerId: updated.winnerId,
+    winnerSide: updated.winnerSide, isDraw: updated.isDraw, status: updated.status,
+    endsAt: updated.endsAt, endTime: updated.endsAt, ...pkSeriesFields(updated),
+  })
+  if (completed) void notifyPkBot(updated, 'end', { winnerId: updated.winnerId,
+    winnerScore: Math.max(updated.score1, updated.score2), loserScore: Math.min(updated.score1, updated.score2), isDraw: updated.isDraw })
+  return updated
 }
 
 /** Bekleyen bir PK'yı verilen nedenle kapatır (iptal/red/süre dolumu dışı otomatik kapanışlar). */

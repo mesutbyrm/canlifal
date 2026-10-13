@@ -25,15 +25,14 @@ export async function getReceivedJetonTotals(
       where.recipientId = { in: userIds }
     }
 
-    const grouped = await prisma.chatRoomGift.groupBy({
-      by: ['recipientId'],
-      where,
-      _sum: { totalPrice: true },
-    })
-
-    for (const g of grouped as Array<{ recipientId: string; _sum: { totalPrice: number | null } }>) {
-      totals.set(g.recipientId, g._sum.totalPrice || 0)
+    const [current, legacy] = await Promise.all([
+      prisma.chatRoomGift.groupBy({ by: ['recipientId'], where: { ...where, pointAmount: { not: null } }, _sum: { pointAmount: true } }),
+      prisma.chatRoomGift.groupBy({ by: ['recipientId'], where: { ...where, pointAmount: null }, _sum: { totalPrice: true } }),
+    ])
+    for (const g of [...current, ...legacy] as any[]) {
+      totals.set(g.recipientId, (totals.get(g.recipientId) || 0) + (g._sum.pointAmount ?? g._sum.totalPrice ?? 0))
     }
+
   } catch (err) {
     console.error('[voice-room-gifts] getReceivedJetonTotals error:', err)
   }

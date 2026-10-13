@@ -26,6 +26,8 @@ export type GiftPkScoreResult = {
   addedSide: 'room1' | 'room2'
   side: 1 | 2
   scoreLogId: string | null
+  event?: any
+  sides?: { stream1Id: string; stream2Id: string }
 } | null
 
 const SELECT = {
@@ -60,7 +62,15 @@ export async function applyGiftPkScore(params: {
   source?: 'gift' | 'gift_box' | 'bonus_reward' | 'manual' | 'battle_bonus' | 'support'
   /** true ise skor hiç yazılmaz (çağıran taraf açıkça hariç tutar). */
   excludeFromPkScore?: boolean
-}): Promise<GiftPkScoreResult> {
+}, options: { client?: any; strict?: boolean } = {}): Promise<GiftPkScoreResult> {
+  if (!options.client) {
+    try {
+      const result = await prisma.$transaction(tx => applyGiftPkScore(params, { client: tx, strict: true }))
+      publishGiftPkScore(result)
+      return result
+    } catch (error) { console.error('[gift-pk-score]', error); if (options.strict) throw error; return null }
+  }
+  const client = options.client
   try {
     // ── §17: Hediye kutusu / bonus ödülleri PK skoru üretmez ──
     if (params.excludeFromPkScore) return null
@@ -78,8 +88,11 @@ export async function applyGiftPkScore(params: {
           OR: [...ids.map((id) => ({ stream1Id: id })), ...ids.map((id) => ({ stream2Id: id }))],
         }
 
-    const battle = await prisma.pKBattle.findFirst({ where, select: SELECT })
-    if (!battle) return null
+    const candidate = await client.pKBattle.findFirst({ where, select: SELECT })
+    if (!candidate) return null
+    await client.$queryRawUnsafe('SELECT "id" FROM "pk_battles" WHERE "id" = $1 FOR UPDATE', candidate.id)
+    const battle = await client.pKBattle.findUnique({ where: { id: candidate.id }, select: SELECT })
+    if (!battle || battle.status !== 'active') return null
 
     // ── Oda izolasyonu: hediye gerçekten bu PK'nın bir tarafına mı gitti? ──
     let isSide1 = ids.includes(battle.stream1Id)
@@ -96,7 +109,7 @@ export async function applyGiftPkScore(params: {
       } else if (params.receiverId === battle.user2Id) {
         isSide1 = false; isSide2 = true
       } else {
-        const part = await prisma.pkBattleParticipant.findUnique({
+        const part = await client.pkBattleParticipant.findUnique({
           where: { battleId_userId: { battleId: battle.id, userId: params.receiverId } },
           select: { side: true },
         })
@@ -109,22 +122,18 @@ export async function applyGiftPkScore(params: {
     // ── Süresi dolmuş PK'ya skor yazma; onun yerine kapat ──
     const endsAt = (battle as any).endsAt as Date | null
     if (endsAt && new Date(endsAt).getTime() <= Date.now()) {
-      await finishPkBattle(battle as any, 'TIME_UP')
       return null
     }
 
     // ── Yarış koşulu: yalnızca hâlâ `active` ise arttır ──
     let updated
     try {
-      updated = await prisma.pKBattle.update({
+      updated = await client.pKBattle.update({
         where: { id: battle.id, status: 'active' } as any,
         data: isSide1 ? { score1: { increment: amount } } : { score2: { increment: amount } },
         select: { id: true, score1: true, score2: true },
       })
-    } catch {
-      // PK bu arada bitmiş — skor yazılmaz, hediye yine de geçerlidir.
-      return null
-    }
+    } catch (error) { throw error }
 
     const side: 1 | 2 = isSide1 ? 1 : 2
 
@@ -147,19 +156,19 @@ export async function applyGiftPkScore(params: {
       source: params.source ?? 'gift',
       timestamp: Date.now(),
     }
-    emitPkToBothSides(battle, payload)
+    // Publish only after the enclosing financial transaction commits.
 
     // ── §7: Her skor değişikliği ledger'a yazılır (PkScore + PkGift) ──
     let scoreLogId: string | null = null
     try {
       if (params.contributorId) {
-        const log = await prisma.pkScore.create({
+        const log = await client.pkScore.create({
           data: { battleId: battle.id, side, contributorId: params.contributorId, points: amount, source: params.source ?? 'gift' },
           select: { id: true },
         })
         scoreLogId = log.id
         if (params.giftTypeId && params.receiverId) {
-          await prisma.pkGift.create({
+          await client.pkGift.create({
             data: {
               battleId: battle.id,
               side,
@@ -174,13 +183,14 @@ export async function applyGiftPkScore(params: {
       }
       // Çok taraflı PK: puanı alan katılımcının kendi hanesine de yaz
       if (params.receiverId) {
-        await prisma.pkBattleParticipant.updateMany({
+        await client.pkBattleParticipant.updateMany({
           where: { battleId: battle.id, userId: params.receiverId },
           data: { points: { increment: amount } },
         })
       }
     } catch (e) {
       console.error('[gift-pk-score] ledger write error:', e)
+      throw e
     }
 
     return {
@@ -191,9 +201,17 @@ export async function applyGiftPkScore(params: {
       addedSide: isSide1 ? 'room1' : 'room2',
       side,
       scoreLogId,
+      event: payload,
+      sides: { stream1Id: battle.stream1Id, stream2Id: battle.stream2Id },
     }
   } catch (e) {
     console.error('[gift-pk-score] applyGiftPkScore error:', e)
+    if (options.strict) throw e
     return null
   }
+}
+
+export function publishGiftPkScore(result: GiftPkScoreResult) {
+  try { if (result?.sides && result.event) emitPkToBothSides(result.sides, result.event) }
+  catch (error) { console.error('[PK] committed score event delivery failed:', error) }
 }

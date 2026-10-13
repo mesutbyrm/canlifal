@@ -11,7 +11,8 @@ const room = { id: 'room', ownerId: 'owner', roomType: 'NORMAL', nameTr: 'Test',
 const stream = { id: 'stream', roomId: 'room', userId: 'owner', status: 'live' }
 const op = fn => ({ then: (resolve, reject) => Promise.resolve().then(fn).then(resolve, reject) })
 const model = name => ({
-  findUnique: async args => name === 'user' ? {...state.users[args.where.id]} : name === 'giftType' ? gift : name === 'chatRoom' ? room : name === 'videoStream' ? stream : name === 'liveSession' ? { id: 'session', userId: 'sender', tellerId: 'teller', user: state.users.sender, teller: {userId:'owner', user:state.users.owner} } : null,
+  findUniqueOrThrow: async args => ({...state.users[args.where.id]}),
+  findUnique: async args => name === 'user' ? {...state.users[args.where.id]} : name === 'giftType' ? gift : name === 'chatRoom' ? room : name === 'videoStream' ? stream : name === 'liveSession' ? { id: 'session', status: 'active', userId: 'sender', tellerId: 'teller', user: state.users.sender, teller: {userId:'owner', user:state.users.owner} } : null,
   findFirst: async () => name === 'user' ? {...state.users.owner} : name === 'videoStream' ? stream : name === 'chatRoom' ? room : null,
   findMany: async () => [], count: async () => 0,
   create: args => op(() => { if (state.failGiftWrite && ['chatRoomGift','streamGift'].includes(name)) throw Error('SIMULATED_GIFT_WRITE_FAILURE'); state.rows.push({model:name,...args.data}); return {id:'record',...args.data,sender:state.users.sender,giftType:gift} }),
@@ -58,7 +59,7 @@ const mocks = {
   '@/lib/supporter-level': {recordContribution:async(...p)=>state.points.push(p)},
   '@/lib/team-points': {recordTeamPoints:noop}, '@/lib/leaderboard-engine': {incrementLeaderboardScore:noop},
   '@/lib/idempotency': {beginIdempotent:async()=>({record:state.withReceipt?'receipt':null}),completeIdempotent:noop,releaseIdempotent:noop},
-  '@/lib/gift-pk-score': {applyGiftPkScore:async p=>{state.pk.push(p);return null}},
+  '@/lib/gift-pk-score': {publishGiftPkScore:()=>{},applyGiftPkScore:async p=>{state.pk.push(p);return null}},
   '@/lib/activity-logger': {logActivity:noop},
 }
 const cache = {}
@@ -68,7 +69,8 @@ function load(file) {
   const mod = {exports:{}}; cache[file] = mod.exports
   const localRequire = key => {
     if (mocks[key]) return mocks[key]
-    if (['@/lib/jeton-source','@/lib/balance-guard','@/lib/voice-room-revenue','@/lib/gift-engine','@/lib/gift-recipient','@/lib/gift-settlement','@/lib/voice-room-constants','@/lib/gift-points'].includes(key)) return load(key.slice(2)+'.ts')
+    if (key === 'crypto') return require('crypto')
+    if (['@/lib/jeton-source','@/lib/balance-guard','@/lib/voice-room-revenue','@/lib/gift-engine','@/lib/gift-recipient','@/lib/gift-settlement','@/lib/direct-gift-settlement','@/lib/voice-room-constants','@/lib/gift-points'].includes(key)) return load(key.slice(2)+'.ts')
     throw Error('Unexpected dependency (network/DB forbidden): '+key)
   }
   vm.runInThisContext('(function(require,module,exports){'+code+'\n})',{filename:file})(localRequire,mod,mod.exports)

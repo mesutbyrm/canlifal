@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     // Toplam kazanç (onaylanmış/tamamlanmış geçmiş çekimler dahil)
     const past = await prisma.withdrawalRequest.aggregate({
-      where: { userId, status: { in: ['approved', 'completed'] } },
+      where: { userId, status: { in: ['completed'] } },
       _sum: { amountTL: true, netAmountTL: true, taxAmount: true },
     })
 
@@ -54,12 +54,13 @@ export async function GET(req: NextRequest) {
       taxAmount,
       netAmountTL,
       lifetime: {
+        scope: 'completed_only',
         grossTL: past._sum.amountTL || 0,
         netTL: past._sum.netAmountTL || 0,
         taxTL: past._sum.taxAmount || 0,
       },
       labels: {
-        gross: 'Toplam kazandığınız',
+        gross: 'Çekim tutarı (brüt)',
         tax: taxPercent > 0 ? `Kesinti (%${taxPercent})` : 'Kesinti yok',
         net: 'Elinize geçecek tahmini tutar',
       },

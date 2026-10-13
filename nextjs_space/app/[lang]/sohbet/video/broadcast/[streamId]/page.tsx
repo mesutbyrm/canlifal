@@ -243,11 +243,13 @@ export default function BroadcastPage() {
     id: string; stream1Id: string; stream2Id: string; user1Id: string; user2Id: string;
     score1: number; score2: number; status: string; duration: number;
     startedAt: string | null; endedAt: string | null; winnerId: string | null;
+    targetArrows?: number; arrows1?: number; arrows2?: number; roundNumber?: number; endsAt?: string | null;
     user1?: { id: string; name: string | null; image: string | null } | null;
     user2?: { id: string; name: string | null; image: string | null } | null;
   } | null>(null)
   const [showPKModal, setShowPKModal] = useState(false)
   const [pkDuration, setPkDuration] = useState(180)
+  const [pkTargetArrows, setPkTargetArrows] = useState(1)
   const [pendingPKRequest, setPendingPKRequest] = useState<typeof pkBattle>(null)
   // Auto-close state
   const [autoCloseWarning, setAutoCloseWarning] = useState<string | null>(null)
@@ -575,7 +577,7 @@ export default function BroadcastPage() {
       const res = await fetch('/api/video-streams/pk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', streamId, targetStreamId, duration: pkDuration })
+        body: JSON.stringify({ action: 'create', streamId, targetStreamId, duration: pkDuration, targetArrows: pkTargetArrows })
       })
       if (res.ok) {
         setShowPKModal(false)
@@ -748,10 +750,11 @@ export default function BroadcastPage() {
 
   const fetchGifts = async () => {
     try {
-      const res = await fetch(`/api/video-streams/${streamId}/gifts`)
+      const res = await fetch(`/api/video-streams/${streamId}/gifts?summary=1`)
       if (res.ok) {
-        const gifts = await res.json()
-        const total = gifts.reduce((sum: number, g: any) => sum + (g.ownerAmount || 0) + (!g.recipientId || g.recipientId === session?.user?.id ? (g.receiverAmount || 0) : 0), 0)
+        const report = await res.json()
+        const gifts = report.gifts || []
+        const total = report.totals?.ownerNetJeton || 0
         setTotalGiftCredits(total)
         
         if (gifts.length > 0 && gifts[0].id !== lastGiftIdRef.current) {
@@ -2672,6 +2675,7 @@ export default function BroadcastPage() {
           battle={pkBattle}
           currentStreamId={streamId}
           onEnd={handleEndPK}
+          onRematch={() => { setShowPKModal(true); fetchLiveBroadcasters() }}
         />
       )}
 
@@ -2712,7 +2716,7 @@ export default function BroadcastPage() {
               </div>
               
               <p className="text-white/70 text-sm mb-4">
-                sizi {Math.floor(pendingPKRequest.duration / 60)} dakikalık PK&apos;ya davet ediyor!
+                sizi raund başına {Math.floor(pendingPKRequest.duration / 60)} dakika, {pendingPKRequest.targetArrows || 1} ok hedefli PK&apos;ya davet ediyor!
               </p>
               
               <div className="flex gap-3">
@@ -2772,6 +2776,12 @@ export default function BroadcastPage() {
                 <button onClick={() => setShowPKModal(false)} className="text-white/60"><X className="w-5 h-5" /></button>
               </div>
               
+              <label className="block text-white text-sm mb-3">Kazanmak için gereken ok
+                <select aria-label="PK ok hedefi" value={pkTargetArrows} onChange={e => setPkTargetArrows(Number(e.target.value))} className="ml-3 bg-gray-900 text-white rounded px-3 py-2">
+                  {[1,2,3].map(n => <option key={n} value={n}>{n} ok</option>)}
+                </select>
+              </label>
+              <p className="text-white/70 text-xs mb-3">Her raundun galibi bir ok alır. Çok oklu seride beraberlik yeni raund başlatır. Elle bitirme kazanan ilan etmeden seriyi kapatır.</p>
               {/* PK Duration selector */}
               <div className="flex gap-2 mb-4">
                 {[60, 180, 300, 600].map(d => (

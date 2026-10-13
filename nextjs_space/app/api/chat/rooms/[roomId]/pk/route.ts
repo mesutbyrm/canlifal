@@ -1,3 +1,4 @@
+import { parseTargetArrows, pkSeriesFields } from '@/lib/pk-series'
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -134,6 +135,8 @@ export async function POST(
 
     const { roomId } = params
     const body = await req.json()
+    const targetArrows = parseTargetArrows(body.targetArrows)
+    if (targetArrows === null) return NextResponse.json({ error: 'Ok hedefi 1, 2 veya 3 olmalıdır' }, { status: 400 })
     const battleId = body?.battleId ?? body?.matchId ?? null
     const duration = body?.duration ?? body?.durationSec ?? null
     const guestUserId = body?.guestUserId ?? body?.targetUserId ?? null
@@ -219,6 +222,7 @@ export async function POST(
 
       const battle = await prisma.pKBattle.create({
         data: {
+          targetArrows,
           stream1Id: roomId,
           stream2Id: targetRoomId,
           user1Id: currentUserId,
@@ -258,7 +262,7 @@ export async function POST(
         targetId: battle.id,
         data: JSON.stringify({
           type: 'pk:invite',
-          battleId: battle.id,
+          battleId: battle.id, ...pkSeriesFields(battle),
           challengerRoomId: roomId,
           opponentRoomId: targetRoomId,
           challengerRoomName: myRoom.nameTr,
@@ -268,7 +272,7 @@ export async function POST(
       // Emit PK event to both rooms
       const pkEventData = {
         type: 'pk',
-        battleId: battle.id,
+        battleId: battle.id, ...pkSeriesFields(battle),
         action: 'created',
         room1Id: roomId,
         room2Id: targetRoomId,
@@ -375,6 +379,7 @@ export async function POST(
       const countdownSec = Math.min(30, Math.max(0, Math.floor(body?.countdownSec ?? 5)))
       const battle = await prisma.pKBattle.create({
         data: {
+          targetArrows,
           stream1Id: roomId,
           stream2Id: roomId,
           user1Id: side1[0],
@@ -395,7 +400,7 @@ export async function POST(
       const participants = await listPkParticipants(battle.id)
       emitChatEvent(roomId, 'pk', {
         type: 'pk',
-        battleId: battle.id,
+        battleId: battle.id, ...pkSeriesFields(battle),
         action: 'starting',
         eventType: 'PK_STARTING',
         room1Id: roomId,
@@ -471,7 +476,7 @@ export async function POST(
 
       // Emit PK started event to both rooms
       const pkStartData = {
-        battleId: battle.id,
+        battleId: battle.id, ...pkSeriesFields(battle),
         action: 'started',
         eventType: 'PK_STARTED',
         room1Id: battle.stream1Id,
@@ -533,7 +538,7 @@ export async function POST(
 
       // Emit event to both rooms
       const pkCancelData = {
-        battleId: battle.id,
+        battleId: battle.id, ...pkSeriesFields(battle),
         action: newStatus,
         eventType: newStatus === 'rejected' ? 'PK_REQUEST_REJECTED' : 'PK_REQUEST_CANCELLED',
         room1Id: battle.stream1Id,
@@ -549,7 +554,7 @@ export async function POST(
     }
 
     // ──────────── END ────────────
-    if (action === 'end') {
+    if (action === 'end' || action === 'round_end') {
       if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
 
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
@@ -567,7 +572,7 @@ export async function POST(
       const endErr = checkPkTransition(battle.status, 'completed')
       if (endErr) return NextResponse.json({ error: endErr }, { status: 400 })
 
-      const updated = await finishPkBattle(battle as any, 'MANUAL')
+      const updated = await finishPkBattle(battle as any, action === 'round_end' ? 'TIME_UP' : 'MANUAL')
       recordAudit({ actorId: currentUserId, action: 'pk.end', targetType: 'pk_battle', targetId: battleId, metadata: { winner: (updated as any).winner, reason: 'MANUAL' }, ip: getAuditIp(req) }).catch(() => {})
       if (!updated) return NextResponse.json({ error: 'PK zaten bitmiş' }, { status: 409 })
 

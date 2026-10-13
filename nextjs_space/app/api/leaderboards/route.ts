@@ -1,3 +1,4 @@
+import { giftSenderTotals } from '@/lib/gift-points'
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
@@ -80,12 +81,7 @@ async function fetchLeaderboardData() {
   })
 
   // 6. Top Gift Senders
-  const giftTransactions = await prisma.streamGift.groupBy({
-    by: ['senderId'],
-    _sum: { totalPrice: true },
-    orderBy: { _sum: { totalPrice: 'desc' } },
-    take: 10
-  })
+  const giftTransactions = (await giftSenderTotals('stream', {})).slice(0, 10)
   const topGiftSenderIds = giftTransactions.map(t => t.senderId)
   const topGiftSenderUsers = await prisma.user.findMany({
     where: { id: { in: topGiftSenderIds } },
@@ -93,7 +89,7 @@ async function fetchLeaderboardData() {
   })
   const topGiftSenders = giftTransactions.map(t => {
     const user = topGiftSenderUsers.find(u => u.id === t.senderId)
-    return { ...user, totalGifted: t._sum.totalPrice || 0 }
+    return { ...user, totalGifted: t.pointAmount || 0 }
   })
 
   // 7. Most Liked Content Creators

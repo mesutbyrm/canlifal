@@ -15,10 +15,11 @@ export async function processAgencyCommission({
   earnedAmount: number
   sourceType: string
   sourceId?: string
-}): Promise<number> {
+}, options: { client?: any; strict?: boolean } = {}): Promise<number> {
   if (earnedAmount <= 0) return 0
 
   try {
+    const prisma = options.client || (await import('@/lib/db')).prisma
     // Check if user is in an active agency
     const membership = await prisma.agencyUser.findUnique({
       where: { userId },
@@ -39,7 +40,7 @@ export async function processAgencyCommission({
 
     // BÖLÜM 21 / A3 §18 — gelir kaynağı bazlı komisyon kuralı.
     // Kayıt yoksa katalog varsayılanı geçerlidir; falcı geliri varsayılan KAPALI.
-    const rule = await resolveCommissionRule(membership.agencyId, sourceType)
+    const rule = await resolveCommissionRule(membership.agencyId, sourceType, options)
     if (!rule.enabled) return 0
 
     let commissionRate = rule.rate !== null && rule.rate !== undefined
@@ -58,7 +59,7 @@ export async function processAgencyCommission({
     // Faz 20 — §77 Transaction Safety: 3 yazım (earning + agency + member)
     // tek bir interactive transaction içinde sarılır; arızada kısmi güncelleme
     // olmaz.
-    await prisma.$transaction(async (tx: any) => {
+    const write = async (tx: any) => {
       await tx.agencyEarning.create({
         data: {
           agencyId: membership.agencyId,
@@ -78,11 +79,14 @@ export async function processAgencyCommission({
         where: { id: membership.id },
         data: { totalEarnings: { increment: commissionAmount } }
       })
-    })
+    }
+    if (options.client) await write(prisma)
+    else await prisma.$transaction(write)
 
     return commissionAmount
   } catch (error) {
     console.error('[Agency Commission] Error:', error)
+    if (options.strict) throw error
     return 0
   }
 }

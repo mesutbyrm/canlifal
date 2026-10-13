@@ -138,7 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const senderExcluded = !spendPlan.countsAsFinance
 
     const settlement = await settleRoomGift({
-      scope: 'voice', contextId: roomId, senderId: sender.id, recipientId: recipient.id,
+      scope: 'voice', contextId: roomId, sideIds: [roomId, room.slug], battleId: body.battleId, senderId: sender.id, recipientId: recipient.id,
       ownerId: roomOwnerId, giftTypeId: giftType.id, quantity, amount: price,
       source: spendPlan.source, skipDeduction: spendPlan.skipDeduction, dist,
       idempotencyRecord: _idempotencyRecord, responseStyle: 'chat', giftName: giftType.name, giftIcon: giftType.icon,
@@ -146,15 +146,6 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     committedReceipt = settlement.receipt
     const gift = settlement.gift
     sender.jetonBalance = settlement.senderBalanceBefore
-    for (const [userId, earnedAmount] of [[recipient.id, dist.receiverNet], [roomOwnerId, dist.ownerNet]] as const) {
-      if (userId && earnedAmount > 0 && !senderExcluded) processAgencyCommission({
-        userId, earnedAmount, sourceType: 'chat_gift', sourceId: gift.id,
-      }).catch(err => console.error('[Chat Gift] Agency commission error:', err))
-    }
-
-    recordContribution(sender.id, recipient.id, price).catch(() => {})
-    recordTeamPoints(sender.id, price).catch(() => {})
-
     // Create system chat message for the gift
     const qtyText = quantity > 1 ? ` x${quantity}` : ''
     await prisma.chatMessage.create({
@@ -195,19 +186,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     // gerçekten gönderildiği odadan türetilir (oda izolasyonu). İstemci
     // `battleId` gönderse bile bu oda o PK'nın tarafı değilse skor yazılmaz.
     // Oda aktif bir PK'daysa parametre gönderilmese de skor işlenir.
-    const pkUpdate = await applyGiftPkScore({
-      sideIds: [roomId, (room as any)?.id, (room as any)?.slug],
-      amount: price,
-      battleId: (body as any)?.battleId || null,
-      contributorId: sender.id,
-      receiverId: recipientId,
-      giftTypeId: giftType.id,
-      quantity,
-      source: 'gift',
-    })
-
-    // Leaderboard skor: hediye alıcısına puan (sesli oda)
-    incrementLeaderboardScore('voice_room', recipientId, price, 'gift_received', roomId).catch(() => {})
+    const pkUpdate = settlement.pkUpdate
 
     // Render metadata so ALL clients (web + Flutter) display the gift the same
     // way and it is visible to everyone in the room.

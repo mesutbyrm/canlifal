@@ -87,6 +87,24 @@ export async function GET(
       }
     })
 
+    if (request.nextUrl.searchParams.get('summary') === '1') {
+      const mobile = await authenticateRequest(request)
+      const session = !mobile ? await getServerSession(authOptions) : null
+      const userId = mobile?.id || session?.user?.id
+      if (!userId) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+      const stream = await prisma.videoStream.findUnique({ where: { id: params.streamId }, select: { userId: true } })
+      if (!stream || stream.userId !== userId) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      const [all, host] = await Promise.all([
+        prisma.streamGift.aggregate({ where: { streamId: params.streamId }, _sum: { totalPrice: true, ownerAmount: true, receiverAmount: true, siteAmount: true }, _count: true }),
+        prisma.streamGift.aggregate({ where: { streamId: params.streamId, OR: [{ recipientId: userId }, { recipientId: null }] }, _sum: { receiverAmount: true } }),
+      ])
+      return NextResponse.json({ gifts: gifts.map((g: any) => ({ ...g, giftType: serializeGiftMedia(g.giftType) })), totals: {
+        grossJeton: all._sum.totalPrice || 0, platformJeton: all._sum.siteAmount || 0,
+        ownerNetJeton: (all._sum.ownerAmount || 0) + (host._sum.receiverAmount || 0),
+        guestNetJeton: (all._sum.receiverAmount || 0) - (host._sum.receiverAmount || 0), giftCount: all._count,
+      } }, { headers: { 'Cache-Control': 'private, no-store' } })
+    }
+
     const serialized = gifts.map((gft: any) => ({
       ...gft,
       pointAmount: giftPointAmount(gft),
@@ -183,7 +201,7 @@ export async function POST(
     const baseDist = await calculateGiftDistribution(totalPrice, 'NORMAL', recipientId === stream.userId)
     const dist = recipientId === userId ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
     const settlement = await settleRoomGift({
-      scope: 'stream', contextId: params.streamId, senderId: userId, recipientId, ownerId: stream.userId,
+      scope: 'stream', contextId: params.streamId, sideIds: [stream.id, stream.roomId], senderId: userId, recipientId, ownerId: stream.userId,
       giftTypeId, quantity, amount: totalPrice, source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
       dist, idempotencyRecord: _idempotencyRecord, responseStyle: 'stream', giftName: giftType.name, giftIcon: giftType.icon,
     })
@@ -191,12 +209,6 @@ export async function POST(
     const gift = settlement.gift
     if (user) user.jetonBalance = settlement.senderBalanceBefore
     const ledgerRecipientAmount = dist.receiverNet + dist.ownerNet
-    for (const [beneficiary, earnedAmount] of [[recipientId, dist.receiverNet], [stream.userId, dist.ownerNet]] as const) {
-      if (!senderExcluded && earnedAmount > 0) processAgencyCommission({
-        userId: beneficiary, earnedAmount, sourceType: 'stream_gift', sourceId: gift.id,
-      }).catch(err => console.error('[Stream Gift] Agency commission error:', err))
-    }
-
     // ── GERÇEK ZAMANLI YOL: PK skoru + hediye motoru, para akışı commit olur
     // olmaz ve diğer (ledger/bildirim/duyuru) işlerden BAĞIMSIZ başlar. Eskiden
     // bunlar ledger/aktivite/bildirim/duyuru işlerinin ve ek DB sorgusunun
@@ -205,15 +217,7 @@ export async function POST(
       where: { id: recipientId },
       select: { name: true, username: true },
     })
-    const pkPromise = applyGiftPkScore({
-      sideIds: [params.streamId, (stream as any)?.id, (stream as any)?.roomId],
-      amount: totalPrice,
-      contributorId: userId,
-      receiverId: recipientId,
-      giftTypeId: giftType.id,
-      quantity,
-      source: 'gift',
-    })
+    const pkPromise = Promise.resolve(settlement.pkUpdate)
     const enginePromise = streamUserPromise
       .then((streamUser) =>
         processGiftSend({
@@ -232,8 +236,7 @@ export async function POST(
         return null
       })
 
-    recordContribution(userId, recipientId, totalPrice).catch(() => {})
-    recordTeamPoints(userId, totalPrice).catch(() => {})
+
 
     // Log gift activity
     logActivity({
@@ -274,7 +277,7 @@ export async function POST(
     ).catch(err => console.error('Stream gift announcement error:', err))
 
     // Leaderboard skor: hediye alıcısına puan (canlı yayın)
-    incrementLeaderboardScore('live_stream', recipientId, totalPrice, 'gift_received', params.streamId).catch(() => {})
+
 
     // Trigger gift sent event announcement
     const giftSenderName = user?.name || 'Bir kullanıcı'

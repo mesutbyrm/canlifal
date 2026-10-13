@@ -497,13 +497,14 @@ export async function getCommissionRules(agencyId?: string | null): Promise<Reso
  * Tek kaynak için çözümlenmiş kural. Kayıt yoksa katalog varsayılanı kullanılır;
  * böylece mevcut davranış hiç değişmez (falcı hariç: varsayılan kapalı).
  */
-export async function resolveCommissionRule(agencyId: string, sourceType: string): Promise<{ enabled: boolean; rate: number | null }> {
+export async function resolveCommissionRule(agencyId: string, sourceType: string, options: { client?: any; strict?: boolean } = {}): Promise<{ enabled: boolean; rate: number | null }> {
   try {
+    const prisma = options.client || (await import('@/lib/db')).prisma
     const local = await prisma.agencyCommissionRule.findFirst({ where: { agencyId, sourceType } })
     if (local) return { enabled: local.enabled, rate: local.rate }
     const global = await prisma.agencyCommissionRule.findFirst({ where: { agencyId: null, sourceType } })
     if (global) return { enabled: global.enabled, rate: global.rate }
-  } catch { /* yut */ }
+  } catch (error) { if (options.strict) throw error }
   const def = AGENCY_COMMISSION_SOURCES.find((s) => s.key === sourceType)
   return { enabled: def ? def.defaultEnabled : true, rate: null }
 }

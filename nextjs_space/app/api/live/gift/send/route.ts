@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       const recipientAmount = dist.receiverNet + dist.ownerNet
       const siteAmount = dist.siteAmount
       const settlement = await settleRoomGift({
-        scope: 'stream', contextId: stream.id, senderId: sender.id, recipientId, ownerId: stream.userId,
+        scope: 'stream', contextId: stream.id, sideIds: [stream.id, stream.roomId], senderId: sender.id, recipientId, ownerId: stream.userId,
         giftTypeId, quantity, amount: totalPrice, source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
         dist, idempotencyRecord: _idempotencyRecord, responseStyle: 'unified', giftName: giftType.name, giftIcon: giftType.icon,
       })
@@ -142,28 +142,7 @@ export async function POST(request: NextRequest) {
       giftRecord = gift
       newBalance = settlement.newBalance
       sender.jetonBalance = settlement.senderBalanceBefore
-      for (const [beneficiary, earnedAmount] of [[recipientId, dist.receiverNet], [stream.userId, dist.ownerNet]] as const) {
-        if (!senderExcluded && earnedAmount > 0) processAgencyCommission({
-          userId: beneficiary, earnedAmount, sourceType: 'stream_gift', sourceId: gift.id,
-        }).catch(err => console.error('[Stream Gift] Agency commission error:', err))
-      }
-
-      recordContribution(sender.id, recipientId, totalPrice).catch(() => {})
-      recordTeamPoints(sender.id, totalPrice).catch(() => {})
-
-      // PK skor atfı: tek kanonik yol (oda izolasyonu + süre + yarış kontrolü)
-      pkUpdate = await applyGiftPkScore({
-        sideIds: [stream.id, stream.roomId],
-        amount: totalPrice,
-        contributorId: sender.id,
-        receiverId: recipientId,
-        giftTypeId,
-        quantity,
-        source: 'gift',
-      })
-
-      // Leaderboard skor: hediye alıcısına (yayıncı) puan (canlı yayın)
-      incrementLeaderboardScore('live_stream', recipientId, totalPrice, 'gift_received', stream.id).catch(() => {})
+      pkUpdate = settlement.pkUpdate
 
       // Emit SSE
       emitStreamEvent(stream.id, 'gift', {
@@ -244,28 +223,7 @@ export async function POST(request: NextRequest) {
       giftRecord = gift
       newBalance = settlement.newBalance
       sender.jetonBalance = settlement.senderBalanceBefore
-      for (const [beneficiary, earnedAmount] of [[recipient.id, dist.receiverNet], [room.ownerId, dist.ownerNet]] as const) {
-        if (beneficiary && !senderExcluded && earnedAmount > 0) processAgencyCommission({
-          userId: beneficiary, earnedAmount, sourceType: 'chat_gift', sourceId: gift.id,
-        }).catch(err => console.error('[Voice Gift] Agency commission error:', err))
-      }
-
-      recordContribution(sender.id, recipient.id, totalPrice).catch(() => {})
-      recordTeamPoints(sender.id, totalPrice).catch(() => {})
-
-      // PK skor atfı: tek kanonik yol (oda izolasyonu + süre + yarış kontrolü)
-      pkUpdate = await applyGiftPkScore({
-        sideIds: [room.id, roomId],
-        amount: totalPrice,
-        contributorId: sender.id,
-        receiverId: recipientId,
-        giftTypeId,
-        quantity,
-        source: 'gift',
-      })
-
-      // Leaderboard skor: hediye alıcısına puan (sesli oda)
-      incrementLeaderboardScore('voice_room', recipientId, totalPrice, 'gift_received', room.id).catch(() => {})
+      pkUpdate = settlement.pkUpdate
 
       // Emit chat event
       emitChatEvent(room.id, 'gift', {

@@ -21,6 +21,12 @@ export interface PKBattleData {
   score2: number
   status: string
   duration: number
+  endsAt?: string | null
+  targetArrows?: number | null
+  arrows1?: number | null
+  arrows2?: number | null
+  roundNumber?: number | null
+  endReason?: string | null
   startedAt: string | null
   endedAt: string | null
   winnerId: string | null
@@ -58,14 +64,14 @@ export default function PKBattleView({ battle, currentStreamId, onMyVideoRef }: 
   useEffect(() => {
     if (battle.status !== 'active' || !battle.startedAt) return
     const calcTimeLeft = () => {
-      const started = new Date(battle.startedAt!).getTime()
+      const started = battle.endsAt ? new Date(battle.endsAt).getTime() - battle.duration * 1000 : new Date(battle.startedAt!).getTime()
       const elapsed = Math.floor((Date.now() - started) / 1000)
       setTimeLeft(Math.max(0, battle.duration - elapsed))
     }
     calcTimeLeft()
     timerRef.current = setInterval(calcTimeLeft, 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [battle.startedAt, battle.duration, battle.status])
+  }, [battle.startedAt, battle.endsAt, battle.duration, battle.status])
 
   // Score change flash + popup
   useEffect(() => {

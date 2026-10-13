@@ -1,3 +1,5 @@
+import { finishPkBattle } from '@/lib/pk-state'
+import { parseTargetArrows, pkSeriesFields } from '@/lib/pk-series'
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -70,6 +72,8 @@ export async function POST(
     if (!authUser) return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 })
 
     const body = await request.json()
+    const targetArrows = parseTargetArrows(body.targetArrows)
+    if (targetArrows === null) return NextResponse.json({ error: 'Ok hedefi 1, 2 veya 3 olmalıdır' }, { status: 400 })
     const { action, targetStreamId, battleId, duration } = body
     const streamId = params.streamId
 
@@ -107,6 +111,7 @@ export async function POST(
 
       const battle = await prisma.pKBattle.create({
         data: {
+          targetArrows,
           stream1Id: sid1,
           stream2Id: sid2,
           user1Id: authUser.id,
@@ -144,8 +149,8 @@ export async function POST(
       }
 
       const updated = await prisma.pKBattle.update({
-        where: { id: battleId },
-        data: { status: 'active', startedAt: new Date() }
+        where: { id: battleId, status: 'pending' },
+        data: { status: 'active', startedAt: new Date(), endsAt: new Date(Date.now() + battle.duration * 1000) }
       })
       return NextResponse.json(updated)
     }
@@ -158,24 +163,20 @@ export async function POST(
         return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
       }
       const updated = await prisma.pKBattle.update({
-        where: { id: battleId },
+        where: { id: battleId, status: 'pending' },
         data: { status: action === 'reject' ? 'rejected' : 'cancelled', endedAt: new Date() }
       })
       return NextResponse.json(updated)
     }
 
-    if (action === 'end') {
+    if (action === 'end' || action === 'round_end') {
       if (!battleId) return NextResponse.json({ error: 'battleId gerekli' }, { status: 400 })
       const battle = await prisma.pKBattle.findUnique({ where: { id: battleId } })
       if (!battle) return NextResponse.json({ error: 'PK bulunamadı' }, { status: 404 })
       if (battle.status !== 'active') return NextResponse.json({ error: 'PK aktif değil' }, { status: 400 })
 
-      const winnerId = battle.score1 > battle.score2 ? battle.user1Id :
-                       battle.score2 > battle.score1 ? battle.user2Id : null
-      const updated = await prisma.pKBattle.update({
-        where: { id: battleId },
-        data: { status: 'completed', endedAt: new Date(), winnerId }
-      })
+      if (battle.user1Id !== authUser.id && battle.user2Id !== authUser.id) return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
+      const updated = await finishPkBattle(battle as any, action === 'round_end' ? 'TIME_UP' : 'MANUAL')
       return NextResponse.json(updated)
     }
 
