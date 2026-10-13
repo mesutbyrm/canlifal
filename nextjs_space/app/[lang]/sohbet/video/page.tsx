@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, TouchEvent, Suspense } from 'react'
 import { GiftSourceSelector, useGiftSource } from '@/components/gift-source-selector'
+import { postGift } from '@/lib/gift-request'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -144,6 +145,7 @@ function VideoStreamPageInner() {
   const [loading, setLoading] = useState(true)
   const [isMuted, setIsMuted] = useState(false) // Start unmuted - user navigated here via interaction
   const [showGifts, setShowGifts] = useState(false)
+  const [giftRecipient, setGiftRecipient] = useState<{ streamId: string; userId: string } | null>(null)
   const giftSource = useGiftSource(session?.user?.id, showGifts)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -1167,11 +1169,10 @@ function VideoStreamPageInner() {
     }
     setSendingGift(gift.id)
     try {
-      const res = await fetch(`/api/video-streams/${currentStream.id}/gifts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ giftTypeId: gift.id, quantity: 1, jetonSource: giftSource.source })
-      })
+      const recipientId = giftRecipient?.streamId === currentStream.id ? giftRecipient.userId : currentStream.user.id
+      const res = await postGift(`/api/video-streams/${currentStream.id}/gifts`, {
+        giftTypeId: gift.id, quantity: 1, jetonSource: giftSource.source, recipientId, clientPrice: gift.price,
+      }, session.user.id)
       if (res.ok) {
         const data = await res.json()
         setUserJetons(data.newBalance)
@@ -1992,6 +1993,16 @@ function VideoStreamPageInner() {
               
               <div className="px-4 pb-4">
                 <GiftSourceSelector control={giftSource} disabled={!!sendingGift} />
+                <label className="mb-3 block text-sm text-white">
+                  Hediye alıcısı
+                  <select aria-label="Hediye alıcısı" disabled={!!sendingGift}
+                    value={giftRecipient?.streamId === currentStream?.id ? giftRecipient?.userId : currentStream?.user.id}
+                    onChange={event => currentStream && setGiftRecipient({ streamId: currentStream.id, userId: event.target.value })}
+                    className="mt-1 w-full rounded-lg bg-slate-900 p-2 text-white">
+                    <option value={currentStream?.user.id}>{currentStream?.user.name} · Yayıncı</option>
+                    {activeCoBroadcasters.map(guest => <option key={guest.userId} value={guest.userId}>{guest.user.name} · Misafir</option>)}
+                  </select>
+                </label>
                 {/* Header with balance */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">

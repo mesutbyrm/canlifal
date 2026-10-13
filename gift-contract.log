@@ -1,0 +1,196 @@
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 1000,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 1000,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 0,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 0,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 0,
+  effectiveBalance: 0,
+  requestedAmount: 100
+}
+[Gift Send] Jeton transfer attempt: {
+  senderId: 'sender',
+  senderName: 'sender',
+  senderJetonBalance: 1000,
+  effectiveBalance: 1000,
+  requestedAmount: 100
+}
+Chat room gift error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:45:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:124:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+Chat room gift error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:124:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+Chat room gift error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:45:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:124:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+Chat room gift error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:124:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+Error sending gift: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:47:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:163:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+Error sending gift: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:163:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:47:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:128:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:128:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+Error sending gift: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:47:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:163:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+Error sending gift: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/video-streams/[streamId]/gifts/route.ts:163:28)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:47:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:128:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:128:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:45:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:220:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:220:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+[LIVE/gift/send] Error: Error: SIMULATED_GIFT_WRITE_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:17:109
+    at async lib/gift-settlement.ts:45:15
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:220:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:144:5
+[LIVE/gift/send] Error: Error: SIMULATED_RECEIPT_FAILURE
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:19:70
+    at async saveGiftReceipt (lib/gift-recipient.ts:55:5)
+    at async lib/gift-settlement.ts:81:9
+    at async Proxy.<anonymous> (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:28:18)
+    at async Object.POST (app/api/live/gift/send/route.ts:220:32)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:145:5
+[Gift] post-commit side effect failed: Error: SIMULATED_NOTIFICATION_FAILURE
+    at createNotificationWithPush (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:51:90)
+    at Object.POST (app/api/chat/rooms/[roomId]/gifts/route.ts:151:55)
+    at async run (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:94:20)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-source.contract.cjs:149:3
+PASS 202 isolated gift scenarios (roles, guest split, self-gift, validation, rollback, receipt). No real database concurrency or device test.

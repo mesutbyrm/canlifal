@@ -590,7 +590,12 @@ model ChatRoomGift {
   recipientId      String
   giftTypeId       String
   quantity         Int      @default(1)
-  totalPrice       Int // total cost
+  totalPrice       Int // financial gross; fake gifts are zero
+  pointAmount      Int? // immutable nominal value at send time; null = legacy
+  jetonSource      String? // real | fake; null = legacy/unknown
+  receiverAmount   Int?
+  ownerAmount      Int?
+  transactionType  String? // gift | self_gift
   currencyType     String   @default("jeton") // "jeton" or "cfc"
   commissionAmount Int      @default(0) // amount taken as commission
   beneficiaryId    String? // who received commission (null if no commission)
@@ -1226,7 +1231,9 @@ model GiftHistory {
   quantity      Int      @default(1)
   combo         Int      @default(1)
   priority      String   @default("MEDIUM")
-  coinAmount    Int      @default(0) // total jetons spent
+  coinAmount    Int      @default(0) // financial jetons spent
+  pointAmount   Int? // nominal points, including Fake
+  jetonSource   String?
   animationType String?
   displayArea   String?
   createdAt     DateTime @default(now())
@@ -1306,7 +1313,12 @@ model StreamGift {
   senderId       String
   giftTypeId     String
   quantity       Int         @default(1)
-  totalPrice     Int // total credits spent (gross / display value)
+  totalPrice     Int // financial gross; fake gifts are zero
+  pointAmount    Int? // immutable nominal value; null = legacy
+  jetonSource    String? // real | fake; null = legacy/unknown
+  recipientId    String? // null = legacy broadcaster recipient
+  ownerAmount    Int?
+  transactionType String? // gift | self_gift
   // ── Revenue split (added) ──
   receiverAmount Int         @default(0) // jetons credited to broadcaster
   siteAmount     Int         @default(0) // jetons kept by the site

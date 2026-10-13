@@ -77,12 +77,12 @@ export async function GET(request: NextRequest) {
         _count: true,
       }),
       prisma.streamGift.aggregate({
-        where: { ...dateFilter, ...exSender },
+        where: { ...dateFilter, ...(excludeTest ? { OR: [{ jetonSource: 'real' }, { jetonSource: null, ...exSender }] } : {}) },
         _sum: { totalPrice: true, siteAmount: true },
         _count: true,
       }),
       prisma.chatRoomGift.aggregate({
-        where: { ...dateFilter, ...exSender },
+        where: { ...dateFilter, ...(excludeTest ? { OR: [{ jetonSource: 'real' }, { jetonSource: null, ...exSender }] } : {}) },
         _sum: { totalPrice: true, commissionAmount: true },
         _count: true,
       }),

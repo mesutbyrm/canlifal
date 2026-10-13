@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { GiftSourceSelector, useGiftSource } from '@/components/gift-source-selector'
+import { postGift } from '@/lib/gift-request'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
@@ -2089,11 +2090,9 @@ export default function ChatRoomPage() {
     if (!room || !giftTargetUser || !selectedGiftType || sendingGift || !giftSource.ready) return
     setSendingGift(true)
     try {
-      const res = await fetch(`/api/chat/rooms/${room.id}/gifts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType, jetonSource: giftSource.source })
-      })
+      const res = await postGift(`/api/chat/rooms/${room.id}/gifts`, {
+        recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType, jetonSource: giftSource.source,
+      }, session?.user?.id || '')
       if (res.ok) {
         setShowGiftModal(false)
         setGiftTargetUser(null)

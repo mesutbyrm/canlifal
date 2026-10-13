@@ -1,3 +1,4 @@
+import { giftPointAmount } from '@/lib/gift-points'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 
@@ -46,7 +47,7 @@ export async function GET(
     // Calculate gift totals per user
     const giftTotals: Record<string, { user: { id: string; name: string | null; image: string | null }; total: number }> = {}
     gifts.forEach((gift: any) => {
-      const total = (gift.giftType.price * gift.quantity)
+      const total = giftPointAmount(gift)
       if (!giftTotals[gift.senderId]) {
         giftTotals[gift.senderId] = {
           user: gift.sender,

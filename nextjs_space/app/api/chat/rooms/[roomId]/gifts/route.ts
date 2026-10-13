@@ -1,3 +1,6 @@
+import { giftPointAmount, giftSenderTotals } from '@/lib/gift-points'
+import { settleRoomGift } from '@/lib/gift-settlement'
+import { GiftRecipientError, parseGiftQuantity } from '@/lib/gift-recipient'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -14,7 +17,6 @@ import { emitChatEvent } from '@/lib/chat-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 import { processGiftSend } from '@/lib/gift-engine'
-import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -26,6 +28,7 @@ export const dynamic = 'force-dynamic'
 // POST - Send a gift in a chat room
 export async function POST(req: NextRequest, { params }: { params: { roomId: string } }) {
   let _idempotencyRecord: string | null = null
+  let committedReceipt: any = null
   try {
     // Feature flag kontrolü
     const featureBlocked = await requireFeature('GIFTS_ENABLED')
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     if (rateLimited) return rateLimited
 
     // Faz 22 (§71) — idempotency koruması
-    const replay = await beginIdempotent(req, 'chatroom_gift', giftUserId)
+    const replay = await beginIdempotent(req, 'chatroom_gift', giftUserId, { strict: true })
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const { giftTypeId, quantity: rawQuantity, senderName: _sn, receiverName: _rn, platform: _pl } = body
     let { recipientId } = body
     const paymentType = 'jeton' // Only jeton is supported in chat rooms
-    const quantity = Math.max(1, Math.min(100, parseInt(rawQuantity) || 1))
+    const quantity = parseGiftQuantity(rawQuantity)
 
     if (!giftTypeId) {
       return NextResponse.json({ error: 'giftTypeId gerekli' }, { status: 400 })
@@ -68,9 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       }
     }
 
-    if (recipientId === giftUserId) {
-      return NextResponse.json({ error: 'Kendinize hediye gönderemezsiniz' }, { status: 400 })
-    }
+
 
     // Verify room exists (include commission settings + roomType)
     const room = await prisma.chatRoom.findUnique({
@@ -130,169 +131,27 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const roomType = (room as any).roomType || 'FREE'
     const roomOwnerId = room.ownerId
     const isRecipientOwner = recipientId === roomOwnerId
-    const dist = await calculateGiftDistribution(price, roomType, isRecipientOwner)
+    const baseDist = await calculateGiftDistribution(price, roomType, isRecipientOwner)
+    const dist = recipientId === sender.id ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: price } : baseDist
 
-    // Admin/yönetici kullanıcıların hediyeleri alıcıya bakiye olarak yansımaz
+    // Yalnız Fake hediyeler finansal kazanç üretmez.
     const senderExcluded = !spendPlan.countsAsFinance
 
-    // ── Atomic money movement ──────────────────────────────────────────────
-    // Sender deduction, recipient credit and room-owner commission are wrapped
-    // in a single interactive transaction so balances can never end up partially
-    // updated on a mid-flight failure. Business logic and amounts are unchanged.
-    await prisma.$transaction(async (tx: any) => {
-      // Deduct jetons from sender (staff skip - unlimited balance)
-      if (!isStaff) {
-        await atomicDebitJeton(tx, sender.id, price, spendPlan.source)
-        await tx.jetonTransaction.create({
-          data: {
-            userId: sender.id,
-            amount: -price,
-            type: 'gift_sent',
-            description: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi (Sohbet odası)`,
-            balanceBefore: sender.jetonBalance ?? 0,
-            balanceAfter: (sender.jetonBalance ?? 0) - price
-          }
-        })
-      }
-
-      // Add net amount to recipient - sadece normal kullanıcılardan
-      if (dist.receiverNet > 0 && !senderExcluded) {
-        const recipientBefore = recipient.jetonBalance ?? 0
-        await tx.user.update({
-          where: { id: recipient.id },
-          data: { jetonBalance: { increment: dist.receiverNet } }
-        })
-        await tx.jetonTransaction.create({
-          data: {
-            userId: recipient.id,
-            amount: dist.receiverNet,
-            type: 'gift_received',
-            description: `${sender.name} tarafından ${giftType.name} hediyesi alındı (${room.nameTr})`,
-            balanceBefore: recipientBefore,
-            balanceAfter: recipientBefore + dist.receiverNet
-          }
-        })
-      }
-
-      // Give net amount to room owner (NORMAL/VIP rooms only)
-      if (dist.ownerNet > 0 && roomOwnerId && !senderExcluded) {
-        const ownerUser = await tx.user.findUnique({ where: { id: roomOwnerId }, select: { jetonBalance: true } })
-        const ownerBefore = ownerUser?.jetonBalance ?? 0
-        await tx.user.update({
-          where: { id: roomOwnerId },
-          data: { jetonBalance: { increment: dist.ownerNet } }
-        })
-        await tx.jetonTransaction.create({
-          data: {
-            userId: roomOwnerId,
-            amount: dist.ownerNet,
-            type: 'gift_commission',
-            description: `Oda sahibi payı: ${giftType.name} hediyesinden (${room.nameTr})`,
-            balanceBefore: ownerBefore,
-            balanceAfter: ownerBefore + dist.ownerNet
-          }
-        })
-      }
+    const settlement = await settleRoomGift({
+      scope: 'voice', contextId: roomId, senderId: sender.id, recipientId: recipient.id,
+      ownerId: roomOwnerId, giftTypeId: giftType.id, quantity, amount: price,
+      source: spendPlan.source, skipDeduction: spendPlan.skipDeduction, dist,
+      idempotencyRecord: _idempotencyRecord, responseStyle: 'chat', giftName: giftType.name, giftIcon: giftType.icon,
     })
-
-    // Process agency commission if recipient is in an agency (outside the money
-    // transaction — fire-and-forget, must not block or roll back balances)
-    if (dist.receiverNet > 0 && !senderExcluded) {
-      processAgencyCommission({
-        userId: recipient.id,
-        earnedAmount: dist.receiverNet,
-        sourceType: 'chat_gift',
+    committedReceipt = settlement.receipt
+    const gift = settlement.gift
+    sender.jetonBalance = settlement.senderBalanceBefore
+    for (const [userId, earnedAmount] of [[recipient.id, dist.receiverNet], [roomOwnerId, dist.ownerNet]] as const) {
+      if (userId && earnedAmount > 0 && !senderExcluded) processAgencyCommission({
+        userId, earnedAmount, sourceType: 'chat_gift', sourceId: gift.id,
       }).catch(err => console.error('[Chat Gift] Agency commission error:', err))
     }
 
-    // Log revenue to audit table
-    logRoomRevenue({
-      roomId,
-      eventType: 'gift',
-      totalAmount: senderExcluded ? 0 : price,
-      receiverAmount: senderExcluded ? 0 : dist.receiverNet,
-      ownerAmount: senderExcluded ? 0 : dist.ownerNet,
-      siteAmount: senderExcluded ? 0 : dist.siteAmount,
-      senderId: sender.id,
-      receiverId: recipient.id,
-      ownerId: roomOwnerId || undefined,
-      metadata: {
-        giftName: giftType.name,
-        giftIcon: giftType.icon,
-        quantity,
-        jetonSource: spendPlan.source,
-        pointAmount: price,
-        roomType,
-        receiverGross: senderExcluded ? 0 : dist.receiverGross,
-        ownerGross: senderExcluded ? 0 : dist.ownerGross,
-        receiverCommission: dist.receiverCommission,
-        ownerCommission: dist.ownerCommission,
-      }
-    }).catch(() => {})
-
-    // Record the gift
-    const gift = await prisma.chatRoomGift.create({
-      data: {
-        roomId,
-        senderId: sender.id,
-        recipientId: recipient.id,
-        giftTypeId: giftType.id,
-        quantity,
-        totalPrice: senderExcluded ? 0 : price,
-        currencyType: paymentType,
-        commissionAmount: senderExcluded ? 0 : dist.siteAmount,
-        beneficiaryId: dist.ownerNet > 0 ? roomOwnerId : null
-      }
-    })
-
-    // ── Immutable ledger (fire-and-forget, never blocks the money flow) ──
-    if (!isStaff && !senderExcluded) {
-      const legs: LedgerLeg[] = [
-        {
-          accountType: 'user_jeton',
-          accountId: sender.id,
-          direction: 'debit',
-          amount: price,
-          balanceBefore: sender.jetonBalance ?? 0,
-          balanceAfter: (sender.jetonBalance ?? 0) - price,
-        },
-      ]
-      if (dist.receiverNet > 0) {
-        legs.push({
-          accountType: 'user_jeton',
-          accountId: recipient.id,
-          direction: 'credit',
-          amount: dist.receiverNet,
-        })
-      }
-      if (dist.ownerNet > 0 && roomOwnerId) {
-        legs.push({
-          accountType: 'user_jeton',
-          accountId: roomOwnerId,
-          direction: 'credit',
-          amount: dist.ownerNet,
-        })
-      }
-      if (dist.siteAmount > 0) {
-        legs.push({
-          accountType: 'platform_jeton',
-          accountId: 'platform',
-          direction: 'credit',
-          amount: dist.siteAmount,
-        })
-      }
-      recordMultiLeg({
-        legs,
-        category: 'gift_send',
-        currency: 'jeton',
-        description: `Sohbet odası hediyesi: ${giftType.name} x${quantity}`,
-        referenceType: 'ChatRoomGift',
-        referenceId: gift.id,
-        actorId: sender.id,
-        metadata: { roomId, roomType, giftTypeId: giftType.id, quantity },
-      }).catch((e) => console.error('[Ledger][chat-gift]', e))
-    }
-    // Puanlar Real/Fake için geçerli; para kayıtlarından bağımsızdır.
     recordContribution(sender.id, recipient.id, price).catch(() => {})
     recordTeamPoints(sender.id, price).catch(() => {})
 
@@ -418,18 +277,26 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         timestamp: Date.now(),
         ...renderMeta,
       },
+      newBalance: settlement.newBalance,
       engine: enginePayload,
       pkUpdate
     }
     await completeIdempotent(replay.record, 200, giftResult)
     return NextResponse.json(giftResult)
   } catch (error) {
+    if (committedReceipt) {
+      console.error('[Gift] post-commit side effect failed:', error)
+      return NextResponse.json(committedReceipt)
+    }
     await releaseIdempotent(_idempotencyRecord)
+    if (error instanceof GiftRecipientError) return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })
     if (isInsufficientBalanceError(error)) {
       return NextResponse.json({ error: 'Yetersiz jeton bakiyesi', code: 'INSUFFICIENT_BALANCE' }, { status: 400 })
     }
     console.error('Chat room gift error:', error)
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  } finally {
+    if (!committedReceipt) await releaseIdempotent(_idempotencyRecord)
   }
 }
 
@@ -455,16 +322,10 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     const activeUserIds = activePresences.map((p: { userId: string }) => p.userId)
 
     // Get aggregated gifts per sender in this room - only today's gifts from active users
-    const gifts = await prisma.chatRoomGift.groupBy({
-      by: ['senderId', 'currencyType'],
-      where: {
-        roomId,
-        createdAt: { gte: todayStart },
-        senderId: { in: activeUserIds.length > 0 ? activeUserIds : ['__none__'] }
-      },
-      _sum: { totalPrice: true },
-      orderBy: { _sum: { totalPrice: 'desc' } }
-    })
+    const gifts = (await giftSenderTotals('voice', {
+      roomId, currencyType: 'jeton', createdAt: { gte: todayStart },
+      senderId: { in: activeUserIds.length > 0 ? activeUserIds : ['__none__'] },
+    })).map(g => ({ ...g, currencyType: 'jeton', _sum: { totalPrice: g.pointAmount } }))
 
     // Get sender details
     const senderIds = [...new Set(gifts.map((g: any) => g.senderId))]
@@ -532,7 +393,10 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
       giftIcon: g.giftType.icon,
       giftImage: '',
       quantity: g.quantity ?? 1,
-      amount: g.totalPrice,
+      amount: giftPointAmount(g),
+      pointAmount: giftPointAmount(g),
+      financialAmount: g.totalPrice,
+      jetonSource: g.jetonSource,
       currencyType: g.currencyType,
       createdAt: g.createdAt.toISOString(),
       ...buildGiftRenderMeta(g.giftType),

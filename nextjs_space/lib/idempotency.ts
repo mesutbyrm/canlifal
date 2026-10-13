@@ -58,7 +58,8 @@ export function getIdempotencyKey(req: NextRequest): string | null {
 export async function beginIdempotent(
   req: NextRequest,
   scope: string,
-  userId?: string | null
+  userId?: string | null,
+  options: { strict?: boolean } = {},
 ): Promise<IdempotencyOutcome> {
   const key = getIdempotencyKey(req)
   if (!key) return { response: null, record: null }
@@ -85,7 +86,7 @@ export async function beginIdempotent(
         // Expired → fall through and re-reserve below.
       } else if (existing.status === 'in_flight') {
         const age = Date.now() - existing.createdAt.getTime()
-        if (age < IN_FLIGHT_STALE_MS) {
+        if (options.strict || age < IN_FLIGHT_STALE_MS) {
           return {
             response: NextResponse.json(
               {
@@ -103,6 +104,10 @@ export async function beginIdempotent(
         // Stale in-flight → treat as abandoned and re-reserve below.
       }
 
+      // Financial callers never reopen an ambiguous/stale key automatically.
+      if (options.strict) {
+        return { response: NextResponse.json({ success: false, error: { code: 'IDEMPOTENCY_EXPIRED', message: 'İşlem anahtarının süresi doldu; geçmişinizi kontrol edin' } }, { status: 409 }), record: null }
+      }
       // Re-reserve an expired / abandoned record.
       const refreshed = await prisma.idempotencyRecord.update({
         where: { key: compositeKey },
@@ -130,6 +135,13 @@ export async function beginIdempotent(
   } catch (error) {
     // A unique-constraint race means a concurrent identical request won.
     console.error('[idempotency] begin failed:', error)
+    if (options.strict) {
+      const duplicate = (error as any)?.code === 'P2002'
+      return { response: NextResponse.json({ success: false, error: {
+        code: duplicate ? 'DUPLICATE_REQUEST' : 'IDEMPOTENCY_UNAVAILABLE',
+        message: duplicate ? 'Aynı istek işleniyor; aynı anahtarla tekrar deneyin' : 'İşlem güvenliği doğrulanamadı; lütfen tekrar deneyin',
+      } }, { status: duplicate ? 409 : 503 }), record: null }
+    }
     return { response: null, record: null }
   }
 }

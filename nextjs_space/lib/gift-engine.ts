@@ -487,6 +487,8 @@ export async function processGiftSend(params: {
           combo,
           priority,
           coinAmount: params.jetonSource === 'fake' ? 0 : params.coinAmount,
+          pointAmount: params.coinAmount,
+          jetonSource: params.jetonSource ?? 'real',
           animationType,
           displayArea,
         },

@@ -1,0 +1,34 @@
+[idempotency] begin failed: Error: simulated race
+    at Object.create (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:10:84)
+    at Object.beginIdempotent (lib/idempotency.ts:111:62)
+    at async Promise.all (index 1)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:26:18 {
+  code: 'P2002'
+}
+[idempotency] begin failed: Error: simulated offline
+    at Object.findUnique (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:9:59)
+    at Object.beginIdempotent (lib/idempotency.ts:61:63)
+    at call (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:24:22)
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:36:23
+[idempotency] begin failed: Error: simulated offline
+    at Object.findUnique (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:9:59)
+    at Object.beginIdempotent (lib/idempotency.ts:61:63)
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:38:27
+[idempotency] begin failed: Error: simulated race
+    at Object.create (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:10:84)
+    at Object.beginIdempotent (lib/idempotency.ts:111:62)
+    at async /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:39:32 {
+  code: 'P2002'
+}
+[Ledger] recordMultiLeg failed: Error: ledger failure
+    at Object.createMany (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:13:67)
+    at Object.recordMultiLeg (lib/ledger.ts:107:60)
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:50:35
+    at waitForActual (node:assert:861:21)
+    at Function.rejects (node:assert:996:31)
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:50:16
+[Ledger] recordMultiLeg failed: Error: ledger failure
+    at Object.createMany (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:13:67)
+    at Object.recordMultiLeg (lib/ledger.ts:107:60)
+    at /home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-replay.contract.cjs:51:29
+PASS 16 isolated replay, point snapshot and strict ledger checks; no production writes.

@@ -1,3 +1,4 @@
+import { giftSenderTotals } from '@/lib/gift-points'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
@@ -20,13 +21,7 @@ export async function GET(
       where.createdAt = { gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) }
     }
 
-    const grouped = await prisma.streamGift.groupBy({
-      by: ['senderId'],
-      where,
-      _sum: { totalPrice: true, quantity: true },
-      orderBy: { _sum: { totalPrice: 'desc' } },
-      take: limit,
-    })
+    const grouped = (await giftSenderTotals('stream', where)).slice(0, limit)
 
     const senderIds = grouped.map((g) => g.senderId)
     const users = senderIds.length
@@ -47,8 +42,8 @@ export async function GET(
         city: u?.city || null,
         country: u?.country || null,
         level: (u as any)?.level ?? null,
-        totalCoins: g._sum.totalPrice || 0,
-        giftCount: g._sum.quantity || 0,
+        totalCoins: g.pointAmount,
+        giftCount: g.quantity,
       }
     })
 

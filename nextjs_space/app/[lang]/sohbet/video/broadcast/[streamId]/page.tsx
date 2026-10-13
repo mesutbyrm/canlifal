@@ -751,7 +751,7 @@ export default function BroadcastPage() {
       const res = await fetch(`/api/video-streams/${streamId}/gifts`)
       if (res.ok) {
         const gifts = await res.json()
-        const total = gifts.reduce((sum: number, g: any) => sum + Math.floor(g.giftType.price * g.quantity * 0.7), 0)
+        const total = gifts.reduce((sum: number, g: any) => sum + (g.ownerAmount || 0) + (!g.recipientId || g.recipientId === session?.user?.id ? (g.receiverAmount || 0) : 0), 0)
         setTotalGiftCredits(total)
         
         if (gifts.length > 0 && gifts[0].id !== lastGiftIdRef.current) {

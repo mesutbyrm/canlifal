@@ -177,13 +177,13 @@ export async function recordMultiLeg(params: {
   referenceId?: string
   metadata?: Record<string, any>
   actorId?: string
-}): Promise<string | null> {
+}, options: { client?: any; strict?: boolean } = {}): Promise<string | null> {
   try {
     const txId = generateTxId()
     const currency = params.currency || 'jeton'
     const now = new Date()
 
-    await prisma.ledgerEntry.createMany({
+    await (options.client || prisma).ledgerEntry.createMany({
       data: params.legs.map((leg) => ({
         transactionId: txId,
         accountType: leg.accountType,
@@ -206,6 +206,7 @@ export async function recordMultiLeg(params: {
     return txId
   } catch (err) {
     console.error('[Ledger] recordMultiLeg failed:', err)
+    if (options.strict) throw err
     return null
   }
 }

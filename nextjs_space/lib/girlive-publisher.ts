@@ -1,3 +1,4 @@
+import { giftPointAmount } from '@/lib/gift-points'
 /**
  * GirLive Yayıncı Asistanı — oturum raporu üretimi.
  * Sesli oda sahibi veya canlı yayın sahibi için brüt/net hediye,
@@ -36,6 +37,7 @@ export interface PublisherReport {
   returnVisitors: number
   avgDwellSeconds: number | null
   peakHourLocal: number | null
+  giftPointTotal: number
   grossGiftJeton: number
   netOwnerJeton: number
   giftCount: number
@@ -87,12 +89,11 @@ export async function buildVoiceRoomReport(
 
   // Hediyeler
   const gifts = await prisma.chatRoomGift.findMany({
-    where: { roomId, recipientId: ownerId, createdAt: { gte: range.gte, lte: range.lte } },
+    where: { roomId, createdAt: { gte: range.gte, lte: range.lte } },
     include: { giftType: { select: { id: true, name: true } }, sender: { select: { id: true, name: true, username: true } } },
   })
   const grossGiftJeton = gifts.reduce((s: number, g: any) => s + (g.totalPrice || 0), 0)
-  const totalCommission = gifts.reduce((s: number, g: any) => s + (g.commissionAmount || 0), 0)
-  const netOwnerJeton = grossGiftJeton - totalCommission
+  const netOwnerJeton = gifts.reduce((s: number, g: any) => s + (g.ownerAmount ?? (g.recipientId === ownerId ? Math.max(0, g.totalPrice - g.commissionAmount) : 0)) + (g.recipientId === ownerId ? (g.receiverAmount || 0) : 0), 0)
 
   // Top hediyeler
   const giftMap = new Map<string, TopGift>()
@@ -101,9 +102,9 @@ export async function buildVoiceRoomReport(
     const existing = giftMap.get(key)
     if (existing) {
       existing.count += g.quantity
-      existing.jetonTotal += g.totalPrice
+      existing.jetonTotal += giftPointAmount(g)
     } else {
-      giftMap.set(key, { giftId: key, name: (g as any).giftType?.name || '?', count: g.quantity, jetonTotal: g.totalPrice })
+      giftMap.set(key, { giftId: key, name: (g as any).giftType?.name || '?', count: g.quantity, jetonTotal: giftPointAmount(g) })
     }
   }
   const topGifts = [...giftMap.values()].sort((a, b) => b.jetonTotal - a.jetonTotal).slice(0, 5)
@@ -115,14 +116,14 @@ export async function buildVoiceRoomReport(
     const existing = gifterMap.get(sid)
     if (existing) {
       existing.giftCount += g.quantity
-      existing.jetonTotal += g.totalPrice
+      existing.jetonTotal += giftPointAmount(g)
     } else {
       const sender = g.sender as any
       gifterMap.set(sid, {
         userId: sid,
         displayName: sender?.name || sender?.username || '?',
         giftCount: g.quantity,
-        jetonTotal: g.totalPrice,
+        jetonTotal: giftPointAmount(g),
       })
     }
   }
@@ -138,23 +139,23 @@ export async function buildVoiceRoomReport(
   const returnVisitors = 0 // return bilgisi log olmadan hesaplanamaz
 
   // PK (oda sahibinin yayın ID'si yok — hostUserId veya guestUserId ile bul)
-  const pkMatches = await prisma.pkMatch.findMany({
+  const pkMatches = await prisma.pKBattle.findMany({
     where: {
-      status: 'finished',
+      status: 'completed',
       createdAt: { gte: range.gte, lte: range.lte },
-      OR: [{ hostUserId: ownerId }, { guestUserId: ownerId }],
+      OR: [{ user1Id: ownerId }, { user2Id: ownerId }],
     },
-    select: { id: true, winnerUserId: true, result: true, hostUserId: true, guestUserId: true },
+    select: { id: true, winnerId: true, isDraw: true, user1Id: true, user2Id: true },
   })
   const pkCompleted = pkMatches.length
-  const pkWon = pkMatches.filter((m: any) => m.winnerUserId === ownerId).length
-  const pkDraw = pkMatches.filter((m: any) => m.result === 'draw').length
+  const pkWon = pkMatches.filter((m: any) => m.winnerId === ownerId).length
+  const pkDraw = pkMatches.filter((m: any) => m.isDraw === true).length
   const pkLost = pkCompleted - pkWon - pkDraw
 
   // İpuçları
   const tips: string[] = []
   if (grossGiftJeton > 0 && topGifters.length > 0) {
-    tips.push(`En çok hediye gönderen: ${topGifters[0].displayName} (${topGifters[0].jetonTotal} jeton)`)
+    tips.push(`En çok hediye gönderen: ${topGifters[0].displayName} (${topGifters[0].jetonTotal} hediye puanı)`)
   }
   if (pkCompleted > 0 && pkWon > pkLost) {
     tips.push(`PK performansınız güçlü! ${pkWon}/${pkCompleted} galibiyet.`)
@@ -174,6 +175,7 @@ export async function buildVoiceRoomReport(
     returnVisitors,
     avgDwellSeconds: null,
     peakHourLocal: null,
+    giftPointTotal: gifts.reduce((sum: number, gift: any) => sum + giftPointAmount(gift), 0),
     grossGiftJeton,
     netOwnerJeton,
     giftCount: gifts.length,
@@ -204,13 +206,18 @@ export async function buildStreamReport(
     select: { id: true, createdAt: true, endedAt: true },
   })
 
+  if (scope === 'session' && stream) {
+    range.gte = stream.createdAt
+    range.lte = stream.endedAt || range.lte
+  }
+
   // Hediyeler
   const gifts = await prisma.streamGift.findMany({
     where: { streamId, createdAt: { gte: range.gte, lte: range.lte } },
     include: { giftType: { select: { id: true, name: true } }, sender: { select: { id: true, name: true, username: true } } },
   })
   const grossGiftJeton = gifts.reduce((s: number, g: any) => s + (g.totalPrice || 0), 0)
-  const netOwnerJeton = gifts.reduce((s: number, g: any) => s + (g.receiverAmount || 0), 0)
+  const netOwnerJeton = gifts.reduce((s: number, g: any) => s + (g.ownerAmount || 0) + ((!g.recipientId || g.recipientId === ownerId) ? (g.receiverAmount || 0) : 0), 0)
 
   // Top hediyeler
   const giftMap = new Map<string, TopGift>()
@@ -219,9 +226,9 @@ export async function buildStreamReport(
     const existing = giftMap.get(key)
     if (existing) {
       existing.count += g.quantity
-      existing.jetonTotal += g.totalPrice
+      existing.jetonTotal += giftPointAmount(g)
     } else {
-      giftMap.set(key, { giftId: key, name: (g as any).giftType?.name || '?', count: g.quantity, jetonTotal: g.totalPrice })
+      giftMap.set(key, { giftId: key, name: (g as any).giftType?.name || '?', count: g.quantity, jetonTotal: giftPointAmount(g) })
     }
   }
   const topGifts = [...giftMap.values()].sort((a, b) => b.jetonTotal - a.jetonTotal).slice(0, 5)
@@ -233,14 +240,14 @@ export async function buildStreamReport(
     const existing = gifterMap.get(sid)
     if (existing) {
       existing.giftCount += g.quantity
-      existing.jetonTotal += g.totalPrice
+      existing.jetonTotal += giftPointAmount(g)
     } else {
       const sender = g.sender as any
       gifterMap.set(sid, {
         userId: sid,
         displayName: sender?.name || sender?.username || '?',
         giftCount: g.quantity,
-        jetonTotal: g.totalPrice,
+        jetonTotal: giftPointAmount(g),
       })
     }
   }
@@ -268,23 +275,23 @@ export async function buildStreamReport(
   const avgDwellSeconds = dwellCount > 0 ? Math.round(totalDwell / dwellCount) : null
 
   // PK
-  const pkMatches = await prisma.pkMatch.findMany({
+  const pkMatches = await prisma.pKBattle.findMany({
     where: {
-      status: 'finished',
+      status: 'completed',
       createdAt: { gte: range.gte, lte: range.lte },
-      OR: [{ hostUserId: ownerId }, { guestUserId: ownerId }],
+      OR: [{ user1Id: ownerId }, { user2Id: ownerId }],
     },
-    select: { id: true, winnerUserId: true, result: true },
+    select: { id: true, winnerId: true, isDraw: true },
   })
   const pkCompleted = pkMatches.length
-  const pkWon = pkMatches.filter((m: any) => m.winnerUserId === ownerId).length
-  const pkDraw = pkMatches.filter((m: any) => m.result === 'draw').length
+  const pkWon = pkMatches.filter((m: any) => m.winnerId === ownerId).length
+  const pkDraw = pkMatches.filter((m: any) => m.isDraw === true).length
   const pkLost = pkCompleted - pkWon - pkDraw
 
   // İpuçları
   const tips: string[] = []
   if (grossGiftJeton > 0 && topGifters.length > 0) {
-    tips.push(`En çok hediye gönderen: ${topGifters[0].displayName} (${topGifters[0].jetonTotal} jeton)`)
+    tips.push(`En çok hediye gönderen: ${topGifters[0].displayName} (${topGifters[0].jetonTotal} hediye puanı)`)
   }
   if (avgDwellSeconds && avgDwellSeconds < 120) {
     tips.push('İzleyicileriniz ortalama 2 dakikadan az kalıyor — içeriği çeşitlendirmeyi deneyin.')
@@ -302,6 +309,7 @@ export async function buildStreamReport(
     returnVisitors: Math.max(0, totalVisits - uniqueVisitors),
     avgDwellSeconds,
     peakHourLocal: null,
+    giftPointTotal: gifts.reduce((sum: number, gift: any) => sum + giftPointAmount(gift), 0),
     grossGiftJeton,
     netOwnerJeton,
     giftCount: gifts.length,

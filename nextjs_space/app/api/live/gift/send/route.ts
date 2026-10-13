@@ -1,3 +1,5 @@
+import { settleRoomGift } from '@/lib/gift-settlement'
+import { GiftRecipientError, parseGiftQuantity } from '@/lib/gift-recipient'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -12,7 +14,6 @@ import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-reve
 import { emitStreamEvent } from '@/lib/stream-events'
 import { emitChatEvent } from '@/lib/chat-events'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
-import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { recordContribution } from '@/lib/supporter-level'
 import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
@@ -38,6 +39,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   let _idempotencyRecord: string | null = null
+  let committedReceipt: any = null
   // Doğrulama hatalarında idempotency rezervasyonu serbest bırakılır; aksi
   // halde kullanıcı düzeltilmiş isteği aynı anahtarla 1 dk tekrar edemezdi.
   const fail = async (status: number, code: string, message: string) => {
@@ -69,13 +71,13 @@ export async function POST(request: NextRequest) {
 
     // Idempotency: aynı Idempotency-Key ile gelen tekrar istekte hediye
     // ikinci kez düşülmez; ilk yanıt aynen tekrar oynatılır.
-    const replay = await beginIdempotent(request, 'live_gift_send', authUser.id)
+    const replay = await beginIdempotent(request, 'live_gift_send', authUser.id, { strict: true })
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
     const body = await request.json()
     const { roomId, roomType, giftTypeId, recipientId: bodyRecipientId } = body
-    const quantity = Math.max(1, Math.min(100, parseInt(body.quantity) || 1))
+    const quantity = parseGiftQuantity(body.quantity)
 
     if (!roomId || !roomType || !giftTypeId) {
       return fail(400, 'MISSING_PARAMS', 'roomId, roomType ve giftTypeId gereklidir')
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
       return fail(400, 'INVALID_GIFT', 'Geçersiz hediye türü')
     }
 
+    if (typeof body.clientPrice === 'number' && body.clientPrice !== giftType.price) return fail(409, 'PRICE_MISMATCH', 'Hediye fiyatı değişti; katalog bilgisini güncelleyin')
     const totalPrice = giftType.price * quantity
     // Render metadata for identical display on every client (web + Flutter)
     const giftRenderMeta = buildGiftRenderMeta(giftType)
@@ -124,102 +127,28 @@ export async function POST(request: NextRequest) {
         return fail(404, 'STREAM_NOT_FOUND', 'Aktif yayın bulunamadı')
       }
 
-      if (stream.userId === authUser.id && !isStaff) {
-        return fail(400, 'SELF_GIFT', 'Kendinize hediye gönderemezsiniz')
-      }
-
-      // Revenue split (recorded on the gift row even when the sender is
-      // excluded from finance, so reporting always reflects the real value)
-      const commissionStr = await getPlatformSetting('stream_gift_commission', '30')
-      const commissionPercent = Math.min(100, Math.max(0, parseInt(commissionStr) || 30))
-      const recipientAmount = Math.floor(totalPrice * (100 - commissionPercent) / 100)
-      const siteAmount = totalPrice - recipientAmount
-
-      const txOps: any[] = [
-        prisma.streamGift.create({
-          data: {
-            streamId: stream.id,
-            senderId: sender.id,
-            giftTypeId,
-            quantity,
-            totalPrice: senderExcluded ? 0 : totalPrice,
-            receiverAmount: senderExcluded ? 0 : recipientAmount,
-            siteAmount: senderExcluded ? 0 : siteAmount
-          },
-          include: {
-            sender: { select: { name: true, image: true } },
-            giftType: true
-          }
-        })
-      ]
-
-      if (!spendPlan.skipDeduction) {
-        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice, spendPlan.source))
-      }
-
-      // Deduct jetons — ATOMİK: bakiye yetersizse transaction tamamen geri alınır
-      // (eski "oku-kontrol et-düşür" deseni eşzamanlı isteklerde negatif bakiyeye yol açıyordu)
-      if (!senderExcluded) {
-        // Credit broadcaster
-        if (recipientAmount > 0) {
-          txOps.push(
-            prisma.user.update({
-              where: { id: stream.userId },
-              data: { jetonBalance: { increment: recipientAmount } }
-            })
-          )
-        }
-
-        // Agency commission (fire-and-forget)
-        processAgencyCommission({
-          userId: stream.userId,
-          earnedAmount: recipientAmount,
-          sourceType: 'stream_gift',
-          sourceId: stream.id,
-        }).catch(() => {})
-      }
-
-      // Update lastGiftAt
-      txOps.push(
-        prisma.videoStream.update({
-          where: { id: stream.id },
-          data: { lastGiftAt: new Date() }
-        })
-      )
-
-      const [gift] = await prisma.$transaction(txOps)
+      const recipientId = bodyRecipientId || stream.userId
+      const baseDist = await calculateGiftDistribution(totalPrice, 'NORMAL', recipientId === stream.userId)
+      const dist = recipientId === sender.id ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
+      const recipientAmount = dist.receiverNet + dist.ownerNet
+      const siteAmount = dist.siteAmount
+      const settlement = await settleRoomGift({
+        scope: 'stream', contextId: stream.id, senderId: sender.id, recipientId, ownerId: stream.userId,
+        giftTypeId, quantity, amount: totalPrice, source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
+        dist, idempotencyRecord: _idempotencyRecord, responseStyle: 'unified', giftName: giftType.name, giftIcon: giftType.icon,
+      })
+      committedReceipt = settlement.receipt
+      const gift = settlement.gift
       giftRecord = gift
-
-      // ── Immutable ledger (fire-and-forget) ──
-      if (!senderExcluded) {
-        const legs: LedgerLeg[] = [
-          {
-            accountType: 'user_jeton',
-            accountId: sender.id,
-            direction: 'debit',
-            amount: totalPrice,
-            balanceBefore: sender.jetonBalance ?? 0,
-            balanceAfter: (sender.jetonBalance ?? 0) - totalPrice,
-          },
-        ]
-        if (recipientAmount > 0) {
-          legs.push({ accountType: 'user_jeton', accountId: stream.userId, direction: 'credit', amount: recipientAmount })
-        }
-        if (siteAmount > 0) {
-          legs.push({ accountType: 'platform_jeton', accountId: 'platform', direction: 'credit', amount: siteAmount })
-        }
-        recordMultiLeg({
-          legs,
-          category: 'gift_send',
-          currency: 'jeton',
-          description: `Canlı yayın hediyesi x${quantity}`,
-          referenceType: 'StreamGift',
-          referenceId: (gift as any)?.id,
-          actorId: sender.id,
-          metadata: { streamId: stream.id, giftTypeId, quantity, commissionPercent },
-        }).catch((e) => console.error('[Ledger][stream-gift]', e))
+      newBalance = settlement.newBalance
+      sender.jetonBalance = settlement.senderBalanceBefore
+      for (const [beneficiary, earnedAmount] of [[recipientId, dist.receiverNet], [stream.userId, dist.ownerNet]] as const) {
+        if (!senderExcluded && earnedAmount > 0) processAgencyCommission({
+          userId: beneficiary, earnedAmount, sourceType: 'stream_gift', sourceId: gift.id,
+        }).catch(err => console.error('[Stream Gift] Agency commission error:', err))
       }
-      recordContribution(sender.id, stream.userId, totalPrice).catch(() => {})
+
+      recordContribution(sender.id, recipientId, totalPrice).catch(() => {})
       recordTeamPoints(sender.id, totalPrice).catch(() => {})
 
       // PK skor atfı: tek kanonik yol (oda izolasyonu + süre + yarış kontrolü)
@@ -227,14 +156,14 @@ export async function POST(request: NextRequest) {
         sideIds: [stream.id, stream.roomId],
         amount: totalPrice,
         contributorId: sender.id,
-        receiverId: stream.userId,
+        receiverId: recipientId,
         giftTypeId,
         quantity,
         source: 'gift',
       })
 
       // Leaderboard skor: hediye alıcısına (yayıncı) puan (canlı yayın)
-      incrementLeaderboardScore('live_stream', stream.userId, totalPrice, 'gift_received', stream.id).catch(() => {})
+      incrementLeaderboardScore('live_stream', recipientId, totalPrice, 'gift_received', stream.id).catch(() => {})
 
       // Emit SSE
       emitStreamEvent(stream.id, 'gift', {
@@ -242,12 +171,12 @@ export async function POST(request: NextRequest) {
         eventType: 'GIFT_SENT',
         streamId: stream.id,
         roomId: stream.roomId || stream.id,
-        receiverId: stream.userId,
+        receiverId: recipientId,
         gift: {
           id: gift.id,
           giftId: gift.id,
           senderId: sender.id,
-          receiverId: stream.userId,
+          receiverId: recipientId,
           streamId: stream.id,
           roomId: stream.roomId || stream.id,
           senderName: sender.name,
@@ -266,7 +195,7 @@ export async function POST(request: NextRequest) {
 
       // Notification (fire-and-forget)
       createNotificationWithPush({
-        userId: stream.userId,
+        userId: recipientId,
         type: 'stream_gift',
         title: 'Canlı Yayın Hediyesi! 🎁',
         message: `${sender.name} ${giftType.name} hediye gönderdi!`,
@@ -279,9 +208,9 @@ export async function POST(request: NextRequest) {
       // ─── Voice Room Gift ───
       const room = await prisma.chatRoom.findFirst({
         where: { OR: [{ id: roomId }, { slug: roomId }] },
-        select: { id: true, ownerId: true, roomType: true, giftCommissionPercent: true, giftBeneficiaryId: true }
+        select: { id: true, ownerId: true, isActive: true, roomType: true, giftCommissionPercent: true, giftBeneficiaryId: true }
       })
-      if (!room) {
+      if (!room || !room.isActive) {
         return fail(404, 'ROOM_NOT_FOUND', 'Oda bulunamadı')
       }
 
@@ -290,9 +219,7 @@ export async function POST(request: NextRequest) {
         return fail(400, 'NO_RECIPIENT', 'Alıcı bulunamadı')
       }
 
-      if (recipientId === sender.id && !isStaff) {
-        return fail(400, 'SELF_GIFT', 'Kendinize hediye gönderemezsiniz')
-      }
+
 
       const recipient = await prisma.user.findUnique({
         where: { id: recipientId },
@@ -304,87 +231,25 @@ export async function POST(request: NextRequest) {
 
       // Calculate distribution
       const roomType2 = (room as any).roomType || 'FREE'
-      const dist = await calculateGiftDistribution(totalPrice, roomType2, recipient.id === room.ownerId)
+      const baseDist = await calculateGiftDistribution(totalPrice, roomType2, recipient.id === room.ownerId)
+      const dist = recipient.id === sender.id ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
 
-      const txOps: any[] = [
-        prisma.chatRoomGift.create({
-          data: {
-            roomId: room.id,
-            senderId: sender.id,
-            recipientId: recipient.id,
-            giftTypeId,
-            quantity,
-            totalPrice: senderExcluded ? 0 : totalPrice,
-            currencyType: 'jeton',
-            commissionAmount: senderExcluded ? 0 : dist.siteAmount,
-            beneficiaryId: room.giftBeneficiaryId || room.ownerId,
-          }
-        })
-      ]
-
-      // Deduct sender jetons — ATOMİK (negatif bakiye / yarış koruma)
-      if (!isStaff) {
-        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice, spendPlan.source))
-      }
-
-      // Credit recipient
-      if (dist.receiverNet > 0 && !senderExcluded) {
-        txOps.push(
-          prisma.user.update({
-            where: { id: recipient.id },
-            data: { jetonBalance: { increment: dist.receiverNet } }
-          })
-        )
-      }
-
-      // Credit room owner commission
-      if (dist.ownerNet > 0 && room.ownerId && !senderExcluded) {
-        txOps.push(
-          prisma.user.update({
-            where: { id: room.ownerId },
-            data: { jetonBalance: { increment: dist.ownerNet } }
-          })
-        )
-      }
-
-      const [gift] = await prisma.$transaction(txOps)
+      const settlement = await settleRoomGift({
+        scope: 'voice', contextId: room.id, senderId: sender.id, recipientId: recipient.id, ownerId: room.ownerId,
+        giftTypeId, quantity, amount: totalPrice, source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
+        dist, idempotencyRecord: _idempotencyRecord, responseStyle: 'unified', giftName: giftType.name, giftIcon: giftType.icon,
+      })
+      committedReceipt = settlement.receipt
+      const gift = settlement.gift
       giftRecord = gift
-
-      // Log revenue
-      logRoomRevenue({ roomId: room.id, eventType: 'gift', totalAmount: senderExcluded ? 0 : totalPrice, receiverAmount: senderExcluded ? 0 : dist.receiverNet, ownerAmount: senderExcluded ? 0 : dist.ownerNet, siteAmount: senderExcluded ? 0 : dist.siteAmount, senderId: sender.id, receiverId: recipientId, ownerId: room.ownerId || undefined, metadata: { jetonSource: spendPlan.source, pointAmount: totalPrice } }).catch(() => {})
-
-      // ── Immutable ledger (fire-and-forget) ──
-      if (!isStaff && !senderExcluded) {
-        const legs: LedgerLeg[] = [
-          {
-            accountType: 'user_jeton',
-            accountId: sender.id,
-            direction: 'debit',
-            amount: totalPrice,
-            balanceBefore: sender.jetonBalance ?? 0,
-            balanceAfter: (sender.jetonBalance ?? 0) - totalPrice,
-          },
-        ]
-        if (dist.receiverNet > 0) {
-          legs.push({ accountType: 'user_jeton', accountId: recipient.id, direction: 'credit', amount: dist.receiverNet })
-        }
-        if (dist.ownerNet > 0 && room.ownerId) {
-          legs.push({ accountType: 'user_jeton', accountId: room.ownerId, direction: 'credit', amount: dist.ownerNet })
-        }
-        if (dist.siteAmount > 0) {
-          legs.push({ accountType: 'platform_jeton', accountId: 'platform', direction: 'credit', amount: dist.siteAmount })
-        }
-        recordMultiLeg({
-          legs,
-          category: 'gift_send',
-          currency: 'jeton',
-          description: `Sesli oda hediyesi x${quantity}`,
-          referenceType: 'ChatRoomGift',
-          referenceId: (gift as any)?.id,
-          actorId: sender.id,
-          metadata: { roomId: room.id, roomType: roomType2, giftTypeId, quantity },
-        }).catch((e) => console.error('[Ledger][live-room-gift]', e))
+      newBalance = settlement.newBalance
+      sender.jetonBalance = settlement.senderBalanceBefore
+      for (const [beneficiary, earnedAmount] of [[recipient.id, dist.receiverNet], [room.ownerId, dist.ownerNet]] as const) {
+        if (beneficiary && !senderExcluded && earnedAmount > 0) processAgencyCommission({
+          userId: beneficiary, earnedAmount, sourceType: 'chat_gift', sourceId: gift.id,
+        }).catch(err => console.error('[Voice Gift] Agency commission error:', err))
       }
+
       recordContribution(sender.id, recipient.id, totalPrice).catch(() => {})
       recordTeamPoints(sender.id, totalPrice).catch(() => {})
 
@@ -453,6 +318,8 @@ export async function POST(request: NextRequest) {
           giftIcon: giftType.icon || '',
           quantity: quantity || 1,
           totalPrice: totalPrice || 0,
+          recipientId: giftRecord?.recipientId,
+          financialAmount: giftRecord?.totalPrice || 0,
         },
         newBalance: typeof newBalance === 'number' ? newBalance : 0,
         pkUpdate: pkUpdate ? {
@@ -466,6 +333,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responsePayload)
 
   } catch (error) {
+    if (committedReceipt) {
+      console.error('[Gift] post-commit side effect failed:', error)
+      return NextResponse.json(committedReceipt)
+    }
+    if (error instanceof GiftRecipientError) return fail(400, error.code, error.message)
     await releaseIdempotent(_idempotencyRecord)
     // Atomik düşüm yetersiz bakiye nedeniyle transaction'ı geri aldıysa 400 dön
     // (ağ kopması / eşzamanlı ödeme senaryolarında 500 yerine anlaşılır hata)
@@ -480,5 +352,7 @@ export async function POST(request: NextRequest) {
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'Hediye gönderilemedi' } },
       { status: 500 }
     )
+  } finally {
+    if (!committedReceipt) await releaseIdempotent(_idempotencyRecord)
   }
 }
