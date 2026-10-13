@@ -5,6 +5,7 @@ import prisma from '@/lib/db'
 import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guard'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
+import { durableNotify } from '@/lib/event-outbox'
 import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { getCachedPlatformSetting } from '@/lib/cache'
@@ -185,9 +186,8 @@ export async function POST(req: NextRequest) {
         amount: giftType.price, commission: commissionAmount, giftTypeId: giftType.id, name: giftType.name,
         source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
         receiptId: _idempotencyRecord, response: giftPayload })
-      // Send notification + push to recipient
-      createNotificationWithPush({
-        userId: recipient.id,
+      // Send notification + push to recipient (durable outbox)
+      durableNotify(recipient.id, {
         type: 'gift',
         title: 'Hediye Aldınız! 🎁',
         message: `size ${giftType.name} hediye gönderdi!`,
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
           senderId: sender.id,
           senderName: sender.name
         })
-      }).catch(err => console.error('Gift notification error:', err))
+      })
 
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price, giftType.id).catch(err => console.error('Gift announcement error:', err))
@@ -254,9 +254,8 @@ export async function POST(req: NextRequest) {
         amount: amount, commission: jetonCommission, giftTypeId: undefined, name: 'Jeton',
         source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,
         receiptId: _idempotencyRecord, response: jetonPayload })
-      // Send notification
-      createNotificationWithPush({
-        userId: recipient.id,
+      // Send notification (durable outbox)
+      durableNotify(recipient.id, {
         type: 'gift',
         title: 'Jeton Hediyesi! 🪙',
         message: `size ${amount} jeton hediye gönderdi!`,

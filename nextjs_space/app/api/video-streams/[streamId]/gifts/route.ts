@@ -16,6 +16,7 @@ import { calculateGiftDistribution } from '@/lib/voice-room-revenue'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { emitStreamEvent } from '@/lib/stream-events'
+import { durableEmitSSE, durableNotify } from '@/lib/event-outbox'
 import { buildGiftRenderMeta } from '@/lib/gift-render'
 import { serializeGiftMedia } from '@/lib/media-url'
 import { processGiftSend } from '@/lib/gift-engine'
@@ -249,8 +250,7 @@ export async function POST(
     })
 
     // Create notification for the banner (so gifts appear in scrolling banner)
-    createNotificationWithPush({
-      userId: recipientId,
+    durableNotify(recipientId, {
       type: 'stream_gift',
       title: 'Canlı Yayın Hediyesi! 🎁',
       message: `${giftType.name} hediye gönderdi!`,
@@ -295,7 +295,7 @@ export async function POST(
 
     // Fallback: motor çalışmadıysa legacy `gift` SSE olayını yayınla
     if (!enginePayload) {
-      emitStreamEvent(params.streamId, 'gift', {
+      durableEmitSSE('stream', params.streamId, 'gift', {
         type: 'gift',
         eventType: 'GIFT_SENT',
         streamId: params.streamId,

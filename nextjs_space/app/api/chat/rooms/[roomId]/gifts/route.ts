@@ -10,6 +10,7 @@ import { atomicDebitJeton, isInsufficientBalanceError } from '@/lib/balance-guar
 import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { createNotificationWithPush } from '@/lib/notify'
+import { durableEmitSSE, durableNotify } from '@/lib/event-outbox'
 import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { processAgencyCommission } from '@/lib/agency-commission'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
@@ -156,8 +157,8 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       }
     })
 
-    // Send notification to recipient
-    await createNotificationWithPush({
+    // Send notification to recipient (durable outbox)
+    durableNotify(recipient.id, {
       userId: recipient.id,
       type: 'gift_received',
       title: 'Sohbet Hediyesi! 🎁',
@@ -213,7 +214,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
 
     // Fallback: motor çalışmadıysa legacy `gift` SSE olayını yayınla
     if (!enginePayload) {
-      emitChatEvent(roomId, 'gift', {
+      durableEmitSSE('chat', roomId, 'gift', {
         type: 'gift',
         eventType: 'GIFT_SENT',
         giftId: gift.id,
