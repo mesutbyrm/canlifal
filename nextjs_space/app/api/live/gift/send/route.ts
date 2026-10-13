@@ -9,6 +9,7 @@ import { requireFeature } from '@/lib/check-feature'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { createNotificationWithPush } from '@/lib/notify'
+import { durableEmitSSE, durableNotify } from '@/lib/event-outbox'
 import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commission'
 import { calculateGiftDistribution, logRoomRevenue } from '@/lib/voice-room-revenue'
 import { emitStreamEvent } from '@/lib/stream-events'
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
       pkUpdate = settlement.pkUpdate
 
       // Emit SSE
-      emitStreamEvent(stream.id, 'gift', {
+      durableEmitSSE('stream', stream.id, 'gift', {
         type: 'gift',
         eventType: 'GIFT_SENT',
         streamId: stream.id,
@@ -172,16 +173,15 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Notification (fire-and-forget)
-      createNotificationWithPush({
-        userId: recipientId,
+      // Notification (durable outbox)
+      durableNotify(recipientId, {
         type: 'stream_gift',
         title: 'Canlı Yayın Hediyesi! 🎁',
         message: `${sender.name} ${giftType.name} hediye gönderdi!`,
         fromUserId: sender.id,
         fromUserName: sender.name || 'Kullanıcı',
         data: JSON.stringify({ streamId: stream.id, giftName: giftType.name, giftIcon: giftType.icon, amount: totalPrice })
-      }).catch(() => {})
+      })
 
     } else if (roomType === 'voice') {
       // ─── Voice Room Gift ───
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       pkUpdate = settlement.pkUpdate
 
       // Emit chat event
-      emitChatEvent(room.id, 'gift', {
+      durableEmitSSE('chat', room.id, 'gift', {
         type: 'gift',
         eventType: 'GIFT_SENT',
         roomId: room.id,
@@ -250,15 +250,14 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Notification
-      createNotificationWithPush({
-        userId: recipient.id,
+      // Notification (durable outbox)
+      durableNotify(recipient.id, {
         type: 'room_gift',
         title: 'Hediye Aldınız! 🎁',
         message: `${sender.name} size ${giftType.name} hediye gönderdi!`,
         fromUserId: sender.id,
         fromUserName: sender.name || 'Kullanıcı',
-      }).catch(() => {})
+      })
     } else {
       return fail(400, 'INVALID_ROOM_TYPE', 'roomType "stream" veya "voice" olmalıdır')
     }

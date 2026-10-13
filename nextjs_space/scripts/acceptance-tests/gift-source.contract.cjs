@@ -48,6 +48,7 @@ const mocks = {
   'next-auth': {getServerSession:async()=>null}, '@/lib/auth-options': {authOptions:{}},
   '@/lib/mobile-auth': {authenticateRequest:async()=>state.auth ? {...state.users.sender,role:'admin'} : null},
   '@/lib/check-feature': {requireFeature:noop}, '@/lib/rate-limit-guard': {guardRateLimit:noop},
+  '@/lib/event-outbox': {durableEmitSSE:noop, durableNotify:noop, enqueueSSE:()=>({}), enqueuePush:()=>({}), enqueueNotification:()=>({}), startOutboxProcessor:noop},
   '@/lib/rate-limiter': {heavyLimiter:{check:()=>({success:true})}},
   '@/lib/notify': {createNotificationWithPush:async()=>{if(state.failNotification) throw Error('SIMULATED_NOTIFICATION_FAILURE')}}, '@/lib/event-announcement': {triggerEventAnnouncement:noop},
   '@/lib/agency-commission': {getPlatformSetting:settings,processAgencyCommission:async p=>{state.agency.push(p)}},
