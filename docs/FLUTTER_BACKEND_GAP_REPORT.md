@@ -1,22 +1,59 @@
-# Flutter ↔ Backend Eksik Uç Raporu
+# Flutter ↔ Backend route parity (Canlifal)
 
-**Yöntem:** `mesutbyrm/Cursor-Flutter-` deposundaki `mobile/lib` altındaki Dart dosyalarında geçen `/api/...` yolları çıkarıldı, normalize edildi (`$id`, `{id}`, `[id]`, `:id` → `{p}`, `/api/v1/` → `/api/`) ve üç kaynağın birleşimine karşı karşılaştırıldı:
+**Kaynaklar**
 
-1. Ana backend: `nextjs_space/app/api/**/route.ts` (726 yol)
-2. İkinci backend (Express): `Cursor-Flutter-/api/src/index.ts` içindeki 33 aktif `app.use` mount'u ve 289 route tanımı
+| Kaynak | Açıklama |
+|--------|----------|
+| Flutter | `mesutbyrm/Cursor-Flutter-` — `mobile/lib/**/*.dart` (`api_endpoints.dart`, `pk_room_remote_datasource.dart`, `agency_wallet_datasource.dart`) |
+| Backend | `mesutbyrm/canlifal` — `nextjs_space/app/api/**/route.ts` |
+| Doğrulama | `python3 scripts/backend-route-parity.py <nextjs_space> --used-only` ve `backend-method-parity.py` (Flutter repo kökü) |
 
-Flutter yönlendirmesi (`mobile/lib/core/network/api_backend_router.dart`) `main`, `game` ve `gateway` olmak üzere üç hedef kullanıyor.
+**Base:** `main` @ `79823e6` (PR #56 birleşimi, ~771 route). Parity dalı: `cursor/mobile-parity-apis-dfca-48ea` (PK + ajans cüzdan hareketleri + test push).
 
-**Sonuç:** Birleşim dışında kalan yaklaşık 100 aday var. Bunların bir kısmı gerçek eksik, bir kısmı gürültü:
+## Parity script sonuçları
 
-- **Gürültü:** Dart string birleştirmeleri (`'/api/agency' + ...`), test fixture'ları (`abc123`, `room1`), yarım kalmış ifadeler (`/api/auth/mobile-`), yorum içindeki örnekler.
-- **Gerçek eksik (doğrulandı):**
-  - `PATCH /api/agency` (ajans profili düzenleme) — `agency_profile_edit_page.dart:8`
-  - `GET /api/agency/periods` — `agency_periods_page.dart:8`
-  - `GET /api/agency/invites` — Flutter `invites` (çoğul) kullanıyor; backend'de `agency/invite` (tekil) var → yol uyuşmazlığı
-- **Gerçek eksik (aday, doğrulanmadı):** `admin/*` (complaints, finance/summary, health, live-stats, role-permissions, social-accounts, users/*), `gifts/insights/{id}/*` alt yolları, `video-streams/*` (trending, list, score, candidates), `short-videos/*` (recommend, live-clip, suggest-metadata, viewed/{id}), `users/{id}/*` (activity, stats, gifts-received, profile-visitors, broadcast-history), `payments/requests/pending`, `membership/plans/purchase`, `wallet/transfer`, `rooms/{id}/music/current`, `chat/rooms/{id}/candidates`, `girlive/publisher-assistant*`.
+| Aşama | Backend route sayısı | `--used-only` eksik | `backend-method-parity.py` |
+|-------|----------------------|---------------------|------------------------------|
+| **Önce** (main, PR #56) | 771 | **9** | `bad=0`, `ok=692` |
+| **Sonra** (bu PR) | 777 | **0** | `bad=0`, `ok=692` |
 
-**Notlar:**
-- Eski bir yol ya da yol uyuşmazlığı, Flutter tarafında hizalanarak da kapatılabilir; her aday için ya backend'e route eklemek ya da Flutter çağrısını düzeltmek gerekir. Hangisinin doğru olduğu ürün kararıdır.
-- Her aday için Flutter'ın beklediği yanıt şeması ayrıca doğrulanmalı. Bu rapor yalnızca yol varlığını kontrol eder.
-- Flutter değişiklikleri için `Cursor-Flutter-` deposuna **push erişimi** gerekir; şu an yalnızca okuma erişimi var.
+### Önce eksik olan (Flutter’da kullanılan) uçlar
+
+- `GET /api/agency/wallet/transactions` — `ApiEndpoints.agencyWalletTransactions`
+- `POST /api/notifications/test-push` — tanılama ekranı
+- `GET /api/pk/me/history` — sayfalı geçmiş (`history` \| `items` \| `data` list)
+- `GET /api/pk/me/matches` — aktif maç listesi (`matches` \| `data` \| `items`)
+- `GET /api/pk/me/stats` — `{ success, stats, data }` (Flutter `PkStats.fromJson` wrapper destekler)
+- `GET /api/pk/stats/{userId}` — public istatistik map
+
+### Bu PR’da eklenen / korunan
+
+- **PK:** `lib/pk-user-stats.ts` + dört route; mevcut `GET /api/pk/active`, `/api/pk/me/invites`, `/api/pk/[matchId]` dokunulmadı.
+- **Ajans cüzdan:** `GET /api/agency/wallet/transactions` (`page`, `limit`; `requireAuth` / JWT Bearer); yanıt `data.transactions`, kök `transactions` / `items` / `txns` — `AgencyWalletDataSource.fetchWalletTransactions` ile uyumlu. Tam snapshot için resmi uç hâlâ `GET /api/agency/wallet`.
+- **Push tanılama:** `POST /api/notifications/test-push` — `authenticateRequest` + `sendTestPushDetailed` (`lib/onesignal.ts`).
+- **PR #56 route’ları silinmedi:** örn. `PATCH /api/agency`, `GET /api/agency/periods`, admin/social-accounts/complaints, wallet transfer, payments pending/cancel, `GET /api/me/permissions`.
+
+## Üretim smoke (Bearer JWT)
+
+Deploy **öncesi** (2026-10-13): birçok uç `ENDPOINT_NOT_FOUND` (404) — prod henüz main/PR #56+parity commit’inde değil. Deploy sonrası doğrulanacak uçlar:
+
+- `GET /api/me/permissions`
+- `GET /api/agency/periods`
+- `PATCH /api/agency`
+- `GET /api/pk/me/matches`, `GET /api/pk/me/history`
+- `GET /api/agency/wallet/transactions`
+
+**Kısıt:** Otomatik toplu veri değiştirme / finans işlemi yok; smoke yalnızca okuma ve yetkisiz isteklerde 401/403 kontrolü.
+
+## Geniş aday listesi (used-only dışı)
+
+Tam birleşim karşılaştırmasında (~100 aday) hâlâ gürültü (string birleştirme, test fixture, yorum) ve ürün kararı gerektiren maddeler olabilir. **Mobil `--used-only` hedefi:** eksik **0**, method parity **bad=0**.
+
+### Bilinen yol uyuşmazlıkları (Flutter veya backend hizalaması gerekir)
+
+- `GET /api/agency/invites` (Flutter) vs `GET /api/agency/invite` (tekil) — her iki uç da backend’de mevcut olabilir; mobil `agencyInvites` kullanıyor.
+
+### Notlar
+
+- Flutter değişiklikleri için `Cursor-Flutter-` deposuna yazma erişimi ayrıca gerekir.
+- Yerel `yarn build`: `prisma/schema.prisma` ve `yarn.lock` Abacus/shared ortam symlink’lerine bağlı; CI/Abacus build’i referans alınmalı.
