@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { GiftSourceSelector, useGiftSource } from '@/components/gift-source-selector'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -31,6 +32,7 @@ interface SearchUser {
 
 export default function GiftsPage() {
   const { data: session, status } = useSession() || {}
+  const giftSource = useGiftSource(session?.user?.id)
   const router = useRouter()
   const { language } = useLanguage()
   const { theme } = useSiteTheme()
@@ -102,6 +104,7 @@ export default function GiftsPage() {
   }, [searchQuery, searchUsers])
 
   const handleSend = async () => {
+    if (!giftSource.ready || sending) return
     if (!selectedUser) { setErrorMsg('Lütfen bir kullanıcı seçin'); return }
     if (selectedTab === 'gift' && !selectedGift) { setErrorMsg('Lütfen bir hediye seçin'); return }
     if (selectedTab === 'jeton' && (!jetonAmount || parseInt(jetonAmount) < 5)) { setErrorMsg('Minimum 5 jeton gönderebilirsiniz'); return }
@@ -114,7 +117,8 @@ export default function GiftsPage() {
     try {
       const body: Record<string, unknown> = {
         recipientUsername: selectedUser.username || selectedUser.id,
-        type: selectedTab
+        type: selectedTab,
+        jetonSource: giftSource.source
       }
       if (selectedTab === 'gift') body.giftTypeId = selectedGift!.id
       if (selectedTab === 'jeton') body.jetonAmount = parseInt(jetonAmount)
@@ -472,11 +476,12 @@ export default function GiftsPage() {
           </AnimatePresence>
         </motion.div>
 
+        <GiftSourceSelector control={giftSource} disabled={sending} />
         {/* Send Button */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <button
             onClick={handleSend}
-            disabled={sending || !canSend || totalCost > userJetonBalance}
+            disabled={sending || !canSend || !giftSource.canAfford(totalCost, userJetonBalance)}
             className={`w-full py-4 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-white flex items-center justify-center gap-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-base sm:text-lg shadow-lg ${
               selectedTab === 'gift' 
                 ? 'bg-gradient-to-r from-pink-500 to-purple-600 shadow-pink-500/30 hover:shadow-pink-500/50' 

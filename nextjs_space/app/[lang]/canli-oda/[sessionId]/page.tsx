@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { GiftSourceSelector, useGiftSource } from '@/components/gift-source-selector'
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-context';
@@ -87,6 +88,7 @@ export default function LiveRoomPage() {
   
   // Tip state
   const [showTipPopup, setShowTipPopup] = useState(false);
+  const giftSource = useGiftSource(session?.user?.id, showTipPopup);
   const [tipNotification, setTipNotification] = useState<{ amount: number; name: string } | null>(null);
   const [tipThanks, setTipThanks] = useState<{ amount: number; name: string } | null>(null);
   const processedTipIdsRef = useRef<Set<string>>(new Set());
@@ -526,11 +528,12 @@ export default function LiveRoomPage() {
 
   // Send tip to teller
   const sendTip = async (amount: number) => {
+    if (!giftSource.ready) return;
     try {
       const res = await fetch(`/api/room/${sessionId}/tip`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount, jetonSource: giftSource.source })
       });
 
       if (res.ok) {
@@ -1558,8 +1561,9 @@ export default function LiveRoomPage() {
             </div>
 
             <div className="grid grid-cols-5 gap-2 mb-4">
+              <div className="col-span-full"><GiftSourceSelector control={giftSource} /></div>
               {[50, 100, 150, 200, 250, 300, 350, 400, 450, 500].map((amount) => {
-                const canAfford = myJetons >= amount;
+                const canAfford = giftSource.canAfford(amount, myJetons);
                 return (
                   <button
                     key={amount}

@@ -209,10 +209,10 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     logRoomRevenue({
       roomId,
       eventType: 'gift',
-      totalAmount: price,
+      totalAmount: senderExcluded ? 0 : price,
       receiverAmount: senderExcluded ? 0 : dist.receiverNet,
       ownerAmount: senderExcluded ? 0 : dist.ownerNet,
-      siteAmount: dist.siteAmount,
+      siteAmount: senderExcluded ? 0 : dist.siteAmount,
       senderId: sender.id,
       receiverId: recipient.id,
       ownerId: roomOwnerId || undefined,
@@ -220,9 +220,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         giftName: giftType.name,
         giftIcon: giftType.icon,
         quantity,
+        jetonSource: spendPlan.source,
+        pointAmount: price,
         roomType,
-        receiverGross: dist.receiverGross,
-        ownerGross: dist.ownerGross,
+        receiverGross: senderExcluded ? 0 : dist.receiverGross,
+        ownerGross: senderExcluded ? 0 : dist.ownerGross,
         receiverCommission: dist.receiverCommission,
         ownerCommission: dist.ownerCommission,
       }
@@ -236,9 +238,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         recipientId: recipient.id,
         giftTypeId: giftType.id,
         quantity,
-        totalPrice: price,
+        totalPrice: senderExcluded ? 0 : price,
         currencyType: paymentType,
-        commissionAmount: dist.siteAmount,
+        commissionAmount: senderExcluded ? 0 : dist.siteAmount,
         beneficiaryId: dist.ownerNet > 0 ? roomOwnerId : null
       }
     })
@@ -289,9 +291,10 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         actorId: sender.id,
         metadata: { roomId, roomType, giftTypeId: giftType.id, quantity },
       }).catch((e) => console.error('[Ledger][chat-gift]', e))
-      recordContribution(sender.id, recipient.id, price).catch(() => {})
-      recordTeamPoints(sender.id, price).catch(() => {})
     }
+    // Puanlar Real/Fake için geçerli; para kayıtlarından bağımsızdır.
+    recordContribution(sender.id, recipient.id, price).catch(() => {})
+    recordTeamPoints(sender.id, price).catch(() => {})
 
     // Create system chat message for the gift
     const qtyText = quantity > 1 ? ` x${quantity}` : ''
@@ -364,6 +367,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         receiver: { id: recipient.id, name: recipient.name },
         quantity,
         coinAmount: price,
+        jetonSource: spendPlan.source,
       })
     } catch (engErr) {
       console.error('Chat room gift engine error (non-fatal):', engErr)
@@ -385,6 +389,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         giftIcon: giftType.icon,
         quantity,
         amount: price,
+        pointAmount: price,
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
         currencyType: paymentType,
         timestamp: Date.now(),
         ...renderMeta,
@@ -404,6 +411,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
         giftName: giftType.name,
         quantity,
         amount: price,
+        pointAmount: price,
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
         currencyType: paymentType,
         timestamp: Date.now(),
         ...renderMeta,

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { GiftSourceSelector, useGiftSource } from '@/components/gift-source-selector'
 import { useSession } from 'next-auth/react'
 import { useLanguage } from '@/lib/language-context'
 import { useSiteTheme } from '@/lib/theme-context'
@@ -196,6 +197,7 @@ export default function ChatRoomPage() {
   
   // Gift system
   const [showGiftModal, setShowGiftModal] = useState(false)
+  const giftSource = useGiftSource(session?.user?.id, showGiftModal)
   const [giftTargetUser, setGiftTargetUser] = useState<ActiveUser | null>(null)
   const [giftTypes, setGiftTypes] = useState<Array<{id: string; name: string; icon: string; price: number; mediaType?: string | null; previewUrl?: string | null; thumbnailUrl?: string | null; fileUrl?: string | null; assetUrl?: string | null}>>([])
   const [selectedGiftType, setSelectedGiftType] = useState<string | null>(null)
@@ -2084,13 +2086,13 @@ export default function ChatRoomPage() {
   }, [room])
 
   const sendGift = async () => {
-    if (!room || !giftTargetUser || !selectedGiftType || sendingGift) return
+    if (!room || !giftTargetUser || !selectedGiftType || sendingGift || !giftSource.ready) return
     setSendingGift(true)
     try {
       const res = await fetch(`/api/chat/rooms/${room.id}/gifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType })
+        body: JSON.stringify({ recipientId: giftTargetUser.id, giftTypeId: selectedGiftType, paymentType: giftPaymentType, jetonSource: giftSource.source })
       })
       if (res.ok) {
         setShowGiftModal(false)
@@ -4408,11 +4410,12 @@ export default function ChatRoomPage() {
                 ))}
               </div>
 
+              <GiftSourceSelector control={giftSource} disabled={sendingGift} />
               {/* Send Button + Jeton Yükle */}
               <div className="p-3 border-t border-purple-500/20 space-y-2">
                 <button
                   onClick={sendGift}
-                  disabled={!selectedGiftType || sendingGift}
+                  disabled={!selectedGiftType || sendingGift || !giftSource.ready}
                   className="w-full py-2.5 bg-gradient-to-r from-gold-500 to-yellow-500 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-gold-400 hover:to-yellow-400 transition-all"
                 >
                   {sendingGift ? 'Gönderiliyor...' : `Hediye Gönder (${giftTypes.find(g => g.id === selectedGiftType)?.price || 0} Jeton)`}

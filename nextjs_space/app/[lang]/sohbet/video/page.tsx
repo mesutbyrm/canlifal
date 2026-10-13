@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, TouchEvent, Suspense } from 'react'
+import { GiftSourceSelector, useGiftSource } from '@/components/gift-source-selector'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/language-context'
@@ -143,6 +144,7 @@ function VideoStreamPageInner() {
   const [loading, setLoading] = useState(true)
   const [isMuted, setIsMuted] = useState(false) // Start unmuted - user navigated here via interaction
   const [showGifts, setShowGifts] = useState(false)
+  const giftSource = useGiftSource(session?.user?.id, showGifts)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([])
@@ -1159,8 +1161,8 @@ function VideoStreamPageInner() {
   }
 
   const handleSendGift = async (gift: GiftType) => {
-    if (!currentStream || !session?.user || userJetons < gift.price) {
-      if (userJetons < gift.price) alert('Yetersiz jeton!')
+    if (sendingGift || !currentStream || !session?.user || !giftSource.canAfford(gift.price, userJetons)) {
+      if (giftSource.ready && !giftSource.canAfford(gift.price, userJetons)) alert('Yetersiz jeton!')
       return
     }
     setSendingGift(gift.id)
@@ -1168,7 +1170,7 @@ function VideoStreamPageInner() {
       const res = await fetch(`/api/video-streams/${currentStream.id}/gifts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ giftTypeId: gift.id, quantity: 1 })
+        body: JSON.stringify({ giftTypeId: gift.id, quantity: 1, jetonSource: giftSource.source })
       })
       if (res.ok) {
         const data = await res.json()
@@ -1989,6 +1991,7 @@ function VideoStreamPageInner() {
               </div>
               
               <div className="px-4 pb-4">
+                <GiftSourceSelector control={giftSource} disabled={!!sendingGift} />
                 {/* Header with balance */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -2012,7 +2015,7 @@ function VideoStreamPageInner() {
                 {/* Gift grid - 4 columns with improved cards */}
                 <div className="grid grid-cols-4 gap-2.5 max-h-[260px] overflow-y-auto pb-1 scrollbar-hide">
                   {giftTypes.map(gift => {
-                    const canAfford = userJetons >= gift.price
+                    const canAfford = giftSource.canAfford(gift.price, userJetons)
                     const isSending = sendingGift === gift.id
                     const isExpensive = gift.price >= 500
                     const isMid = gift.price >= 100

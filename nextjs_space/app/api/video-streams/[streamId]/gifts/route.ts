@@ -191,8 +191,8 @@ export async function POST(
       }),
     ]
 
-    // Staff kullanıcılardan jeton düşülmez (sınırsız bakiye)
-    if (!senderExcluded) {
+    // Yalnız staff Fake gönderiminde düşüm atlanır.
+    if (!spendPlan.skipDeduction) {
       txOps.push(
         atomicDebitJeton(prisma, userId, totalPrice, spendPlan.source)
       )
@@ -263,7 +263,8 @@ export async function POST(
           sender: { id: userId as string, name: userName, image: userImage },
           receiver: { id: stream.userId, name: streamUser?.name ?? streamUser?.username ?? null },
           quantity,
-          coinAmount: senderExcluded ? 0 : totalPrice,
+          coinAmount: totalPrice,
+          jetonSource: spendPlan.source,
         })
       )
       .catch((engErr) => {
@@ -300,9 +301,9 @@ export async function POST(
         actorId: userId,
         metadata: { streamId: params.streamId, giftTypeId, quantity },
       }).catch((e) => console.error('[Ledger][video-stream-gift]', e))
-      recordContribution(userId, stream.userId, totalPrice).catch(() => {})
-      recordTeamPoints(userId, totalPrice).catch(() => {})
     }
+    recordContribution(userId, stream.userId, totalPrice).catch(() => {})
+    recordTeamPoints(userId, totalPrice).catch(() => {})
 
     // Log gift activity
     logActivity({
@@ -372,7 +373,10 @@ export async function POST(
           giftName: giftType.name,
           giftIcon: giftType.icon,
           quantity,
-          totalPrice: senderExcluded ? 0 : totalPrice,
+          totalPrice,
+          pointAmount: totalPrice,
+          jetonSource: spendPlan.source,
+          countsAsFinance: spendPlan.countsAsFinance,
           timestamp: Date.now(),
           ...renderMeta,
         }
@@ -381,6 +385,9 @@ export async function POST(
 
     const streamGiftResult = {
       success: true,
+      jetonSource: spendPlan.source,
+      countsAsFinance: spendPlan.countsAsFinance,
+      pointAmount: totalPrice,
       gift,
       giftRender: renderMeta,
       engine: enginePayload,

@@ -313,6 +313,7 @@ export function buildGiftReceivedPayload(params: {
   quantity: number
   combo: number
   coinAmount: number
+  jetonSource?: 'real' | 'fake'
   queueId?: string | null
   queueIndex?: number
 }) {
@@ -345,6 +346,10 @@ export function buildGiftReceivedPayload(params: {
     },
     quantity: params.quantity,
     coin: params.coinAmount,
+    pointAmount: params.coinAmount,
+    jetonSource: params.jetonSource ?? 'real',
+    countsAsFinance: params.jetonSource !== 'fake',
+    financialAmount: params.jetonSource === 'fake' ? 0 : params.coinAmount,
     combo,
     comboMilestone: comboMilestone(combo),
     priority,
@@ -411,6 +416,7 @@ export async function processGiftSend(params: {
   receiver: { id: string; name?: string | null }
   quantity: number
   coinAmount: number
+  jetonSource?: 'real' | 'fake'
 }) {
   try {
     const g = params.giftType || {}
@@ -441,6 +447,7 @@ export async function processGiftSend(params: {
       quantity: params.quantity,
       combo,
       coinAmount: params.coinAmount,
+      jetonSource: params.jetonSource,
     })
 
     const enq = await enqueueGift({
@@ -479,7 +486,7 @@ export async function processGiftSend(params: {
           quantity: params.quantity,
           combo,
           priority,
-          coinAmount: params.coinAmount,
+          coinAmount: params.jetonSource === 'fake' ? 0 : params.coinAmount,
           animationType,
           displayArea,
         },

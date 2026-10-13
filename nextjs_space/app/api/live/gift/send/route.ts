@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
             senderId: sender.id,
             giftTypeId,
             quantity,
-            totalPrice,
+            totalPrice: senderExcluded ? 0 : totalPrice,
             receiverAmount: senderExcluded ? 0 : recipientAmount,
             siteAmount: senderExcluded ? 0 : siteAmount
           },
@@ -153,11 +153,13 @@ export async function POST(request: NextRequest) {
         })
       ]
 
+      if (!spendPlan.skipDeduction) {
+        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice, spendPlan.source))
+      }
+
       // Deduct jetons — ATOMİK: bakiye yetersizse transaction tamamen geri alınır
       // (eski "oku-kontrol et-düşür" deseni eşzamanlı isteklerde negatif bakiyeye yol açıyordu)
       if (!senderExcluded) {
-        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice))
-
         // Credit broadcaster
         if (recipientAmount > 0) {
           txOps.push(
@@ -216,9 +218,9 @@ export async function POST(request: NextRequest) {
           actorId: sender.id,
           metadata: { streamId: stream.id, giftTypeId, quantity, commissionPercent },
         }).catch((e) => console.error('[Ledger][stream-gift]', e))
-        recordContribution(sender.id, stream.userId, totalPrice).catch(() => {})
-        recordTeamPoints(sender.id, totalPrice).catch(() => {})
       }
+      recordContribution(sender.id, stream.userId, totalPrice).catch(() => {})
+      recordTeamPoints(sender.id, totalPrice).catch(() => {})
 
       // PK skor atfı: tek kanonik yol (oda izolasyonu + süre + yarış kontrolü)
       pkUpdate = await applyGiftPkScore({
@@ -254,6 +256,9 @@ export async function POST(request: NextRequest) {
           giftIcon: giftType.icon,
           quantity,
           totalPrice,
+          pointAmount: totalPrice,
+          jetonSource: spendPlan.source,
+          countsAsFinance: spendPlan.countsAsFinance,
           timestamp: Date.now(),
           ...(giftRenderMeta || {}),
         }
@@ -299,7 +304,7 @@ export async function POST(request: NextRequest) {
 
       // Calculate distribution
       const roomType2 = (room as any).roomType || 'FREE'
-      const dist = await calculateGiftDistribution(totalPrice, roomType2)
+      const dist = await calculateGiftDistribution(totalPrice, roomType2, recipient.id === room.ownerId)
 
       const txOps: any[] = [
         prisma.chatRoomGift.create({
@@ -309,9 +314,9 @@ export async function POST(request: NextRequest) {
             recipientId: recipient.id,
             giftTypeId,
             quantity,
-            totalPrice,
+            totalPrice: senderExcluded ? 0 : totalPrice,
             currencyType: 'jeton',
-            commissionAmount: dist.siteAmount,
+            commissionAmount: senderExcluded ? 0 : dist.siteAmount,
             beneficiaryId: room.giftBeneficiaryId || room.ownerId,
           }
         })
@@ -319,7 +324,7 @@ export async function POST(request: NextRequest) {
 
       // Deduct sender jetons — ATOMİK (negatif bakiye / yarış koruma)
       if (!isStaff) {
-        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice))
+        txOps.push(atomicDebitJeton(prisma, sender.id, totalPrice, spendPlan.source))
       }
 
       // Credit recipient
@@ -333,7 +338,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Credit room owner commission
-      if (dist.ownerNet > 0 && room.ownerId && room.ownerId !== recipient.id && !senderExcluded) {
+      if (dist.ownerNet > 0 && room.ownerId && !senderExcluded) {
         txOps.push(
           prisma.user.update({
             where: { id: room.ownerId },
@@ -346,7 +351,7 @@ export async function POST(request: NextRequest) {
       giftRecord = gift
 
       // Log revenue
-      logRoomRevenue({ roomId: room.id, eventType: 'gift', totalAmount: totalPrice, receiverAmount: dist.receiverNet, ownerAmount: dist.ownerNet, siteAmount: dist.siteAmount, senderId: sender.id, receiverId: recipientId, ownerId: room.ownerId || undefined }).catch(() => {})
+      logRoomRevenue({ roomId: room.id, eventType: 'gift', totalAmount: senderExcluded ? 0 : totalPrice, receiverAmount: senderExcluded ? 0 : dist.receiverNet, ownerAmount: senderExcluded ? 0 : dist.ownerNet, siteAmount: senderExcluded ? 0 : dist.siteAmount, senderId: sender.id, receiverId: recipientId, ownerId: room.ownerId || undefined, metadata: { jetonSource: spendPlan.source, pointAmount: totalPrice } }).catch(() => {})
 
       // ── Immutable ledger (fire-and-forget) ──
       if (!isStaff && !senderExcluded) {
@@ -363,7 +368,7 @@ export async function POST(request: NextRequest) {
         if (dist.receiverNet > 0) {
           legs.push({ accountType: 'user_jeton', accountId: recipient.id, direction: 'credit', amount: dist.receiverNet })
         }
-        if (dist.ownerNet > 0 && room.ownerId && room.ownerId !== recipient.id) {
+        if (dist.ownerNet > 0 && room.ownerId) {
           legs.push({ accountType: 'user_jeton', accountId: room.ownerId, direction: 'credit', amount: dist.ownerNet })
         }
         if (dist.siteAmount > 0) {
@@ -379,9 +384,9 @@ export async function POST(request: NextRequest) {
           actorId: sender.id,
           metadata: { roomId: room.id, roomType: roomType2, giftTypeId, quantity },
         }).catch((e) => console.error('[Ledger][live-room-gift]', e))
-        recordContribution(sender.id, recipient.id, totalPrice).catch(() => {})
-        recordTeamPoints(sender.id, totalPrice).catch(() => {})
       }
+      recordContribution(sender.id, recipient.id, totalPrice).catch(() => {})
+      recordTeamPoints(sender.id, totalPrice).catch(() => {})
 
       // PK skor atfı: tek kanonik yol (oda izolasyonu + süre + yarış kontrolü)
       pkUpdate = await applyGiftPkScore({
@@ -414,6 +419,9 @@ export async function POST(request: NextRequest) {
           giftIcon: giftType.icon,
           quantity,
           totalPrice,
+          pointAmount: totalPrice,
+          jetonSource: spendPlan.source,
+          countsAsFinance: spendPlan.countsAsFinance,
           timestamp: Date.now(),
           ...(giftRenderMeta || {}),
         }
@@ -435,6 +443,9 @@ export async function POST(request: NextRequest) {
     const responsePayload = {
       success: true,
       data: {
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
+        pointAmount: totalPrice,
         gift: {
           id: giftRecord?.id || '',
           giftTypeId: giftType.id || '',

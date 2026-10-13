@@ -8,6 +8,8 @@ import { processAgencyCommission, getPlatformSetting } from '@/lib/agency-commis
 import { getCachedPlatformSetting } from '@/lib/cache'
 import { heavyLimiter } from '@/lib/rate-limiter'
 import { recordLedger } from '@/lib/ledger'
+import { recordContribution } from '@/lib/supporter-level'
+import { recordTeamPoints } from '@/lib/team-points'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 
 async function createGiftAnnouncement(
@@ -141,7 +143,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Gift type not found' }, { status: 404 })
       }
 
-      const senderJetons = sender.jetonBalance ?? 0
+      const senderJetons = spendPlan.source === 'fake' ? spendPlan.fakeBalance : (sender.jetonBalance ?? 0)
       if (!isStaff && senderJetons < giftType.price) {
         return NextResponse.json({ error: 'Yetersiz jeton' }, { status: 400 })
       }
@@ -164,7 +166,7 @@ export async function POST(req: NextRequest) {
       // Deduct jetons from sender (staff skip)
       if (!isStaff) {
         await atomicDebitJeton(prisma, sender.id, giftType.price, spendPlan.source)
-        await prisma.jetonTransaction.create({
+        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: sender.id,
             amount: -giftType.price,
@@ -184,7 +186,7 @@ export async function POST(req: NextRequest) {
           where: { id: recipient.id },
           data: { jetonBalance: { increment: recipientAmount } }
         })
-        await prisma.jetonTransaction.create({
+        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: recipient.id,
             amount: recipientAmount,
@@ -223,8 +225,8 @@ export async function POST(req: NextRequest) {
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, giftType.icon, giftType.name, giftType.price, giftType.id).catch(err => console.error('Gift announcement error:', err))
 
-      // Ledger: record gift send (fire-and-forget)
-      if (!isStaff) {
+      // Ledger: yalnız gerçek jeton.
+      if (spendPlan.countsAsFinance) {
         recordLedger({
           debit: { accountType: 'user_jeton', accountId: sender.id, balanceBefore: senderJetons, balanceAfter: senderJetons - giftType.price },
           credit: { accountType: senderExcluded ? 'platform_jeton' : 'user_jeton', accountId: senderExcluded ? 'PLATFORM' : recipient.id },
@@ -237,9 +239,14 @@ export async function POST(req: NextRequest) {
         }).catch(e => console.error('[Ledger] gift send error:', e))
       }
 
+      recordContribution(sender.id, recipient.id, giftType.price).catch(() => {})
+      recordTeamPoints(sender.id, giftType.price).catch(() => {})
       const isBigGift = giftType.price >= 1000
       const giftPayload = {
         success: true,
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
+        pointAmount: giftType.price,
         message: `${giftType.name} hediyesi ${recipient.name} kişisine gönderildi! 🎁`,
         bigGift: isBigGift ? {
           senderName: sender.name,
@@ -260,7 +267,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Handle null jetonBalance - default to 0 if null
-      const senderJetonBalance = sender.jetonBalance ?? 0
+      const senderJetonBalance = spendPlan.source === 'fake' ? spendPlan.fakeBalance : (sender.jetonBalance ?? 0)
       
       console.log('[Gift Send] Jeton transfer attempt:', {
         senderId: sender.id,
@@ -284,7 +291,7 @@ export async function POST(req: NextRequest) {
         // Deduct from sender
         await atomicDebitJeton(prisma, sender.id, amount, spendPlan.source)
         // Record sender transaction
-        await prisma.jetonTransaction.create({
+        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: sender.id,
             amount: -amount,
@@ -313,7 +320,7 @@ export async function POST(req: NextRequest) {
 
       // Record recipient transaction (only if not excluded)
       if (!senderExcluded) {
-        await prisma.jetonTransaction.create({
+        if (spendPlan.countsAsFinance) await prisma.jetonTransaction.create({
           data: {
             userId: recipient.id,
             amount: amount,
@@ -343,8 +350,8 @@ export async function POST(req: NextRequest) {
 
       // Auto-create scrolling announcement (settings determine threshold)
       createGiftAnnouncement(sender.name, sender.username, recipient.name, recipient.username, '🪙', 'Jeton', amount).catch(err => console.error('Jeton gift announcement error:', err))
-      // Ledger: record jeton transfer (fire-and-forget)
-      if (!isStaff) {
+      // Ledger: yalnız gerçek jeton.
+      if (spendPlan.countsAsFinance) {
         recordLedger({
           debit: { accountType: 'user_jeton', accountId: sender.id, balanceBefore: senderJetonBalance, balanceAfter: senderJetonBalance - amount },
           credit: { accountType: senderExcluded ? 'platform_jeton' : 'user_jeton', accountId: senderExcluded ? 'PLATFORM' : recipient.id },
@@ -355,9 +362,14 @@ export async function POST(req: NextRequest) {
         }).catch(e => console.error('[Ledger] jeton transfer error:', e))
       }
 
+      recordContribution(sender.id, recipient.id, amount).catch(() => {})
+      recordTeamPoints(sender.id, amount).catch(() => {})
       const isBigJetonGift = amount >= 1000
       const jetonPayload = {
         success: true,
+        jetonSource: spendPlan.source,
+        countsAsFinance: spendPlan.countsAsFinance,
+        pointAmount: amount,
         message: `${amount} jeton ${recipient.name} kişisine gönderildi!`,
         bigGift: isBigJetonGift ? {
           senderName: sender.name,
