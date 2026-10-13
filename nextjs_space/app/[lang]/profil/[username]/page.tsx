@@ -427,11 +427,10 @@ export default function ProfilePage() {
 
           {/* Membership Badge */}
           <div className="mt-2">
-            <MembershipBadge 
-              membership={profile.membership || 'basic'} 
-              role={profile.role} 
-              isFounder={(profile as any)?.isFounder} 
-              size="md" 
+            <MembershipBadge
+              membership={profile.membership || 'basic'}
+              role={profile.role}
+              size="md"
             />
           </div>
 

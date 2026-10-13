@@ -11,8 +11,15 @@ interface BadgeData {
 
 interface MembershipBadgeProps {
   membership: string // basic, premium, gold, diamond, admin
+  /** Platform rolü; `admin` ise üyelik yerine admin rozeti gösterilir (profil/navbar ile uyumlu). */
+  role?: string | null
   size?: 'sm' | 'md' | 'lg'
   className?: string
+}
+
+function displayTier(membership: string, role?: string | null): string {
+  if (role === 'admin') return 'admin'
+  return membership || 'basic'
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -57,7 +64,7 @@ function fetchBadges(): Promise<BadgeData[]> {
   return badgeFetchPromise
 }
 
-export default function MembershipBadge({ membership, size = 'sm', className = '' }: MembershipBadgeProps) {
+export default function MembershipBadge({ membership, role, size = 'sm', className = '' }: MembershipBadgeProps) {
   const [badges, setBadges] = useState<BadgeData[]>(badgeCache || [])
   const [loaded, setLoaded] = useState(!!badgeCache)
   const [imgError, setImgError] = useState(false)
@@ -73,7 +80,7 @@ export default function MembershipBadge({ membership, size = 'sm', className = '
     }
   }, [])
 
-  const rawTier = membership || 'basic'
+  const rawTier = displayTier(membership, role)
   // Map faluser to basic for badge lookup
   const tier = rawTier === 'faluser' ? 'basic' : rawTier
   const label = TIER_LABELS[tier] || tier.toUpperCase()
