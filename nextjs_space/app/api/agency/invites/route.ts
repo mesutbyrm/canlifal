@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { BLOCKED_MESSAGE, isBlockedByAgency } from '@/lib/agency-access'
-import { recordMembershipJoin } from '@/lib/agency-membership-history'
 import { authenticateRequest } from '@/lib/mobile-auth'
-import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
-// GET: Giriş yapan kullanıcının bekleyen ajans davetleri
+// GET /api/agency/invites — kullanıcıya gelen bekleyen ajans üyelik davetleri.
+// Yanıt: { invites: [{ id, agency: { name, logoUrl }, invitedBy: { name, username }, createdAt }] }
 export async function GET(req: NextRequest) {
   try {
     const authUser = await authenticateRequest(req)
@@ -16,12 +14,19 @@ export async function GET(req: NextRequest) {
     }
 
     const invites = await prisma.agencyMemberInvite.findMany({
-      where: { userId: authUser.id, status: 'pending' },
-      include: {
-        agency: { select: { id: true, name: true, logoUrl: true, level: true, commissionRate: true } },
-        invitedBy: { select: { id: true, name: true, username: true, image: true } },
+      where: {
+        userId: authUser.id,
+        status: 'pending',
+        agency: { status: 'approved' },
       },
       orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        createdAt: true,
+        agency: { select: { name: true, logoUrl: true } },
+        invitedBy: { select: { name: true, username: true } },
+      },
     })
 
     return NextResponse.json({ invites })
@@ -31,7 +36,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: Daveti kabul et veya reddet. Body: { inviteId, action: 'accept' | 'reject' }
+// POST /api/agency/invites — { inviteId, action: 'accept' | 'reject' }
+// Kabul, kullanıcıyı ajansa 'member' olarak ekler; kullanıcı zaten bir ajanstaysa reddedilir.
 export async function POST(req: NextRequest) {
   try {
     const authUser = await authenticateRequest(req)
@@ -39,140 +45,74 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const { inviteId, action } = body
+    const body = await req.json().catch(() => ({}))
+    const inviteId = typeof body?.inviteId === 'string' ? body.inviteId.trim() : ''
+    const action = body?.action
 
-    if (!inviteId || !['accept', 'reject'].includes(action)) {
-      return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 })
+    if (!inviteId) {
+      return NextResponse.json({ error: 'Davet kimliği gerekli' }, { status: 400 })
+    }
+    if (action !== 'accept' && action !== 'reject') {
+      return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
     }
 
-    const invite = await prisma.agencyMemberInvite.findUnique({
-      where: { id: inviteId },
-      include: { agency: { select: { id: true, name: true, status: true, invitesDisabled: true, ownerId: true } } },
+    const invite = await prisma.agencyMemberInvite.findFirst({
+      where: { id: inviteId, userId: authUser.id, status: 'pending' },
+      include: { agency: { select: { id: true, name: true, status: true } } },
     })
-
-    if (!invite || invite.userId !== authUser.id) {
-      return NextResponse.json({ error: 'Davet bulunamadı' }, { status: 404 })
-    }
-    if (invite.status !== 'pending') {
-      return NextResponse.json({ error: 'Bu davet artık geçerli değil' }, { status: 409 })
+    if (!invite) {
+      return NextResponse.json({ error: 'Davet bulunamadı veya artık geçerli değil' }, { status: 404 })
     }
 
-    // REDDET
     if (action === 'reject') {
       await prisma.agencyMemberInvite.update({
-        where: { id: inviteId },
+        where: { id: invite.id },
         data: { status: 'rejected', respondedAt: new Date() },
       })
-      await createNotificationWithPush({
-        userId: invite.invitedById,
-        type: 'agency_invite_rejected',
-        title: 'Davet Reddedildi',
-        message: `Bir kullanıcı ${invite.agency.name} ajansına katılma davetini reddetti.`,
-        fromUserId: authUser.id,
-        targetPath: '/ajans-paneli',
-      }).catch(() => {})
-      return NextResponse.json({ success: true, message: 'Davet reddedildi' })
+      return NextResponse.json({ success: true, status: 'rejected' })
     }
 
-    // KABUL ET
-    if (await isBlockedByAgency(invite.agencyId, authUser.id)) {
-      return NextResponse.json({ error: BLOCKED_MESSAGE }, { status: 403 })
-    }
     if (invite.agency.status !== 'approved') {
-      return NextResponse.json({ error: 'Ajans artık davet kabul edemiyor' }, { status: 403 })
+      return NextResponse.json({ error: 'Bu ajans aktif değil' }, { status: 400 })
     }
 
-    // Kullanıcı başka bir ajansa üye mi?
-    const existingMembership = await prisma.agencyUser.findUnique({
-      where: { userId: authUser.id },
-    })
-    if (existingMembership) {
-      return NextResponse.json({ error: 'Zaten bir ajansa üyesiniz' }, { status: 409 })
+    const existingMember = await prisma.agencyUser.findUnique({ where: { userId: authUser.id } })
+    if (existingMember) {
+      return NextResponse.json(
+        { error: 'Zaten bir ajansın üyesisiniz. Önce ayrılmanız gerekiyor.' },
+        { status: 400 }
+      )
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.agencyUser.create({
+    await prisma.$transaction([
+      prisma.agencyUser.create({
         data: {
           agencyId: invite.agencyId,
           userId: authUser.id,
           role: 'member',
-          joinedVia: 'invite',
-          isActive: true,
+          joinedVia: 'member_invite',
         },
-      })
-      await tx.agency.update({
-        where: { id: invite.agencyId },
-        data: {
-          totalMembers: { increment: 1 },
-          activeMembers: { increment: 1 },
-        },
-      })
-      await tx.agencyMemberInvite.update({
-        where: { id: inviteId },
+      }),
+      prisma.agencyMemberInvite.update({
+        where: { id: invite.id },
         data: { status: 'accepted', respondedAt: new Date() },
-      })
-      // Aynı kullanıcıya açık diğer davetleri iptal et
-      await tx.agencyMemberInvite.updateMany({
-        where: { userId: authUser.id, status: 'pending', id: { not: inviteId } },
-        data: { status: 'cancelled', respondedAt: new Date() },
-      })
+      }),
+      prisma.agency.update({
+        where: { id: invite.agencyId },
+        data: { totalMembers: { increment: 1 }, activeMembers: { increment: 1 } },
+      }),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      status: 'accepted',
+      agencyName: invite.agency.name,
     })
-    await recordMembershipJoin({ agencyId: invite.agencyId, userId: authUser.id, role: 'member', via: 'invite', actorId: invite.invitedById })
-
-    await createNotificationWithPush({
-      userId: invite.invitedById,
-      type: 'agency_invite_accepted',
-      title: 'Davet Kabul Edildi',
-      message: `Bir kullanıcı ${invite.agency.name} ajansına katıldı.`,
-      fromUserId: authUser.id,
-      targetPath: '/ajans-paneli',
-    }).catch(() => {})
-
-    return NextResponse.json({ success: true, message: `${invite.agency.name} ajansına katıldınız` })
   } catch (error: any) {
     console.error('[Agency Invites POST] Error:', error)
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: 'Zaten bir ajansın üyesisiniz' }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Davet işlenirken hata oluştu' }, { status: 500 })
-  }
-}
-
-// DELETE: Ajans daveti iptal et (owner/manager). ?inviteId=
-export async function DELETE(req: NextRequest) {
-  try {
-    const authUser = await authenticateRequest(req)
-    if (!authUser) {
-      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
-    }
-
-    const membership = await prisma.agencyUser.findUnique({
-      where: { userId: authUser.id },
-    })
-    if (!membership || !['owner', 'manager'].includes(membership.role)) {
-      return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
-    }
-
-    const { searchParams } = new URL(req.url)
-    const inviteId = searchParams.get('inviteId')
-    if (!inviteId) {
-      return NextResponse.json({ error: 'Davet ID gerekli' }, { status: 400 })
-    }
-
-    const invite = await prisma.agencyMemberInvite.findUnique({ where: { id: inviteId } })
-    if (!invite || invite.agencyId !== membership.agencyId) {
-      return NextResponse.json({ error: 'Davet bulunamadı' }, { status: 404 })
-    }
-    if (invite.status !== 'pending') {
-      return NextResponse.json({ error: 'Bu davet artık iptal edilemez' }, { status: 409 })
-    }
-
-    await prisma.agencyMemberInvite.update({
-      where: { id: inviteId },
-      data: { status: 'cancelled', respondedAt: new Date() },
-    })
-
-    return NextResponse.json({ success: true, message: 'Davet iptal edildi' })
-  } catch (error: any) {
-    console.error('[Agency Invites DELETE] Error:', error)
-    return NextResponse.json({ error: 'Davet iptal edilirken hata oluştu' }, { status: 500 })
   }
 }

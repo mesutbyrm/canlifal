@@ -1,58 +1,44 @@
-/**
- * GET /api/me/permissions
- * Oturum sahibinin efektif yetki listesini döner.
- * Frontend bu listeyle buton/menü gizleme yapar; yetki kontrolü her uçta ayrıca yapılır.
- */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
-import { getEffectivePermissions, PERMISSIONS, PERMISSION_GROUPS, SYSTEM_ROLES } from '@/lib/permissions'
-import { NextRequest } from 'next/server'
+import prisma from '@/lib/db'
+import { PERMISSIONS, getEffectivePermissions } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+// GET /api/me/permissions — oturumdaki kullanıcının gerçek yetki listesi.
+// Yalnızca UI görünürlüğü içindir; her admin ucu yetkiyi ayrıca denetler.
+// Yanıt: { role, isSuper, permissions: string[], groups: { [group]: string[] } }
+export async function GET(req: NextRequest) {
   try {
-    // Dual auth: mobile JWT or web session
-    let userId: string | undefined
-    let role: string | undefined
-
-    const mobileUser = await authenticateRequest(request)
-    if (mobileUser) {
-      userId = mobileUser.id
-      role = mobileUser.role ?? 'user'
-    } else {
-      const session = await getServerSession(authOptions)
-      if (session?.user?.id) {
-        userId = session.user.id
-        role = (session.user as any).role ?? 'user'
-      }
+    const mobileUser = await authenticateRequest(req)
+    const webSession = !mobileUser ? await getServerSession(authOptions) : null
+    const userId: string | undefined = mobileUser?.id || (webSession?.user as any)?.id
+    if (!userId) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    if (!userId || !role) {
-      return NextResponse.json(
-        { success: false, error: 'Oturum açmanız gerekiyor' },
-        { status: 401 }
-      )
-    }
+    const me = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    const role = me?.role || 'user'
 
-    const { isSuper, permissions } = await getEffectivePermissions(role, userId)
+    const effective = await getEffectivePermissions(role, userId)
+    const granted = new Set(effective.permissions)
+
+    const groups: Record<string, string[]> = {}
+    for (const def of PERMISSIONS) {
+      if (!granted.has(def.key)) continue
+      ;(groups[def.group] ||= []).push(def.key)
+    }
 
     return NextResponse.json({
-      success: true,
-      data: {
-        role,
-        isSuper,
-        permissions,
-        groups: PERMISSION_GROUPS,
-      },
+      role,
+      isSuper: effective.isSuper,
+      permissions: effective.permissions,
+      groups,
     })
-  } catch (error) {
-    console.error('[/api/me/permissions] Error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Yetki bilgileri alınamadı' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    console.error('[Me Permissions GET] Error:', error)
+    return NextResponse.json({ error: 'Yetkiler alınamadı' }, { status: 500 })
   }
 }

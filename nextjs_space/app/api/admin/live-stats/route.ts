@@ -1,107 +1,77 @@
-/**
- * GET /api/admin/live-stats?days=7
- *
- * Mobil «Canlı Yayın İstatistikleri» ekranı için: 4 özet kart + gün bazında seri.
- * Çift kimlik (web çerezi VEYA mobil Bearer JWT), staff izni: `analytics.live.view`.
- *
- * Şema değişikliği YOK — yalnızca mevcut tablolardan okur.
- */
 import { NextRequest, NextResponse } from 'next/server'
-import { getStaffSession } from '@/lib/admin-auth'
-import { staffCan } from '@/lib/permissions'
-import { getCached } from '@/lib/cache'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
+import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
-const STAFF_ROLES = ['admin', 'yonetici', 'moderator', 'finans']
-
-function dayKey(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
-export async function GET(request: NextRequest) {
-  const session = await getStaffSession(request)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
-  }
-  const role = (session.user as any).role as string | undefined
-  if (!role || !(await staffCan(role, session.user.id, 'analytics.live.view', STAFF_ROLES))) {
-    return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 403 })
-  }
-
+// GET /api/admin/live-stats?days=N (1–90, varsayılan 7)
+// Tanımlar:
+//   activeStreams / activeBroadcasters / totalViewers → şu an status='live' olan yayınlar;
+//     totalViewers = bu yayınların viewerCount toplamı (anlık).
+//   giftRevenue / totalGiftsValue → seçilen dönemdeki hediyelerin totalPrice toplamı (kredi/jeton, brüt).
+//   series → her gün için o gün yayına katılan tekil izleyici sayısı (video_stream_viewers.joinedAt).
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const rawDays = parseInt(searchParams.get('days') || '7', 10)
-    const days = Math.min(30, Math.max(1, Number.isFinite(rawDays) ? rawDays : 7))
+    const mobileUser = await authenticateRequest(req)
+    const webSession = !mobileUser ? await getServerSession(authOptions) : null
+    const userId: string | undefined = mobileUser?.id || (webSession?.user as any)?.id
+    if (!userId) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+    const me = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    const allowed = await staffCan(me?.role, userId, 'analytics.dashboard.view', ['admin', 'yonetici', 'moderator'])
+    if (!allowed) {
+      return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
+    }
 
-    const data = await getCached(`admin:live-stats:${days}`, 60, async () => {
-      const now = new Date()
-      // Seri başlangıcı: bugün dâhil `days` gün (UTC gün sınırı)
-      const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-      const since = new Date(startOfToday.getTime() - (days - 1) * 24 * 60 * 60 * 1000)
+    const daysRaw = parseInt(new URL(req.url).searchParams.get('days') || '7', 10)
+    const days = Math.min(90, Math.max(1, Number.isFinite(daysRaw) ? daysRaw : 7))
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    since.setUTCHours(0, 0, 0, 0)
 
-      const [activeStreams, activeBroadcasters, periodStreams, periodGifts, periodViewers] = await Promise.all([
-        prisma.videoStream.count({ where: { status: 'live', endedAt: null } }),
-        prisma.videoStream
-          .findMany({
-            where: { startedAt: { gte: since } },
-            select: { userId: true },
-            distinct: ['userId'],
-          })
-          .then((rows: any[]) => rows.length),
-        prisma.videoStream.findMany({
-          where: { startedAt: { gte: since } },
-          select: { startedAt: true },
-        }),
-        prisma.streamGift.findMany({
-          where: { createdAt: { gte: since } },
-          select: { createdAt: true, totalPrice: true },
-        }),
-        prisma.videoStreamViewer.findMany({
-          where: { joinedAt: { gte: since } },
-          select: { joinedAt: true },
-        }),
-      ])
+    const [live, giftAgg, perDay] = await Promise.all([
+      prisma.videoStream.findMany({
+        where: { status: 'live' },
+        select: { userId: true, viewerCount: true },
+      }),
+      prisma.streamGift.aggregate({
+        where: { createdAt: { gte: since } },
+        _sum: { totalPrice: true },
+      }),
+      prisma.$queryRaw<{ day: string; viewers: number }[]>`
+        SELECT to_char("joinedAt", 'YYYY-MM-DD') AS day,
+               COUNT(DISTINCT "viewerId")::int AS viewers
+        FROM video_stream_viewers
+        WHERE "joinedAt" >= ${since}
+        GROUP BY 1
+        ORDER BY 1
+      `,
+    ])
 
-      // Boş günleri 0 ile doldur
-      const buckets = new Map<string, { date: string; viewers: number; giftRevenue: number; streams: number }>()
-      for (let i = 0; i < days; i++) {
-        const d = new Date(since.getTime() + i * 24 * 60 * 60 * 1000)
-        const k = dayKey(d)
-        buckets.set(k, { date: k, viewers: 0, giftRevenue: 0, streams: 0 })
-      }
+    const byDay = new Map<string, number>(
+      perDay.map((r): [string, number] => [r.day, Number(r.viewers)])
+    )
+    const series: { date: string; viewers: number }[] = []
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      series.push({ date: d, viewers: byDay.get(d) ?? 0 })
+    }
 
-      for (const s of periodStreams as any[]) {
-        const b = buckets.get(dayKey(new Date(s.startedAt)))
-        if (b) b.streams += 1
-      }
-      let giftRevenue = 0
-      for (const g of periodGifts as any[]) {
-        giftRevenue += g.totalPrice || 0
-        const b = buckets.get(dayKey(new Date(g.createdAt)))
-        if (b) b.giftRevenue += g.totalPrice || 0
-      }
-      let totalViewers = 0
-      for (const v of periodViewers as any[]) {
-        totalViewers += 1
-        const b = buckets.get(dayKey(new Date(v.joinedAt)))
-        if (b) b.viewers += 1
-      }
-
-      return {
-        activeStreams,
-        totalViewers,
-        giftRevenue,
-        activeBroadcasters,
-        days,
-        series: Array.from(buckets.values()),
-      }
+    const giftRevenue = Number(giftAgg._sum.totalPrice ?? 0)
+    return NextResponse.json({
+      days,
+      activeStreams: live.length,
+      activeBroadcasters: new Set(live.map((s) => s.userId)).size,
+      totalViewers: live.reduce((sum, s) => sum + (s.viewerCount || 0), 0),
+      giftRevenue,
+      totalGiftsValue: giftRevenue,
+      series,
     })
-
-    return NextResponse.json(data)
-  } catch (error) {
-    console.error('[admin/live-stats]', error)
-    return NextResponse.json({ error: 'İstatistikler alınamadı' }, { status: 500 })
+  } catch (error: any) {
+    console.error('[Admin Live Stats GET] Error:', error)
+    return NextResponse.json({ error: 'Canlı istatistikler alınamadı' }, { status: 500 })
   }
 }

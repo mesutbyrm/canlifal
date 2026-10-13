@@ -1,7 +1,6 @@
-import { adminGiftHistory } from '@/lib/admin-gift-history'
-import { parseReportDates } from '@/lib/report-filters'
 import { NextResponse, NextRequest } from 'next/server'
-import { getStaffSession } from '@/lib/admin-auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
 import prisma from '@/lib/db'
 import { getExcludedUserIds } from '@/lib/admin-check'
 import { invalidateCachePrefix } from '@/lib/cache'
@@ -11,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getStaffSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.report.view', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
@@ -75,11 +74,11 @@ export async function GET(request: NextRequest) {
 
       // Total gifts sent (StreamGift + ChatRoomGift + TellerGift) - filtered, admin/yönetici hariç
       const streamGiftTotal = await prisma.streamGift.aggregate({
-        where: { ...dateFilter, OR: [{ jetonSource: 'real' }, { jetonSource: null, ...excludeSenderFilter }] },
-        _sum: { totalPrice: true, siteAmount: true, receiverAmount: true, ownerAmount: true },
+        where: { ...dateFilter, ...excludeSenderFilter },
+        _sum: { totalPrice: true },
       })
       const chatGiftTotal = await prisma.chatRoomGift.aggregate({
-        where: { ...dateFilter, OR: [{ jetonSource: 'real' }, { jetonSource: null, ...excludeSenderFilter }] },
+        where: { ...dateFilter, ...excludeSenderFilter },
         _sum: { totalPrice: true, commissionAmount: true },
       })
       const tellerGiftTotal = await prisma.tellerGift.aggregate({
@@ -162,12 +161,12 @@ export async function GET(request: NextRequest) {
       const totalMembershipSpent = membershipPurchases._sum.pricePaid || 0
 
       // Platform komisyon gelirleri detaylı
-      const streamCommission = (streamGiftTotal._sum.siteAmount || 0) // Yayıncıdan kesilen
+      const streamCommission = Math.floor(streamGiftSpent * broadcasterCommRate / 100) // Yayıncıdan kesilen
       const sessionCommission = Math.floor(totalSessionSpent * commRate / 100) // Falcıdan kesilen
       const chatCommission = totalCommission // Sohbet odası komisyonu
 
       // Siteye kalan toplam (tüm jeton harcamalarından kullanıcılara dağıtılan düşülür)
-      const totalDistributed = totalTellerEarnings + ((streamGiftTotal._sum.receiverAmount || 0) + (streamGiftTotal._sum.ownerAmount || 0))
+      const totalDistributed = totalTellerEarnings + Math.floor(streamGiftSpent * (100 - broadcasterCommRate) / 100)
       const totalBurnedJetons = totalBanaOzelSpent + totalMembershipSpent // Bu jetonlar tamamen siteye kalır
 
       // Manual profit adjustments from platform_settings
@@ -435,21 +434,110 @@ export async function GET(request: NextRequest) {
 
     // Gift history with sender, receiver, source
     if (section === 'gift-history') {
-      try {
-        const dates = period === 'custom' ? parseReportDates(searchParams) : undefined
-        return NextResponse.json(await adminGiftHistory(searchParams, period === 'custom' ? (dates ? { createdAt: dates } : {}) : dateFilter))
-      } catch (error) {
-        if (error instanceof Error && /Geçersiz|Sayfa|Tarih|tarih|Başlangıç/.test(error.message)) return NextResponse.json({ error: error.message }, { status: 400 })
-        throw error
-      }
+      const page = parseInt(searchParams.get('page') || '1')
+      const limit = 30
+
+      // Chat room gifts
+      const chatGifts = await prisma.chatRoomGift.findMany({
+        where: dateFilter,
+        select: {
+          id: true, totalPrice: true, quantity: true, createdAt: true, commissionAmount: true,
+          sender: { select: { id: true, name: true, username: true, image: true } },
+          recipient: { select: { id: true, name: true, username: true, image: true } },
+          giftType: { select: { name: true, icon: true } },
+          room: { select: { nameTr: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      // Stream gifts
+      const streamGifts = await prisma.streamGift.findMany({
+        where: dateFilter,
+        select: {
+          id: true, totalPrice: true, quantity: true, createdAt: true,
+          sender: { select: { id: true, name: true, username: true, image: true } },
+          giftType: { select: { name: true, icon: true } },
+          stream: { select: { id: true, title: true, user: { select: { id: true, name: true, username: true, image: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      // Teller gifts (no relations in schema, use raw IDs)
+      const tellerGiftsRaw = await prisma.tellerGift.findMany({
+        where: dateFilter,
+        select: {
+          id: true, totalPrice: true, quantity: true, createdAt: true,
+          senderId: true, tellerId: true, giftTypeId: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      })
+
+      // Resolve teller gift sender/teller info
+      const tellerGiftUserIds = [...new Set(tellerGiftsRaw.map((g: any) => g.senderId))]
+      const tellerGiftTellerIds = [...new Set(tellerGiftsRaw.map((g: any) => g.tellerId))]
+      const tellerGiftTypeIds = [...new Set(tellerGiftsRaw.map((g: any) => g.giftTypeId))]
+      const [tgUsers, tgTellers, tgGiftTypes] = await Promise.all([
+        prisma.user.findMany({ where: { id: { in: tellerGiftUserIds } }, select: { id: true, name: true, username: true, image: true } }),
+        prisma.liveFortuneTeller.findMany({ where: { id: { in: tellerGiftTellerIds } }, select: { id: true, displayName: true, userId: true, user: { select: { id: true, name: true, username: true, image: true } } } }),
+        prisma.giftType.findMany({ where: { id: { in: tellerGiftTypeIds } }, select: { id: true, name: true, icon: true } }),
+      ])
+      const tgUserMap = Object.fromEntries(tgUsers.map((u: any) => [u.id, u]))
+      const tgTellerMap = Object.fromEntries(tgTellers.map((t: any) => [t.id, t]))
+      const tgGiftTypeMap = Object.fromEntries(tgGiftTypes.map((g: any) => [g.id, g]))
+
+      // Merge and sort by date
+      const allGifts = [
+        ...chatGifts.map((g: any) => ({
+          id: g.id, type: 'chat_room' as const, amount: g.totalPrice, quantity: g.quantity, commission: g.commissionAmount || 0,
+          createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
+          sender: g.sender, receiver: g.recipient, sourceName: g.room?.nameTr || 'Sohbet Odası', sourceSlug: g.room?.slug,
+        })),
+        ...streamGifts.map((g: any) => ({
+          id: g.id, type: 'stream' as const, amount: g.totalPrice, quantity: g.quantity, commission: Math.floor(g.totalPrice * 0.3),
+          createdAt: g.createdAt, giftName: g.giftType?.name || 'Hediye', giftIcon: g.giftType?.icon || '🎁',
+          sender: g.sender, receiver: g.stream?.user || null, sourceName: g.stream?.title || 'Canlı Yayın', sourceSlug: null,
+        })),
+        ...tellerGiftsRaw.map((g: any) => {
+          const gt = tgGiftTypeMap[g.giftTypeId]
+          const teller = tgTellerMap[g.tellerId]
+          return {
+            id: g.id, type: 'teller' as const, amount: g.totalPrice, quantity: g.quantity, commission: 0,
+            createdAt: g.createdAt, giftName: gt?.name || 'Hediye', giftIcon: gt?.icon || '🎁',
+            sender: tgUserMap[g.senderId] || null, receiver: teller?.user || null, sourceName: teller?.displayName || 'Falcı', sourceSlug: null,
+          }
+        }),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit)
+
+      return NextResponse.json({ gifts: allGifts, page })
     }
 
     // Top earners (users who earned the most from all sources)
     if (section === 'top-earners') {
-      const giftEarnings = await prisma.jetonTransaction.groupBy({
-        by: ['userId'], where: { ...dateFilter, type: { in: ['gift_received', 'gift_commission'] }, amount: { gt: 0 } },
-        _sum: { amount: true },
+      // Earn from chat room gifts (as recipient)
+      const chatEarnings = await prisma.chatRoomGift.groupBy({
+        by: ['recipientId'],
+        where: dateFilter,
+        _sum: { totalPrice: true, commissionAmount: true },
       })
+      // Earn from stream gifts (broadcaster earns 70%)
+      const streamEarnings = await prisma.streamGift.groupBy({
+        by: ['streamId'],
+        where: dateFilter,
+        _sum: { totalPrice: true },
+      })
+      // Map streamId to user
+      const streamIds = streamEarnings.map((s: any) => s.streamId)
+      const streams = streamIds.length > 0 ? await prisma.videoStream.findMany({
+        where: { id: { in: streamIds } },
+        select: { id: true, userId: true },
+      }) : []
+      const streamUserMap = new Map<string, string>(streams.map((s: any) => [s.id, s.userId]))
 
       // Teller session earnings
       const tellerEarnings = await prisma.liveFortuneTeller.findMany({
@@ -459,8 +547,16 @@ export async function GET(request: NextRequest) {
 
       // Merge all into earnerMap
       const earnerMap = new Map<string, number>()
-      for (const earning of giftEarnings) {
-        earnerMap.set(earning.userId, earning._sum.amount || 0)
+      for (const c of chatEarnings) {
+        const net = (c._sum.totalPrice || 0) - (c._sum.commissionAmount || 0)
+        earnerMap.set(c.recipientId, (earnerMap.get(c.recipientId) || 0) + net)
+      }
+      for (const s of streamEarnings) {
+        const userId = streamUserMap.get(s.streamId)
+        if (userId) {
+          const earnerShare = Math.floor((s._sum.totalPrice || 0) * 0.7)
+          earnerMap.set(userId, (earnerMap.get(userId) || 0) + earnerShare)
+        }
       }
       for (const t of tellerEarnings) {
         earnerMap.set(t.userId, (earnerMap.get(t.userId) || 0) + t.totalEarnings)
@@ -572,7 +668,7 @@ export async function GET(request: NextRequest) {
 // POST: Multiple actions - adjust user balance, update commission settings, manual profit adjustment
 export async function POST(request: Request) {
   try {
-    const session = await getStaffSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.report.view', ['admin','yonetici','moderator','finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
