@@ -299,3 +299,27 @@ CİHAZ TESTİ            : YAPILMADI (cihaz yok)
 ```
 
 **DUR.**
+
+---
+
+## 12. GÜNCELLEME — Kod tarafı doğrulaması
+
+Bu bölüm, yukarıdaki "eksik" listesinin kod tabanıyla yeniden karşılaştırılmasının sonucudur. Denetim tarihinden sonra ya da yanlış yol adlarıyla yapılmış bazı tespitler düzeltilmiştir.
+
+**Kimlik (AUTH) — 4 uç:**
+| Listelenen yol | Kodda karşılığı | Durum |
+|---|---|---|
+| `/api/auth/mobile-send-verification` | `/api/auth/email/send-verification` (Bearer JWT) | Flutter yalnızca `useMobileAuth == false` dalında kullanıyor → ölü kod |
+| `/api/auth/mobile-verify-email` | `/api/auth/email/verify` (GET/POST) | Aynı → ölü kod |
+| `/api/auth/mobile-sessions` | `app/api/auth/mobile-sessions/route.ts` → `sessions` alias | Var |
+| `/api/auth/mobile/device-token` | `app/api/auth/mobile/device-token/route.ts` → `devices/fcm` alias | Var |
+
+Kanonik kontrat (`docs/CANLIFAL_FLUTTER_PROMPT.md`) doğru yolları listeler. Eski yolları ekleyen alias'lar eklenmedi; ölü kod üretirdi.
+
+**Profil (PROFILE) — 13 uç:** Kodda var olanlar: `user/daily-tasks`, `user/device-token`, `user/favorites`, `user/story`, `users/me/activity`, `users/me/stats`, `users/me/broadcast-history`, `users/me/profile-visitors`. Gerçekten eksik olanlar:
+- `user/cosmetics`, `user/cosmetics/equip`, `user/cosmetics/loadout`, `user/profile/cosmetics/equip`: Şemada cosmetic **seçimleri** (`nameEffect`, `entranceEffectId`, `profileFrameId`) var, ama kullanıcının **sahip olduğu** cosmetic envanteri modeli yok. Envanter modeli bir veri modeli kararı gerektirir; bu turda eklenmedi.
+- `users/me/gifts-received`: Parity dokümanına göre Flutter bu ucu ikinci backend'e gönderiyor (bkz. bölüm D). Bu, istemci yönlendirme sorunudur; ana backend'e route eklemek doğru düzeltme değildir.
+
+**Ayrı not:** Parity dokümanındaki "P0 — GIFTS WRONG_HOST" maddesi Flutter'daki `api_backend_router.dart` dosyasında çözülmesi gereken bir istemci işidir ve bu repoda değildir.
+
+**Sonuç:** Bu repoda kodla kapatılabilecek bir AUTH eksiği kalmadı. Kalan maddeler ya istemci yönlendirmesi ya da ürün/veri modeli kararıdır.
