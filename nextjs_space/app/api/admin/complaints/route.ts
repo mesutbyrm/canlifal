@@ -1,192 +1,155 @@
-/**
- * GET/PATCH /api/admin/complaints
- * Şikâyet (UserReport) yönetimi — listeleme, durum güncelleme, atama.
- */
 import { NextRequest, NextResponse } from 'next/server'
-import { getStaffSession } from '@/lib/admin-auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
-import { recordAudit, getAuditIp } from '@/lib/audit-log'
 import { staffCan } from '@/lib/permissions'
-import { createNotificationWithPush } from '@/lib/notify'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getStaffSession()
-    if (
-      !session?.user?.id ||
-      !(await staffCan(
-        (session.user as any).role,
-        (session.user as any).id,
-        'moderation.report.handle',
-        ['admin', 'yonetici', 'moderator']
-      ))
-    ) {
-      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
-    }
+const STATUSES = ['pending', 'reviewed', 'dismissed'] as const
+const ACTION_TO_STATUS: Record<string, string> = {
+  review: 'reviewed',
+  resolve: 'reviewed',
+  dismiss: 'dismissed',
+}
 
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') || 'all'
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')))
-    const search = searchParams.get('search') || ''
+const USER_SELECT = { id: true, name: true, username: true, image: true, role: true, isBanned: true } as const
 
-    const where: any = {}
-    if (status !== 'all') where.status = status
+// Şikayet (UserReport) yönetimi için ortak yetki kontrolü: mobil Bearer veya web oturumu.
+async function requireModerator(req: NextRequest): Promise<{ id: string } | NextResponse> {
+  const mobileUser = await authenticateRequest(req)
+  const webSession = !mobileUser ? await getServerSession(authOptions) : null
+  const userId: string | undefined = mobileUser?.id || (webSession?.user as any)?.id
+  if (!userId) {
+    return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+  }
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+  const allowed = await staffCan(me?.role, userId, 'moderation.report.handle', ['admin', 'yonetici', 'moderator'])
+  if (!allowed) {
+    return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
+  }
+  return { id: userId }
+}
 
-    if (search) {
-      where.OR = [
-        { reason: { contains: search, mode: 'insensitive' } },
-        { details: { contains: search, mode: 'insensitive' } },
-        { reporter: { name: { contains: search, mode: 'insensitive' } } },
-        { reported: { name: { contains: search, mode: 'insensitive' } } },
-      ]
-    }
-
-    const [reports, total, statusCounts] = await Promise.all([
-      prisma.userReport.findMany({
-        where,
-        include: {
-          reporter: {
-            select: { id: true, name: true, username: true, image: true, role: true },
-          },
-          reported: {
-            select: { id: true, name: true, username: true, image: true, role: true, isBanned: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.userReport.count({ where }),
-      prisma.userReport.groupBy({
-        by: ['status'],
-        _count: true,
-      }),
-    ])
-
-    const counts: Record<string, number> = {}
-    for (const sc of statusCounts as any[]) {
-      counts[sc.status] = sc._count
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        reports,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-        statusCounts: counts,
-      },
-    })
-  } catch (error) {
-    console.error('[admin/complaints] GET error:', error)
-    return NextResponse.json({ error: 'Şikayetler yüklenemedi' }, { status: 500 })
+function shapeReport(r: any) {
+  return {
+    id: r.id,
+    reason: r.reason,
+    details: r.details ?? '',
+    status: r.status,
+    createdAt: r.createdAt,
+    reporter: r.reporter ?? null,
+    reported: r.reported ?? null,
   }
 }
 
-export async function PATCH(request: NextRequest) {
+// GET /api/admin/complaints?status=pending|reviewed|dismissed|all&page=&limit=&search=
+export async function GET(req: NextRequest) {
   try {
-    const session = await getStaffSession()
-    if (
-      !session?.user?.id ||
-      !(await staffCan(
-        (session.user as any).role,
-        (session.user as any).id,
-        'moderation.report.handle',
-        ['admin', 'yonetici', 'moderator']
-      ))
-    ) {
-      return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 })
+    const guard = await requireModerator(req)
+    if (guard instanceof NextResponse) return guard
+
+    const { searchParams } = new URL(req.url)
+    const statusParam = searchParams.get('status') || 'pending'
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10) || 50))
+    const search = (searchParams.get('search') || '').trim()
+
+    const where: Record<string, any> = {}
+    if (statusParam !== 'all') {
+      if (!(STATUSES as readonly string[]).includes(statusParam)) {
+        return NextResponse.json({ error: 'Geçersiz durum' }, { status: 400 })
+      }
+      where.status = statusParam
+    }
+    if (search) {
+      where.OR = [
+        { reason: { contains: search, mode: 'insensitive' } },
+        { reporter: { OR: [{ name: { contains: search, mode: 'insensitive' } }, { username: { contains: search, mode: 'insensitive' } }] } },
+        { reported: { OR: [{ name: { contains: search, mode: 'insensitive' } }, { username: { contains: search, mode: 'insensitive' } }] } },
+      ]
     }
 
-    const body = await request.json()
-    const { reportId, action, reason, assignedTo } = body
+    const [total, rows, grouped] = await Promise.all([
+      prisma.userReport.count({ where }),
+      prisma.userReport.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          reporter: { select: USER_SELECT },
+          reported: { select: USER_SELECT },
+        },
+      }),
+      prisma.userReport.groupBy({ by: ['status'], _count: { _all: true } }),
+    ])
 
-    if (!reportId || !action) {
-      return NextResponse.json(
-        { error: 'reportId ve action gerekli' },
-        { status: 400 }
-      )
+    const statusCounts: Record<string, number> = {}
+    for (const g of grouped) statusCounts[g.status] = g._count._all
+
+    return NextResponse.json({
+      reports: rows.map(shapeReport),
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      statusCounts,
+    })
+  } catch (error: any) {
+    console.error('[Admin Complaints GET] Error:', error)
+    return NextResponse.json({ error: 'Şikayetler alınamadı' }, { status: 500 })
+  }
+}
+
+// PATCH /api/admin/complaints — { reportId, action: review|resolve|dismiss, reason? }
+export async function PATCH(req: NextRequest) {
+  try {
+    const guard = await requireModerator(req)
+    if (guard instanceof NextResponse) return guard
+
+    const body = await req.json().catch(() => ({}))
+    const reportId = typeof body?.reportId === 'string' ? body.reportId.trim() : ''
+    const action = typeof body?.action === 'string' ? body.action : ''
+    const reason = typeof body?.reason === 'string' ? body.reason.trim().slice(0, 500) : ''
+
+    if (!reportId) {
+      return NextResponse.json({ error: 'Şikayet kimliği gerekli' }, { status: 400 })
+    }
+    const nextStatus = ACTION_TO_STATUS[action]
+    if (!nextStatus) {
+      return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
     }
 
-    const report = await prisma.userReport.findUnique({ where: { id: reportId } })
-    if (!report) {
-      return NextResponse.json({ error: 'Şikâyet bulunamadı' }, { status: 404 })
-    }
-
-    // Optimistic locking: prevent two mods from working the same report
-    if (report.status !== 'pending' && action === 'review') {
-      return NextResponse.json(
-        { error: 'Bu şikâyet zaten inceleniyor', currentStatus: report.status },
-        { status: 409 }
-      )
-    }
-
-    let newStatus = report.status
-    switch (action) {
-      case 'review':
-        newStatus = 'reviewing'
-        break
-      case 'resolve':
-        newStatus = 'resolved'
-        break
-      case 'dismiss':
-        newStatus = 'dismissed'
-        break
-      case 'escalate':
-        newStatus = 'escalated'
-        break
-      default:
-        return NextResponse.json({ error: 'Geçersiz action' }, { status: 400 })
+    const existing = await prisma.userReport.findUnique({ where: { id: reportId } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Şikayet bulunamadı' }, { status: 404 })
     }
 
     const updated = await prisma.userReport.update({
       where: { id: reportId },
-      data: {
-        status: newStatus,
-        updatedAt: new Date(),
+      data: { status: nextStatus },
+      include: {
+        reporter: { select: USER_SELECT },
+        reported: { select: USER_SELECT },
       },
     })
 
-    // Audit log
-    try {
-      await recordAudit({
-        actorId: (session.user as any).id,
+    await prisma.auditLog.create({
+      data: {
+        actorId: guard.id,
         action: `complaint_${action}`,
         targetType: 'UserReport',
         targetId: reportId,
-        metadata: {
-          reportedUserId: report.reportedId,
-          reporterUserId: report.reporterId,
-          previousStatus: report.status,
-          newStatus,
-          reason: reason || undefined,
-        },
-        ip: getAuditIp(request),
-      })
-    } catch { /* non-blocking */ }
+        before: { status: existing.status },
+        after: { status: nextStatus },
+        description: reason || null,
+      },
+    }).catch((e) => console.error('[Admin Complaints] audit log failed:', e))
 
-    // Notify reporter when complaint is resolved or dismissed
-    if (action === 'resolve' || action === 'dismiss') {
-      try {
-        await createNotificationWithPush({
-          userId: report.reporterId,
-          type: 'system',
-          title: action === 'resolve' ? 'Şikâyetiniz incelendi' : 'Şikâyetiniz değerlendirildi',
-          message:
-            action === 'resolve'
-              ? 'Şikâyetiniz incelendi ve gerekli işlem yapıldı.'
-              : 'Şikâyetiniz incelendi. Mevcut bilgiler ışığında ek işlem gerekmediğine karar verildi.',
-        })
-      } catch { /* non-blocking */ }
-    }
-
-    return NextResponse.json({ success: true, data: updated })
-  } catch (error) {
-    console.error('[admin/complaints] PATCH error:', error)
-    return NextResponse.json({ error: 'Şikâyet güncellenemedi' }, { status: 500 })
+    return NextResponse.json(shapeReport(updated))
+  } catch (error: any) {
+    console.error('[Admin Complaints PATCH] Error:', error)
+    return NextResponse.json({ error: 'Şikayet güncellenemedi' }, { status: 500 })
   }
 }
