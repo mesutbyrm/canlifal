@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth';
+
+export const dynamic = 'force-dynamic';
+
+// Get the current user's fortune teller profile
+export async function GET(request: NextRequest) {
+  try {
+    const authUser = await authenticateRequest(request)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
+    }
+
+    const teller = await prisma.liveFortuneTeller.findUnique({
+      where: { userId: authUser.id },
+      select: {
+        id: true,
+        displayName: true,
+        bio: true,
+        avatar: true,
+        specialties: true,
+        pricePerSession: true,
+        rating: true,
+        totalSessions: true,
+        isOnline: true,
+        isVerified: true,
+        isActive: true,
+        applicationStatus: true,
+        totalEarnings: true,
+        bonusCredits: true,
+        isBanned: true,
+        isFrozen: true,
+        createdAt: true,
+        // Permissions (admin controlled)
+        canGoOnline: true,
+        canChat: true,
+        canStartSession: true,
+        canSetPrice: true,
+        canEditProfile: true,
+        canViewEarnings: true,
+        canWithdraw: true,
+        maxSessionsPerDay: true,
+        commissionRate: true
+      }
+    });
+
+    if (!teller) {
+      return NextResponse.json({ error: 'Teller profile not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(teller);
+  } catch (error) {
+    console.error('My profile error:', error);
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+  }
+}

@@ -1,0 +1,146 @@
+export const dynamic = 'force-dynamic'
+
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/db'
+import { authenticateRequest } from '@/lib/mobile-auth'
+import { guardRateLimit } from '@/lib/rate-limit-guard'
+
+// GET - fetch active stories (not expired) grouped by user, followed users first
+export async function GET(req: NextRequest) {
+  try {
+    const authUser = await authenticateRequest(req).catch(() => null)
+    const now = new Date()
+
+    // Get followed user IDs if logged in
+    let followedIds: string[] = []
+    if (authUser?.id) {
+      const follows = await prisma.follow.findMany({
+        where: { followerId: authUser.id },
+        select: { followingId: true },
+      })
+      followedIds = follows.map(f => f.followingId)
+    }
+
+    const stories = await prisma.userStory.findMany({
+      where: {
+        isActive: true,
+        expiresAt: { gt: now },
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true, username: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Group by user
+    const grouped: Record<string, { user: any; stories: any[]; isFollowed: boolean }> = {}
+    for (const s of stories) {
+      if (!grouped[s.userId]) {
+        grouped[s.userId] = {
+          user: s.user,
+          stories: [],
+          isFollowed: followedIds.includes(s.userId),
+        }
+      }
+      grouped[s.userId].stories.push({
+        id: s.id,
+        mediaUrl: s.mediaUrl,
+        mediaType: s.mediaType,
+        caption: s.caption,
+        viewCount: s.viewCount,
+        createdAt: s.createdAt,
+        expiresAt: s.expiresAt,
+      })
+    }
+
+    // Sort: followed users first, then others
+    const allGroups = Object.values(grouped)
+    allGroups.sort((a, b) => {
+      if (a.isFollowed && !b.isFollowed) return -1
+      if (!a.isFollowed && b.isFollowed) return 1
+      return 0
+    })
+
+    return NextResponse.json({ storyGroups: allGroups })
+  } catch (error) {
+    console.error('Stories fetch error:', error)
+    return NextResponse.json({ storyGroups: [] })
+  }
+}
+
+// POST - create a new story
+export async function POST(req: NextRequest) {
+  try {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+    const userId = authUser.id
+
+    // Rate limit: hikaye oluşturma
+    const rateLimited = await guardRateLimit(req, 'content_create', { userId })
+    if (rateLimited) return rateLimited
+
+    const body = await req.json()
+    const { mediaUrl, mediaType, caption } = body
+
+    if (!mediaUrl) {
+      return NextResponse.json({ error: 'Medya gerekli' }, { status: 400 })
+    }
+
+    // Stories expire after 24 hours
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 24)
+
+    const story = await prisma.userStory.create({
+      data: {
+        userId: userId,
+        mediaUrl,
+        mediaType: mediaType || 'image',
+        caption: caption || null,
+        expiresAt,
+      },
+    })
+
+    return NextResponse.json({ story })
+  } catch (error) {
+    console.error('Story create error:', error)
+    return NextResponse.json({ error: 'Hikaye oluşturulamadı' }, { status: 500 })
+  }
+}
+
+// DELETE - delete own story
+export async function DELETE(req: NextRequest) {
+  try {
+    const authUser = await authenticateRequest(req)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+    const userId = authUser.id
+
+    const { searchParams } = new URL(req.url)
+    const storyId = searchParams.get('id')
+
+    if (!storyId) {
+      return NextResponse.json({ error: 'Hikaye ID gerekli' }, { status: 400 })
+    }
+
+    // Verify ownership
+    const story = await prisma.userStory.findFirst({
+      where: { id: storyId, userId: userId },
+    })
+
+    if (!story) {
+      return NextResponse.json({ error: 'Hikaye bulunamadı' }, { status: 404 })
+    }
+
+    await prisma.userStory.delete({ where: { id: storyId } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Story delete error:', error)
+    return NextResponse.json({ error: 'Hikaye silinemedi' }, { status: 500 })
+  }
+}

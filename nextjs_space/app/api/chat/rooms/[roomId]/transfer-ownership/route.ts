@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { authenticateRequest } from '@/lib/mobile-auth'
+import prisma from '@/lib/db'
+import { emitOwnerChanged } from '@/lib/voice-room-events'
+
+export const dynamic = 'force-dynamic'
+
+// POST: Transfer room ownership to another user
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  const authUser = await authenticateRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    if (!authUser?.id) {
+      return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    }
+
+    const { roomId } = await params
+    const { newOwnerId } = await request.json()
+
+    if (!newOwnerId || typeof newOwnerId !== 'string') {
+      return NextResponse.json({ error: 'Yeni sahip belirtilmedi' }, { status: 400 })
+    }
+
+    // Get the room
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      select: { id: true, ownerId: true, nameTr: true }
+    })
+
+    if (!room) {
+      return NextResponse.json({ error: 'Oda bulunamadı' }, { status: 404 })
+    }
+
+    // Check if the user is the current owner or a global admin
+    const isOwner = room.ownerId === authUser.id
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { role: true }
+    })
+    const isGlobalAdmin = user?.role === 'admin' || user?.role === 'superadmin'
+
+    if (!isOwner && !isGlobalAdmin) {
+      return NextResponse.json({ error: 'Sadece oda sahibi sahipliği devredebilir' }, { status: 403 })
+    }
+
+    // Verify new owner exists
+    const newOwner = await prisma.user.findUnique({
+      where: { id: newOwnerId },
+      select: { id: true, name: true, username: true }
+    })
+
+    if (!newOwner) {
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+    }
+
+    // Cannot transfer to yourself
+    if (newOwnerId === room.ownerId) {
+      return NextResponse.json({ error: 'Zaten bu kullanıcı oda sahibi' }, { status: 400 })
+    }
+
+    // Transfer ownership
+    await prisma.chatRoom.update({
+      where: { id: roomId },
+      data: { ownerId: newOwnerId }
+    })
+
+    // Set the new owner as founder role in the room
+    await prisma.chatUserRole.upsert({
+      where: {
+        roomId_userId: { roomId, userId: newOwnerId }
+      },
+      create: {
+        roomId,
+        userId: newOwnerId,
+        role: 'founder',
+        grantedBy: authUser.id
+      },
+      update: {
+        role: 'founder',
+        grantedBy: authUser.id
+      }
+    })
+
+    // Broadcast the ownership change (web + Flutter via SSE)
+    emitOwnerChanged(roomId, newOwnerId, newOwner.name || newOwner.username || undefined)
+
+    return NextResponse.json({
+      success: true,
+      message: `Oda sahipliği ${newOwner.name || newOwner.username} kullanıcısına devredildi`
+    })
+  } catch (error) {
+    console.error('Error transferring room ownership:', error)
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
+  }
+}

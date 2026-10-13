@@ -1,0 +1,27 @@
+[Ledger] recordMultiLeg failed: Error: simulated ledger failure
+    at Object.createMany (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:57:68)
+    at recordMultiLeg (lib/ledger.ts:107:60)
+    at app/api/wallet/transfer/route.ts:125:51
+    at async Object.$transaction (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:64:81)
+    at async Object.POST (app/api/wallet/transfer/route.ts:85:32)
+    at async main (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:85:72)
+[wallet/transfer] error: Error: simulated ledger failure
+    at Object.createMany (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:57:68)
+    at recordMultiLeg (lib/ledger.ts:107:60)
+    at app/api/wallet/transfer/route.ts:125:51
+    at async Object.$transaction (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:64:81)
+    at async Object.POST (app/api/wallet/transfer/route.ts:85:32)
+    at async main (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:85:72)
+[wallet/transfer] error: Error: simulated receipt failure
+    at Object.update (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:61:54)
+    at app/api/wallet/transfer/route.ts:139:48
+    at async Object.$transaction (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:64:81)
+    at async Object.POST (app/api/wallet/transfer/route.ts:85:32)
+    at async main (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:85:72)
+[wallet/transfer] error: Error: commit acknowledgement lost
+    at Object.$transaction (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:64:134)
+    at async Object.POST (app/api/wallet/transfer/route.ts:85:32)
+    at async main (/home/ubuntu/fortune_telling_platform/nextjs_space/scripts/acceptance-tests/gift-followup.contract.cjs:90:14) {
+  committed: true
+}
+PASS 53 isolated PK alias/serialization, filters, pagination and transfer contract checks; no production writes.
