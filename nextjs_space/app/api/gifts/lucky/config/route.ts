@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.giftType.findMany({
         where: { isLucky: true, isActive: true },
-        orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+        orderBy: [{ price: 'asc' }, { name: 'asc' }],
         select: {
           id: true, name: true, nameEn: true, icon: true, iconImageUrl: true,
           thumbnailUrl: true, assetUrl: true, assetType: true, price: true,

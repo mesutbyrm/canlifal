@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
-import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 import { recordAudit, getAuditIp } from '@/lib/audit-log';
 import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
 import { staffCan } from '@/lib/permissions'
+import {
+  DELETED_GIFT_CATEGORY,
+  notDeletedGiftWhere,
+  deriveGiftEngineFields,
+  parseDisplayMode,
+  nextGiftContentVersion,
+  invalidateGiftCaches,
+} from '@/lib/gift-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +59,11 @@ export async function PATCH(
     }
 
     const body = await request.json();
+
+    const existing = await prisma.giftType.findUnique({ where: { id: params.giftId } });
+    if (!existing || existing.category === DELETED_GIFT_CATEGORY) {
+      return NextResponse.json({ error: 'Hediye bulunamadı' }, { status: 404 });
+    }
 
     const resolveUrl = async (cloudPath: string | undefined | null) => {
       if (!cloudPath) return undefined;
@@ -150,8 +162,38 @@ export async function PATCH(
       }
     }
 
-    // Increment content version for sync
-    data.contentVersion = { increment: 1 };
+    if (data.name !== undefined) {
+      data.name = String(data.name ?? '').trim();
+      if (!data.name) {
+        return NextResponse.json({ error: 'Hediye adı zorunlu' }, { status: 400 });
+      }
+      const clash = await prisma.giftType.findFirst({
+        where: {
+          AND: [notDeletedGiftWhere, { id: { not: params.giftId } }, { name: { equals: data.name, mode: 'insensitive' } }],
+        },
+        select: { id: true },
+      });
+      if (clash) {
+        return NextResponse.json({ error: 'Bu isimde başka bir hediye var', existingId: clash.id }, { status: 409 });
+      }
+    }
+    if (data.price !== undefined && (!Number.isFinite(data.price) || data.price < 1 || data.price > 100000)) {
+      return NextResponse.json({ error: 'Jeton fiyatı 1 ile 100.000 arasında olmalı' }, { status: 400 });
+    }
+    if (data.category === DELETED_GIFT_CATEGORY) delete data.category;
+    // Yeni dosya yüklendi ama süresi gelmediyse eski videonun süresi kalmasın.
+    if (data.assetUrl !== undefined && data.assetUrl !== existing.assetUrl && body.assetDurationMs === undefined) {
+      data.assetDurationMs = null;
+    }
+
+    // Motor alanları (süre, konum, öncelik, parçacık, sıra, görünürlük) otomatik.
+    const merged = { ...existing, ...data };
+    const mode = parseDisplayMode(body.displayMode ?? body.displayArea);
+    Object.assign(data, deriveGiftEngineFields(merged, mode));
+    if (data.assetMimeType === null) delete data.assetMimeType;
+
+    // Global sürüm — her APK delta ile bu değişikliği alır.
+    data.contentVersion = await nextGiftContentVersion();
 
     const gift = await prisma.giftType.update({
       where: { id: params.giftId },
@@ -159,9 +201,7 @@ export async function PATCH(
       include: { collection: { select: { id: true, name: true, slug: true } } },
     });
 
-    await invalidateCache('gifts:active');
-    invalidateCache('gifts:version-check');
-    invalidateCachePrefix('gifts:catalog:');
+    invalidateGiftCaches();
 
     recordAudit({
       action: 'gift_update',
@@ -179,7 +219,9 @@ export async function PATCH(
   }
 }
 
-// DELETE gift (soft delete — set isActive=false)
+// DELETE gift — uygulamadan tamamen kaldırır. Geçmiş gönderim kayıtları
+// hediyeye bağlı olduğundan satır silinmez; "silindi" olarak işaretlenir,
+// admin listesinden ve tüm APK kataloglarından (delta ile) düşer.
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { giftId: string } }
@@ -190,21 +232,29 @@ export async function DELETE(
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
 
+    const existing = await prisma.giftType.findUnique({ where: { id: params.giftId }, select: { id: true, name: true, category: true } });
+    if (!existing || existing.category === DELETED_GIFT_CATEGORY) {
+      return NextResponse.json({ error: 'Hediye bulunamadı' }, { status: 404 });
+    }
+
     await prisma.giftType.update({
       where: { id: params.giftId },
-      data: { isActive: false, contentVersion: { increment: 1 } },
+      data: {
+        isActive: false,
+        isHidden: true,
+        category: DELETED_GIFT_CATEGORY,
+        contentVersion: await nextGiftContentVersion(),
+      },
     });
 
-    await invalidateCache('gifts:active');
-    invalidateCache('gifts:version-check');
-    invalidateCachePrefix('gifts:catalog:');
+    invalidateGiftCaches();
 
     recordAudit({
       action: 'gift_delete',
       targetType: 'GiftType',
       targetId: params.giftId,
       actorId: (session.user as any).id || session.user.email || 'unknown',
-      metadata: { softDelete: true },
+      metadata: { name: existing.name, removedFromCatalog: true },
       ip: getAuditIp(request),
     }).catch(() => {});
 

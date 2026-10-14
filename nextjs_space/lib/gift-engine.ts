@@ -7,7 +7,7 @@
  * Responsibilities (backend is the single source of truth):
  *   - Priority   : SMALL | MEDIUM | LARGE | ULTRA (admin editable per gift)
  *   - Animation  : PNG | SVG | LOTTIE | MP4 | WEBM | PARTICLE
- *   - Display    : FULL_SCREEN | CENTER | SEAT | BOTTOM | TOP
+ *   - Display    : FULL_SCREEN | HALF_SCREEN | CENTER | SEAT | BOTTOM | TOP
  *   - Seat effect: GLOW | SHAKE | PARTICLE | BORDER | PULSE | NONE (toggleable)
  *   - Duration   : animation display duration (ms)
  *   - Combo      : consecutive same-gift sends by same user (x2/x5/x10/x50/x100)
@@ -28,7 +28,7 @@ import { buildGiftRenderMeta } from '@/lib/gift-render'
 
 // ── Enumerations (kept as plain string unions for cross-platform clarity) ──
 export const PRIORITIES = ['SMALL', 'MEDIUM', 'LARGE', 'ULTRA'] as const
-export const DISPLAY_AREAS = ['FULL_SCREEN', 'CENTER', 'SEAT', 'BOTTOM', 'TOP'] as const
+export const DISPLAY_AREAS = ['FULL_SCREEN', 'HALF_SCREEN', 'CENTER', 'SEAT', 'BOTTOM', 'TOP'] as const
 export const ANIMATION_TYPES = ['PNG', 'SVG', 'LOTTIE', 'MP4', 'WEBM', 'PARTICLE'] as const
 export const SEAT_EFFECTS = ['GLOW', 'SHAKE', 'PARTICLE', 'BORDER', 'PULSE', 'NONE'] as const
 
@@ -75,7 +75,7 @@ export function resolveAnimationType(g: any, renderMeta?: any): string {
   return 'PNG'
 }
 
-/** FULL_SCREEN | CENTER | SEAT | BOTTOM | TOP */
+/** FULL_SCREEN | HALF_SCREEN | CENTER | SEAT | BOTTOM | TOP */
 export function resolveDisplayArea(g: any): string {
   const explicit = (g?.displayArea || '').toUpperCase()
   if (DISPLAY_AREAS.includes(explicit as any)) return explicit

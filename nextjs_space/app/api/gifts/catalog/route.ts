@@ -3,7 +3,8 @@ import prisma from '@/lib/db';
 import { authenticateRequest } from '@/lib/mobile-auth';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { getCached, invalidateCache, CACHE_TTL } from '@/lib/cache';
+import { getCached } from '@/lib/cache';
+import { notDeletedGiftWhere, normalizeCatalogGift } from '@/lib/gift-admin';
 import { serializeGiftMedia } from '@/lib/media-url';
 
 export const dynamic = 'force-dynamic';
@@ -30,17 +31,16 @@ export async function GET(request: NextRequest) {
     const sinceVersion = parseInt(searchParams.get('sinceVersion') || '0');
     const context = searchParams.get('context') || '';
 
-    // Build where
-    const where: any = { isActive: true };
-    if (sinceVersion > 0) {
-      where.contentVersion = { gt: sinceVersion };
-    }
+    // Tam katalog: yalnızca aktif hediyeler. Delta: değişen HER hediye — pasif
+    // veya silinen hediyeler isActive:false ile gelir, böylece eski APK'lar da
+    // önbelleğindeki kopyayı ezer ve panelden kaldırır.
+    const where: any = sinceVersion > 0
+      ? { contentVersion: { gt: sinceVersion } }
+      : { isActive: true, ...notDeletedGiftWhere };
 
     // Context-based visibility filtering
+    // Sesli oda / canlı yayın / PK: tüm hediyeler her yerde gönderilebilir.
     const contextFieldMap: Record<string, string> = {
-      voice_room: 'visibleInVoiceRoom',
-      live_stream: 'visibleInLiveStream',
-      pk: 'visibleInPK',
       profile: 'visibleInProfile',
       messaging: 'visibleInMessaging',
       trend: 'visibleInTrend',
@@ -55,14 +55,15 @@ export async function GET(request: NextRequest) {
     }
 
     const cacheKey = `gifts:catalog:${sinceVersion}:${context}`;
-    const ttl = sinceVersion > 0 ? 60 : CACHE_TTL.GIFT_TYPES;
+    const ttl = sinceVersion > 0 ? 5 : 15;
 
     const result = await getCached(cacheKey, ttl, async () => {
       const [gifts, collections, maxVersionResult] = await Promise.all([
         prisma.giftType.findMany({
           where,
           include: { collection: { select: { id: true, name: true, nameEn: true, slug: true, iconEmoji: true } } },
-          orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+          // Her zaman jeton fiyatına göre: 1 → 100K.
+          orderBy: [{ price: 'asc' }, { name: 'asc' }],
         }),
         prisma.giftCollection.findMany({
           where: { isActive: true },
@@ -73,15 +74,15 @@ export async function GET(request: NextRequest) {
       ]);
 
       return {
-        gifts: gifts.map(serializeGiftMedia),
+        gifts: gifts.map((g) => normalizeCatalogGift(serializeGiftMedia(g))),
         collections,
         currentVersion: maxVersionResult._max.contentVersion || 1,
-        totalGifts: gifts.length,
+        totalGifts: gifts.filter((g) => g.isActive).length,
         timestamp: new Date().toISOString(),
       };
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Gift catalog error:', error);
     return NextResponse.json({ error: 'Katalog yüklenemedi' }, { status: 500 });

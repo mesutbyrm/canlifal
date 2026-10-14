@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       prisma.giftType.findMany({
         where: catalogWhere,
         select: GIFT_SELECT,
-        orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+        orderBy: [{ price: 'asc' }, { name: 'asc' }],
         take: 200,
       }),
     ])

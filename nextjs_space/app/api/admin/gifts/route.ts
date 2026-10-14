@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
-import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 import { getFileUrl } from '@/lib/s3';
 import { serializeGiftMedia, resolveMediaUrl, deriveAssetFormat, deriveMediaType, deriveMimeType } from '@/lib/media-url';
 import { generateVideoThumbnail } from '@/lib/gift-media-probe';
 import { recordAudit } from '@/lib/audit-log';
+import {
+  DELETED_GIFT_CATEGORY,
+  notDeletedGiftWhere,
+  deriveGiftEngineFields,
+  parseDisplayMode,
+  nextGiftContentVersion,
+  invalidateGiftCaches,
+} from '@/lib/gift-admin';
 import { staffCan } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic';
@@ -26,12 +33,16 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
-    const sortBy = searchParams.get('sortBy') || 'sortOrder';
-    const sortDir = searchParams.get('sortDir') || 'asc';
+    // Hediyeler her zaman jeton fiyatına göre (1 → 100K) listelenir.
+    const SORTABLE = new Set(['price', 'name', 'createdAt', 'updatedAt'])
+    const sortByRaw = searchParams.get('sortBy') || 'price';
+    const sortBy = SORTABLE.has(sortByRaw) ? sortByRaw : 'price';
+    const sortDir = searchParams.get('sortDir') === 'desc' ? 'desc' : 'asc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
 
-    const where: any = {};
+    // Silinen hediyeler admin listesinde de görünmez.
+    const where: any = { AND: [notDeletedGiftWhere] };
 
     if (search) {
       where.OR = [
@@ -51,7 +62,7 @@ export async function GET(request: NextRequest) {
       prisma.giftType.findMany({
         where,
         include: { collection: { select: { id: true, name: true, slug: true, iconEmoji: true } } },
-        orderBy: { [sortBy]: sortDir },
+        orderBy: [{ [sortBy]: sortDir }, { name: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -70,7 +81,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new gift
+// POST create new gift — sade form; motor alanları medyaya göre otomatik.
 export async function POST(request: NextRequest) {
   try {
     const session = await getStaffSession();
@@ -94,11 +105,40 @@ export async function POST(request: NextRequest) {
     const soundUrl = body.soundUrl || await resolveUrl(body.soundCloudPath);
     const musicUrl = body.musicUrl || await resolveUrl(body.musicCloudPath);
 
-    // ── Derive media descriptors + MIME type from the resolved asset ──
+    const name = String(body.name ?? '').trim();
+    if (!name) {
+      return NextResponse.json({ error: 'Hediye adı zorunlu' }, { status: 400 });
+    }
+    const price = parseInt(body.price);
+    if (!Number.isFinite(price) || price < 1 || price > 100000) {
+      return NextResponse.json({ error: 'Jeton fiyatı 1 ile 100.000 arasında olmalı' }, { status: 400 });
+    }
+
+    // Aynı hediye ikinci kez eklenemez — mevcut hediye düzenlenir.
+    const duplicate = await prisma.giftType.findFirst({
+      where: {
+        AND: [
+          notDeletedGiftWhere,
+          {
+            OR: [
+              { name: { equals: name, mode: 'insensitive' } },
+              ...(assetUrl ? [{ assetUrl }] : []),
+            ],
+          },
+        ],
+      },
+      select: { id: true, name: true },
+    });
+    if (duplicate) {
+      return NextResponse.json(
+        { error: `Bu hediye zaten var: "${duplicate.name}". Yeni ekleme yerine mevcut hediyeyi düzenleyin.`, existingId: duplicate.id },
+        { status: 409 },
+      );
+    }
+
     const resolvedAssetUrl = resolveMediaUrl(assetUrl) ?? assetUrl ?? null;
-    const assetFormat = deriveAssetFormat(body.assetType, resolvedAssetUrl, body.animationType);
+    const assetFormat = deriveAssetFormat(body.assetType, resolvedAssetUrl, null);
     const mediaType = deriveMediaType(assetFormat);
-    const assetMimeType = body.assetMimeType || deriveMimeType(assetFormat) || undefined;
     const assetWidth = body.assetWidth != null ? parseInt(body.assetWidth) : undefined;
     const assetHeight = body.assetHeight != null ? parseInt(body.assetHeight) : undefined;
     const assetDurationMs = body.assetDurationMs != null ? parseInt(body.assetDurationMs) : undefined;
@@ -113,109 +153,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const engine = deriveGiftEngineFields(
+      {
+        assetUrl,
+        assetType: body.assetType,
+        assetMimeType: body.assetMimeType || deriveMimeType(assetFormat),
+        assetDurationMs,
+        particleEffect: body.particleEffect,
+        price,
+      },
+      parseDisplayMode(body.displayMode ?? body.displayArea) ?? (mediaType === 'video' ? 'full' : 'small'),
+    );
+
     const gift = await prisma.giftType.create({
       data: {
-        name: body.name,
-        nameEn: body.nameEn || body.name,
+        name,
+        nameEn: body.nameEn || name,
         icon: body.icon || '🎁',
         animation: body.animation,
-        price: parseInt(body.price) || 10,
-        sortOrder: parseInt(body.sortOrder) || 0,
         isActive: body.isActive ?? true,
-        // Asset fields
         thumbnailUrl,
         assetUrl,
-        assetType: body.assetType || 'image',
         cloudStoragePath: body.cloudStoragePath,
         thumbnailCloudPath: body.thumbnailCloudPath,
-        // Media metadata (nullable / backward-compatible)
         assetWidth,
         assetHeight,
         assetDurationMs,
-        assetMimeType,
-        category: body.category,
+        category: body.category && body.category !== DELETED_GIFT_CATEGORY ? body.category : undefined,
         description: body.description,
-        // Premium
         soundUrl,
         soundCloudPath: body.soundCloudPath,
-        animationDurationMs: body.animationDurationMs ? parseInt(body.animationDurationMs) : undefined,
-        isFullscreen: body.isFullscreen ?? false,
-        tier: body.tier || 'small',
-        isPopular: body.isPopular ?? false,
-        isNew: body.isNew ?? true,
-        isSpecialEvent: body.isSpecialEvent ?? false,
-        isHidden: body.isHidden ?? false,
-        seasonStart: body.seasonStart ? new Date(body.seasonStart) : undefined,
-        seasonEnd: body.seasonEnd ? new Date(body.seasonEnd) : undefined,
-        isFeatured: body.isFeatured ?? false,
-        // Icon/effect
         iconImageUrl,
         iconImageCloudPath: body.iconImageCloudPath,
-        effectColor: body.effectColor,
-        comboEnabled: body.comboEnabled ?? false,
-        isPremium: body.isPremium ?? false,
-        isLucky: body.isLucky ?? false,
-        // Visibility
-        visibleInVoiceRoom: body.visibleInVoiceRoom ?? true,
-        visibleInLiveStream: body.visibleInLiveStream ?? true,
-        visibleInPK: body.visibleInPK ?? true,
-        visibleInProfile: body.visibleInProfile ?? false,
-        visibleInMessaging: body.visibleInMessaging ?? false,
-        visibleInTrend: body.visibleInTrend ?? false,
-        visibleInStories: body.visibleInStories ?? false,
-        visibleInFortune: body.visibleInFortune ?? false,
-        visibleInNotification: body.visibleInNotification ?? false,
-        visibleAsMini: body.visibleAsMini ?? false,
-        visibleAsFullscreen: body.visibleAsFullscreen ?? false,
-        // Type
-        displayType: body.displayType || 'static',
-        // Properties
-        requiresVip: body.requiresVip ?? false,
-        eventOnly: body.eventOnly ?? false,
-        pkOnly: body.pkOnly ?? false,
-        liveOnly: body.liveOnly ?? false,
-        voiceOnly: body.voiceOnly ?? false,
-        newUserOnly: body.newUserOnly ?? false,
-        timedCampaign: body.timedCampaign ?? false,
-        campaignStart: body.campaignStart ? new Date(body.campaignStart) : undefined,
-        campaignEnd: body.campaignEnd ? new Date(body.campaignEnd) : undefined,
-        isSeasonal: body.isSeasonal ?? false,
-        isReusable: body.isReusable ?? true,
-        dailySendLimit: body.dailySendLimit ? parseInt(body.dailySendLimit) : undefined,
-        // Animation
-        startDelayMs: body.startDelayMs ? parseInt(body.startDelayMs) : undefined,
-        displayDurationMs: body.displayDurationMs ? parseInt(body.displayDurationMs) : undefined,
-        repeatCount: body.repeatCount !== undefined ? parseInt(body.repeatCount) : 1,
-        volume: body.volume !== undefined ? parseInt(body.volume) : 100,
-        particleEffect: body.particleEffect,
-        hasVibration: body.hasVibration ?? false,
-        hasColorChange: body.hasColorChange ?? false,
-        // Position
-        screenPosition: body.screenPosition || 'center',
-        animStartPoint: body.animStartPoint,
-        animEndPoint: body.animEndPoint,
-        // Collection
-        collectionId: body.collectionId || undefined,
-        // Music
         musicUrl,
         musicCloudPath: body.musicCloudPath,
-        // ── Gift Engine attributes (additive) ──
-        priority: body.priority || 'MEDIUM',
-        animationType: body.animationType || undefined,
-        displayArea: body.displayArea || undefined,
-        seatEffect: body.seatEffect || undefined,
-        seatEffectEnabled: body.seatEffectEnabled ?? true,
-        soundEffectEnabled: body.soundEffectEnabled ?? true,
-        comboWindowMs: body.comboWindowMs ? parseInt(body.comboWindowMs) : undefined,
-        // Version
-        contentVersion: 1,
+        effectColor: body.effectColor,
+        volume: body.volume !== undefined ? parseInt(body.volume) : 100,
+        isNew: true,
+        ...engine,
+        contentVersion: await nextGiftContentVersion(),
       },
       include: { collection: { select: { id: true, name: true, slug: true } } },
     });
 
-    await invalidateCache('gifts:active');
-    invalidateCache('gifts:version-check');
-    invalidateCachePrefix('gifts:catalog:');
+    invalidateGiftCaches();
 
     recordAudit({ actorId: (session.user as any).id, action: 'gift.create', targetType: 'gift_type', targetId: gift.id, after: { name: gift.name, price: gift.price } }).catch(() => {});
     return NextResponse.json(serializeGiftMedia(gift), { status: 201 });
