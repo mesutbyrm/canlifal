@@ -31,12 +31,12 @@ export async function GET(request: NextRequest) {
 
     const where: any = { isActive: true }
     if (collectionId) where.collectionId = collectionId
-    if (context === 'voice_room') where.visibleInVoiceRoom = true
-    if (context === 'live_stream') where.visibleInLiveStream = true
+    // Sesli oda / canlı yayın / PK: tüm aktif hediyeler gönderilebilir.
+    void context
 
     const gifts = await prisma.giftType.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+      orderBy: [{ price: 'asc' }, { name: 'asc' }],
     })
 
     const catalog = gifts.map((g) => {

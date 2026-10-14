@@ -445,7 +445,7 @@ import prisma from '@/lib/db'
 // Cache TTL constants (seconds)
 export const CACHE_TTL = {
   PLATFORM_SETTING: 300,    // 5 minutes - settings rarely change
-  GIFT_TYPES: 600,          // 10 minutes - gift catalog rarely changes
+  GIFT_TYPES: 30,           // 30 seconds - isim/fiyat değişikliği tüm APK'lara hemen yansısın
   PUBLIC_SETTINGS: 300,     // 5 minutes
   PAYMENT_METHODS: 600,     // 10 minutes
   CREDIT_PACKAGES: 600,     // 10 minutes
@@ -492,13 +492,13 @@ export async function getCachedAllPlatformSettings(): Promise<Map<string, string
 }
 
 /**
- * Cached active gift types. 10-minute TTL.
+ * Cached active gift types, always ordered by jeton price (1 → 100K).
  */
 export async function getCachedGiftTypes() {
   return getCached('gifts:active', CACHE_TTL.GIFT_TYPES, async () => {
     return prisma.giftType.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' }
+      where: { isActive: true, OR: [{ category: null }, { category: { not: '__deleted__' } }] },
+      orderBy: [{ price: 'asc' }, { name: 'asc' }]
     })
   })
 }

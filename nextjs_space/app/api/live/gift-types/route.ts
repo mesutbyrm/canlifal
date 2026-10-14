@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
     // Use cache to avoid DB storm
     const { getCached } = await import('@/lib/cache')
     const cacheKey = 'live:gift_types'
-    const data = await getCached(cacheKey, 60, async () => {
+    const data = await getCached(cacheKey, 15, async () => {
       const giftTypes = await prisma.giftType.findMany({
         where: { isActive: true },
-        orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+        orderBy: [{ price: 'asc' }, { name: 'asc' }],
         select: {
           id: true,
           name: true,
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       icon: g.icon || '',
       animation: g.animation || '',
       price: typeof g.price === 'number' ? g.price : 0,
-      sortOrder: typeof g.sortOrder === 'number' ? g.sortOrder : 0,
+      sortOrder: typeof g.price === 'number' ? g.price : 0,
       thumbnailUrl: resolveMediaUrl(g.thumbnailUrl) || '',
       assetUrl: resolveMediaUrl(g.assetUrl) || '',
       assetType: g.assetType || '',

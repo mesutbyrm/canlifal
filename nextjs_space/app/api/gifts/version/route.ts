@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getCached } from '@/lib/cache';
+import { notDeletedGiftWhere } from '@/lib/gift-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const result = await getCached('gifts:version-check', 30, async () => {
+    const result = await getCached('gifts:version-check', 5, async () => {
       const [giftVersion, themeVersion, giftCount, themeCount] = await Promise.all([
-        prisma.giftType.aggregate({ where: { isActive: true }, _max: { contentVersion: true } }),
+        // Tüm hediyeler: pasif/silinen hediyenin sürümü de istemcileri tetiklemeli.
+        prisma.giftType.aggregate({ _max: { contentVersion: true } }),
         prisma.roomTheme.aggregate({ where: { isActive: true }, _max: { contentVersion: true } }),
-        prisma.giftType.count({ where: { isActive: true } }),
+        prisma.giftType.count({ where: { isActive: true, ...notDeletedGiftWhere } }),
         prisma.roomTheme.count({ where: { isActive: true } }),
       ]);
 
@@ -29,10 +31,10 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Cache-Control: allow client caching for 30s, CDN for 60s
+    // Kısa önbellek: isim/fiyat değişikliği her APK'da saniyeler içinde görünsün.
     return NextResponse.json(result, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        'Cache-Control': 'public, max-age=0, s-maxage=5, stale-while-revalidate=10',
       },
     });
   } catch (error) {
