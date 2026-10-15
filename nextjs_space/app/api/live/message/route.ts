@@ -4,7 +4,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { canUserSpeak, getUserRole, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
-import { moderateMessage } from '@/lib/girlive-bot'
+import { moderateMessage, maybeBotReply, streamChatBlock } from '@/lib/girlive-bot'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,11 +65,20 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Bot/moderatör susturması veya yasağı sunucuda uygulanır.
+      const blockedS = await streamChatBlock(roomId, authUser.id)
+      if (blockedS) {
+        return NextResponse.json(
+          { success: false, code: 'CHAT_MUTED', message: blockedS, error: { code: 'CHAT_MUTED', message: blockedS } },
+          { status: 403 }
+        )
+      }
+
       // GirLive Bot — sunucu taraflı moderasyon
       const modS = await moderateMessage({ scope: 'live_stream', scopeId: roomId, userId: authUser.id, text: trimmedContent })
       if (!modS.allowed) {
         return NextResponse.json(
-          { success: false, error: { code: 'MODERATION_BLOCKED', message: modS.message, verdict: modS.verdict, severity: modS.severity } },
+          { success: false, code: 'MODERATION_BLOCKED', message: modS.message, error: { code: 'MODERATION_BLOCKED', message: modS.message, verdict: modS.verdict, severity: modS.severity } },
           { status: 422 }
         )
       }
@@ -84,6 +93,7 @@ export async function POST(request: NextRequest) {
           user: { select: { id: true, name: true, image: true } }
         }
       })
+      void maybeBotReply('live_stream', roomId, authUser.id, trimmedContent)
 
       return NextResponse.json({
         success: true,
@@ -134,7 +144,7 @@ export async function POST(request: NextRequest) {
       const modV = await moderateMessage({ scope: 'voice_room', scopeId: roomId, userId: authUser.id, text: trimmedContent })
       if (!modV.allowed) {
         return NextResponse.json(
-          { success: false, error: { code: 'MODERATION_BLOCKED', message: modV.message, verdict: modV.verdict, severity: modV.severity } },
+          { success: false, code: 'MODERATION_BLOCKED', message: modV.message, error: { code: 'MODERATION_BLOCKED', message: modV.message, verdict: modV.verdict, severity: modV.severity } },
           { status: 422 }
         )
       }
@@ -149,6 +159,8 @@ export async function POST(request: NextRequest) {
           user: { select: { id: true, name: true, image: true, role: true, membership: true } }
         }
       })
+
+      void maybeBotReply('voice_room', roomId, authUser.id, trimmedContent)
 
       // Get user's room role
       const userRole = await getUserRole(roomId, authUser.id)

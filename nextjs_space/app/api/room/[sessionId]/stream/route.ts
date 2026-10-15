@@ -86,7 +86,7 @@ export async function GET(
           const newEvents = getRoomEventsSince(sessionId, lastEventCheck)
           for (const event of newEvents) {
             const mid = (event.data as any)?.id
-            if (event.type === 'message' && typeof mid === 'string') {
+            if ((event.type === 'message' || event.type === 'tip') && typeof mid === 'string') {
               if (emittedMessageIds.has(mid)) continue
               emittedMessageIds.add(mid)
             }
@@ -110,6 +110,20 @@ export async function GET(
             for (const row of rows) {
               if (emittedMessageIds.has(row.id)) continue
               emittedMessageIds.add(row.id)
+              // Bahşiş satırları ham "[TIP:…]" sohbet metni olarak gitmesin.
+              const tip = /^\[TIP:(\d+):(.*)\]$/.exec(row.message || '')
+              if (tip) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: 'tip_received',
+                  id: row.id,
+                  tipId: row.id,
+                  amount: parseInt(tip[1], 10),
+                  senderName: tip[2],
+                  createdAt: row.createdAt.toISOString()
+                })}\n\n`))
+                continue
+              }
+              if ((row.message || '').startsWith('[TIP_THANKS:')) continue
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                 type: 'message',
                 id: row.id,

@@ -4,7 +4,7 @@ import prisma from '@/lib/db'
 import { emitStreamEvent } from '@/lib/stream-events'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { withCachePolicy } from '@/lib/perf'
-import { moderateMessage } from '@/lib/girlive-bot'
+import { moderateMessage, maybeBotReply, streamChatBlock } from '@/lib/girlive-bot'
 
 export async function GET(
   request: NextRequest,
@@ -68,11 +68,16 @@ export async function POST(
       return NextResponse.json({ error: 'Content required' }, { status: 400 })
     }
 
+    const blocked = await streamChatBlock(params.streamId, authUser.id)
+    if (blocked) {
+      return NextResponse.json({ error: blocked, message: blocked, code: 'CHAT_MUTED' }, { status: 403 })
+    }
+
     // GirLive Bot — sunucu taraflı moderasyon
     const moderation = await moderateMessage({ scope: 'live_stream', scopeId: params.streamId, userId: authUser.id, text: content })
     if (!moderation.allowed) {
       return NextResponse.json(
-        { error: moderation.message, code: 'MODERATION_BLOCKED', moderation: { verdict: moderation.verdict, severity: moderation.severity } },
+        { error: moderation.message, message: moderation.message, code: 'MODERATION_BLOCKED', moderation: { verdict: moderation.verdict, severity: moderation.severity } },
         { status: 422 }
       )
     }
@@ -96,6 +101,8 @@ export async function POST(
         }
       }
     })
+
+    void maybeBotReply('live_stream', params.streamId, authUser.id, content.trim())
 
     // Return comment with display name (nickname if set, otherwise real name)
     const displayName = comment.isHidden ? (comment.nickname || 'Anonim') : (comment.nickname || comment.user.name)

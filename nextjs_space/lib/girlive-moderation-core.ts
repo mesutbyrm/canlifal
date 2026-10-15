@@ -219,3 +219,54 @@ export function botNoticeFor(action: ModAction, user: string): string {
       return `🚫 @${user} oda kurallarını ihlal ettiği için odadan uzaklaştırıldı.`
   }
 }
+
+// ── Bot sohbet yanıtları (saf) ─────────────────────────────────────────────
+function normalizeBotText(text: string): string {
+  return text
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[ıİ]/g, 'i')
+    .replace(/[şŞ]/g, 's')
+    .replace(/[ğĞ]/g, 'g')
+    .replace(/[üÜ]/g, 'u')
+    .replace(/[öÖ]/g, 'o')
+    .replace(/[çÇ]/g, 'c')
+    .replace(/[^a-z0-9@\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const GREETINGS = [
+  'selam', 'slm', 'selamlar', 'merhaba', 'mrb', 'merhabalar', 'sa', 'selamun aleykum',
+  'selamunaleykum', 'gunaydin', 'iyi aksamlar', 'iyi geceler', 'hey', 'hi', 'hello',
+]
+
+/** Kullanıcının mesajına bot yanıtı (null = yanıt yok). Saf fonksiyon — testlenebilir. */
+export function buildBotReply(text: string, name: string, rulesText: string): { reply: string; greeting: boolean } | null {
+  const t = normalizeBotText(text)
+  if (!t) return null
+  const mentioned = /(^|\s)@?(girlive|girlive bot|girlive_bot|bot)(\s|$)/.test(t) || t.includes('girlive')
+  const isGreeting = GREETINGS.some((g) => t === g || t.startsWith(`${g} `) || t.endsWith(` ${g}`))
+  if (!mentioned && !isGreeting) return null
+  const at = `@${name}`
+  if (/kural/.test(t)) return { reply: `📜 ${at} ${rulesText}`, greeting: false }
+  if (/(jeton|bakiye|yukle|satin al)/.test(t)) {
+    return { reply: `💰 ${at} Jeton yüklemek için profilindeki Cüzdan / Jeton Yükle bölümünü kullanabilirsin.`, greeting: false }
+  }
+  if (/(hediye|gift)/.test(t)) {
+    return { reply: `🎁 ${at} Hediye göndermek için alttaki hediye simgesine dokun, hediyeyi seç ve gönder.`, greeting: false }
+  }
+  if (/(^|\s)pk(\s|$)/.test(t)) {
+    return { reply: `⚔️ ${at} PK sırasında yayıncına hediye göndererek takımına puan kazandırabilirsin.`, greeting: false }
+  }
+  if (/(yardim|nasil|ne yap|help)/.test(t)) {
+    return { reply: `🤖 ${at} Sana yardımcı olabilirim: "kurallar", "jeton", "hediye" veya "pk" yazman yeterli.`, greeting: false }
+  }
+  if (/(tesekkur|sagol|eyvallah|tsk)/.test(t)) {
+    return { reply: `😊 ${at} Rica ederim! İyi eğlenceler.`, greeting: false }
+  }
+  if (isGreeting) {
+    return { reply: `👋 Merhaba ${at}! Hoş geldin, keyifli sohbetler. Yardım için "@GirLive yardım" yazabilirsin.`, greeting: true }
+  }
+  return { reply: `🤖 ${at} Ben GirLive Bot! "kurallar", "jeton", "hediye" veya "pk" yazarak bana soru sorabilirsin.`, greeting: false }
+}
+
