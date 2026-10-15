@@ -265,7 +265,7 @@ export function buildBotReply(text: string, name: string, rulesText: string): { 
     return { reply: `😊 ${at} Rica ederim! İyi eğlenceler.`, greeting: false }
   }
   if (isGreeting) {
-    return { reply: `👋 Merhaba ${at}! Hoş geldin, keyifli sohbetler. Yardım için "@GirLive yardım" yazabilirsin.`, greeting: true }
+    return { reply: `👋 Merhaba ${at}! Keyifli sohbetler dilerim. Yardım için "@GirLive yardım" yazabilirsin.`, greeting: true }
   }
   return { reply: `🤖 ${at} Ben GirLive Bot! "kurallar", "jeton", "hediye" veya "pk" yazarak bana soru sorabilirsin.`, greeting: false }
 }
