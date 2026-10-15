@@ -23,7 +23,19 @@ export async function GET(
       )
     }
 
-    const { userId } = await params
+    const { userId: rawUserId } = await params
+    // Kimlik veya kullanıcı adı (@etiket / paylaşım linki) kabul edilir.
+    let userId = rawUserId
+    const raw = decodeURIComponent(String(rawUserId || '')).replace(/^@/, '').trim()
+    if (raw) {
+      const byId = await prisma.user.findUnique({ where: { id: raw }, select: { id: true } })
+      if (byId) {
+        userId = byId.id
+      } else {
+        const byName = await prisma.user.findFirst({ where: { username: raw.toLowerCase() }, select: { id: true } })
+        if (byName) userId = byName.id
+      }
+    }
     const isOwnProfile = userId === authUser.id
 
     // Parallel: user data + relationship + stats

@@ -156,7 +156,8 @@ export async function normalizeFortuneBody(
         mine = normalizeSign(u?.zodiacSign) ?? signFromDate(u?.birthDate)
       }
       b.yourSign = mine ?? undefined
-      b.partnerSign = normalizeSign(b.partnerSign) ?? signFromDate(b.partnerBirthDate) ?? b.partnerSign
+      // Mobil: partnerin burcu serbest metin (userInput) olarak da gelebilir.
+      b.partnerSign = normalizeSign(b.partnerSign) ?? signFromDate(b.partnerBirthDate) ?? normalizeSign(text) ?? b.partnerSign
       break
     }
     default:
