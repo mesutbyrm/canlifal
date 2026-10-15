@@ -37,6 +37,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erişim reddedildi' }, { status: 403 });
     }
 
+    // Bahşiş bildirimini artık sunucu (tip uç noktası) yazıyor; eski
+    // istemcilerin ayrıca gönderdiği "tip" sinyali falcıda çift bildirime yol
+    // açıyordu → saklanmaz.
+    if (String(signalType).toLowerCase() === 'tip') {
+      return NextResponse.json({ id: null, skipped: true, reason: 'tip_signal_server_side' })
+    }
+
     // Create the signal
     const signal = await prisma.roomSignal.create({
       data: {
