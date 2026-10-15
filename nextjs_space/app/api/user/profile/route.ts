@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         zodiacSign: true,
         risingSign: true,
         favoriteTeam: true,
+        city: true,
         credits: true,
         jetonBalance: true,
         fakeJetonBalance: true,
@@ -94,7 +95,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam, messagePrivacy, hideProfileViews } = body;
+    const { name, username, email, phone, image, bio, birthDate, birthTime, zodiacSign, risingSign, favoriteTeam, messagePrivacy, hideProfileViews, city } = body;
 
     const updateData: any = {};
     
@@ -107,6 +108,7 @@ export async function PATCH(request: NextRequest) {
     if (zodiacSign !== undefined) updateData.zodiacSign = zodiacSign;
     if (risingSign !== undefined) updateData.risingSign = risingSign;
     if (favoriteTeam !== undefined) updateData.favoriteTeam = favoriteTeam;
+    if (city !== undefined) updateData.city = city ? String(city).trim().slice(0, 80) : null;
     if (messagePrivacy !== undefined && ['everyone', 'followers', 'nobody'].includes(messagePrivacy)) {
       updateData.messagePrivacy = messagePrivacy;
     }

@@ -111,6 +111,23 @@ export async function GET(
       )
     }
 
+    // Uygulamadan gelen ziyaretler de «Kim Baktı» listesine yazılır
+    // (önceden yalnız web ziyaretleri kaydediliyordu).
+    let postCount = 0
+    if (!isOwnProfile) {
+      try {
+        const me = await prisma.user.findUnique({ where: { id: authUser.id }, select: { hideProfileViews: true } })
+        await prisma.profileVisit.upsert({
+          where: { visitorId_profileId: { visitorId: authUser.id, profileId: userId } },
+          update: { visitedAt: new Date(), isHidden: !!me?.hideProfileViews },
+          create: { visitorId: authUser.id, profileId: userId, isHidden: !!me?.hideProfileViews },
+        })
+      } catch { /* ziyaret kaydı profili engellemesin */ }
+    }
+    try {
+      postCount = await prisma.socialPost.count({ where: { userId, isPublic: true } })
+    } catch { /* yoksay */ }
+
     // Check if target blocked me
     let isBlockedByTarget = false
     if (!isOwnProfile) {
@@ -146,7 +163,14 @@ export async function GET(
           following: followingCount,
           videoCount: shortVideoCount,
           totalLikes: totalVideoLikes._sum?.likesCount || 0,
+          // Mobil istemcinin okuduğu adlar (eski sürümler 0 gösteriyordu).
+          followerCount,
+          followingCount,
+          postCount,
+          likeCount: totalVideoLikes._sum?.likesCount || 0,
         },
+        isOwnProfile,
+        role: targetUser.role,
         relationship: {
           isOwnProfile,
           isFollowing: !!followStatus,
