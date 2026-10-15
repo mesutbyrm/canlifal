@@ -100,7 +100,7 @@ export interface CosmeticPublicConfig {
 // Kademeli erişim: üst seviye, altındaki tüm kademelerin kozmetiklerini de görür.
 const COSMETIC_TIER_LADDER = ['free', 'basic', 'gold', 'premium', 'diamond'] as const
 
-function accessibleTiers(membership?: string | null): string[] {
+export function accessibleTiers(membership?: string | null): string[] {
   const m = (membership || 'basic').toLowerCase()
   // svip/vip/platinum gibi üst roller tüm kademeleri görür
   if (['svip', 'vip', 'platinum', 'admin'].includes(m)) return [...COSMETIC_TIER_LADDER]

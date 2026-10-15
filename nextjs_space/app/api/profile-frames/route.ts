@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import { accessibleTiers as cosmeticAccessibleTiers } from '@/lib/cosmetics'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,10 +21,9 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
 
     // Determine which tiers user can access
-    const accessibleTiers = ['free']
-    if (user.membership === 'gold' || user.membership === 'premium') {
-      accessibleTiers.push('gold')
-    }
+    // Kademeli erişim (free < basic < gold < premium < diamond; svip/vip tümü).
+    // Önceden Diamond/SVIP üyeler Gold çerçeveleri göremiyordu.
+    const accessibleTiers = cosmeticAccessibleTiers(user.membership)
 
     const frames = await prisma.profileFrame.findMany({
       where: {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Bu çerçeve sadece admin tarafından atanabilir' }, { status: 403 })
     }
 
-    if (frame.tier === 'gold' && user.membership !== 'gold' && user.membership !== 'premium') {
+    if (frame.tier !== 'free' && !cosmeticAccessibleTiers(user.membership).includes(frame.tier)) {
       return NextResponse.json({ error: 'Bu çerçeve Gold üyelik gerektirir' }, { status: 403 })
     }
 
