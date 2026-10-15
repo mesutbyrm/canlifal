@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
+import { normalizeFortuneBody, createSseNormalizer } from '@/lib/fortune-input'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     const authUser = await authenticateRequest(request)
     
     // Parse body once
-    const body = await request.json().catch(() => ({}))
+    const body = await normalizeFortuneBody(await request.json().catch(() => ({})), 'numeroloji', authUser?.id)
     const adWatched = body?.adWatched === true
 
     // Access control: IP-based for unregistered, CFC for registered
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     const { name, birthDate, language } = body
 
     if (!name || !birthDate) {
-      return NextResponse.json({ error: 'Name and birth date are required' }, { status: 400 })
+      return NextResponse.json({ error: 'İsim ve doğum tarihi gereklidir' }, { status: 400 })
     }
 
     // Check and deduct credits (skip if ad watched or unregistered)
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
         const decoder = new TextDecoder()
         const encoder = new TextEncoder()
         let fullResponse = ''
+        const sseNorm = createSseNormalizer()
 
         try {
           while (true) {
@@ -99,11 +101,13 @@ export async function POST(request: NextRequest) {
                 } catch (e) {}
               }
             }
-            controller.enqueue(encoder.encode(chunk))
+            controller.enqueue(encoder.encode(sseNorm.push(chunk)))
           }
         } catch (error) {
           controller.error(error)
         } finally {
+          const rest = sseNorm.flush()
+          if (rest) controller.enqueue(encoder.encode(rest))
           controller.close()
         }
       },
