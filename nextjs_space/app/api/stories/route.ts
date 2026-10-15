@@ -121,7 +121,12 @@ export async function DELETE(req: NextRequest) {
     const userId = authUser.id
 
     const { searchParams } = new URL(req.url)
-    const storyId = searchParams.get('id')
+    // Mobil uygulama kimliği gövdede ({storyId} / {id}) gönderiyor.
+    let storyId = searchParams.get('id') || searchParams.get('storyId')
+    if (!storyId) {
+      const body = await req.json().catch(() => null)
+      storyId = body?.storyId || body?.id || null
+    }
 
     if (!storyId) {
       return NextResponse.json({ error: 'Hikaye ID gerekli' }, { status: 400 })

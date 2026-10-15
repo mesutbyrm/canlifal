@@ -44,6 +44,9 @@ export async function GET(
       ]
     }
 
+    // Görüntüleyen girişliyse beğeni durumu (kalp dolu/boş) doğru gelsin.
+    const viewer = await authenticateRequest(request).catch(() => null)
+
     const [posts, total] = await Promise.all([
       prisma.socialPost.findMany({
         where: whereClause,
@@ -53,7 +56,9 @@ export async function GET(
               id: true,
               name: true,
               username: true,
-              image: true
+              image: true,
+              role: true,
+              membership: true
             }
           },
           fortune: {
@@ -69,7 +74,10 @@ export async function GET(
               likes: true,
               comments: true
             }
-          }
+          },
+          ...(viewer?.id
+            ? { likes: { where: { userId: viewer.id }, select: { userId: true } } }
+            : {})
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -82,6 +90,8 @@ export async function GET(
       posts: posts.map((post: any) => ({
         ...post,
         likeCount: post._count.likes,
+        likedByMe: Array.isArray(post.likes) && post.likes.length > 0,
+        isLiked: Array.isArray(post.likes) && post.likes.length > 0,
         commentCount: post._count.comments,
         viewCount: post.fortune?.viewCount || 0
       })),
@@ -90,6 +100,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Error fetching user posts:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

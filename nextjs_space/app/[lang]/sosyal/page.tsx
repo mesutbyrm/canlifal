@@ -262,7 +262,8 @@ export default function SocialPage() {
   useEffect(() => {
     if (!loading && posts.length > 0) {
       const params = new URLSearchParams(window.location.search)
-      const postId = params.get('postId')
+      // Mobil uygulama paylaşım linki ?post= kullanır.
+      const postId = params.get('postId') || params.get('post')
       if (postId) {
         setHighlightedPostId(postId)
         setTimeout(() => {

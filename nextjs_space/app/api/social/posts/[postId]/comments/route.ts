@@ -3,6 +3,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
+import { isBlockedBetween } from '@/lib/user-blocks'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,11 +48,11 @@ export async function POST(
     const { content } = await request.json()
 
     if (!content || content.trim().length === 0) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Yorum boş olamaz' }, { status: 400 })
     }
 
     if (content.length > 500) {
-      return NextResponse.json({ error: 'Comment too long (max 500 chars)' }, { status: 400 })
+      return NextResponse.json({ error: 'Yorum en fazla 500 karakter olabilir' }, { status: 400 })
     }
 
     // Check if post exists
@@ -60,7 +61,12 @@ export async function POST(
     })
 
     if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Gönderi bulunamadı' }, { status: 404 })
+    }
+
+    // Engelleme: gönderi sahibiyle aranızda engel varsa yorum yapılamaz.
+    if (post.userId && (await isBlockedBetween(post.userId, authUser.id))) {
+      return NextResponse.json({ error: 'Bu gönderiye yorum yapamazsınız', code: 'BLOCKED' }, { status: 403 })
     }
 
     const comment = await prisma.socialComment.create({
@@ -110,7 +116,7 @@ export async function DELETE(
     const commentId = searchParams.get('commentId')
 
     if (!commentId) {
-      return NextResponse.json({ error: 'Comment ID required' }, { status: 400 })
+      return NextResponse.json({ error: 'Yorum kimliği gerekli' }, { status: 400 })
     }
 
     const comment = await prisma.socialComment.findUnique({
@@ -118,7 +124,7 @@ export async function DELETE(
     })
 
     if (!comment) {
-      return NextResponse.json({ error: 'Comment not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Yorum bulunamadı' }, { status: 404 })
     }
 
     // Only owner or admin can delete

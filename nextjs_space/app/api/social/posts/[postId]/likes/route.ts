@@ -22,7 +22,7 @@ export async function POST(
     })
 
     if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Gönderi bulunamadı' }, { status: 404 })
     }
 
     // Check if already liked

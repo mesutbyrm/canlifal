@@ -34,7 +34,7 @@ export async function POST(
     }
 
     if (currentUserId === targetUser.id) {
-      return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 })
+      return NextResponse.json({ error: 'Kendinizi takip edemezsiniz' }, { status: 400 })
     }
 
     // Check if already following
@@ -113,7 +113,7 @@ export async function POST(
     }
   } catch (error) {
     console.error('Error following/unfollowing user:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -182,6 +182,6 @@ export async function GET(
     }
   } catch (error) {
     console.error('Error fetching follow list:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
