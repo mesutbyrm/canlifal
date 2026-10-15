@@ -40,8 +40,14 @@ export async function POST(request: NextRequest) {
       })
 
       if (stream) {
-        // If the leaving user is the host, end the stream
-        if (stream.userId === authUser.id) {
+        // Yayıncının RTC odasından çıkması (PK oda geçişi, misafir/yeniden
+        // bağlanma) yayını BİTİRMEZ — önceden PK sonrası yayın sunucuda sessizce
+        // "ended" oluyor, uygulamada kapatma kilitleniyordu. Yayın bitirme
+        // PATCH /api/video-streams/[id] veya /end ile yapılır; burada yalnızca
+        // açıkça `endStream: true` istenirse bitirilir.
+        if (stream.userId === authUser.id && body?.endStream !== true) {
+          console.log(`[LIVE/leave-room] Host left RTC room (stream kept). streamId=${stream.id} userId=${authUser.id}`)
+        } else if (stream.userId === authUser.id) {
           await prisma.videoStream.update({
             where: { id: stream.id },
             data: { status: 'ended', endedAt: new Date() }
