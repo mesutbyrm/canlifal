@@ -147,7 +147,7 @@ export async function POST(
     if (replay.response) return replay.response
     _idempotencyRecord = replay.record
 
-    const { giftTypeId, quantity: rawQuantity, jetonSource, clientPrice, recipientId: requestedRecipient } = await request.json()
+    const { giftTypeId, quantity: rawQuantity, jetonSource, clientPrice, recipientId: requestedRecipient, toUserId } = await request.json()
     const quantity = parseGiftQuantity(rawQuantity)
 
     if (!giftTypeId) {
@@ -197,7 +197,17 @@ export async function POST(
       return NextResponse.json({ error: 'Stream not found' }, { status: 404 })
     }
 
-    const recipientId = requestedRecipient || stream.userId
+    // Mobil uygulama misafire hediyeyi `toUserId` ile gönderir; önceden yok
+    // sayılıp hediye hep yayıncıya gidiyordu. Yalnızca bu yayının AKTİF
+    // misafiri kabul edilir (aksi halde yayıncıya gider).
+    let recipientId: string = requestedRecipient || stream.userId
+    if (!requestedRecipient && typeof toUserId === 'string' && toUserId && toUserId !== stream.userId) {
+      const guest = await prisma.liveGuestSession.findFirst({
+        where: { streamId: stream.id, userId: toUserId, status: 'active' },
+        select: { id: true },
+      })
+      if (guest) recipientId = toUserId
+    }
     const senderExcluded = !spendPlan.countsAsFinance
     const baseDist = await calculateGiftDistribution(totalPrice, 'NORMAL', recipientId === stream.userId)
     const dist = recipientId === userId ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
