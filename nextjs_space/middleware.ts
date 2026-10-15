@@ -80,6 +80,15 @@ export default withAuth(
       '/social': '/sosyal',
       '/teller-chat': '/falci-sohbet',
       '/forgot-password': '/sifremi-unuttum',
+      // Mobil uygulamanın açtığı kısa linkler
+      '/gizlilik': '/sayfa/gizlilik-politikasi',
+      '/destek': '/iletisim',
+    }
+
+    // Mobil uygulamanın paylaştığı profil linki: /@kullaniciadi → /profil/kullaniciadi
+    const atMatch = /^\/(?:@|%40)([A-Za-z0-9_.]{2,40})\/?$/.exec(pathname)
+    if (atMatch) {
+      return NextResponse.redirect(new URL(`/profil/${atMatch[1]}${req.nextUrl.search}`, req.url), 301)
     }
 
     // Check for legacy English URL redirects

@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
+import { normalizeFortuneBody } from '@/lib/fortune-input'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     const authUser = await authenticateRequest(request)
     
     // Parse body once
-    const body = await request.json().catch(() => ({}))
+    const body = await normalizeFortuneBody(await request.json().catch(() => ({})), 'kursundokme', authUser?.id)
     const adWatched = body?.adWatched === true
     const shapes: string = body?.shapes || ''
     const language: string = body?.language || 'tr'

@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { isCursorMode, parseCursorParams, fetchCursorPage } from '@/lib/pagination'
 import { apiPaginated } from '@/lib/api-response'
+import { isBlockedBetween } from '@/lib/user-blocks'
 
 // GET messages with a specific user
 export async function GET(
@@ -158,7 +159,12 @@ export async function POST(
     const { content, imageUrl } = await request.json()
 
     if (!content?.trim() && !imageUrl) {
-      return NextResponse.json({ error: 'Message content required' }, { status: 400 })
+      return NextResponse.json({ error: 'Mesaj içeriği gerekli' }, { status: 400 })
+    }
+
+    // Engelleme: iki taraftan biri diğerini engellediyse mesaj gönderilemez.
+    if (await isBlockedBetween(currentUserId, otherUserId)) {
+      return NextResponse.json({ error: 'Bu kullanıcıyla mesajlaşamazsınız', code: 'BLOCKED' }, { status: 403 })
     }
 
     // Get other user's privacy settings
@@ -173,7 +179,7 @@ export async function POST(
 
     // Check message permission
     if (otherUser.messagePrivacy === 'nobody') {
-      return NextResponse.json({ error: 'This user is not accepting messages' }, { status: 403 })
+      return NextResponse.json({ error: 'Bu kullanıcı mesaj kabul etmiyor' }, { status: 403 })
     }
 
     if (otherUser.messagePrivacy === 'followers') {
@@ -199,7 +205,7 @@ export async function POST(
         })
 
         if (!acceptedRequest || acceptedRequest.status !== 'accepted') {
-          return NextResponse.json({ error: 'Message request required' }, { status: 403 })
+          return NextResponse.json({ error: 'Bu kullanıcıya önce mesaj isteği göndermelisiniz' }, { status: 403 })
         }
       }
     }

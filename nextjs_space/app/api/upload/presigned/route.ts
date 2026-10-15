@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       profile: 'gift/profiles',
       profiles: 'gift/profiles',
       avatar: 'gift/profiles',
+      avatars: 'gift/profiles',
       cover: 'gift/covers',
       kapak: 'gift/covers',
       // Paylaşılan görsel / gönderiler

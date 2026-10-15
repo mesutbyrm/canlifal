@@ -62,6 +62,18 @@ export async function GET(req: NextRequest) {
       _sum: { viewCount: true }
     })
 
+    // Mobil profil sayaçları (önceden «Beğeni», yayın, hediye, ziyaret hep 0'dı).
+    const safe = async (fn: () => Promise<number>) => { try { return await fn() } catch { return 0 } }
+    const sumQty = (r: any) => (r?._sum?.quantity as number | null) || 0
+    const [liveStreams, streamGiftsIn, roomGiftsIn, streamGiftsOut, roomGiftsOut, profileViews] = await Promise.all([
+      safe(() => prisma.videoStream.count({ where: { userId: auth.id } })),
+      safe(async () => sumQty(await prisma.streamGift.aggregate({ where: { recipientId: auth.id }, _sum: { quantity: true } }))),
+      safe(async () => sumQty(await prisma.chatRoomGift.aggregate({ where: { recipientId: auth.id }, _sum: { quantity: true } }))),
+      safe(async () => sumQty(await prisma.streamGift.aggregate({ where: { senderId: auth.id }, _sum: { quantity: true } }))),
+      safe(async () => sumQty(await prisma.chatRoomGift.aggregate({ where: { senderId: auth.id }, _sum: { quantity: true } }))),
+      safe(() => prisma.profileVisit.count({ where: { profileId: auth.id } })),
+    ])
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -80,7 +92,14 @@ export async function GET(req: NextRequest) {
         followersCount: user._count.followers,
         followingCount: user._count.following,
         likesReceived,
+        likes: likesReceived,
         totalViews: totalViews._sum.viewCount || 0,
+        followers: user._count.followers,
+        following: user._count.following,
+        liveStreams,
+        giftsReceivedCount: streamGiftsIn + roomGiftsIn,
+        giftsSentCount: streamGiftsOut + roomGiftsOut,
+        profileViews,
         fortunesByType: fortunesByType.map((f: FortuneGroup) => ({
           type: f.fortuneType,
           count: f._count
@@ -89,7 +108,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('Stats fetch error:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }
 
@@ -105,7 +124,7 @@ export async function POST(req: NextRequest) {
     const { minutesToAdd } = body
 
     if (typeof minutesToAdd !== 'number' || minutesToAdd < 0) {
-      return NextResponse.json({ error: 'Invalid minutes' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz süre' }, { status: 400 })
     }
 
     await prisma.user.update({
@@ -119,6 +138,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Time update error:', error)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

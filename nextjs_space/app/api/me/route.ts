@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
         zodiacSign: true,
         risingSign: true,
         favoriteTeam: true,
+        city: true,
+        emailVerified: true,
         level: true,
         xp: true,
         loginStreak: true,
@@ -73,6 +75,8 @@ export async function GET(req: NextRequest) {
       jetonBalance: user.jetonBalance,
       cfcBalance: user.cfcBalance ?? 0,
       membership: user.membership,
+      city: user.city ?? null,
+      emailVerified: !!user.emailVerified,
       membershipExpiresAt: user.membershipExpiresAt?.toISOString() ?? null,
       preferredLanguage: user.preferredLanguage,
       bio: user.bio,
@@ -115,7 +119,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const allowedFields = [
       'name', 'username', 'phone', 'bio', 'birthDate', 'birthTime',
-      'zodiacSign', 'favoriteTeam', 'preferredLanguage', 'image',
+      'zodiacSign', 'favoriteTeam', 'preferredLanguage', 'image', 'city',
     ]
 
     const updateData: Record<string, any> = {}
@@ -135,7 +139,13 @@ export async function PATCH(req: NextRequest) {
 
     // Username uniqueness check
     if (updateData.username) {
-      const normalized = updateData.username.toLowerCase().trim()
+      const normalized = String(updateData.username).toLowerCase().trim()
+      if (!/^[a-z0-9_]{3,20}$/.test(normalized)) {
+        return NextResponse.json({
+          error: 'Kullanıcı adı 3-20 karakter, sadece harf, rakam ve alt çizgi içerebilir',
+          code: 'username_invalid',
+        }, { status: 400 })
+      }
       const existing = await prisma.user.findFirst({
         where: { username: normalized, NOT: { id: authUser.id } },
       })
@@ -151,7 +161,7 @@ export async function PATCH(req: NextRequest) {
       select: {
         id: true, email: true, name: true, username: true, phone: true,
         image: true, bio: true, birthDate: true, birthTime: true,
-        zodiacSign: true, favoriteTeam: true, preferredLanguage: true,
+        zodiacSign: true, favoriteTeam: true, preferredLanguage: true, city: true,
       },
     })
 

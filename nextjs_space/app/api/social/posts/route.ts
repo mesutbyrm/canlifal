@@ -4,6 +4,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { triggerEventAnnouncement } from '@/lib/event-announcement'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { withCachePolicy } from '@/lib/perf'
+import { blockedUserIdsFor } from '@/lib/user-blocks'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,26 @@ export async function GET(request: NextRequest) {
     const where: any = { isPublic: true }
     if (postType) {
       where.postType = postType
+    }
+
+    // Filtreler: belirli kullanıcının gönderileri, takip edilenler akışı,
+    // engellenen kullanıcıların gönderileri gizlenir.
+    const viewer = await authenticateRequest(request).catch(() => null)
+    const authorId = searchParams.get('authorId') || searchParams.get('userId')
+    const feed = searchParams.get('feed')
+    const blocked = await blockedUserIdsFor(viewer?.id)
+    if (authorId) {
+      where.userId = blocked.includes(authorId) ? '__blocked__' : authorId
+    } else if (feed === 'following' && viewer?.id) {
+      const follows = await prisma.follow.findMany({
+        where: { followerId: viewer.id },
+        select: { followingId: true },
+        take: 2000,
+      })
+      const ids = follows.map((f: { followingId: string }) => f.followingId).filter((id: string) => !blocked.includes(id))
+      where.userId = { in: [...ids, viewer.id] }
+    } else if (blocked.length > 0) {
+      where.userId = { notIn: blocked }
     }
 
     const [posts, total] = await Promise.all([
@@ -97,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     // Allow posting if there's content, YouTube video, or image
     if (!content && !youtubeUrl && !imageUrl) {
-      return NextResponse.json({ error: 'Content, image, or video is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Metin, görsel veya video gerekli' }, { status: 400 })
     }
     
     if (!postType) {
@@ -115,7 +136,7 @@ export async function POST(request: NextRequest) {
         where: { id: fortuneId, userId: userId }
       })
       if (!fortune) {
-        return NextResponse.json({ error: 'Fortune not found' }, { status: 404 })
+        return NextResponse.json({ error: 'Fal bulunamadı' }, { status: 404 })
       }
     }
 

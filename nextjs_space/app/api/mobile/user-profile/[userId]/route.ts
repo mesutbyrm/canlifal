@@ -23,7 +23,19 @@ export async function GET(
       )
     }
 
-    const { userId } = await params
+    const { userId: rawUserId } = await params
+    // Kimlik veya kullanıcı adı (@etiket / paylaşım linki) kabul edilir.
+    let userId = rawUserId
+    const raw = decodeURIComponent(String(rawUserId || '')).replace(/^@/, '').trim()
+    if (raw) {
+      const byId = await prisma.user.findUnique({ where: { id: raw }, select: { id: true } })
+      if (byId) {
+        userId = byId.id
+      } else {
+        const byName = await prisma.user.findFirst({ where: { username: raw.toLowerCase() }, select: { id: true } })
+        if (byName) userId = byName.id
+      }
+    }
     const isOwnProfile = userId === authUser.id
 
     // Parallel: user data + relationship + stats
@@ -111,6 +123,23 @@ export async function GET(
       )
     }
 
+    // Uygulamadan gelen ziyaretler de «Kim Baktı» listesine yazılır
+    // (önceden yalnız web ziyaretleri kaydediliyordu).
+    let postCount = 0
+    if (!isOwnProfile) {
+      try {
+        const me = await prisma.user.findUnique({ where: { id: authUser.id }, select: { hideProfileViews: true } })
+        await prisma.profileVisit.upsert({
+          where: { visitorId_profileId: { visitorId: authUser.id, profileId: userId } },
+          update: { visitedAt: new Date(), isHidden: !!me?.hideProfileViews },
+          create: { visitorId: authUser.id, profileId: userId, isHidden: !!me?.hideProfileViews },
+        })
+      } catch { /* ziyaret kaydı profili engellemesin */ }
+    }
+    try {
+      postCount = await prisma.socialPost.count({ where: { userId, isPublic: true } })
+    } catch { /* yoksay */ }
+
     // Check if target blocked me
     let isBlockedByTarget = false
     if (!isOwnProfile) {
@@ -146,7 +175,14 @@ export async function GET(
           following: followingCount,
           videoCount: shortVideoCount,
           totalLikes: totalVideoLikes._sum?.likesCount || 0,
+          // Mobil istemcinin okuduğu adlar (eski sürümler 0 gösteriyordu).
+          followerCount,
+          followingCount,
+          postCount,
+          likeCount: totalVideoLikes._sum?.likesCount || 0,
         },
+        isOwnProfile,
+        role: targetUser.role,
         relationship: {
           isOwnProfile,
           isFollowing: !!followStatus,

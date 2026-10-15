@@ -5,6 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { callLLM } from '@/lib/llm'
 import { checkAndDeductCredits, sendFortuneSummaryEmail } from '@/lib/credit-checker'
 import { autoShareFortune } from '@/lib/social-helper'
+import { normalizeFortuneBody, createSseNormalizer } from '@/lib/fortune-input'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     const authUser = await authenticateRequest(request)
     
     // Parse body once
-    const body = await request.json().catch(() => ({}))
+    const body = await normalizeFortuneBody(await request.json().catch(() => ({})), 'tarot-fali', authUser?.id)
     const { question, cardCount, language } = body
     const adWatched = body?.adWatched === true
 
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
         const decoder = new TextDecoder()
         const encoder = new TextEncoder()
         let fullResponse = ''
+        const sseNorm = createSseNormalizer()
 
         try {
           while (true) {
@@ -117,12 +119,14 @@ export async function POST(request: NextRequest) {
               }
             }
             
-            controller.enqueue(encoder.encode(chunk))
+            controller.enqueue(encoder.encode(sseNorm.push(chunk)))
           }
         } catch (error) {
           console.error('Stream error:', error)
           controller.error(error)
         } finally {
+          const rest = sseNorm.flush()
+          if (rest) controller.enqueue(encoder.encode(rest))
           controller.close()
         }
       },
