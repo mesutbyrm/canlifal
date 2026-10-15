@@ -179,6 +179,10 @@ export async function PATCH(
           return NextResponse.json({ error: 'Only teller can add time' }, { status: 403 });
         }
 
+        // Bitmiş seansa süre eklenemez (danışanın jetonu boşa çekilmesin).
+        if (liveSession.status !== 'active') {
+          return NextResponse.json({ error: 'Seans artık aktif değil', code: 'SESSION_CLOSED' }, { status: 409 });
+        }
         const addMinutes = minutes || 5;
         
         // Get credits per minute (cached)
