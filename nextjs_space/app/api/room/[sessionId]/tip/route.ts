@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest, { params }: { params: { sessionId: string } }) {
   let idemRecord: string | null = null
   let committed = false
-  let tipEvent: { id: string; amount: number; senderName: string } | null = null
+  let tipEvent: { id: string; amount: number; senderName: string; senderId: string; tellerUserId: string } | null = null
   try {
     const mobile = await authenticateRequest(request)
     const session = !mobile ? await getServerSession(authOptions) : null
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest, { params }: { params: { session
       }
       await recordContribution(userId, live.teller.userId, amount, options)
       await recordTeamPoints(userId, amount, options)
-      tipEvent = { id: msg.id, amount, senderName: live.user.name || 'Kullanıcı' }
+      tipEvent = { id: msg.id, amount, senderName: live.user.name || 'Kullanıcı', senderId: userId, tellerUserId: live.teller.userId }
       const body = { success: true, transactionId: msg.id, amount, pointAmount: amount, jetonSource: plan.source,
         countsAsFinance: plan.countsAsFinance, tellerEarnings: plan.countsAsFinance ? net : 0,
         jetonsRemaining: sender.jetonBalance - (plan.countsAsFinance ? amount : 0) }
@@ -77,20 +77,30 @@ export async function POST(request: NextRequest, { params }: { params: { session
       return body
     }, { timeout: 20000 })
     committed = true
-    // Falcıya anında bildir (SSE) — sinyal yoklamasını (8 sn) beklemesin.
-    // (atama transaction callback'inde — TS daraltmasını aşmak için cast)
-    const ev = tipEvent as { id: string; amount: number; senderName: string } | null
+    // Falcıya anında bildir. Sunucu tek bir sinyal satırı yazar ve SSE olayı
+    // AYNI kimliği taşır: falcı uygulaması (eski sürümler dahil) SSE ve sinyal
+    // yoklamasından gelen aynı bahşişi kimlikle tekilleştirir → çift bildirim yok.
+    const ev = tipEvent as { id: string; amount: number; senderName: string; senderId: string; tellerUserId: string } | null
     if (ev) {
       try {
+        const sig = await prisma.roomSignal.create({
+          data: {
+            sessionId: params.sessionId,
+            senderId: ev.senderId,
+            receiverId: ev.tellerUserId,
+            signalType: 'tip',
+            signalData: JSON.stringify({ amount: ev.amount, senderName: ev.senderName, senderId: ev.senderId, transactionId: ev.id }),
+          },
+        })
         emitRoomEvent(params.sessionId, 'tip', {
           type: 'tip_received',
-          id: ev.id,
-          tipId: ev.id,
+          id: sig.id,
+          tipId: sig.id,
           amount: ev.amount,
           senderName: ev.senderName,
         })
       } catch (e) {
-        console.error('[tip] SSE emit failed (continuing):', e)
+        console.error('[tip] falcı bildirimi başarısız (devam):', e)
       }
     }
     return NextResponse.json(response)
