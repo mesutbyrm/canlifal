@@ -13,12 +13,14 @@ import { beginIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { GiftRecipientError, lockGiftBalances, saveGiftReceipt } from '@/lib/gift-recipient'
+import { emitRoomEvent } from '@/lib/room-events'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest, { params }: { params: { sessionId: string } }) {
   let idemRecord: string | null = null
   let committed = false
+  let tipEvent: { id: string; amount: number; senderName: string } | null = null
   try {
     const mobile = await authenticateRequest(request)
     const session = !mobile ? await getServerSession(authOptions) : null
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest, { params }: { params: { session
       }
       await recordContribution(userId, live.teller.userId, amount, options)
       await recordTeamPoints(userId, amount, options)
+      tipEvent = { id: msg.id, amount, senderName: live.user.name || 'Kullanıcı' }
       const body = { success: true, transactionId: msg.id, amount, pointAmount: amount, jetonSource: plan.source,
         countsAsFinance: plan.countsAsFinance, tellerEarnings: plan.countsAsFinance ? net : 0,
         jetonsRemaining: sender.jetonBalance - (plan.countsAsFinance ? amount : 0) }
@@ -74,6 +77,22 @@ export async function POST(request: NextRequest, { params }: { params: { session
       return body
     }, { timeout: 20000 })
     committed = true
+    // Falcıya anında bildir (SSE) — sinyal yoklamasını (8 sn) beklemesin.
+    // (atama transaction callback'inde — TS daraltmasını aşmak için cast)
+    const ev = tipEvent as { id: string; amount: number; senderName: string } | null
+    if (ev) {
+      try {
+        emitRoomEvent(params.sessionId, 'tip', {
+          type: 'tip_received',
+          id: ev.id,
+          tipId: ev.id,
+          amount: ev.amount,
+          senderName: ev.senderName,
+        })
+      } catch (e) {
+        console.error('[tip] SSE emit failed (continuing):', e)
+      }
+    }
     return NextResponse.json(response)
   } catch (error) {
     if (error instanceof GiftRecipientError) return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })

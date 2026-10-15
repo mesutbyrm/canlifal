@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
-import { moderateMessage } from '@/lib/girlive-bot'
+import { moderateMessage, maybeBotReply, streamChatBlock } from '@/lib/girlive-bot'
 import { emitStreamEvent } from '@/lib/stream-events'
 
 export const dynamic = 'force-dynamic'
@@ -110,11 +110,17 @@ export async function POST(
       return NextResponse.json({ error: 'Yayın sona ermiş' }, { status: 400 })
     }
 
+    // Bot/moderatör susturması veya yasağı sunucuda uygulanır.
+    const blocked = await streamChatBlock(params.streamId, authUser.id)
+    if (blocked) {
+      return NextResponse.json({ error: blocked, message: blocked, code: 'CHAT_MUTED' }, { status: 403 })
+    }
+
     // GirLive Bot — sunucu taraflı moderasyon
     const moderation = await moderateMessage({ scope: 'live_stream', scopeId: params.streamId, userId: authUser.id, text: content })
     if (!moderation.allowed) {
       return NextResponse.json(
-        { error: moderation.message, code: 'MODERATION_BLOCKED', moderation: { verdict: moderation.verdict, severity: moderation.severity } },
+        { error: moderation.message, message: moderation.message, code: 'MODERATION_BLOCKED', moderation: { verdict: moderation.verdict, severity: moderation.severity } },
         { status: 422 }
       )
     }
@@ -140,6 +146,8 @@ export async function POST(
         }
       }
     })
+
+    void maybeBotReply('live_stream', params.streamId, authUser.id, content)
 
     const displayName = isHidden ? (nickname || 'Anonim') : (nickname || comment.user?.name || 'Anonim')
     const messagePayload = {

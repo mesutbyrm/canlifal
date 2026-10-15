@@ -18,6 +18,20 @@ export async function POST(
     const viewerId = authUser?.id || `guest_${Date.now()}`
     const viewerName = authUser?.name || 'Misafir'
 
+    // GirLive Bot / moderatör yasağı: yasaklı izleyici yayına tekrar giremez.
+    if (authUser?.id) {
+      const ban = await prisma.streamBan.findUnique({
+        where: { streamId_bannedUserId: { streamId: params.streamId, bannedUserId: authUser.id } },
+        select: { id: true },
+      }).catch(() => null)
+      if (ban) {
+        return NextResponse.json(
+          { error: 'Bu yayından uzaklaştırıldınız.', message: 'Bu yayından uzaklaştırıldınız.', code: 'STREAM_BANNED' },
+          { status: 403 }
+        )
+      }
+    }
+
     // Upsert viewer record - handles re-joining after leaving
     const viewer = await prisma.videoStreamViewer.upsert({
       where: {

@@ -6,6 +6,17 @@ import { incrementLeaderboardScore } from '@/lib/leaderboard-engine'
 import { applyGiftPkScore, publishGiftPkScore } from '@/lib/gift-pk-score'
 import { recordMultiLeg, type LedgerLeg } from '@/lib/ledger'
 import { atomicDebitJeton } from '@/lib/balance-guard'
+
+/** Cüzdan geçmişinde görünen kapsam etiketi — her zaman Türkçe. */
+function scopeLabelTr(scope: string): string {
+  const map: Record<string, string> = {
+    voice: 'sesli oda', voice_room: 'sesli oda', chat_room: 'sesli oda',
+    live: 'canlı yayın', live_stream: 'canlı yayın', stream: 'canlı yayın',
+    pk: 'PK', live_fortune: 'canlı fal', fortune: 'canlı fal', profile: 'profil',
+    message: 'mesaj', messaging: 'mesaj', shorts: 'kısa video',
+  }
+  return map[String(scope || '').toLowerCase()] || scope
+}
 import { assertGiftRecipient, lockGiftBalances, saveGiftReceipt } from '@/lib/gift-recipient'
 
 type Distribution = { receiverNet: number; ownerNet: number; siteAmount: number }
@@ -27,7 +38,7 @@ export async function settleRoomGift(p: {
       await tx.jetonTransaction.create({ data: {
         userId: p.senderId, type: p.senderId === p.recipientId ? 'self_gift_sent' : 'gift_sent',
         amount: -p.amount, balanceBefore: sender.jetonBalance, balanceAfter: senderBalanceAfter,
-        description: `${p.giftName} x${p.quantity} (${p.scope})`,
+        description: `${p.giftName} x${p.quantity} (${scopeLabelTr(p.scope)})`,
       } })
       const credits = new Map<string, number>()
       if (p.dist.receiverNet) credits.set(p.recipientId, p.dist.receiverNet)
@@ -38,7 +49,7 @@ export async function settleRoomGift(p: {
         await tx.jetonTransaction.create({ data: {
           userId, type: userId === p.recipientId ? 'gift_received' : 'gift_commission', amount,
           balanceBefore: before.jetonBalance, balanceAfter: before.jetonBalance + amount,
-          description: `${p.giftName} x${p.quantity} (${p.scope})`,
+          description: `${p.giftName} x${p.quantity} (${scopeLabelTr(p.scope)})`,
         } })
       }
     }

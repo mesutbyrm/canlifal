@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
         prisma.siteAnnouncement.create({
           data: {
             type: 'lucky_jackpot',
-            message: `🍰 ${userName} Şanslı Hediye JACKPOT! ${giftType.icon} ${giftType.name} → ${multiplier}x = ${wonJetons.toLocaleString('tr-TR')} CFC! 🎉`,
+            message: `🍰 ${userName} Şanslı Hediye BÜYÜK İKRAMİYE! ${giftType.icon} ${giftType.name} → ${multiplier}x = ${wonJetons.toLocaleString('tr-TR')} CFC! 🎉`,
             color: 'gift',
             maxPasses: 2,
             expiresAt: new Date(Date.now() + 3 * 60 * 1000),

@@ -25,6 +25,7 @@ import {
   DEFAULT_SEVERITY_ACTIONS,
   DEFAULT_WELCOME_TEXT,
   botNoticeFor,
+  buildBotReply,
   decideAction,
   detectViolation,
   parseBannedWordEntries,
@@ -39,6 +40,9 @@ import {
 export type ModScope = 'voice_room' | 'live_stream'
 
 const BOT_EMAIL = 'girlive-bot@system.canlifal.com'
+/** Bot profil resmi (public/images/girlive-bot.png). */
+export const GIRLIVE_BOT_IMAGE =
+  `${(process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://canlifal.com').replace(/\/+$/, '')}/images/girlive-bot.png`
 const GLOBAL_STAFF = ['admin', 'yonetici', 'moderator', 'site_manager']
 const PRIOR_WINDOW_MS = 24 * 60 * 60 * 1000
 const WELCOME_DEDUPE_MS = 30 * 60 * 1000
@@ -52,16 +56,16 @@ export async function getGirLiveBotId(): Promise<string> {
   try {
     user = await prisma.user.upsert({
       where: { email: BOT_EMAIL },
-      update: {},
-      create: { email: BOT_EMAIL, name: BOT_NAME, username: 'girlive_bot', isBot: true },
+      update: { image: GIRLIVE_BOT_IMAGE },
+      create: { email: BOT_EMAIL, name: BOT_NAME, username: 'girlive_bot', isBot: true, image: GIRLIVE_BOT_IMAGE },
       select: { id: true },
     })
   } catch {
     // `girlive_bot` kullanıcı adı başkasında olabilir: kullanıcı adsız oluştur.
     user = await prisma.user.upsert({
       where: { email: BOT_EMAIL },
-      update: {},
-      create: { email: BOT_EMAIL, name: BOT_NAME, isBot: true },
+      update: { image: GIRLIVE_BOT_IMAGE },
+      create: { email: BOT_EMAIL, name: BOT_NAME, isBot: true, image: GIRLIVE_BOT_IMAGE },
       select: { id: true },
     })
   }
@@ -451,3 +455,73 @@ export async function listModerationActions(scope: ModScope, scopeId: string, ta
 }
 
 export { DEFAULT_SEVERITY_ACTIONS }
+
+
+// ── Yayın susturma / yasak denetimi ───────────────────────────────────────
+/**
+ * Bot (veya moderatör) bir izleyiciyi susturduysa / yasakladıysa sohbet
+ * mesajını engeller. Dönen metin kullanıcıya gösterilir; null = serbest.
+ */
+export async function streamChatBlock(streamId: string, userId: string): Promise<string | null> {
+  try {
+    const [ban, mute] = await Promise.all([
+      prisma.streamBan.findUnique({
+        where: { streamId_bannedUserId: { streamId, bannedUserId: userId } },
+        select: { id: true },
+      }),
+      prisma.streamMutedViewer.findUnique({
+        where: { streamId_viewerId: { streamId, viewerId: userId } },
+        select: { expiresAt: true },
+      }),
+    ])
+    if (ban) return 'Bu yayından uzaklaştırıldınız; mesaj gönderemezsiniz.'
+    if (mute && (!mute.expiresAt || mute.expiresAt.getTime() > Date.now())) {
+      if (mute.expiresAt) {
+        const mins = Math.max(1, Math.ceil((mute.expiresAt.getTime() - Date.now()) / 60000))
+        return `Susturuldunuz. ${mins} dakika sonra tekrar yazabilirsiniz.`
+      }
+      return 'Bu yayında susturuldunuz.'
+    }
+    return null
+  } catch (e) {
+    console.error('[GirLive] susturma kontrolü başarısız (fail-open):', e)
+    return null
+  }
+}
+
+// ── Sohbet yanıtları ──────────────────────────────────────────────────────
+const replyRoomCooldown = new Map<string, number>()
+const replyUserCooldown = new Map<string, number>()
+const ROOM_GREETING_COOLDOWN_MS = 45 * 1000
+const USER_MENTION_COOLDOWN_MS = 12 * 1000
+
+/**
+ * Gönderilen (izin verilmiş) mesaja bot yanıtı — selamlaşmalara ve bota
+ * hitap edilen mesajlara cevap verir. Spam olmasın diye oda/kullanıcı başına
+ * bekleme süresi uygulanır. Asla birincil işlemi bozmaz.
+ */
+export async function maybeBotReply(scope: ModScope, scopeId: string, userId: string, text: string): Promise<void> {
+  try {
+    const config = await getGirLiveConfig()
+    if (!config.enabled) return
+    const botId = await getGirLiveBotId()
+    if (userId === botId) return
+    const now = Date.now()
+    const userKey = `${scope}:${scopeId}:${userId}`
+    if ((replyUserCooldown.get(userKey) ?? 0) > now) return
+    const name = await displayName(userId)
+    const out = buildBotReply(text, name, config.rulesText)
+    if (!out) return
+    const roomKey = `${scope}:${scopeId}`
+    if (out.greeting && (replyRoomCooldown.get(roomKey) ?? 0) > now) return
+    replyUserCooldown.set(userKey, now + USER_MENTION_COOLDOWN_MS)
+    if (out.greeting) replyRoomCooldown.set(roomKey, now + ROOM_GREETING_COOLDOWN_MS)
+    if (replyUserCooldown.size > 5000) replyUserCooldown.clear()
+    if (replyRoomCooldown.size > 2000) replyRoomCooldown.clear()
+    // Kısa gecikme: kullanıcının kendi mesajı önce görünsün.
+    await new Promise((r) => setTimeout(r, 700))
+    await postBotMessage(scope, scopeId, out.reply)
+  } catch (e) {
+    console.error('[GirLive] bot yanıtı yazılamadı:', e)
+  }
+}

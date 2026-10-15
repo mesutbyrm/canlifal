@@ -5,7 +5,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { guardGatedRoom } from '@/lib/room-access-guard'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
-import { moderateMessage } from '@/lib/girlive-bot'
+import { moderateMessage, maybeBotReply } from '@/lib/girlive-bot'
 import { canUserSpeak, getUserRole, getUserPermissions, isUserBanned, ROLE_SYMBOLS } from '@/lib/chat-permissions'
 import { withCachePolicy } from '@/lib/perf'
 
@@ -250,6 +250,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: moderation.message,
+          message: moderation.message,
           code: 'MODERATION_BLOCKED',
           moderation: { verdict: moderation.verdict, severity: moderation.severity },
         },
@@ -279,6 +280,7 @@ export async function POST(
         }
       }
     })
+    void maybeBotReply('voice_room', roomId, postUserId, content.trim())
 
     // Update presence
     await prisma.chatPresence.upsert({

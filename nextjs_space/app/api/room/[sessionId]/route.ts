@@ -239,6 +239,10 @@ export async function PATCH(
           return NextResponse.json({ error: 'Only user can extend session' }, { status: 403 });
         }
 
+        // Bitmiş seans uzatılamaz (jeton boşa çekilmesin).
+        if (liveSession.status !== 'active') {
+          return NextResponse.json({ error: 'Seans artık aktif değil', code: 'SESSION_CLOSED' }, { status: 409 });
+        }
         const extendMinutes = minutes || 5;
         
         // Use session's creditsPerMinute (jeton cost per minute)

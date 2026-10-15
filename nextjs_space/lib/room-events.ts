@@ -9,7 +9,7 @@ import { publishEvent, registerBridgeHandler, touchBridge, type IncomingEvent } 
 interface RoomEvent {
   eventId: string
   timestamp: number
-  type: 'message' | 'timer_started' | 'time_extended' | 'session_ended' | 'ping' | 'system'
+  type: 'message' | 'timer_started' | 'time_extended' | 'session_ended' | 'ping' | 'system' | 'tip'
   data: any
 }
 
