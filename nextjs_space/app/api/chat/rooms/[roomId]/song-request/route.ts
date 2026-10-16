@@ -179,8 +179,9 @@ export async function POST(
     })
     const roomType = roomInfo?.roomType || 'FREE'
 
-    // Calculate music revenue distribution based on room type
-    const musicDist = await calculateMusicDistribution(roomType)
+    // Gelir paylaşımı, odanın gerçekten tahsil ettiği ücret üzerinden
+    // (önceden sabit 10 jeton üzerinden hesaplanıyordu).
+    const musicDist = await calculateMusicDistribution(roomType, SONG_REQUEST_COST)
 
     // Deduct jetons only if not skipping payment
     if (!shouldSkipPayment) {

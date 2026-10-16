@@ -123,13 +123,15 @@ export async function calculateGiftDistribution(
  * VIP: vipMusicOwnerPercent to owner, rest to site
  */
 export async function calculateMusicDistribution(
-  roomType: string
+  roomType: string,
+  /** Odanın gerçek istek ücreti (oda müzik ayarları); verilmezse varsayılan. */
+  requestCost: number = MUSIC_REQUEST_COST
 ): Promise<{
   totalAmount: number
   ownerAmount: number
   siteAmount: number
 }> {
-  const totalAmount = MUSIC_REQUEST_COST
+  const totalAmount = Math.max(0, Math.floor(requestCost))
 
   if (roomType === 'FREE') {
     return { totalAmount, ownerAmount: 0, siteAmount: totalAmount }
