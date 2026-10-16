@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getStaffSession();
-    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'content.announcement.manage', ['admin', 'yonetici', 'moderator', 'finans']))) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 

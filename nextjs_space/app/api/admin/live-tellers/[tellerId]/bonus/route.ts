@@ -14,7 +14,7 @@ export async function POST(
   try {
     const session = await getStaffSession();
     
-    if (!session || !(await staffCan(session.user.role, (session?.user as any)?.id, 'content.teller.manage', ['admin','yonetici','moderator','finans']))) {
+    if (!session || !(await staffCan(session.user.role, (session?.user as any)?.id, 'finance.balance.adjust', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 });
     }
 

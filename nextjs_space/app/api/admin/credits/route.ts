@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   try {
     const session = await getStaffSession()
     
-    if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.jeton.adjust', ['admin','yonetici','moderator','finans']))) {
+    if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.jeton.adjust', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json(
         { error: 'Oturum açmanız gerekiyor' },
         { status: 401 }
