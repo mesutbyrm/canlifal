@@ -63,14 +63,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 });
     }
 
-    // Get total likes on user's posts
-    const likesCount = await prisma.socialLike.count({
-      where: {
-        post: {
-          userId: auth.id
-        }
-      }
-    });
+    // Toplam alınan beğeni = gönderi beğenileri + kısa video beğenileri
+    const [socialLikes, shortLikeAgg] = await Promise.all([
+      prisma.socialLike.count({ where: { post: { userId: auth.id } } }),
+      prisma.shortVideo
+        .aggregate({ where: { userId: auth.id }, _sum: { likesCount: true } })
+        .catch(() => null),
+    ])
+    const likesCount = socialLikes + Math.max(0, Number(shortLikeAgg?._sum?.likesCount) || 0)
 
     return withCachePolicy(NextResponse.json({
       ...user,
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       fortunesCount: user._count.fortunes,
       postsCount: user._count.socialPosts,
       likesCount
-    }), 'private-5m');
+    }), 'no-store');
   } catch (error) {
     console.error('Get profile error:', error);
     return NextResponse.json({ error: 'Failed to get profile' }, { status: 500 });

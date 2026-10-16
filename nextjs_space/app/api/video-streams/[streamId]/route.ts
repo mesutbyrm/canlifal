@@ -7,6 +7,7 @@ import { emitStreamEvent } from '@/lib/stream-events'
 import { endPksForSide } from '@/lib/pk-state'
 import { closeGuestStateForStream } from '@/lib/live-guest'
 import { closeGiftBoxesFor } from '@/lib/gift-box'
+import { finalizeStreamEnd, canStaffEndStream } from '@/lib/video-stream-end'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,9 +93,14 @@ export async function PATCH(
     })
 
     const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
-    const isAdmin = userRecord?.role === 'admin' || userRecord?.role === 'yonetici'
+    const isAdmin = ['admin', 'yonetici', 'kurucu'].includes(userRecord?.role || '')
+    // Moderatör vb. yetkililer başkasının yayınını yalnızca kapatabilir.
+    const staffEndOnly =
+      status === 'ended' && title === undefined && description === undefined &&
+      broadcastImage === undefined && isImageMode === undefined && backgroundUrl === undefined &&
+      (await canStaffEndStream(userRecord?.role, userId))
 
-    if (!stream || (stream.userId !== userId && !isAdmin)) {
+    if (!stream || (stream.userId !== userId && !isAdmin && !staffEndOnly)) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
     }
 
@@ -110,22 +116,9 @@ export async function PATCH(
       }
     })
 
-    // If stream ended, emit event + clear viewers
+    // If stream ended, emit event + clear viewers + PK/misafir/hediye kutusu
     if (status === 'ended') {
-      emitStreamEvent(params.streamId, 'streamEnded', {
-        type: 'streamEnded',
-        event: 'STREAM_ENDED',
-        streamId: params.streamId,
-      })
-      await prisma.videoStreamViewer.updateMany({
-        where: { streamId: params.streamId, leftAt: null },
-        data: { leftAt: new Date() }
-      })
-      // Yayın bittiğinde bu yayına bağlı bekleyen/aktif PK'ları da kapat
-      await endPksForSide([params.streamId], 'LIVE_ENDED')
-      // Misafirlik durumunu da güvenle kapat (aktif misafirler + bekleyen talepler)
-      await closeGuestStateForStream(params.streamId, 'LIVE_ENDED')
-      await closeGiftBoxesFor({ streamId: params.streamId }).catch(() => {})
+      await finalizeStreamEnd(params.streamId)
     }
 
     return NextResponse.json(updated)

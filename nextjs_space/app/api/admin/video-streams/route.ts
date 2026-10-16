@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import { staffCan } from '@/lib/permissions'
+import { finalizeStreamEnd } from '@/lib/video-stream-end'
 
 export const dynamic = 'force-dynamic'
 
@@ -112,6 +113,7 @@ export async function PATCH(request: NextRequest) {
         where: { id: streamId },
         data: { status: 'ended', endedAt: new Date() }
       })
+      await finalizeStreamEnd(streamId)
     }
 
     return NextResponse.json({ success: true })
