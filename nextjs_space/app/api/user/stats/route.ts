@@ -49,12 +49,15 @@ export async function GET(req: NextRequest) {
       _count: true
     }) as unknown as FortuneGroup[]
 
-    // Get total likes received
-    const likesReceived = await prisma.socialLike.count({
-      where: {
-        post: { userId: auth.id }
-      }
-    })
+    // Toplam alınan beğeni = gönderi beğenileri + kısa video beğenileri
+    // (önceden yalnız gönderi beğenileri sayılıyordu; videoları olan kullanıcıda 0).
+    const [socialLikes, shortLikeAgg] = await Promise.all([
+      prisma.socialLike.count({ where: { post: { userId: auth.id } } }),
+      prisma.shortVideo
+        .aggregate({ where: { userId: auth.id }, _sum: { likesCount: true } })
+        .catch(() => null),
+    ])
+    const likesReceived = socialLikes + Math.max(0, Number(shortLikeAgg?._sum?.likesCount) || 0)
 
     // Get total views
     const totalViews = await prisma.fortune.aggregate({

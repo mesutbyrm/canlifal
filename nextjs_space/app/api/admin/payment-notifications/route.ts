@@ -8,7 +8,7 @@ import { hasPermission } from '@/lib/permissions'
 
 /**
  * GET  /api/admin/payment-notifications — admin ödeme bildirimleri listesi
- * POST /api/admin/payment-notifications — mobil'den ödeme bildirimi oluştur
+ * POST /api/admin/payment-notifications — eski mobil gölge kaydı (artık yok sayılır)
  */
 export async function GET(req: NextRequest) {
   const actor = await resolveUser(req)
@@ -43,30 +43,16 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * Eski mobil sürümler her ödeme talebinden sonra buraya ikinci bir «gölge»
+ * kayıt gönderiyordu: jeton sayısı TL tutarı olarak yazılıyor, CFC talebi de
+ * ayrıca jeton bildirimi gibi görünüyordu (admin aynı ödeme için iki farklı
+ * talep görüyordu). Gerçek talep `/api/payments/requests` veya
+ * `/api/payments/notify` ile zaten oluşturulup adminlere bildiriliyor; bu uç
+ * artık kayıt oluşturmaz.
+ */
 export async function POST(req: NextRequest) {
   const actor = await resolveUser(req)
   if (!actor) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
-
-  try {
-    const body = await req.json()
-    const { type, requestType, coins, amount, method, packageTitle, source, senderInfo } = body || {}
-
-    // Mobil admin bildirimi — mevcut PaymentNotification kaydı oluşturma
-    const notif = await prisma.paymentNotification.create({
-      data: {
-        userId: actor.id,
-        username: actor.email || 'mobile',
-        paymentMethod: method || 'unknown',
-        amount: parseFloat(amount) || 0,
-        productType: requestType || type || 'jeton',
-        requestedAmount: parseInt(coins) || null,
-        notes: [packageTitle, source, senderInfo].filter(Boolean).join(' | ') || null,
-        status: 'pending',
-      },
-    })
-    return NextResponse.json({ success: true, id: notif.id })
-  } catch (e) {
-    console.error('[payment-notifications POST]', e)
-    return NextResponse.json({ error: 'Bildirim oluşturulamadı' }, { status: 500 })
-  }
+  return NextResponse.json({ success: true, ignored: true })
 }
