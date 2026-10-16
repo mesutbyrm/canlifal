@@ -4,6 +4,7 @@
  * POST : ziyaret kaydı — ziyaretçi `vip.hide_profile_visit` kullanıyorsa gizli işaretlenir.
  */
 import { NextRequest } from 'next/server'
+import { notifyProfileVisit } from '@/lib/profile-visit-notify'
 import prisma from '@/lib/db'
 import { apiSuccess, apiError, apiUnauthorized, ErrorCodes } from '@/lib/api-response'
 import { resolveUserId, requireCapability, VipGuardResult } from '@/lib/vip-guard'
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
     create: { visitorId, profileId, isHidden },
     update: { isHidden, visitedAt: new Date() },
   })
+  void notifyProfileVisit(visitorId, profileId, isHidden)
 
   return apiSuccess({ recorded: true, hidden: isHidden })
 }

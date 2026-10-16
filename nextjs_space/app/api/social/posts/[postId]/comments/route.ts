@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
+import { socialPostNounDative } from '@/lib/social-post-noun'
 import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { isBlockedBetween } from '@/lib/user-blocks'
 
@@ -87,7 +88,7 @@ export async function POST(
       createNotificationWithPush({
         userId: post.userId,
         type: 'comment',
-        message: 'gönderinize yorum yaptı',
+        message: socialPostNounDative(post) + ' yorum yaptı',
         postId: params.postId,
         fromUserId: authUser.id,
         fromUserName: authUser.name || 'Birisi'

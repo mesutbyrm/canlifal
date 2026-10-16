@@ -49,6 +49,9 @@ const DEDUPE_WINDOW_BY_TYPE: Record<string, number> = {
   level_up: 86400,
   live_started: 1800,   // yayın başladı bildirimi 30 dakikada bir
   stream_started: 1800,
+  profile_view: 21600,  // aynı kişinin profil ziyareti 6 saatte bir
+  share: 3600,          // aynı gönderiyi aynı kişi paylaşırsa saatte bir
+  short_video_like: 3600,
 }
 
 function resolveDedupeWindow(type: string, override?: number): number {
@@ -160,7 +163,9 @@ export async function createNotificationWithPush(params: NotifyParams) {
 
     // 2. Send OneSignal push (fire and forget)
     const pushTitle = params.title || getNotificationTitle(params.type)
-    const pushBody = params.fromUserName
+    // Mesaj zaten adla başlıyorsa («Ali videonu beğendi») ad tekrar eklenmez;
+    // önceden bildirim «Ali Ali videonu beğendi» görünüyordu.
+    const pushBody = params.fromUserName && !params.message.startsWith(params.fromUserName)
       ? `${params.fromUserName} ${params.message}`
       : params.message
 

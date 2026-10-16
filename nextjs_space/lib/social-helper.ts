@@ -86,6 +86,37 @@ async function getSystemUserId(): Promise<string | null> {
  * @param aiResponse - The full AI response
  * @param language - Language code (tr/en)
  */
+/** «Tarot Falı» → «#TarotFalı» (boşluk/noktalama atılır, Türkçe harf korunur). */
+export function fortuneHashtag(label: string): string {
+  const parts = label
+    .split(/[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1))
+  return parts.length ? `#${parts.join('')}` : '#Fal'
+}
+
+/**
+ * Fal paylaşımı açıklaması: başlık (kullanıcı etiketi + fal türü), tam yorum
+ * ve otomatik etiketler. Ör.:
+ * «🔮 @ayse Tarot Falı baktırdı ✨\n\n<yorum>\n\n#TarotFalı #Fal #GirLive #CanlıFal»
+ */
+export async function buildFortuneShareCaption(
+  userId: string | null,
+  fortuneType: string,
+  aiResponse: string,
+): Promise<string> {
+  const trLabel = FORTUNE_TYPE_LABELS[fortuneType]?.tr || 'Fal'
+  let mention = ''
+  if (userId) {
+    try {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } })
+      if (u?.username) mention = `@${u.username} `
+    } catch {}
+  }
+  const tags = Array.from(new Set([fortuneHashtag(trLabel), '#Fal', '#GirLive', '#CanlıFal']))
+  return `🔮 ${mention}${trLabel} baktırdı ✨\n\n${aiResponse.trim()}\n\n${tags.join(' ')}`
+}
+
 export async function autoShareFortune(
   userId: string | null,
   fortuneId: string | null,
@@ -115,6 +146,7 @@ export async function autoShareFortune(
     }
     
     const label = FORTUNE_TYPE_LABELS[fortuneType]?.[language] || fortuneType
+    const content = await buildFortuneShareCaption(userId, fortuneType, aiResponse)
     
     console.log(`[AUTO-SHARE] Creating social post for ${userId ? 'user' : 'guest'}, type: ${fortuneType}, length: ${aiResponse.length}`)
     
@@ -123,7 +155,7 @@ export async function autoShareFortune(
       data: {
         userId: postUserId,
         fortuneId: fortuneId || undefined,
-        content: aiResponse,
+        content,
         postType: 'fortune',
         fortuneType,
         isAuto: true,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { notifyProfileVisit } from '@/lib/profile-visit-notify'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
@@ -134,6 +135,7 @@ export async function GET(
           update: { visitedAt: new Date(), isHidden: !!me?.hideProfileViews },
           create: { visitorId: authUser.id, profileId: userId, isHidden: !!me?.hideProfileViews },
         })
+        void notifyProfileVisit(authUser.id, userId, !!me?.hideProfileViews)
       } catch { /* ziyaret kaydı profili engellemesin */ }
     }
     try {
