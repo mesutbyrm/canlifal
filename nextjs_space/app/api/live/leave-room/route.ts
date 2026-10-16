@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
+import { finalizeStreamEnd } from '@/lib/video-stream-end'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
             where: { id: stream.id },
             data: { status: 'ended', endedAt: new Date() }
           })
+          await finalizeStreamEnd(stream.id).catch(() => {})
           // Mark all viewers as left
           await prisma.videoStreamViewer.updateMany({
             where: { streamId: stream.id, leftAt: null },

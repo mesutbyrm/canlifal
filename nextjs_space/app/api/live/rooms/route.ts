@@ -18,6 +18,11 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Mobil keşif bu ucu kullanır: görüntü/ses gelmeyen (kapanmamış) yayınlar
+    // burada da kapatılsın (önceden yalnız /api/video-streams tetikliyordu).
+    import('@/lib/stream-auto-close')
+      .then(m => m.sweepMediaInactiveStreams())
+      .catch(() => {})
     const authUser = await authenticateRequest(request)
     if (!authUser) {
       return NextResponse.json(

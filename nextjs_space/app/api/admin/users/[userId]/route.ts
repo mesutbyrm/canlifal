@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { staffCan } from '@/lib/permissions'
 import { isFullAdmin } from '@/lib/admin-utils'
 import { recordAudit, getAuditIp } from '@/lib/audit-log'
+import { finalizeStreamEnd } from '@/lib/video-stream-end'
 
 // GET - Fetch single user details
 export async function GET(
@@ -208,10 +209,19 @@ export async function PATCH(
         }
       })
       // End any active streams
-      await prisma.videoStream.updateMany({
-        where: { userId: params.userId, status: 'active' },
-        data: { status: 'ended', endedAt: new Date() }
-      })
+      {
+        // Önceden `status: 'active'` aranıyordu; canlı yayınlar 'live' olduğu
+        // için hiçbiri kapanmıyordu.
+        const liveStreams = await prisma.videoStream.findMany({
+          where: { userId: params.userId, status: 'live' },
+          select: { id: true },
+        })
+        await prisma.videoStream.updateMany({
+          where: { userId: params.userId, status: { in: ['live', 'active'] } },
+          data: { status: 'ended', endedAt: new Date() }
+        })
+        for (const ls of liveStreams) await finalizeStreamEnd(ls.id).catch(() => {})
+      }
       return NextResponse.json({ success: true, message: 'User banned from streaming' })
     }
 
@@ -242,10 +252,19 @@ export async function PATCH(
     }
 
     if (action === 'end_stream') {
-      await prisma.videoStream.updateMany({
-        where: { userId: params.userId, status: 'active' },
-        data: { status: 'ended', endedAt: new Date() }
-      })
+      {
+        // Önceden `status: 'active'` aranıyordu; canlı yayınlar 'live' olduğu
+        // için hiçbiri kapanmıyordu.
+        const liveStreams = await prisma.videoStream.findMany({
+          where: { userId: params.userId, status: 'live' },
+          select: { id: true },
+        })
+        await prisma.videoStream.updateMany({
+          where: { userId: params.userId, status: { in: ['live', 'active'] } },
+          data: { status: 'ended', endedAt: new Date() }
+        })
+        for (const ls of liveStreams) await finalizeStreamEnd(ls.id).catch(() => {})
+      }
       return NextResponse.json({ success: true, message: 'Streams ended' })
     }
 

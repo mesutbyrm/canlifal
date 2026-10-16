@@ -43,6 +43,19 @@ export async function GET(
       // Send initial connection event
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected', streamId })}\n\n`))
 
+      const sendEnded = () => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          type: 'streamEnded',
+          event: 'STREAM_ENDED',
+          streamId,
+        })}\n\n`))
+      }
+
+      // Yayın zaten bitmişse (geç bağlanan / yeniden bağlanan izleyici) hemen bildir.
+      if (stream.status === 'ended') {
+        sendEnded()
+      }
+
       // Send initial viewer count
       try {
         const viewerCount = await prisma.videoStreamViewer.count({
@@ -67,6 +80,9 @@ export async function GET(
         console.error('[Stream SSE] pk snapshot error:', e)
       }
 
+      let lastStatusCheck = Date.now()
+      let endedSent = stream.status === 'ended'
+
       const checkForUpdates = async () => {
         if (!isActive) return
 
@@ -82,6 +98,24 @@ export async function GET(
           }
         } catch (error) {
           console.error('[Stream SSE] Update error:', error)
+        }
+
+        // Olay deposu bellek içi ve sunucu kopyasına özel: yayın başka bir
+        // kopyada bitirildiyse bu bağlantı olayı hiç görmez. Bu yüzden
+        // birkaç saniyede bir veritabanındaki durum da kontrol edilir.
+        const nowMs = Date.now()
+        if (isActive && !endedSent && nowMs - lastStatusCheck >= 4000) {
+          lastStatusCheck = nowMs
+          try {
+            const cur = await prisma.videoStream.findUnique({
+              where: { id: streamId },
+              select: { status: true },
+            })
+            if (!cur || cur.status === 'ended') {
+              endedSent = true
+              sendEnded()
+            }
+          } catch {}
         }
 
         if (isActive) {

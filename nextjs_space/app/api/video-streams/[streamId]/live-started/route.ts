@@ -40,6 +40,12 @@ export async function POST(
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 
+    // Bitmiş yayın için «canlı yayında» bildirimi gönderilmez (yeniden bağlanma
+    // denemesi bitmiş yayını takipçilere canlıymış gibi gösteriyordu).
+    if (stream.status !== 'live') {
+      return NextResponse.json({ error: 'Yayın aktif değil', ended: true }, { status: 409 })
+    }
+
     // Get followers (max 500)
     const followers = await prisma.follow.findMany({
       where: { followingId: authUser.id },
