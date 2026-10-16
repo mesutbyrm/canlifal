@@ -1,6 +1,8 @@
 // OneSignal Server-Side Helper - Send push notifications via REST API
 // Compatible with Flutter mobile app (OneSignal.login(userId) → external_id)
 
+import { isPushAllowed, filterPushRecipients } from '@/lib/notification-prefs'
+
 const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || ''
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY || ''
 const ONESIGNAL_API_URL = 'https://api.onesignal.com'
@@ -24,6 +26,9 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
     console.warn('OneSignal credentials not configured, skipping push notification')
     return false
   }
+
+  // Kullanıcı bu kanalı kapattıysa push gönderilmez.
+  if (!(await isPushAllowed(userId, payload.type, payload.urgent))) return false
 
   try {
     const notifBody: Record<string, any> = {
@@ -85,6 +90,8 @@ export async function sendPushToMultipleUsers(
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY || userIds.length === 0) {
     return false
   }
+  userIds = await filterPushRecipients(userIds, payload.type, payload.urgent)
+  if (userIds.length === 0) return false
 
   try {
     const notifBody: Record<string, any> = {
