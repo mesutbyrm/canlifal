@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { revokeAllUserTokens } from '@/lib/token-revocation'
 import { recordAudit } from '@/lib/audit-log'
+import { finalizeStreamEnd } from '@/lib/video-stream-end'
 
 /**
  * Hesap silme — KVKK ve Google Play "hesap silme" zorunluluğu için.
@@ -85,10 +86,15 @@ export async function handleAccountDeletion(req: NextRequest) {
 
     // Yayın/oda sahipliği gibi aktif durumları güvenli hale getir.
     try {
+      const liveStreams = await prisma.videoStream.findMany({
+        where: { userId: user.id, status: 'live' },
+        select: { id: true },
+      })
       await prisma.videoStream.updateMany({
         where: { userId: user.id, status: 'live' },
         data: { status: 'ended', endedAt: new Date() },
       })
+      for (const ls of liveStreams) await finalizeStreamEnd(ls.id).catch(() => {})
     } catch { /* alan yoksa yoksay */ }
 
     const shortId = user.id.slice(-10)

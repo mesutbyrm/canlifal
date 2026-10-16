@@ -47,6 +47,7 @@ export async function closeStreamForMediaInactivity(
 
   emitStreamEvent(streamId, 'streamEnded', {
     type: 'streamEnded',
+    event: 'STREAM_ENDED',
     streamId,
     reason: 'media_inactivity',
     timeoutMinutes,

@@ -6,6 +6,7 @@ import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
 import { getPlatformSetting } from '@/lib/agency-commission'
 import { getMediaInactivityTimeoutMs } from '@/lib/stream-auto-close'
+import { finalizeStreamEnd } from '@/lib/video-stream-end'
 
 // GET - Check if stream should be auto-closed (called by broadcaster polling)
 export async function GET(
@@ -106,11 +107,8 @@ export async function POST(
       }
     })
 
-    // Clear viewers
-    await prisma.videoStreamViewer.updateMany({
-      where: { streamId: params.streamId, leftAt: null },
-      data: { leftAt: new Date() }
-    })
+    // Yayıncı + izleyicilere «yayın bitti», izleyicileri çıkar, PK/misafir kapat
+    await finalizeStreamEnd(params.streamId).catch(() => {})
 
     // Create notification for broadcaster
     try {

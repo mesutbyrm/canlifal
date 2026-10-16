@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import prisma from '@/lib/db'
 import { redisCache } from '@/lib/cache'
+import { finalizeStreamEnd } from '@/lib/video-stream-end'
 
 /* ────────────────────────────────────────────────────────────────────
  *  Tencent TRTC Event Callback Endpoint
@@ -78,10 +79,17 @@ async function handleRoomDissolved(info: any) {
   if (!roomId) return
 
   // End any live streams for this room
+  const liveBefore = await prisma.videoStream.findMany({
+    where: { roomId, status: 'live' },
+    select: { id: true },
+  })
   const updated = await prisma.videoStream.updateMany({
     where: { roomId, status: 'live' },
     data: { status: 'ended', endedAt: new Date() },
   })
+  for (const s of liveBefore) {
+    await finalizeStreamEnd(s.id).catch(() => {})
+  }
 
   // Fetch all streams for this room (before updateMany clears status)
   const streams = await prisma.videoStream.findMany({
@@ -208,6 +216,7 @@ async function handleMemberLeave(info: any) {
       where: { id: stream.id },
       data: { status: 'ended', endedAt: new Date() },
     })
+    await finalizeStreamEnd(stream.id).catch(() => {})
 
     // Mark all remaining viewers as left
     await prisma.videoStreamViewer.updateMany({
