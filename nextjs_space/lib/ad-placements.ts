@@ -59,6 +59,10 @@ export const DEFAULT_AD_PLACEMENTS: Array<{
   { placementKey: 'blog_inline', name: 'Blog İçi Reklam', description: 'Blog yazısı paragrafları arasında gösterilen reklam.', adType: 'native', position: 'inline', sortOrder: 6 },
   { placementKey: 'game_rewarded', name: 'Oyun Ödüllü Reklam', description: 'Oyun sonunda ödül karşılığı izlenen video reklam.', adType: 'rewarded', position: 'overlay', sortOrder: 7 },
   { placementKey: 'fortune_list_native', name: 'Fal Listesi Reklam', description: 'Fal kartları listesinin arasına yerleştirilen doğal reklam.', adType: 'native', position: 'inline', sortOrder: 8 },
+  // Mobil GirLive Sosyal tam ekran akışı: her 5 paylaşımdan sonra tam ekran
+  // geçiş reklamı. «Özel kod» alanına AdMob geçiş reklamı birim kimliği
+  // (ca-app-pub-…/…) yazılabilir; boşsa bağlı reklam ağının birimi kullanılır.
+  { placementKey: 'social_feed_interstitial', name: 'GirLive Sosyal Akış Reklamı', description: 'Mobil GirLive Sosyal akışında her 5 paylaşımdan sonra çıkan tam ekran geçiş reklamı. Özel kod alanına AdMob geçiş reklamı birim kimliği yazın.', adType: 'interstitial', position: 'overlay', sortOrder: 9 },
 ]
 
 export type AdAdminAuth =
