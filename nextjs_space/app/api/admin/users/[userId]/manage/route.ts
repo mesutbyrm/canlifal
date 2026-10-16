@@ -166,10 +166,30 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     )
   }
 
-  // Prevent managing higher-level admins (unless full admin)
-  if (target.role === 'admin' && admin.role !== 'admin') {
+  // Üst düzey hesapları koru: admin/yönetici/kurucu yalnızca tam yönetici
+  // tarafından, admin yalnızca admin/kurucu, kurucu yalnızca kurucu tarafından
+  // yönetilebilir.
+  const FULL_ROLES = ['admin', 'yonetici', 'kurucu']
+  const actorFull = FULL_ROLES.includes(admin.role || '')
+  if (
+    (FULL_ROLES.includes(target.role || '') && !actorFull) ||
+    (target.role === 'admin' && admin.role !== 'admin' && admin.role !== 'kurucu') ||
+    (target.role === 'kurucu' && admin.role !== 'kurucu')
+  ) {
     return NextResponse.json(
       { success: false, error: { code: 'FORBIDDEN', message: 'Üst düzey yöneticiyi yönetemezsiniz' } },
+      { status: 403 }
+    )
+  }
+
+  // Kişi kendi rolünü, yetkisini, bakiyesini veya yasağını değiştiremez.
+  const SELF_BLOCKED = new Set([
+    'role_change', 'set_permission', 'set_permissions_bulk', 'jeton_adjust', 'cfc_adjust',
+    'gold_grant', 'gold_revoke', 'ban', 'unban', 'freeze', 'unfreeze', 'set_withdrawal_limit',
+  ])
+  if (target.id === admin.id && SELF_BLOCKED.has(action)) {
+    return NextResponse.json(
+      { success: false, error: { code: 'FORBIDDEN', message: 'Bu işlemi kendi hesabınızda yapamazsınız' } },
       { status: 403 }
     )
   }
@@ -435,13 +455,21 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     const denied = await guardPermission(admin, 'moderation.user.role')
     if (denied) return denied
 
-    const newRole = data.role
-    if (!newRole) {
+    const newRole = typeof data.role === 'string' ? data.role.trim() : ''
+    if (!newRole || newRole.length > 50) {
       return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Yeni rol gerekli' } }, { status: 400 })
     }
 
-    // Only full admin can assign admin/yonetici
-    if (['admin', 'yonetici'].includes(newRole) && admin.role !== 'admin') {
+    // Kurucu rolünü yalnızca kurucu atayabilir
+    if (newRole === 'kurucu' && admin.role !== 'kurucu') {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'Kurucu rolünü yalnızca kurucu atayabilir' } },
+        { status: 403 }
+      )
+    }
+
+    // admin/yonetici rolünü yalnızca admin veya kurucu atayabilir
+    if (['admin', 'yonetici'].includes(newRole) && admin.role !== 'admin' && admin.role !== 'kurucu') {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Sadece ana admin bu rolü atayabilir' } },
         { status: 403 }
