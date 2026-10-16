@@ -210,7 +210,10 @@ export async function POST(
     }
     const senderExcluded = !spendPlan.countsAsFinance
     const baseDist = await calculateGiftDistribution(totalPrice, 'NORMAL', recipientId === stream.userId)
-    const dist = recipientId === userId ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
+    // Kendine hediye de normal hediye gibi dağıtılır: alıcı (gönderenin
+    // kendisi) komisyon düşülmüş payını, oda/yayın sahibi kendi payını alır.
+    // (Önceden tutarın tamamı platforma gidiyordu.)
+    const dist = baseDist
     const settlement = await settleRoomGift({
       scope: 'stream', contextId: params.streamId, sideIds: [stream.id, stream.roomId], senderId: userId, recipientId, ownerId: stream.userId,
       giftTypeId, quantity, amount: totalPrice, source: spendPlan.source, skipDeduction: spendPlan.skipDeduction,

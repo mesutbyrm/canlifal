@@ -133,7 +133,10 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     const roomOwnerId = room.ownerId
     const isRecipientOwner = recipientId === roomOwnerId
     const baseDist = await calculateGiftDistribution(price, roomType, isRecipientOwner)
-    const dist = recipientId === sender.id ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: price } : baseDist
+    // Kendine hediye de normal hediye gibi dağıtılır: alıcı (gönderenin
+    // kendisi) komisyon düşülmüş payını, oda/yayın sahibi kendi payını alır.
+    // (Önceden tutarın tamamı platforma gidiyordu.)
+    const dist = baseDist
 
     // Yalnız Fake hediyeler finansal kazanç üretmez.
     const senderExcluded = !spendPlan.countsAsFinance
