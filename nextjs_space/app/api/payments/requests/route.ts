@@ -6,6 +6,7 @@ import { guardRateLimit } from '@/lib/rate-limit-guard'
 import { beginIdempotent, completeIdempotent, releaseIdempotent } from '@/lib/idempotency'
 import { recordRiskEvent } from '@/lib/risk-score'
 import { getAuditIp } from '@/lib/audit-log'
+import { createJetonPaymentNotification, isJetonPurchaseBody } from '@/lib/jeton-payment-request'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,42 @@ export async function POST(request: NextRequest) {
 
     if (!method || !['whatsapp', 'papara', 'bank_transfer'].includes(method)) {
       return NextResponse.json({ error: 'Geçersiz ödeme yöntemi' }, { status: 400 })
+    }
+
+    // Jeton alımı CFC talebi DEĞİLDİR. Önceden mobil jeton alımı burada
+    // CfcPaymentRequest olarak («2000 CFC») kaydediliyordu; artık tek bir jeton
+    // ödeme bildirimi açılır ve tutar sunucu fiyatından hesaplanır
+    // (ör. 2000 jeton → 1000 TL).
+    if (isJetonPurchaseBody(body)) {
+      const coins = parseInt(String(body.coins ?? amount)) || 0
+      if (coins < 1) {
+        return NextResponse.json({ error: 'Geçersiz miktar' }, { status: 400 })
+      }
+      const { notification, quote, duplicate } = await createJetonPaymentNotification({
+        userId,
+        coins,
+        method,
+        senderInfo: senderInfo || null,
+        notes: notes || null,
+        proofUrl: body.receiptUrl || body.proofUrl || null,
+      })
+      return NextResponse.json(
+        {
+          success: true,
+          id: notification.id,
+          requestType: 'jeton',
+          productType: 'jeton',
+          coins,
+          requestedAmount: coins,
+          amount: coins,
+          priceTry: quote.finalAmount,
+          status: notification.status,
+          duplicate,
+          message: 'Jeton ödeme bildiriminiz alındı. Admin onayı bekleniyor.',
+          notification,
+        },
+        { status: duplicate ? 200 : 201 }
+      )
     }
 
     // Check if user has pending request already

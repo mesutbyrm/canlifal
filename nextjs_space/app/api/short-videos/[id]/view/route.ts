@@ -4,13 +4,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 
-const MIN_WATCH_SEC = 3
+// Kaydırıp ekranda gördüğü her video izlenmiş sayılır ve «İzlediklerim»e eklenir.
+const MIN_WATCH_SEC = 1
 
 /**
  * POST /api/short-videos/:id/view
  * Auth: ZORUNLU
  * Body: { watchedSec: number }
- * Kural: watchedSec >= 3 ve kullanıcı bu videoyu daha önce sayılmadıysa views_count +1
+ * Kural: watchedSec >= 1 ve kullanıcı bu videoyu daha önce sayılmadıysa views_count +1
  */
 export async function POST(
   req: NextRequest,
@@ -49,7 +50,7 @@ export async function POST(
         data: {
           counted: false,
           viewsCount: video.viewsCount,
-          reason: 'min_3_seconds',
+          reason: 'min_1_second',
         },
       })
     }
@@ -60,13 +61,14 @@ export async function POST(
     })
 
     if (existing) {
-      // Already counted, update watchedSec if longer
-      if (watchedSec > (existing.watchedSec || 0)) {
-        await prisma.shortVideoView.update({
-          where: { id: existing.id },
-          data: { watchedSec },
-        })
-      }
+      // Zaten sayıldı: izleme geçmişinde en üste taşı, süre uzunsa güncelle.
+      await prisma.shortVideoView.update({
+        where: { id: existing.id },
+        data: {
+          createdAt: new Date(),
+          watchedSec: Math.max(watchedSec, existing.watchedSec || 0),
+        },
+      })
       return NextResponse.json({
         success: true,
         data: {

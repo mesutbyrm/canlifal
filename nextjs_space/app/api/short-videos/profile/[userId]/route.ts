@@ -30,9 +30,9 @@ export async function GET(
       )
     }
 
-    const [videoCount, likeAgg, followers, following, isFollowingRec] = await Promise.all([
+    const [videoCount, likeAgg, followers, following, isFollowingRec, socialLikes] = await Promise.all([
       prisma.shortVideo.count({ where: { userId } }),
-      prisma.shortVideo.aggregate({ where: { userId }, _sum: { likesCount: true } }),
+      prisma.shortVideo.aggregate({ where: { userId }, _sum: { likesCount: true, viewsCount: true } }),
       prisma.follow.count({ where: { followingId: userId } }),
       prisma.follow.count({ where: { followerId: userId } }),
       authUser
@@ -41,6 +41,8 @@ export async function GET(
             select: { id: true },
           }).catch(() => null)
         : Promise.resolve(null),
+      // Profil «Beğeni»: kısa video + gönderi beğenilerinin toplamı.
+      prisma.socialLike.count({ where: { post: { userId } } }).catch(() => 0),
     ])
 
     return NextResponse.json({
@@ -56,7 +58,8 @@ export async function GET(
         },
         stats: {
           videoCount: safeInt(videoCount),
-          totalLikes: safeInt(likeAgg?._sum?.likesCount),
+          totalLikes: safeInt(likeAgg?._sum?.likesCount) + safeInt(socialLikes),
+          totalViews: safeInt(likeAgg?._sum?.viewsCount),
           followers: safeInt(followers),
           following: safeInt(following),
         },
