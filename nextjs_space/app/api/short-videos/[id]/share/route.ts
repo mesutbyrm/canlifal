@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import prisma from '@/lib/db'
 import { safeInt } from '@/lib/short-videos'
+import { createNotificationWithPush } from '@/lib/notify'
 
 /**
  * POST /api/short-videos/:id/share
@@ -19,7 +20,7 @@ export async function POST(
 
     const video = await prisma.shortVideo.findUnique({
       where: { id: videoId },
-      select: { id: true, sharesCount: true },
+      select: { id: true, sharesCount: true, userId: true },
     })
     if (!video) {
       return NextResponse.json(
@@ -28,8 +29,33 @@ export async function POST(
       )
     }
 
-    // Auth opsiyonel — sadece istatistik bağlama için
-    await authenticateRequest(req).catch(() => null)
+    // Auth opsiyonel — giriş yapmışsa video sahibine «videonu paylaştı» bildirimi.
+    const authUser = await authenticateRequest(req).catch(() => null)
+    if (authUser && video.userId && video.userId !== authUser.id) {
+      void (async () => {
+        try {
+          const sharer = await prisma.user.findUnique({
+            where: { id: authUser.id },
+            select: { name: true, username: true },
+          })
+          const sharerName = sharer?.name || sharer?.username || 'Bir kullanıcı'
+          await createNotificationWithPush({
+            userId: video.userId,
+            type: 'short_video_share',
+            title: 'Videon paylaşıldı',
+            message: `${sharerName} videonu paylaştı`,
+            fromUserId: authUser.id,
+            fromUserName: sharerName,
+            targetPath: 'short_video',
+            targetId: videoId,
+            data: JSON.stringify({ videoId }),
+            dedupeWindowSeconds: 3600,
+          })
+        } catch (e) {
+          console.error('[short-videos] share notify error (non-fatal):', e)
+        }
+      })()
+    }
 
     const updated = await prisma.shortVideo.update({
       where: { id: videoId },

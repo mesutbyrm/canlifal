@@ -85,6 +85,8 @@ export function resolveNotificationDeepLink(params: {
   fromUserId?: string | null
   deepLinkType?: DeepLinkType
   deepLinkValue?: string
+  targetPath?: string | null
+  targetId?: string | null
 }): string | null {
   try {
     if (params.deepLinkType) {
@@ -95,6 +97,13 @@ export function resolveNotificationDeepLink(params: {
         userId: params.deepLinkValue,
       })
       return link.app
+    }
+    if (params.targetId && /^(short_video|short|shorts|video)$/.test(params.targetPath || '')) {
+      // Kısa video bildirimi doğrudan o videoyu açsın (önceden genel liste açılıyordu).
+      return buildDeepLink('video', { id: params.targetId }).app
+    }
+    if (params.targetId && params.targetPath === 'profile') {
+      return buildDeepLink('profile', { username: params.targetId }).app
     }
     if (params.postId) {
       return buildDeepLink('post', { id: params.postId }).app
@@ -119,7 +128,7 @@ export async function createNotificationWithPush(params: NotifyParams) {
       params.dedupeKey ||
       buildNotificationDedupeKey({
         type: params.type,
-        postId: params.postId,
+        postId: params.postId || params.targetId,
         fromUserId: params.fromUserId,
         message: params.message,
       })
@@ -143,6 +152,8 @@ export async function createNotificationWithPush(params: NotifyParams) {
       fromUserId: params.fromUserId,
       deepLinkType: params.deepLinkType,
       deepLinkValue: params.deepLinkValue,
+      targetPath: params.targetPath,
+      targetId: params.targetId,
     })
 
     // 1. Create DB notification
@@ -240,6 +251,8 @@ export async function createBulkNotificationsWithPush(params: {
       fromUserId: params.fromUserId,
       deepLinkType: params.deepLinkType,
       deepLinkValue: params.deepLinkValue,
+      targetPath: params.targetPath,
+      targetId: params.targetId,
     })
 
     // 1. Create DB notifications in bulk
