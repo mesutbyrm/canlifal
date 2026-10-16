@@ -130,7 +130,10 @@ export async function POST(request: NextRequest) {
 
       const recipientId = bodyRecipientId || stream.userId
       const baseDist = await calculateGiftDistribution(totalPrice, 'NORMAL', recipientId === stream.userId)
-      const dist = recipientId === sender.id ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
+      // Kendine hediye de normal hediye gibi dağıtılır: alıcı (gönderenin
+      // kendisi) komisyon düşülmüş payını, oda/yayın sahibi kendi payını alır.
+      // (Önceden tutarın tamamı platforma gidiyordu.)
+      const dist = baseDist
       const recipientAmount = dist.receiverNet + dist.ownerNet
       const siteAmount = dist.siteAmount
       const settlement = await settleRoomGift({
@@ -211,7 +214,10 @@ export async function POST(request: NextRequest) {
       // Calculate distribution
       const roomType2 = (room as any).roomType || 'FREE'
       const baseDist = await calculateGiftDistribution(totalPrice, roomType2, recipient.id === room.ownerId)
-      const dist = recipient.id === sender.id ? { ...baseDist, receiverNet: 0, ownerNet: 0, siteAmount: totalPrice } : baseDist
+      // Kendine hediye de normal hediye gibi dağıtılır: alıcı (gönderenin
+      // kendisi) komisyon düşülmüş payını, oda/yayın sahibi kendi payını alır.
+      // (Önceden tutarın tamamı platforma gidiyordu.)
+      const dist = baseDist
 
       const settlement = await settleRoomGift({
         scope: 'voice', contextId: room.id, senderId: sender.id, recipientId: recipient.id, ownerId: room.ownerId,
