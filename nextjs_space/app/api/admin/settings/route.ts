@@ -3,6 +3,8 @@ import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db';
 import { invalidateCache, invalidateCachePrefix } from '@/lib/cache';
 import { staffCan } from '@/lib/permissions'
+import { isFullAdmin } from '@/lib/admin-utils'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +55,15 @@ export async function GET() {
   }
 }
 
+// Para akışını etkileyen ayarlar (komisyon, fiyat, ödül, bakiye, ödeme
+// iletişimi). Moderatör bunları değiştiremez; yalnızca tam yönetici ve finans.
+const FINANCE_SETTING_PATTERN =
+  /(commission|transfer|withdraw|bonus|credit|jeton|cfc|price|(^|_)rate($|_)|percent|pct|share|reward|amount|cost|fee|payment|iban|bank|papara|whatsapp|referral)/i
+
+function isFinanceSettingKey(key: string): boolean {
+  return FINANCE_SETTING_PATTERN.test(key)
+}
+
 // Update platform settings
 export async function POST(request: NextRequest) {
   try {
@@ -64,9 +75,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { key, value, description } = body;
 
-    if (!key || value === undefined) {
+    if (typeof key !== 'string' || !key.trim() || key.length > 100 || value === undefined || value === null) {
       return NextResponse.json({ error: 'Key and value required' }, { status: 400 });
     }
+    if (String(value).length > 20000) {
+      return NextResponse.json({ error: 'Değer çok uzun' }, { status: 400 });
+    }
+
+    const role = (session.user as any).role as string | undefined
+    const actorId = (session.user as any).id as string
+    if (isFinanceSettingKey(key) && !isFullAdmin(role) &&
+        !(await staffCan(role, actorId, 'finance.payment.manage', ['finans']))) {
+      return NextResponse.json({ error: 'Bu ayarı değiştirme yetkiniz yok' }, { status: 403 });
+    }
+
+    const before = await prisma.platformSettings.findUnique({ where: { key } });
 
     const setting = await prisma.platformSettings.upsert({
       where: { key },
@@ -77,6 +100,19 @@ export async function POST(request: NextRequest) {
     // Invalidate cache for this specific setting and the "all settings" cache
     invalidateCache(`platform:${key}`);
     invalidateCache('platform:__all__');
+
+    if (before?.value !== setting.value) {
+      await recordAudit({
+        actorId,
+        actorRole: role,
+        action: 'platform_setting_update',
+        targetType: 'platform_setting',
+        targetId: key,
+        before: before ? { value: before.value } : null,
+        after: { value: setting.value },
+        ip: getAuditIp(request),
+      })
+    }
 
     return NextResponse.json(setting);
   } catch (error) {
