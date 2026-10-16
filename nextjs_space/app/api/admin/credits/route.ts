@@ -21,13 +21,43 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { userId, amount, currency = 'credits' } = body
+    const userId = body?.userId
+    // Para birimi: `currency` (web) veya eski mobil sürümlerin `type` /
+    // `creditType` alanı. Önceden mobil «jeton yükle» isteği `currency`
+    // göndermediği için varsayılan CFC yükleniyordu.
+    const rawCurrency = String(body?.currency ?? body?.type ?? body?.creditType ?? 'credits').toLowerCase().trim()
+    const currency = ['jeton', 'coins', 'coin'].includes(rawCurrency) ? 'jeton' : 'credits'
+    // Miktar: işaretli sayı (web) veya pozitif miktar + `action`/`operation`
+    // = subtract (eski mobil). Önceden «çıkar» isteği de ekleme yapıyordu.
+    let amount = typeof body?.amount === 'number' ? body.amount : Number(body?.amount)
+    const op = String(body?.action ?? body?.operation ?? '').toLowerCase()
+    if (['subtract', 'remove', 'decrease', 'deduct', 'cikar', 'çıkar'].includes(op) && amount > 0) {
+      amount = -amount
+    }
 
-    if (!userId || typeof amount !== 'number') {
+    if (!userId || !Number.isFinite(amount) || amount === 0 || !Number.isInteger(amount) || Math.abs(amount) > 10_000_000) {
       return NextResponse.json(
         { error: 'Geçersiz istek' },
         { status: 400 }
       )
+    }
+
+    // Düşme işlemi bakiyeyi eksiye indiremez.
+    if (amount < 0) {
+      const current = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true, jetonBalance: true },
+      })
+      if (!current) {
+        return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+      }
+      const balance = currency === 'jeton' ? current.jetonBalance ?? 0 : current.credits ?? 0
+      if (balance + amount < 0) {
+        return NextResponse.json(
+          { error: `Yetersiz bakiye: kullanıcının bakiyesi ${balance} ${currency === 'jeton' ? 'jeton' : 'CFC'}` },
+          { status: 400 }
+        )
+      }
     }
 
     const updateData = currency === 'jeton' 
