@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { notifyProfileVisit } from '@/lib/profile-visit-notify'
 import prisma from '@/lib/db'
 import { requireAuth } from '@/lib/rbac'
 import { computeDistanceBand } from '@/lib/distance-bands'
@@ -32,14 +33,18 @@ export async function GET(req: NextRequest) {
 
   if (!target || !myUser) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Kullanıcı bulunamadı' } }, { status: 404 })
 
-  // Record profile visit
-  try {
-    await prisma.profileVisit.upsert({
-      where: { visitorId_profileId: { visitorId: me.id, profileId: targetId } },
-      update: { visitedAt: new Date() },
-      create: { visitorId: me.id, profileId: targetId },
-    })
-  } catch { /* skip */ }
+  // Record profile visit (kendi profili sayılmaz; gizli gezinti bildirim göndermez)
+  if (me.id !== targetId) {
+    try {
+      const hidden = await prisma.user.findUnique({ where: { id: me.id }, select: { hideProfileViews: true } })
+      await prisma.profileVisit.upsert({
+        where: { visitorId_profileId: { visitorId: me.id, profileId: targetId } },
+        update: { visitedAt: new Date() },
+        create: { visitorId: me.id, profileId: targetId },
+      })
+      void notifyProfileVisit(me.id, targetId, !!hidden?.hideProfileViews)
+    } catch { /* skip */ }
+  }
 
   // Distance
   const distance = computeDistanceBand(

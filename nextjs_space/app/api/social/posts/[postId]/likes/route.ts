@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { authenticateRequest } from '@/lib/mobile-auth'
 import { createNotificationWithPush } from '@/lib/notify'
+import { socialPostNoun } from '@/lib/social-post-noun'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +65,7 @@ export async function POST(
         createNotificationWithPush({
           userId: post.userId,
           type: 'like',
-          message: 'gönderinizi beğendi',
+          message: socialPostNoun(post) + ' beğendi',
           postId: params.postId,
           fromUserId: authUser.id,
           fromUserName: authUser.name || 'Birisi'
