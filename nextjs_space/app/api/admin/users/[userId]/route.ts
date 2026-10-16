@@ -3,6 +3,8 @@ import { getStaffSession } from '@/lib/admin-auth'
 import prisma from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { staffCan } from '@/lib/permissions'
+import { isFullAdmin } from '@/lib/admin-utils'
+import { recordAudit, getAuditIp } from '@/lib/audit-log'
 
 // GET - Fetch single user details
 export async function GET(
@@ -120,6 +122,69 @@ export async function PATCH(
       specialBadges,
       profileEffect,
     } = body
+
+    // ── Yetki sınırları ──────────────────────────────────────────────
+    // Bu uca «kullanıcı görme» yetkisiyle (moderatör, finans) girilebiliyor;
+    // önceden aynı yetkiyle rol değiştirme (kendini admin yapma dahil),
+    // herkesin şifresini sıfırlama ve kayıtsız jeton/CFC işlemi yapılabiliyordu.
+    const actorRole = String((session.user as any).role || '')
+    const actorId = String((session.user as any).id || '')
+    const actorFull = isFullAdmin(actorRole)
+    const target = await prisma.user.findUnique({
+      where: { id: params.userId },
+      select: { role: true, credits: true, jetonBalance: true },
+    })
+    if (!target) {
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+    }
+    const deny = (msg: string) => NextResponse.json({ error: msg }, { status: 403 })
+    // Üst yetkili hesaplar (admin / yönetici / kurucu) yalnız tam admin tarafından düzenlenir.
+    if (isFullAdmin(target.role) && !actorFull) {
+      return deny('Yönetici hesapları üzerinde işlem yetkiniz yok')
+    }
+    const CREDIT_ACTIONS = ['add_credits', 'remove_credits', 'set_credits', 'add_jetons', 'remove_jetons', 'set_jetons']
+    if (action === 'reset_password') {
+      if (!actorFull) return deny('Şifre sıfırlama yalnız tam yöneticilere açıktır')
+      if (target.role === 'kurucu' && actorRole !== 'kurucu') return deny('Kurucu hesabının şifresi değiştirilemez')
+      if (typeof newPassword !== 'string' || newPassword.length < 8) {
+        return NextResponse.json({ error: 'Şifre en az 8 karakter olmalı' }, { status: 400 })
+      }
+    }
+    if (CREDIT_ACTIONS.includes(action)) {
+      if (!(await staffCan(actorRole, actorId, 'finance.jeton.adjust', ['admin', 'yonetici', 'kurucu', 'finans']))) {
+        return deny('Bakiye işlemi yetkiniz yok')
+      }
+      const n = Math.abs(Number(action.endsWith('_credits') && action !== 'set_credits' ? credits : body.amount) || 0)
+      if (action === 'remove_credits' && n > (target.credits ?? 0)) {
+        return NextResponse.json({ error: `Yetersiz bakiye: ${target.credits ?? 0} CFC` }, { status: 400 })
+      }
+      if (action === 'remove_jetons' && n > (target.jetonBalance ?? 0)) {
+        return NextResponse.json({ error: `Yetersiz bakiye: ${target.jetonBalance ?? 0} jeton` }, { status: 400 })
+      }
+    }
+    if (role !== undefined) {
+      if (!actorFull) return deny('Rol değiştirme yalnız tam yöneticilere açıktır')
+      if (params.userId === actorId) return deny('Kendi rolünüzü değiştiremezsiniz')
+      if ((role === 'kurucu' || target.role === 'kurucu') && actorRole !== 'kurucu') {
+        return deny('Kurucu rolünü yalnız kurucu değiştirebilir')
+      }
+    }
+    if ((membership !== undefined || membershipExpiresAt !== undefined) && !actorFull && actorRole !== 'finans') {
+      return deny('Üyelik değiştirme yetkiniz yok')
+    }
+    if (action === 'reset_password' || CREDIT_ACTIONS.includes(action) || role !== undefined) {
+      recordAudit({
+        actorId,
+        actorRole,
+        action: action === 'reset_password' ? 'user_password_reset' : role !== undefined && !action ? 'user_role_change' : 'balance_adjust',
+        targetType: 'User',
+        targetId: params.userId,
+        before: { role: target.role, credits: target.credits, jetonBalance: target.jetonBalance },
+        after: { action: action || null, role: role ?? null, credits: credits ?? null, amount: body.amount ?? null },
+        description: `Admin kullanıcı işlemi: ${action || 'rol'}`,
+        ip: getAuditIp(request),
+      }).catch(() => {})
+    }
 
     // Handle specific actions
     if (action === 'reset_password') {
@@ -299,6 +364,30 @@ export async function DELETE(
     if ((session.user as any).id === params.userId) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
     }
+
+    // Hesap silme yalnız tam yöneticilere; kurucu hesabı yalnız kurucu silebilir.
+    // (Önceden «kullanıcı görme» yetkisi olan moderatör/finans da silebiliyordu.)
+    const actorRole = String((session.user as any).role || '')
+    if (!isFullAdmin(actorRole)) {
+      return NextResponse.json({ error: 'Hesap silme yalnız tam yöneticilere açıktır' }, { status: 403 })
+    }
+    const target = await prisma.user.findUnique({ where: { id: params.userId }, select: { role: true, email: true } })
+    if (!target) {
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+    }
+    if (target.role === 'kurucu' && actorRole !== 'kurucu') {
+      return NextResponse.json({ error: 'Kurucu hesabı silinemez' }, { status: 403 })
+    }
+    recordAudit({
+      actorId: String((session.user as any).id || ''),
+      actorRole,
+      action: 'user_delete',
+      targetType: 'User',
+      targetId: params.userId,
+      before: { role: target.role, email: target.email },
+      description: 'Admin hesap sildi',
+      ip: getAuditIp(request),
+    }).catch(() => {})
 
     // Delete user and related data
     await prisma.user.delete({
