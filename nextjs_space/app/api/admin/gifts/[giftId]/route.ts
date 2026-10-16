@@ -14,6 +14,7 @@ import {
   nextGiftContentVersion,
   invalidateGiftCaches,
 } from '@/lib/gift-admin';
+import { GIFT_MEDIA_PATH_FIELDS, deleteGiftMediaKeys, giftMediaKeys } from '@/lib/gift-media-cleanup';
 
 export const dynamic = 'force-dynamic';
 
@@ -203,6 +204,14 @@ export async function PATCH(
 
     invalidateGiftCaches();
 
+    // Değiştirilen / kaldırılan medyanın eski dosyası depoda kalmasın.
+    const replacedKeys = GIFT_MEDIA_PATH_FIELDS.filter(
+      (f) => data[f] !== undefined && (existing as any)[f] && (existing as any)[f] !== data[f],
+    ).map((f) => String((existing as any)[f]))
+    if (replacedKeys.length > 0) {
+      deleteGiftMediaKeys(replacedKeys, params.giftId).catch(() => {})
+    }
+
     recordAudit({
       action: 'gift_update',
       targetType: 'GiftType',
@@ -219,9 +228,14 @@ export async function PATCH(
   }
 }
 
-// DELETE gift — uygulamadan tamamen kaldırır. Geçmiş gönderim kayıtları
-// hediyeye bağlı olduğundan satır silinmez; "silindi" olarak işaretlenir,
-// admin listesinden ve tüm APK kataloglarından (delta ile) düşer.
+// DELETE gift — hediyeyi tamamen kaldırır:
+//  • Video / görsel / ikon / ses / müzik dosyaları depodan silinir (başka bir
+//    hediye aynı dosyayı kullanmıyorsa).
+//  • Kayıttaki tüm medya bağlantıları boşaltılır; hediye admin listesinden,
+//    kataloglardan ve tüm uygulamalardan düşer.
+//  • Satırın kendisi kalır: geçmiş gönderim kayıtları ona bağlıdır ve
+//    uygulamalar önbellekteki kopyayı ancak «silindi» işaretli satırı görünce
+//    kaldırır (satır tamamen silinirse eski uygulamalarda görünmeye devam eder).
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { giftId: string } }
@@ -232,20 +246,34 @@ export async function DELETE(
       return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
     }
 
-    const existing = await prisma.giftType.findUnique({ where: { id: params.giftId }, select: { id: true, name: true, category: true } });
+    const existing = await prisma.giftType.findUnique({ where: { id: params.giftId } });
     if (!existing || existing.category === DELETED_GIFT_CATEGORY) {
       return NextResponse.json({ error: 'Hediye bulunamadı' }, { status: 404 });
     }
 
+    const keys = giftMediaKeys(existing as any);
     await prisma.giftType.update({
       where: { id: params.giftId },
       data: {
         isActive: false,
         isHidden: true,
         category: DELETED_GIFT_CATEGORY,
+        collectionId: null,
+        assetUrl: null,
+        thumbnailUrl: null,
+        iconImageUrl: null,
+        soundUrl: null,
+        musicUrl: null,
+        cloudStoragePath: null,
+        thumbnailCloudPath: null,
+        iconImageCloudPath: null,
+        soundCloudPath: null,
+        musicCloudPath: null,
         contentVersion: await nextGiftContentVersion(),
       },
     });
+
+    const filesDeleted = await deleteGiftMediaKeys(keys, params.giftId);
 
     invalidateGiftCaches();
 
@@ -254,11 +282,11 @@ export async function DELETE(
       targetType: 'GiftType',
       targetId: params.giftId,
       actorId: (session.user as any).id || session.user.email || 'unknown',
-      metadata: { name: existing.name, removedFromCatalog: true },
+      metadata: { name: existing.name, filesDeleted, mediaKeys: keys.length, removedFromCatalog: true },
       ip: getAuditIp(request),
     }).catch(() => {});
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, filesDeleted });
   } catch (error) {
     console.error('Admin gift DELETE error:', error);
     return NextResponse.json({ error: 'Hediye silinemedi' }, { status: 500 });
