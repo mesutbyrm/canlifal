@@ -46,7 +46,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getStaffSession()
-    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'system.config.manage', ALLOWED_ROLES))) {
+    if (!session?.user?.id || !(await staffCan((session?.user as any)?.role, (session?.user as any)?.id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Yetkiniz yok' }, { status: 403 })
     }
 

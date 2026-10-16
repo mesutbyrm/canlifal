@@ -669,7 +669,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.report.view', ['admin','yonetici','moderator','finans']))) {
+    if (!session?.user?.id || !(await staffCan(session?.user?.role, (session?.user as any)?.id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 

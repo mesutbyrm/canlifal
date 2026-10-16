@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getStaffSession()
-    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const session = await getStaffSession()
-    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -138,7 +138,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getStaffSession()
-    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 

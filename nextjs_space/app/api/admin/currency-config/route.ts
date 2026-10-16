@@ -58,7 +58,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await getStaffSession()
-    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const session = await getStaffSession()
-    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.report.view', ['admin', 'yonetici', 'moderator', 'finans']))) {
+    if (!session?.user || !(await staffCan((session.user as any).role, (session.user as any).id, 'finance.payment.manage', ['admin', 'yonetici', 'kurucu', 'finans']))) {
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
