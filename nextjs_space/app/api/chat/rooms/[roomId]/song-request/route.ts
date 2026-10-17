@@ -1,3 +1,4 @@
+import { canControlMusic } from '@/lib/music-permissions'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
@@ -37,15 +38,17 @@ async function parseQueue(roomId: string) {
     const data = msg.content.replace(prefix, '')
     const parts = data.split('|')
 
-    // parts: videoId|title|dedication|note|duration|typeTag
-    const typeTag = isPaid ? (parts[5] || 'AUDIO') : (parts[3] || 'AUDIO')
+    // parts: videoId|title|dedication|note|duration|typeTag (FREE da aynı 6 alan;
+    // eski kayıtlar: videoId|title|duration|typeTag).
+    const full = isPaid || parts.length >= 6
+    const typeTag = full ? (parts[5] || 'AUDIO') : (parts[3] || 'AUDIO')
     return {
       id: msg.id,
       videoId: parts[0] || '',
       title: parts[1] || '',
-      dedication: isPaid ? (parts[2] || '') : '',
-      note: isPaid ? (parts[3] || '') : '',
-      duration: isPaid ? (parts[4] || '') : (parts[2] || ''),
+      dedication: full ? (parts[2] || '') : '',
+      note: full ? (parts[3] || '') : '',
+      duration: full ? (parts[4] || '') : (parts[2] || ''),
       requestType: typeTag === 'VIDEO' ? 'video' : 'audio',
       isPaid,
       userId: msg.userId,
@@ -280,7 +283,12 @@ export async function POST(
       select: { currentMusicVideoId: true }
     })
 
-    const shouldPlayNow = !room?.currentMusicVideoId || (priority === true)
+    // Öncelik (çalanı kesip hemen çalma) yalnız müziği yönetebilenlere:
+    // normal kullanıcının isteği çalan şarkıyı yarıda kesmez, sıraya girer.
+    const canPreempt = priority === true && room?.currentMusicVideoId
+      ? await canControlMusic(params.roomId, userId)
+      : false
+    const shouldPlayNow = !room?.currentMusicVideoId || canPreempt
 
     if (shouldPlayNow) {
       // If priority: stop current + play this. If no music: play this.
@@ -374,7 +382,7 @@ export async function PATCH(
       const parts = data.split('|')
       const videoId = parts[0]
       const title = parts[1]
-      const duration = isPaid ? (parts[4] || '') : (parts[2] || '')
+      const duration = (isPaid || parts.length >= 6) ? (parts[4] || '') : (parts[2] || '')
 
       if (videoId && title) {
         await prisma.chatRoom.update({
