@@ -311,6 +311,17 @@ export async function POST(
   }
 }
 
+function parseDurationSec(raw: string | null | undefined): number {
+  if (!raw) return 0
+  const t = String(raw).trim()
+  if (/^\d+$/.test(t)) return Number(t)
+  const p = t.split(':').map(Number)
+  if (p.some(n => Number.isNaN(n))) return 0
+  if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2]
+  if (p.length === 2) return p[0] * 60 + p[1]
+  return 0
+}
+
 // DELETE: Stop music
 export async function DELETE(
   req: NextRequest,
@@ -326,9 +337,30 @@ export async function DELETE(
       return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     }
 
-    const allowed = await canControlMusic(params.roomId, userId)
-    if (!allowed) {
-      return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
+    // `?endedVideoId=X`: istemcide parça bitti bildirimi. Çalan şarkı X değilse
+    // (başka istemci zaten ilerletti) hiçbir şey yapılmaz — çift atlama / erken
+    // kesilme olmaz. Şarkı süresi dolduysa herhangi bir oda üyesi ilerletebilir.
+    const endedVideoId = req.nextUrl.searchParams.get('endedVideoId')?.trim() || ''
+    if (endedVideoId) {
+      const cur = await prisma.chatRoom.findUnique({
+        where: { id: params.roomId },
+        select: { currentMusicVideoId: true, currentMusicStartedAt: true, currentMusicDuration: true },
+      })
+      if (!cur?.currentMusicVideoId || cur.currentMusicVideoId !== endedVideoId) {
+        return NextResponse.json({ success: true, autoAdvanced: false, ignored: true })
+      }
+      const durSec = parseDurationSec(cur.currentMusicDuration)
+      const startedMs = cur.currentMusicStartedAt?.getTime() ?? 0
+      const elapsedSec = startedMs ? (Date.now() - startedMs) / 1000 : 0
+      const finished = durSec > 0 && elapsedSec >= durSec - 15
+      if (!finished && !(await canControlMusic(params.roomId, userId))) {
+        return NextResponse.json({ success: true, autoAdvanced: false, ignored: true })
+      }
+    } else {
+      const allowed = await canControlMusic(params.roomId, userId)
+      if (!allowed) {
+        return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
+      }
     }
 
     // Clear current music
