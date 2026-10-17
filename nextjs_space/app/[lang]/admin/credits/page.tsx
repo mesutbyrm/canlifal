@@ -23,6 +23,7 @@ interface PaymentNotification {
   notes: string | null
   status: string
   productType?: string | null
+  requestedAmount?: number | null
   jetonLoaded: number | null
   processedBy: string | null
   processedAt: string | null
@@ -256,6 +257,25 @@ export default function AdminCreditsPage() {
     return Math.floor(amount * 2)
   }
 
+  // Kullanıcının istediği jeton miktarı: önce kayıttaki requestedAmount,
+  // yoksa nottaki «sunucu fiyatı: 9540 × …» / «ajans fiyatı: 100000 Jeton».
+  // (Önceden yalnız TL tutarına göre paket önerildiği için 4.770 TL'lik
+  // 9.540 jeton isteğine 5.000 jeton öneriliyordu.)
+  const requestedJeton = (n: PaymentNotification): number | null => {
+    if (n.requestedAmount && n.requestedAmount > 0) return n.requestedAmount
+    const notes = n.notes || ''
+    const m =
+      notes.match(/sunucu fiyat[ıi]:\s*([\d.]+)\s*[×x]/i) ||
+      notes.match(/ajans fiyat[ıi]:\s*([\d.]+)\s*Jeton/i) ||
+      notes.match(/([\d.]+)\s*Jeton/i)
+    if (!m) return null
+    const v = parseInt(m[1].replace(/\./g, ''), 10)
+    return Number.isFinite(v) && v > 0 ? v : null
+  }
+
+  const suggestedJeton = (n: PaymentNotification): number =>
+    requestedJeton(n) ?? calculateJetonAmount(n.amount)
+
   // Get jeton package info for display
   const getJetonPackageInfo = (amount: number): string => {
     if (amount >= 2250) return '2.250₺+ → 5.000 Jeton'
@@ -442,11 +462,11 @@ export default function AdminCreditsPage() {
                     <div className="flex flex-col gap-2">
                       {/* Show package info */}
                       <div className="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded">
-                        📦 {getJetonPackageInfo(notif.amount)}
+                        📦 {requestedJeton(notif) ? `İstenen: ${requestedJeton(notif)!.toLocaleString('tr-TR')} Jeton (${notif.amount}₺)` : getJetonPackageInfo(notif.amount)}
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => { setProcessModal(notif); setJetonAmount(String(calculateJetonAmount(notif.amount))); }}
+                          onClick={() => { setProcessModal(notif); setJetonAmount(String(suggestedJeton(notif))); }}
                           className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
                         >
                           <Check className="w-4 h-4" />
@@ -507,7 +527,7 @@ export default function AdminCreditsPage() {
                     <span className="col-span-2">2.250₺ → 5.000 Jeton</span>
                   </div>
                   <p className="text-green-400 text-sm mt-2 font-medium">
-                    ✓ Önerilen: {calculateJetonAmount(processModal.amount).toLocaleString()} Jeton
+                    ✓ {requestedJeton(processModal) ? 'Kullanıcının istediği' : 'Önerilen'}: {suggestedJeton(processModal).toLocaleString('tr-TR')} Jeton
                   </p>
                 </div>
                 
