@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { authenticateRequest } from '@/lib/mobile-auth'
+import prisma from '@/lib/db'
 import { emitDjUpdate } from '@/lib/chat-dj-events'
 import {
   DjRequestError,
@@ -12,6 +13,15 @@ import {
 } from '@/lib/dj-requests'
 
 export const dynamic = 'force-dynamic'
+
+/** İstemci oda kimliği yerine bağlantı adını (slug) yollarsa gerçek kimliğe çevir. */
+async function resolveRoomId(key: string): Promise<string> {
+  const room = await prisma.chatRoom.findFirst({
+    where: { OR: [{ id: key }, { slug: key }] },
+    select: { id: true },
+  })
+  return room?.id ?? key
+}
 
 async function resolveUserId(req: NextRequest): Promise<string | null> {
   const mobileUser = await authenticateRequest(req)
@@ -33,9 +43,10 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
   try {
     const userId = await resolveUserId(req)
     if (!userId) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    const roomId = await resolveRoomId(params.roomId)
     const [requests, handlerIds] = await Promise.all([
-      listRoomDjRequests(params.roomId),
-      resolveDjHandlers(params.roomId),
+      listRoomDjRequests(roomId),
+      resolveDjHandlers(roomId),
     ])
     return NextResponse.json(
       { ...requests, handlerIds, isHandler: handlerIds.includes(userId) },
@@ -51,10 +62,11 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
   try {
     const userId = await resolveUserId(req)
     if (!userId) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    const roomId = await resolveRoomId(params.roomId)
     const body = await req.json().catch(() => ({}))
     const query = String(body?.query ?? body?.title ?? '').trim()
     const result = await createDjRequest({
-      roomId: params.roomId,
+      roomId: roomId,
       userId,
       query,
       jetonSource: body?.jetonSource,
@@ -62,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       giftToUserId: typeof body?.giftToUserId === 'string' ? body.giftToUserId : undefined,
       priority: body?.priority === true,
     })
-    await emitDjUpdate(params.roomId)
+    await emitDjUpdate(roomId)
     return NextResponse.json({ success: true, ...result })
   } catch (e) {
     return fail(e, 'İstek gönderilemedi')
@@ -74,6 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
   try {
     const userId = await resolveUserId(req)
     if (!userId) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
+    const roomId = await resolveRoomId(params.roomId)
     const body = await req.json().catch(() => ({}))
     const action = String(body?.action ?? '')
     if (!['play', 'reject', 'cancel', 'done', 'clap'].includes(action)) {
@@ -82,12 +95,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
     const requestId = String(body?.requestId ?? '')
     if (!requestId) return NextResponse.json({ error: 'İstek kimliği eksik' }, { status: 400 })
     const result = await actOnDjRequest({
-      roomId: params.roomId,
+      roomId: roomId,
       userId,
       requestId,
       action: action as 'play' | 'reject' | 'cancel' | 'done' | 'clap',
     })
-    await emitDjUpdate(params.roomId)
+    await emitDjUpdate(roomId)
     return NextResponse.json({ success: true, ...result })
   } catch (e) {
     return fail(e, 'İşlem yapılamadı')
