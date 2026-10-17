@@ -166,7 +166,11 @@ export async function resolveDjHandlers(roomId: string): Promise<string[]> {
     djs = room.djUserIds ? JSON.parse(room.djUserIds) : []
   } catch {}
   if (!Array.isArray(djs)) djs = []
-  return djs.filter((id) => typeof id === 'string' && present.has(id))
+  djs = djs.filter((id) => typeof id === 'string' && id.length > 0)
+  const presentDjs = djs.filter((id) => present.has(id))
+  if (presentDjs.length > 0) return presentDjs
+  // Varlık kaydı gecikmiş / boş olabilir: oda sahibi + tüm DJ'ler hedeflenir.
+  return Array.from(new Set([...(room.ownerId ? [room.ownerId] : []), ...djs]))
 }
 
 async function canHandle(roomId: string, userId: string): Promise<boolean> {
@@ -251,10 +255,9 @@ export async function createDjRequest(params: {
   const settings = await getRoomMusicSettings(params.roomId)
   if (!settings.musicEnabled) throw new DjRequestError('Bu odada müzik isteği kapalı', 403)
 
+  // Odada kimse görünmese de istek alınır (oda sahibi + DJ'lere gider);
+  // 5 dk içinde çalınmazsa jeton otomatik iade edilir.
   const handlers = await resolveDjHandlers(params.roomId)
-  if (handlers.length === 0) {
-    throw new DjRequestError('Şu an odada isteği çalacak oda sahibi veya DJ yok', 409)
-  }
 
   // Kullanıcı başına tek bekleyen istek (spam ve yanlışlıkla çift kesinti önlemi).
   const open = await listRoomDjRequests(params.roomId)

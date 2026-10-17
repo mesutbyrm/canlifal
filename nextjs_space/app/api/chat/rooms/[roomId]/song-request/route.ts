@@ -51,6 +51,8 @@ async function parseQueue(roomId: string) {
       duration: full ? (parts[4] || '') : (parts[2] || ''),
       requestType: typeTag === 'VIDEO' ? 'video' : 'audio',
       isPaid,
+      // ⚡ Öne geç (çift ücret) — sırada en üstte.
+      priority: data.includes('|PRIO'),
       userId: msg.userId,
       userName: msg.user?.name || msg.user?.username || 'Anonim',
       createdAt: msg.createdAt,
@@ -59,6 +61,7 @@ async function parseQueue(roomId: string) {
 
   // Sort: paid first, then by createdAt
   queue.sort((a: any, b: any) => {
+    if (a.priority !== b.priority) return a.priority ? -1 : 1
     if (a.isPaid && !b.isPaid) return -1
     if (!a.isPaid && b.isPaid) return 1
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -141,9 +144,9 @@ export async function POST(
     if (!roomMusicSettings.musicEnabled) {
       return NextResponse.json({ error: 'Bu odada müzik isteği kapalı' }, { status: 403 })
     }
-    const SONG_REQUEST_COST = isVideoRequest
-      ? roomMusicSettings.videoRequestCost
-      : roomMusicSettings.musicRequestCost
+    // Tüm istekler (sesli / videolu) aynı ücret; ⚡ öne geçmek iki kat
+    // (varsayılan 10 / 20 jeton).
+    const SONG_REQUEST_COST = roomMusicSettings.musicRequestCost * (priority === true ? 2 : 1)
     if (!videoId || !title) {
       return NextResponse.json({ error: 'Şarkı bilgisi eksik' }, { status: 400 })
     }
@@ -256,7 +259,7 @@ export async function POST(
       data: {
         roomId: params.roomId,
         userId,
-        content: `${prefix} ${videoId}|${title}|${dedText}|${noteText}|${durText}|${typeTag}`,
+        content: `${prefix} ${videoId}|${title}|${dedText}|${noteText}|${durText}|${typeTag}${priority === true ? '|PRIO' : ''}`,
       }
     })
 
@@ -267,6 +270,7 @@ export async function POST(
       : `🎵 ${userName} şarkı isteği gönderdi: ${title}`
     if (dedText) visibleMsg += ` (${dedText} için)`
     if (noteText) visibleMsg += ` — "${noteText}"`
+    if (priority === true) visibleMsg += ' ⚡ öne geçti'
     if (!shouldSkipPayment) visibleMsg += ` [${SONG_REQUEST_COST} 💎${isVideoRequest ? ' 🎬' : ' 🎧'}]`
 
     await prisma.chatMessage.create({

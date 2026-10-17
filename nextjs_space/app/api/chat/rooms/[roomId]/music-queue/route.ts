@@ -45,6 +45,8 @@ async function parseQueue(roomId: string) {
       duration: isPaid ? (parts[4] || '') : (parts[2] || ''),
       requestType: typeTag === 'VIDEO' ? 'video' : 'audio',
       isPaid,
+      // ⚡ Öne geç (çift ücret) — sırada en üstte.
+      priority: data.includes('|PRIO'),
       userId: msg.userId,
       userName: msg.user?.name || msg.user?.username || 'Anonim',
       createdAt: msg.createdAt,
@@ -52,6 +54,7 @@ async function parseQueue(roomId: string) {
   }).filter(Boolean)
 
   queue.sort((a: any, b: any) => {
+    if (a.priority !== b.priority) return a.priority ? -1 : 1
     if (a.isPaid && !b.isPaid) return -1
     if (!a.isPaid && b.isPaid) return 1
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
