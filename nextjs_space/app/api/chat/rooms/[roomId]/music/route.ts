@@ -355,8 +355,12 @@ export async function DELETE(
       const durSec = parseDurationSec(cur.currentMusicDuration)
       const startedMs = cur.currentMusicStartedAt?.getTime() ?? 0
       const elapsedSec = startedMs ? (Date.now() - startedMs) / 1000 : 0
-      const finished = durSec > 0 && elapsedSec >= durSec - 15
-      if (!finished && !(await canControlMusic(params.roomId, userId))) {
+      // «Bitti» bildirimi yalnız şarkı gerçekten bittiğinde geçerli — kimden
+      // gelirse gelsin (DJ dahil). Oynatıcı hatası / erken bitiş bildirimi
+      // şarkıyı herkes için 3-5 sn'de kesiyordu. Süre bilinmiyorsa en az 60 sn.
+      // Bilerek geçmek için parametresiz DELETE (yetki gerekir) kullanılır.
+      const finished = durSec > 0 ? elapsedSec >= durSec - 15 : elapsedSec >= 60
+      if (!finished) {
         return NextResponse.json({ success: true, autoAdvanced: false, ignored: true })
       }
     } else {
