@@ -58,6 +58,9 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
       userId,
       query,
       jetonSource: body?.jetonSource,
+      message: typeof body?.message === 'string' ? body.message : undefined,
+      giftToUserId: typeof body?.giftToUserId === 'string' ? body.giftToUserId : undefined,
+      priority: body?.priority === true,
     })
     await emitDjUpdate(params.roomId)
     return NextResponse.json({ success: true, ...result })
@@ -66,14 +69,14 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
   }
 }
 
-// PATCH: { requestId, action: 'play' | 'reject' | 'cancel' | 'done' }
+// PATCH: { requestId, action: 'play' | 'reject' | 'cancel' | 'done' | 'clap' }
 export async function PATCH(req: NextRequest, { params }: { params: { roomId: string } }) {
   try {
     const userId = await resolveUserId(req)
     if (!userId) return NextResponse.json({ error: 'Oturum açmanız gerekiyor' }, { status: 401 })
     const body = await req.json().catch(() => ({}))
     const action = String(body?.action ?? '')
-    if (!['play', 'reject', 'cancel', 'done'].includes(action)) {
+    if (!['play', 'reject', 'cancel', 'done', 'clap'].includes(action)) {
       return NextResponse.json({ error: 'Geçersiz işlem' }, { status: 400 })
     }
     const requestId = String(body?.requestId ?? '')
@@ -82,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { roomId: st
       roomId: params.roomId,
       userId,
       requestId,
-      action: action as 'play' | 'reject' | 'cancel' | 'done',
+      action: action as 'play' | 'reject' | 'cancel' | 'done' | 'clap',
     })
     await emitDjUpdate(params.roomId)
     return NextResponse.json({ success: true, ...result })
