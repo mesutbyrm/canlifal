@@ -23,6 +23,9 @@ async function playNextFromQueue(roomId: string): Promise<boolean> {
 
   // Sort: paid first
   const sorted = requests.sort((a, b) => {
+    const aQ = a.content.includes('|PRIO') ? 0 : 1
+    const bQ = b.content.includes('|PRIO') ? 0 : 1
+    if (aQ !== bQ) return aQ - bQ
     const aP = a.content.startsWith('[SONG_REQUEST_PAID]') ? 0 : 1
     const bP = b.content.startsWith('[SONG_REQUEST_PAID]') ? 0 : 1
     if (aP !== bP) return aP - bP
