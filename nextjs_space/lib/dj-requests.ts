@@ -34,6 +34,15 @@ export interface DjRequestData {
   requesterName: string
   handlerId?: string
   handlerName?: string
+  /** İsteyenin mesajı (bantta 2. satırda kayar). */
+  message?: string
+  /** Şarkının armağan edildiği kişi. */
+  giftToId?: string
+  giftToName?: string
+  /** Öne geç (çift ücret) — sırada en üstte. */
+  priority?: boolean
+  claps?: number
+  clapperIds?: string[]
   createdAtMs: number
   updatedAtMs: number
 }
@@ -47,6 +56,11 @@ export interface DjRequestView {
   userName: string
   handlerId: string | null
   handlerName: string | null
+  message: string | null
+  giftToId: string | null
+  giftToName: string | null
+  priority: boolean
+  claps: number
   createdAtMs: number
   updatedAtMs: number
 }
@@ -81,6 +95,11 @@ function toView(msg: { id: string; userId: string }, d: DjRequestData): DjReques
     userName: d.requesterName,
     handlerId: d.handlerId ?? null,
     handlerName: d.handlerName ?? null,
+    message: d.message ?? null,
+    giftToId: d.giftToId ?? null,
+    giftToName: d.giftToName ?? null,
+    priority: d.priority === true,
+    claps: d.claps ?? 0,
     createdAtMs: d.createdAtMs,
     updatedAtMs: d.updatedAtMs,
   }
@@ -208,6 +227,10 @@ export async function listRoomDjRequests(roomId: string): Promise<{
       if (!playing || d.updatedAtMs >= playing.updatedAtMs) playing = toView(row, d)
     }
   }
+  // Öne geçenler önce, sonra geliş sırası.
+  pending.sort((a, b) =>
+    a.priority !== b.priority ? (a.priority ? -1 : 1) : a.createdAtMs - b.createdAtMs,
+  )
   return { pending, playing }
 }
 
@@ -216,8 +239,13 @@ export async function createDjRequest(params: {
   userId: string
   query: string
   jetonSource?: unknown
+  message?: string
+  giftToUserId?: string
+  priority?: boolean
 }) {
   const query = params.query.replace(/\s+/g, ' ').trim().slice(0, 120)
+  const message = (params.message ?? '').replace(/\s+/g, ' ').trim().slice(0, 100)
+  const priority = params.priority === true
   if (query.length < 2) throw new DjRequestError('Şarkı ve şarkıcı adını yazın (ör. !istek Tarkan Kuzu Kuzu)')
 
   const settings = await getRoomMusicSettings(params.roomId)
@@ -240,7 +268,23 @@ export async function createDjRequest(params: {
   })
   if (!user) throw new DjRequestError('Kullanıcı bulunamadı', 404)
 
-  const cost = Math.max(0, Math.floor(settings.musicRequestCost))
+  const baseCost = Math.max(0, Math.floor(settings.musicRequestCost))
+  // Öne geç: ücretin iki katı (varsayılan 10 → 20 jeton).
+  const cost = priority ? baseCost * 2 : baseCost
+
+  let giftToId: string | undefined
+  let giftToName: string | undefined
+  const giftRaw = (params.giftToUserId ?? '').trim()
+  if (giftRaw && giftRaw !== params.userId) {
+    const g = await prisma.user.findUnique({
+      where: { id: giftRaw },
+      select: { id: true, name: true, username: true },
+    })
+    if (g) {
+      giftToId = g.id
+      giftToName = g.username || g.name || undefined
+    }
+  }
   const plan = await resolveJetonSpend(params.userId, cost, parseJetonSource(params.jetonSource))
   const charge = !plan.skipDeduction && cost > 0
 
@@ -278,6 +322,9 @@ export async function createDjRequest(params: {
     source: charge ? plan.source : null,
     countsAsFinance: charge && plan.countsAsFinance,
     requesterName,
+    ...(message ? { message } : {}),
+    ...(giftToId ? { giftToId, giftToName } : {}),
+    ...(priority ? { priority: true } : {}),
     createdAtMs: now,
     updatedAtMs: now,
   }
@@ -288,7 +335,12 @@ export async function createDjRequest(params: {
     data: {
       roomId: params.roomId,
       userId: params.userId,
-      content: `🎵 ${requesterName} şarkı isteği gönderdi: ${query}${charge ? ` [${cost} 💎 — DJ çalarsa kesilir]` : ''}`,
+      content:
+        `🎵 ${requesterName} şarkı isteği gönderdi: ${query}` +
+        (giftToName ? ` → 🎁 @${giftToName}` : '') +
+        (priority ? ' ⚡ öne geçti' : '') +
+        (message ? ` — «${message}»` : '') +
+        (charge ? ` [${cost} 💎 — DJ çalarsa kesilir]` : ''),
     },
   })
   return { request: toView(msg, data), handlers }
@@ -298,7 +350,7 @@ export async function actOnDjRequest(params: {
   roomId: string
   userId: string
   requestId: string
-  action: 'play' | 'reject' | 'cancel' | 'done'
+  action: 'play' | 'reject' | 'cancel' | 'done' | 'clap'
 }) {
   const row = await prisma.chatMessage.findUnique({
     where: { id: params.requestId },
@@ -309,6 +361,44 @@ export async function actOnDjRequest(params: {
 
   const now = Date.now()
   const isRequester = row.userId === params.userId
+
+  if (params.action === 'clap') {
+    // Alkış: çalan şarkıya kişi başı bir kez; kilit çakışırsa birkaç kez dene.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const cur = attempt === 0
+        ? row
+        : await prisma.chatMessage.findUnique({
+            where: { id: row.id },
+            select: { id: true, roomId: true, userId: true, content: true },
+          })
+      const cd = cur ? parse(cur.content) : null
+      if (!cur || !cd || cd.status !== 'playing') {
+        throw new DjRequestError('Bu şarkı artık çalmıyor', 409)
+      }
+      const ids = cd.clapperIds ?? []
+      if (ids.includes(params.userId)) return { status: cd.status, claps: cd.claps ?? ids.length }
+      const next = {
+        ...cd,
+        clapperIds: [...ids, params.userId].slice(-200),
+        claps: (cd.claps ?? 0) + 1,
+      }
+      if (await transition(cur.id, cur.content, next)) {
+        const u = await prisma.user.findUnique({
+          where: { id: params.userId },
+          select: { name: true, username: true },
+        })
+        await prisma.chatMessage.create({
+          data: {
+            roomId: params.roomId,
+            userId: params.userId,
+            content: `👏 ${u?.name || u?.username || 'Biri'} alkışladı: ${cd.query}`,
+          },
+        })
+        return { status: cd.status, claps: next.claps }
+      }
+    }
+    throw new DjRequestError('Alkış kaydedilemedi, tekrar dene', 409)
+  }
 
   if (params.action === 'cancel') {
     if (!isRequester) throw new DjRequestError('Yalnız istek sahibi iptal edebilir', 403)
