@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { presenceCutoff } from '@/lib/presence'
 import { atomicDebitJeton, isInsufficientBalanceError, type JetonSource } from '@/lib/balance-guard'
 import { parseJetonSource, resolveJetonSpend } from '@/lib/jeton-source'
 import { getRoomMusicSettings } from '@/lib/chat-music-settings'
@@ -122,20 +123,25 @@ async function transition(
   return res.count === 1
 }
 
-async function refund(userId: string, d: DjRequestData, reason: string) {
+async function refundWith(
+  db: any,
+  userId: string,
+  d: DjRequestData,
+  reason: string,
+) {
   if (!d.source || d.cost <= 0) return
   const field = d.source === 'fake' ? 'fakeJetonBalance' : 'jetonBalance'
-  const before = await prisma.user.findUnique({
+  const before = await db.user.findUnique({
     where: { id: userId },
     select: { jetonBalance: true },
   })
-  await prisma.user.update({
+  await db.user.update({
     where: { id: userId },
     data: { [field]: { increment: d.cost } },
   })
   if (d.countsAsFinance) {
     const b = before?.jetonBalance ?? 0
-    await prisma.jetonTransaction.create({
+    await db.jetonTransaction.create({
       data: {
         userId,
         amount: d.cost,
@@ -148,6 +154,34 @@ async function refund(userId: string, d: DjRequestData, reason: string) {
   }
 }
 
+/**
+ * Durum geçişi + iade tek veritabanı işleminde: iade başarısız olursa durum
+ * da geri alınır (istek kaybolmaz, sonraki turda yeniden denenir).
+ */
+async function transitionWithRefund(
+  msgId: string,
+  oldContent: string,
+  next: DjRequestData,
+  userId: string,
+  d: DjRequestData,
+  reason: string,
+): Promise<boolean> {
+  try {
+    await prisma.$transaction(async (tx: any) => {
+      const res = await tx.chatMessage.updateMany({
+        where: { id: msgId, content: oldContent },
+        data: { content: serialize(next) },
+      })
+      if (res.count !== 1) throw new Error('DJ_REQ_LOCK_LOST')
+      await refundWith(tx, userId, d, reason)
+    })
+    return true
+  } catch (e) {
+    if ((e as Error)?.message === 'DJ_REQ_LOCK_LOST') return false
+    throw e
+  }
+}
+
 /** Oda sahibi odadaysa yalnız o; değilse odadaki DJ'ler. Global admin her zaman. */
 export async function resolveDjHandlers(roomId: string): Promise<string[]> {
   const room = await prisma.chatRoom.findUnique({
@@ -155,8 +189,11 @@ export async function resolveDjHandlers(roomId: string): Promise<string[]> {
     select: { ownerId: true, djUserIds: true },
   })
   if (!room) return []
+  // Odadan çıkınca kayıt silinmez (lastSeen sıfırlanır): yalnız güncel
+  // varlıklar sayılır. Aksi halde odada olmayan sahip hep «odada» görünüp
+  // açılır pencere DJ'lere hiç gitmiyordu.
   const presences = await prisma.chatPresence.findMany({
-    where: { roomId },
+    where: { roomId, lastSeen: { gte: presenceCutoff() } },
     select: { userId: true },
   })
   const present = new Set(presences.map((p) => p.userId))
@@ -198,13 +235,29 @@ export async function listRoomDjRequests(roomId: string): Promise<{
   pending: DjRequestView[]
   playing: DjRequestView | null
 }> {
+  // Bekleyenler tarih sınırı olmadan (süresi dolanlar burada iade edilir —
+  // oda uzun süre boş kalsa da jeton kaybolmaz); çalanlar son 2 saatten.
+  // serialize() alan sırasını korur: içerik `{"v":1,"status":"..."` ile başlar.
   const since = new Date(Date.now() - 2 * 60 * 60 * 1000)
-  const rows = await prisma.chatMessage.findMany({
-    where: { roomId, content: { startsWith: DJ_REQ_PREFIX }, createdAt: { gte: since } },
-    orderBy: { createdAt: 'asc' },
-    take: 50,
-    select: { id: true, userId: true, content: true },
-  })
+  const [pendingRows, playingRows] = await Promise.all([
+    prisma.chatMessage.findMany({
+      where: { roomId, content: { startsWith: `${DJ_REQ_PREFIX}{"v":1,"status":"pending"` } },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+      select: { id: true, userId: true, content: true },
+    }),
+    prisma.chatMessage.findMany({
+      where: {
+        roomId,
+        content: { startsWith: `${DJ_REQ_PREFIX}{"v":1,"status":"playing"` },
+        createdAt: { gte: since },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: { id: true, userId: true, content: true },
+    }),
+  ])
+  const rows = [...pendingRows, ...playingRows]
   const now = Date.now()
   const pending: DjRequestView[] = []
   let playing: DjRequestView | null = null
@@ -214,11 +267,9 @@ export async function listRoomDjRequests(roomId: string): Promise<{
     if (d.status === 'pending') {
       if (now - d.createdAtMs > DJ_REQ_PENDING_TTL_MS) {
         const next = { ...d, status: 'expired' as const, updatedAtMs: now }
-        if (await transition(row.id, row.content, next)) {
-          await refund(row.userId, d, 'süre doldu').catch((e) =>
-            console.error('dj-request refund (expired) error:', e),
-          )
-        }
+        await transitionWithRefund(row.id, row.content, next, row.userId, d, 'süre doldu').catch(
+          (e) => console.error('dj-request refund (expired) error:', e),
+        )
         continue
       }
       pending.push(toView(row, d))
@@ -406,9 +457,15 @@ export async function actOnDjRequest(params: {
   if (params.action === 'cancel') {
     if (!isRequester) throw new DjRequestError('Yalnız istek sahibi iptal edebilir', 403)
     if (d.status !== 'pending') throw new DjRequestError('İstek artık iptal edilemez', 409)
-    const ok = await transition(row.id, row.content, { ...d, status: 'cancelled', updatedAtMs: now })
+    const ok = await transitionWithRefund(
+      row.id,
+      row.content,
+      { ...d, status: 'cancelled', updatedAtMs: now },
+      row.userId,
+      d,
+      'iptal',
+    )
     if (!ok) throw new DjRequestError('İstek zaten yanıtlandı', 409)
-    await refund(row.userId, d, 'iptal')
     return { status: 'cancelled' as const }
   }
 
@@ -430,15 +487,15 @@ export async function actOnDjRequest(params: {
   if (d.status !== 'pending') throw new DjRequestError('İstek zaten yanıtlandı', 409)
 
   if (params.action === 'reject') {
-    const ok = await transition(row.id, row.content, {
-      ...d,
-      status: 'rejected',
-      handlerId: params.userId,
-      handlerName,
-      updatedAtMs: now,
-    })
+    const ok = await transitionWithRefund(
+      row.id,
+      row.content,
+      { ...d, status: 'rejected', handlerId: params.userId, handlerName, updatedAtMs: now },
+      row.userId,
+      d,
+      'DJ reddetti',
+    )
     if (!ok) throw new DjRequestError('İstek zaten yanıtlandı', 409)
-    await refund(row.userId, d, 'DJ reddetti')
     await prisma.chatMessage.create({
       data: {
         roomId: params.roomId,
