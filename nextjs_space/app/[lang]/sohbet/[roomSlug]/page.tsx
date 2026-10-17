@@ -3737,7 +3737,7 @@ export default function ChatRoomPage() {
                 const isSpeakingUser = speakingUsers.has(msg.user.id)
                 
                 // Hide internal song request queue messages
-                if (msg.content.startsWith('[SONG_REQUEST_PAID]') || msg.content.startsWith('[SONG_REQUEST_FREE]')) return null
+                if (msg.content.startsWith('[SONG_REQUEST_PAID]') || msg.content.startsWith('[SONG_REQUEST_FREE]') || msg.content.startsWith('[DJ_REQ]')) return null
 
                 // Local rules system message
                 const isRulesMsg = msg.content.startsWith('[SYSTEM_RULES]')

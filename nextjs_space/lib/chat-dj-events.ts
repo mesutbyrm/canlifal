@@ -1,4 +1,5 @@
 import prisma from '@/lib/db'
+import { listRoomDjRequests, resolveDjHandlers } from './dj-requests'
 import { publishEvent, registerBridgeHandler, touchBridge, type IncomingEvent } from './realtime-bridge'
 
 /**
@@ -100,9 +101,22 @@ export async function buildDjPayload(roomId: string) {
     embedUrl,
   } : null
 
+  // DJ istekleri (!istek): bekleyenler, çalan, popup hedefleri.
+  let djRequests: any = null
+  try {
+    const [reqs, handlerIds] = await Promise.all([
+      listRoomDjRequests(roomId),
+      resolveDjHandlers(roomId),
+    ])
+    djRequests = { ...reqs, handlerIds }
+  } catch (e) {
+    console.error('djRequests payload error:', e)
+  }
+
   return {
     type: 'dj' as const,
     event: 'QUEUE_UPDATED',
+    djRequests,
     playing,
     nowPlaying,
     // Geriye dönük uyumluluk: musicUrl artık embed URL'sidir (ham stream değil).
